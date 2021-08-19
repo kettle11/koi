@@ -43,7 +43,7 @@ impl StorageLookup {
         filters: &[(Option<usize>, Filter)],
     ) -> MatchingArchetypeIterator<CHANNEL_COUNT> {
         let mut filter_info = Vec::with_capacity(filters.len());
-        for (i, (output_index, filter)) in filters.iter().enumerate() {
+        for (output_index, filter) in filters.iter() {
             let archetypes = self.component_archetypes.get(&filter.component_id);
             let matching_archetypes_len = match filter.filter_type {
                 FilterType::With => archetypes.map_or(0, |a| a.len()),

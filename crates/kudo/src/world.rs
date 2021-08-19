@@ -401,6 +401,9 @@ impl World {
                         .data
                         .migrate_component(index_within_archetype, &mut *destination_channel.data);
                     current_index += 1;
+                    if source_archetype.channels.len() == current_index {
+                        break;
+                    }
                 }
             }
         }
