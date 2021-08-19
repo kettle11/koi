@@ -1,0 +1,20 @@
+<html>
+
+<head>
+  <meta content="text/html;charset=utf-8" http-equiv="Content-Type" />
+</head>
+
+<body style="margin:0; overflow-y: hidden;overflow-x: hidden;">
+  <noscript>This page requires WebAssembly and Javascript to be enabled.</noscript>
+  <canvas id='canvas' style="width:100vw; height: 100vh;" oncontextmenu="return false;"></canvas>
+  <script type="module">
+    import init from './example.js';
+    async function run() {
+      const wasm = await init();
+      wasm.main();
+    }
+    run();
+  </script>
+</body>
+
+</html>

@@ -1,0 +1,16 @@
+[package]
+name = "kapp"
+version = "0.1.0"
+authors = ["Ian Kettlewell"]
+edition = "2018"
+license = "Zlib OR Apache-2.0 OR MIT"
+
+[features]
+default = ["gl_context", "wasm_bindgen_support"]
+gl_context = ["kapp_gl_context"]
+SDL = ["kapp_platforms/SDL"]
+wasm_bindgen_support = ["kapp_platforms/wasm_bindgen_support"]
+
+[dependencies]
+kapp_gl_context = { path = "./gl_context", optional = true }
+kapp_platforms = { path = "./kapp_platforms" }

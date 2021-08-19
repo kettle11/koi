@@ -1,0 +1,18 @@
+[package]
+name = "kwasm"
+version = "0.1.0"
+authors = ["Ian Kettlewell <ian.kettlewell@gmail.com>"]
+edition = "2018"
+license = "Zlib OR Apache-2.0 OR MIT"
+
+[dependencies]
+wasm_set_stack_pointer = {git = "https://github.com/kettle11/wasm_set_stack_pointer"}
+wasm-bindgen = { version = "*", optional = true }
+js-sys = { version = "*", optional = true }
+
+[dev-dependencies]
+ktasks = {path = "../ktasks"}
+
+[features]
+default = []
+wasm_bindgen_support = ["wasm-bindgen", "js-sys"]

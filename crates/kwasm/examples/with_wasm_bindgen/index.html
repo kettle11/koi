@@ -1,0 +1,15 @@
+<html>
+<canvas width="570" height="570" id="my_canvas"></canvas>
+
+<body>
+    <script type="module">
+        import init from './with_wasm_bindgen.js';
+        async function run() {
+            const wasm = await init();
+            wasm.main();
+        }
+        run();
+    </script>
+</body>
+
+</html>

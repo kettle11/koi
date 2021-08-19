@@ -1,0 +1,11 @@
+[package]
+name = "kreflect_common"
+version = "0.1.0"
+authors = ["Ian Kettlewell <ian.kettlewell@gmail.com>"]
+edition = "2018"
+
+[features]
+# This enables a helper for when `kreflect_common` is used within a proc_macro.
+proc_macro = []
+
+[dependencies]
