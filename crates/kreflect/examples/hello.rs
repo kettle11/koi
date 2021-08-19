@@ -3,7 +3,7 @@
 use kreflect::*;
 
 #[derive(Reflect)]
-pub struct Events<Event: Sync + Send>(Vec<Event>);
+pub struct Events<Event: Sync + Send> (Vec<Event> );
 
 fn main() {}
 /*

@@ -200,16 +200,7 @@ fn setup_graphics(world: &mut World) {
 }
 
 /*
-pub fn attach_gpu_mesh(graphics: &mut Graphics, meshes: Query<&Mesh, (Without<GPUMesh>,)>) {
-    // There are bad assumptions here about only a single window existing.
-    let main_window: &NotSendSync<kapp::Window> = &window;
-    let main_window: &kapp::Window = main_window;
-
-    let (window_width, window_height) = main_window.size();
-
-    graphics
-        .context
-        .resize(main_window, window_width, window_height);
+pub fn attach_gpu_mesh(graphics: &mut Graphics, meshes: Query<&Mesh, Without<Handle<GPUMesh>>>) {
 }
 */
 

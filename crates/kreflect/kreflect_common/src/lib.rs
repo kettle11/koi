@@ -54,6 +54,22 @@ pub enum Token<'a> {
 #[cfg(feature = "proc_macro")]
 extern crate proc_macro;
 
+fn char_to_token<'a>(c: char) -> Token<'a> {
+    match c {
+        ':' => Token::Colon,
+        ',' => Token::Comma,
+        '<' => Token::LessThan,
+        '>' => Token::GreaterThan,
+        '#' => Token::Pound,
+        '\'' => Token::SingleQuote,
+        ';' => Token::SemiColon,
+        '&' => Token::And,
+        '!' => Token::Not,
+        '=' => Token::Equal,
+        '+' => Token::Plus,
+        _ => unimplemented!("Unimplemented punctuation: {}", c),
+    }
+}
 #[cfg(feature = "proc_macro")]
 pub fn token_stream_to_rust_tokens(
     token_stream: proc_macro::TokenStream,
@@ -88,24 +104,11 @@ pub fn token_stream_to_rust_tokens(
             TokenTree::Punct(p) => {
                 let c0 = p.as_char();
                 let token = match p.spacing() {
-                    Spacing::Alone => match c0 {
-                        ':' => Token::Colon,
-                        ',' => Token::Comma,
-                        '<' => Token::LessThan,
-                        '>' => Token::GreaterThan,
-                        '#' => Token::Pound,
-                        '\'' => Token::SingleQuote,
-                        ';' => Token::SemiColon,
-                        '&' => Token::And,
-                        '!' => Token::Not,
-                        '=' => Token::Equal,
-                        '+' => Token::Plus,
-                        _ => unimplemented!("Unimplemented punctuation: {}", c0),
-                    },
+                    Spacing::Alone => char_to_token(c0),
                     Spacing::Joint => {
-                        let next_c = token_iter.next().unwrap();
+                        let next_c = token_iter.next();
                         match next_c {
-                            TokenTree::Punct(p) => {
+                            Some(TokenTree::Punct(p)) => {
                                 let c1 = p.as_char();
                                 match (c0, c1) {
                                     ('+', '=') => Token::PlusEqual,
@@ -135,13 +138,16 @@ pub fn token_stream_to_rust_tokens(
                                 }
                             }
                             // This happens for lifetimes.
-                            TokenTree::Ident(i) => match c0 {
+                            Some(TokenTree::Ident(i)) => match c0 {
                                 '\'' => {
                                     rust_tokens.push(Token::SingleQuote);
                                     Token::Identifier(Cow::Owned(i.to_string()))
                                 }
                                 _ => unimplemented!("Unexpected case"),
                             },
+                            // I don't know why this case happens but it happens only within
+                            // Rust-analyzer for some reason.
+                            None => char_to_token(c0),
                             _ => {
                                 unimplemented!("UNEXPECTED: C0: {:?}, {:?}", c0, next_c)
                             }
