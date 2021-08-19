@@ -517,6 +517,7 @@ impl<'a> Parser<'a> {
                                     args.push(GenericArgument::Type(_type))
                                 }
                             }
+                            self.check_for_token(Token::Comma);
                         }
                     }
                     PathSegmentType::Named(i.clone())
@@ -825,6 +826,7 @@ impl<'a> Parser<'a> {
                         }
                         other => panic!("Unexpected token in generic params: {:?}", other),
                     }
+
                     self.check_for_token(Token::Comma);
                 }
             }
