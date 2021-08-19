@@ -1,6 +1,6 @@
 use crate::*;
 
-pub trait ComponentBundleTrait: 'static {
+pub trait ComponentBundleTrait: 'static + Send + Sync {
     fn add_to_entity(self, world: &mut World, entity: Entity) -> Result<(), KudoError>;
 }
 

@@ -96,6 +96,7 @@ impl App {
         ktasks::create_workers(3);
 
         let mut world = World::new();
+        world.spawn(Commands::new());
 
         // For now `kapp` is integrated directly into `koi`
         let (kapp_app, kapp_event_loop) = kapp::initialize();
@@ -148,14 +149,18 @@ impl App {
                         for system in &mut self.fixed_upate_systems {
                             system.run(&mut world).unwrap()
                         }
+                        apply_commands(&mut world);
                         run_system(crate::Event::FixedUpdate, &mut world);
+                        apply_commands(&mut world);
                         time_acumulator -= fixed_time_step;
                     }
 
                     run_system(crate::Event::Draw, &mut world);
+                    apply_commands(&mut world);
                     for system in &mut self.draw_systems {
                         system.run(&mut world).unwrap()
                     }
+                    apply_commands(&mut world);
 
                     // This ensures a continuous redraw.
                     world
