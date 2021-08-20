@@ -8,9 +8,10 @@ members = ["crates/*", "third_party/koi_kolor/build/kolor"]
 
 
 [features]
-default = ["graphics", "drawer2d"]
+default = ["graphics", "drawer2d", "png", "jpeg"]
 graphics = ["kgraphics"]
 drawer2d = []
+jpeg = ["jpeg-decoder"]
 
 [dependencies]
 kapp = {path = "crates/kapp", version = "0.1.0", default-features=false}
@@ -20,6 +21,8 @@ ktasks = {path = "crates/ktasks", version = "0.1.0"}
 kmath = {path = "crates/kmath", version = "0.1.0"}
 klog = {path = "crates/klog", version = "0.1.0"}
 oorandom = "11.1.3"
+png = {git = "https://github.com/image-rs/image-png", optional = true}
+jpeg-decoder = {version = "0.1.20", default-features = false, optional = true}
 
 # This is copied / modified locally because it can't build presently with `glam` disabled.
 kolor = {path = "third_party/koi_kolor/build/kolor", default-features=false, features=["f32", "std"]}

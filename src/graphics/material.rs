@@ -36,7 +36,7 @@ impl Material {
         materials.add_and_leak(emissive_material, &Self::EMISSIVE);
     }
 
-    pub fn new(shader: Handle<Pipeline>) -> Self {
+    pub fn new(pipeline: Handle<Pipeline>) -> Self {
         Self {
             pipeline,
             float_properties: HashMap::new(),
@@ -103,42 +103,42 @@ impl Material {
         textures: &Assets<Texture>,
     ) {
         for (name, value) in self.float_properties.iter() {
-            if let Ok(property) = shader.pipeline.get_float_property(name) {
+            if let Ok(property) = pipeline.get_float_property(name) {
                 render_pass.set_float_property(&property, *value);
             } else {
                 println!("WARNING: Shader does not have float property '{}'", name);
             }
         }
         for (name, value) in self.vec2_properties.iter() {
-            if let Ok(property) = shader.pipeline.get_vec2_property(name) {
+            if let Ok(property) = pipeline.get_vec2_property(name) {
                 render_pass.set_vec2_property(&property, (*value).into());
             } else {
                 println!("WARNING: Shader does not have Vec2 property '{}'", name);
             }
         }
         for (name, value) in self.vec3_properties.iter() {
-            if let Ok(property) = shader.pipeline.get_vec3_property(name) {
+            if let Ok(property) = pipeline.get_vec3_property(name) {
                 render_pass.set_vec3_property(&property, (*value).into());
             } else {
                 println!("WARNING: Shader does not have Vec3 property '{}'", name);
             }
         }
         for (name, value) in self.vec4_properties.iter() {
-            if let Ok(property) = shader.pipeline.get_vec4_property(name) {
+            if let Ok(property) = pipeline.get_vec4_property(name) {
                 render_pass.set_vec4_property(&property, (*value).into());
             } else {
                 println!("WARNING: Shader does not have Vec4 property '{}'", name);
             }
         }
         for (name, value) in self.mat4_properties.iter() {
-            if let Ok(property) = shader.pipeline.get_mat4_property(name) {
+            if let Ok(property) = pipeline.get_mat4_property(name) {
                 render_pass.set_mat4_property(&property, (*value).as_array());
             } else {
                 println!("WARNING: Shader does not have mat4 property '{}'", name);
             }
         }
         for (name, (texture, texture_unit)) in self.texture_properties.iter() {
-            if let Ok(property) = shader.pipeline.get_texture_property(name) {
+            if let Ok(property) = pipeline.get_texture_property(name) {
                 let texture = textures.get(&texture);
                 render_pass.set_texture_property(&property, Some(texture), *texture_unit);
             } else {

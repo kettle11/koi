@@ -92,10 +92,26 @@ fn setup_graphics(world: &mut World) {
         mesh_data: Some(MeshData::default()),
     });
 
-    initialize_static_primitives(&mut mesh_assets, &mut graphics);
+    // Initialize asset stores and their placeholders.
+    let white_texture = graphics
+        .new_texture(
+            Some(&[255, 255, 255, 255]),
+            1,
+            1,
+            PixelFormat::RGBA8Unorm,
+            TextureSettings {
+                srgb: false,
+                ..Default::default()
+            },
+        )
+        .unwrap();
+    let mut texture_assets = Assets::new(white_texture);
 
+    initialize_static_primitives(&mut mesh_assets, &mut graphics);
+    initialize_static_textures(&mut graphics, &mut texture_assets);
     world.spawn(graphics);
     world.spawn(mesh_assets);
+    world.spawn(texture_assets);
 }
 
 impl GraphicsInner {
@@ -132,6 +148,19 @@ impl GraphicsInner {
             .build()
             .map_err(PipelineError::PipelineCompilationError)?;
         Ok(pipeline)
+    }
+
+    pub fn new_texture(
+        &mut self,
+        data: Option<&[u8]>,
+        width: u32,
+        height: u32,
+        pixel_format: PixelFormat,
+        texture_settings: kgraphics::TextureSettings,
+    ) -> Result<Texture, ()> {
+        Ok(self
+            .context
+            .new_texture(width, height, data, pixel_format, texture_settings)?)
     }
 
     pub fn new_gpu_mesh(&mut self, mesh_data: &MeshData) -> Result<GPUMesh, ()> {
