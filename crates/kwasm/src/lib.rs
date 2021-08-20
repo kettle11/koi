@@ -126,17 +126,17 @@ fn initialize_kwasm_for_wasmbindgen() {
     use std::sync::Once;
     static THREAD_LOCAL_STORAGE_METADATA_INIT: Once = Once::new();
     THREAD_LOCAL_STORAGE_METADATA_INIT.call_once(|| {
-        // Smuggle out the Wasm instance's exports right from under `wasm-bindgen`'s nose.
-        js_sys::eval("self.kwasm_exports = wasm;").unwrap();
-
-        #[cfg_attr(
-            feature = "wasm_bindgen_support",
-            wasm_bindgen(module = "/js/kwasm.js")
-        )]
-        extern "C" {
-            pub fn kwasm_initialize_wasmbindgen(module: JsValue, function_table: JsValue);
-        }
         unsafe {
+            // Smuggle out the Wasm instance's exports right from under `wasm-bindgen`'s nose.
+            js_sys::eval("self.kwasm_exports = wasm;").unwrap();
+
+            #[cfg_attr(
+                feature = "wasm_bindgen_support",
+                wasm_bindgen(module = "/js/kwasm.js")
+            )]
+            extern "C" {
+                pub fn kwasm_initialize_wasmbindgen(module: JsValue, function_table: JsValue);
+            }
             kwasm_initialize_wasmbindgen(wasm_bindgen::module(), wasm_bindgen::memory());
         }
     });

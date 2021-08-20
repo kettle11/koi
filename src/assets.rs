@@ -210,7 +210,8 @@ impl<T> WeakHandle<T> {
     }
 }
 
-pub struct Assets<T: LoadableAsset> {
+#[derive(NotCloneComponent)]
+pub struct Assets<T: LoadableAssetTrait> {
     indirection_storage: IndirectionStorage<T>,
     send_drop_channel: SyncGuard<mpsc::Sender<usize>>,
     receive_drop_channel: SyncGuard<mpsc::Receiver<usize>>,
@@ -219,7 +220,10 @@ pub struct Assets<T: LoadableAsset> {
     pub asset_loader: T::AssetLoader,
 }
 
-impl<T: LoadableAsset> Assets<T> {
+unsafe impl<T: LoadableAssetTrait> Send for Assets<T> {}
+unsafe impl<T: LoadableAssetTrait> Sync for Assets<T> {}
+
+impl<T: LoadableAssetTrait> Assets<T> {
     pub fn new(default_placeholder: T) -> Self {
         let (send_drop_channel, receive_drop_channel) = mpsc::channel();
         let mut s = Self {
@@ -313,12 +317,12 @@ impl<T: LoadableAsset> Assets<T> {
     }
 }
 
-pub trait LoadableAsset: Sized {
-    type AssetLoader: AssetLoader<Self>;
+pub trait LoadableAssetTrait: Sized + 'static {
+    type AssetLoader: AssetLoader<Self> + Send + Sync;
     type Options: Default;
 }
 
-pub trait AssetLoader<T: LoadableAsset> {
+pub trait AssetLoader<T: LoadableAssetTrait> {
     fn new() -> Self;
     fn load_with_options(&mut self, path: &str, handle: Handle<T>, options: T::Options);
 }

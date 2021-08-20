@@ -1,9 +1,17 @@
 //use std::any::Any;
 
+use std::{collections::HashMap, sync::mpsc};
+
 use kreflect::*;
 
+trait LoadableAssetTrait {
+    type AssetLoader;
+}
+
 #[derive(Reflect)]
-pub struct Events<Event: Sync + Send> (Vec<Event> );
+struct Assets {
+    path_to_handle: HashMap<String, bool>,
+}
 
 fn main() {}
 /*

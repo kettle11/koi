@@ -7,12 +7,12 @@ license = "Zlib OR Apache-2.0 OR MIT"
 [dependencies]
 kserde = {git = "https://github.com/kettle11/kserde", branch="main"}
 
-[dev-dependencies]
-bencher = "0.1.5"
-glam = "0.14.0"
-ultraviolet = "0.8.0"
-nalgebra = "0.26.2"
-
-[[bench]]
-name = "bench"
-harness = false
+# [dev-dependencies]
+# bencher = "0.1.5"
+# glam = "0.14.0"
+# ultraviolet = "0.8.0"
+# nalgebra = "0.26.2"
+# 
+# [[bench]]
+# name = "bench"
+# harness = false

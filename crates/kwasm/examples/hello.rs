@@ -14,5 +14,5 @@ fn main() {
     console::log("LOGGING FROM THE CONSOLE");
 
     eval("console.log('EVAL SEEMS TO WORK')");
-    let v = kwasm::libraries::Instant::now();
+    let _ = kwasm::libraries::Instant::now();
 }

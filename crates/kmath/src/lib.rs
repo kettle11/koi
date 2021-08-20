@@ -36,8 +36,8 @@ mod default_types {
 }
 pub use default_types::*;
 
-#[cfg(test)]
-mod tests;
+// #[cfg(test)]
+// mod tests;
 
 pub mod geometry;
 pub use geometry::*;

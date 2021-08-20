@@ -16,6 +16,7 @@ async fn run_async(app: Application, events: Events) {
 
     let mut g = GraphicsContext::new_with_settings(GraphicsContextSettings {
         high_resolution_framebuffer: true,
+        ..Default::default()
     })
     .unwrap();
 
@@ -74,7 +75,13 @@ async fn run_async(app: Application, events: Events) {
     // For some reason the following error occurs on my M1 Mac if BGRA8Unorm is used:
     // UNSUPPORTED (log once): POSSIBLE ISSUE: unit 0 GLD_TEXTURE_INDEX_2D is unloadable and bound to sampler type (Float) - using zero texture because texture unloadable
     let target_color_texture = g
-        .new_texture(256, 256, None, PixelFormat::RGBA8Unorm, false)
+        .new_texture(
+            256,
+            256,
+            None,
+            PixelFormat::RGBA8Unorm,
+            TextureSettings::default(),
+        )
         .unwrap();
 
     let fullscreen_vertex = g
@@ -155,7 +162,7 @@ async fn run_async(app: Application, events: Events) {
                         render_pass
                             .set_vertex_attribute(&vertex_position_attribute, Some(&vertex_buffer));
                         // render_pass.set_vec4_property(&custom_color, triangle_color);
-                        render_pass.draw_triangles(1, Some(&index_buffer));
+                        render_pass.draw_triangles(1, &index_buffer);
                     }
 
                     // Second render pass
@@ -179,7 +186,7 @@ async fn run_async(app: Application, events: Events) {
 
                         // Draw an object
 
-                        render_pass.draw_triangles(1, None);
+                        render_pass.draw_triangles_without_buffer(1);
                     }
 
                     g.commit_command_buffer(command_buffer);

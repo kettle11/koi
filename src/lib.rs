@@ -85,6 +85,8 @@ impl App {
         let app = self;
         #[cfg(feature = "graphics")]
         let app = app.add_plugin(graphics_plugin());
+        let app = app.add_plugin(renderer_plugin());
+
         app
     }
 

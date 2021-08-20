@@ -15,18 +15,20 @@ pub struct SystemParameterMetaData {
 
 impl SystemParameterMetaData {
     pub fn append_meta_data(&self, archetype_access: &mut Vec<ArchetypeAccess>) {
-        let channel_count = self.channels.len() / self.archetypes.len();
-        for (archetype_index, channels) in self
-            .archetypes
-            .iter()
-            .zip(self.channels.chunks_exact(channel_count))
-        {
-            for (channel_index, mutable) in channels.iter().flatten() {
-                archetype_access.push(ArchetypeAccess {
-                    archetype_index: *archetype_index,
-                    channel_index: *channel_index,
-                    mutable: *mutable,
-                })
+        if self.archetypes.len() > 0 {
+            let channel_count = self.channels.len() / self.archetypes.len();
+            for (archetype_index, channels) in self
+                .archetypes
+                .iter()
+                .zip(self.channels.chunks_exact(channel_count))
+            {
+                for (channel_index, mutable) in channels.iter().flatten() {
+                    archetype_access.push(ArchetypeAccess {
+                        archetype_index: *archetype_index,
+                        channel_index: *channel_index,
+                        mutable: *mutable,
+                    })
+                }
             }
         }
     }

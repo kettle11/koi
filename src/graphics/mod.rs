@@ -9,6 +9,15 @@ pub use camera::*;
 mod render_layers;
 pub use render_layers::*;
 
+mod mesh;
+pub use mesh::*;
+
+mod mesh_primitives;
+pub use mesh_primitives::*;
+
+mod renderer;
+pub use renderer::*;
+
 // Alias this type so that it's simpler to query for it.
 // On other platforms it might be possible to free `Graphics` of the `NotSendSync` requirement.
 pub type Graphics = NotSendSync<GraphicsInner>;
@@ -43,35 +52,44 @@ pub enum PipelineError {
     PipelineCompilationError(String),
 }
 
-#[derive(Clone, Debug, Component)]
-pub struct Mesh {
-    pub positions: Vec<Vec3>,
-    pub indices: Vec<[u32; 3]>,
-    pub normals: Vec<Vec3>,
-    pub texture_coordinates: Vec<Vec2>,
-    pub colors: Vec<Vec4>,
-}
+fn setup_graphics(world: &mut World) {
+    let main_window = world
+        .get_single_component_mut::<NotSendSync<kapp::Window>>()
+        .unwrap();
 
-#[derive(Clone)]
-pub struct GPUMesh {
-    pub positions: DataBuffer<Vec3>,
-    pub texture_coordinates: Option<DataBuffer<Vec2>>,
-    pub normals: Option<DataBuffer<Vec3>>,
-    pub index_buffer: IndexBuffer,
-    pub triangle_count: u32,
-    pub colors: Option<DataBuffer<Vec4>>,
-}
+    let mut context = GraphicsContext::new_with_settings(GraphicsContextSettings {
+        high_resolution_framebuffer: true,
+        /// How many MSAA samples the window framebuffer should have
+        samples: 0,
+    })
+    .unwrap();
 
-impl Default for Mesh {
-    fn default() -> Self {
-        Self {
-            positions: Vec::new(),
-            indices: Vec::new(),
-            normals: Vec::new(),
-            texture_coordinates: Vec::new(),
-            colors: Vec::new(),
-        }
-    }
+    let main_window: &kapp::Window = main_window;
+
+    let (window_width, window_height) = main_window.size();
+    context.resize(main_window, window_width, window_height);
+
+    let render_target = unsafe {
+        context
+            .get_render_target_for_window(main_window, window_width, window_height)
+            .unwrap()
+    };
+
+    let mut graphics = NotSendSync::new(GraphicsInner {
+        context,
+        render_target,
+    });
+
+    let default_mesh = graphics.new_gpu_mesh(&MeshData::default()).unwrap();
+    let mut mesh_assets = Assets::<Mesh>::new(Mesh {
+        gpu_mesh: Some(default_mesh),
+        mesh_data: Some(MeshData::default()),
+    });
+
+    initialize_static_primitives(&mut mesh_assets, &mut graphics);
+
+    world.spawn(graphics);
+    world.spawn(mesh_assets);
 }
 
 impl GraphicsInner {
@@ -110,47 +128,52 @@ impl GraphicsInner {
         Ok(pipeline)
     }
 
-    pub fn new_gpu_mesh(&mut self, mesh: &Mesh) -> Result<GPUMesh, ()> {
+    pub fn new_gpu_mesh(&mut self, mesh_data: &MeshData) -> Result<GPUMesh, ()> {
         // Check that all of the indices point to valid vertices.
         // If this causes performance issues this check could be disabled in the future.
-        let len = mesh.positions.len();
-        for i in mesh.indices.iter() {
+        let len = mesh_data.positions.len();
+        for i in mesh_data.indices.iter() {
             if i[0] as usize > len || i[1] as usize > len || i[2] as usize > len {
                 panic!(
-                    "Indices refer to out of bound vertices: {:?}. Vertex count: {:?}",
+                    "Mesh indices refer to out of bound vertices: {:?}. Vertex count: {:?}",
                     i,
-                    mesh.positions.len()
+                    mesh_data.positions.len()
                 );
-                //return Err(());
             }
         }
 
-        let triangle_count = mesh.indices.len() as u32;
+        let triangle_count = mesh_data.indices.len() as u32;
 
         // Flatten the index buffer
         let index_buffer: &[u32] = unsafe {
-            std::slice::from_raw_parts(mesh.indices.as_ptr() as *const u32, mesh.indices.len() * 3)
+            std::slice::from_raw_parts(
+                mesh_data.indices.as_ptr() as *const u32,
+                mesh_data.indices.len() * 3,
+            )
         };
 
-        let texture_coordinates = if !mesh.texture_coordinates.is_empty() {
-            Some(self.context.new_data_buffer(&mesh.texture_coordinates)?)
+        let texture_coordinates = if !mesh_data.texture_coordinates.is_empty() {
+            Some(
+                self.context
+                    .new_data_buffer(&mesh_data.texture_coordinates)?,
+            )
         } else {
             None
         };
-        let normals = if !mesh.normals.is_empty() {
-            Some(self.context.new_data_buffer(&mesh.normals)?)
+        let normals = if !mesh_data.normals.is_empty() {
+            Some(self.context.new_data_buffer(&mesh_data.normals)?)
         } else {
             None
         };
 
-        let colors = if !mesh.colors.is_empty() {
-            Some(self.context.new_data_buffer(&mesh.colors)?)
+        let colors = if !mesh_data.colors.is_empty() {
+            Some(self.context.new_data_buffer(&mesh_data.colors)?)
         } else {
             None
         };
 
         Ok(GPUMesh {
-            positions: self.context.new_data_buffer(&mesh.positions)?,
+            positions: self.context.new_data_buffer(&mesh_data.positions)?,
             texture_coordinates,
             normals,
             index_buffer: self.context.new_index_buffer(index_buffer)?,
@@ -167,42 +190,6 @@ pub fn graphics_plugin() -> Plugin {
         ..Default::default()
     }
 }
-
-fn setup_graphics(world: &mut World) {
-    let main_window = world
-        .get_single_component_mut::<NotSendSync<kapp::Window>>()
-        .unwrap();
-
-    let mut context = GraphicsContext::new_with_settings(GraphicsContextSettings {
-        high_resolution_framebuffer: true,
-        /// How many MSAA samples the window framebuffer should have
-        samples: 0,
-    })
-    .unwrap();
-
-    let main_window: &kapp::Window = main_window;
-
-    let (window_width, window_height) = main_window.size();
-    context.resize(main_window, window_width, window_height);
-
-    let render_target = unsafe {
-        context
-            .get_render_target_for_window(main_window, window_width, window_height)
-            .unwrap()
-    };
-
-    let graphics = GraphicsInner {
-        context,
-        render_target,
-    };
-
-    world.spawn(NotSendSync::new(graphics));
-}
-
-/*
-pub fn attach_gpu_mesh(graphics: &mut Graphics, meshes: Query<&Mesh, Without<Handle<GPUMesh>>>) {
-}
-*/
 
 pub fn resize_window(graphics: &mut Graphics, window: &NotSendSync<kapp::Window>) {
     // There are bad assumptions here about only a single window existing.
