@@ -26,10 +26,16 @@ pub use commands::*;
 mod math;
 pub use math::*;
 
+mod temporary;
+pub use temporary::*;
+
 #[cfg(feature = "graphics")]
 mod graphics;
 #[cfg(feature = "graphics")]
 pub use graphics::*;
+
+mod experimental;
+pub use experimental::*;
 
 #[cfg(target_arch = "wasm32")]
 use kwasm::libraries::Instant;
@@ -37,15 +43,25 @@ use kwasm::libraries::Instant;
 use std::time::Instant;
 
 pub struct App {
-    setup_systems: Vec<System>,
-    fixed_upate_systems: Vec<System>,
-    draw_systems: Vec<System>,
+    systems: Plugin,
 }
 
 pub struct Plugin {
     pub setup_systems: Vec<System>,
     pub fixed_update_systems: Vec<System>,
     pub draw_systems: Vec<System>,
+    pub end_of_frame_systems: Vec<System>,
+}
+
+impl Plugin {
+    fn append(&mut self, mut other: Self) {
+        self.setup_systems.append(&mut other.setup_systems);
+        self.fixed_update_systems
+            .append(&mut other.fixed_update_systems);
+        self.draw_systems.append(&mut other.draw_systems);
+        self.end_of_frame_systems
+            .append(&mut other.end_of_frame_systems);
+    }
 }
 
 impl Default for Plugin {
@@ -54,6 +70,7 @@ impl Default for Plugin {
             setup_systems: Vec::new(),
             fixed_update_systems: Vec::new(),
             draw_systems: Vec::new(),
+            end_of_frame_systems: Vec::new(),
         }
     }
 }
@@ -66,18 +83,13 @@ pub enum Event {
 impl App {
     pub fn new() -> Self {
         let s = Self {
-            setup_systems: Vec::new(),
-            fixed_upate_systems: Vec::new(),
-            draw_systems: Vec::new(),
+            systems: Plugin::default(),
         };
         s.add_default_plugins()
     }
 
     pub fn add_plugin(mut self, mut plugin: Plugin) -> Self {
-        self.setup_systems.append(&mut plugin.setup_systems);
-        self.fixed_upate_systems
-            .append(&mut plugin.fixed_update_systems);
-        self.draw_systems.append(&mut plugin.draw_systems);
+        self.systems.append(plugin);
         self
     }
 
@@ -86,7 +98,7 @@ impl App {
         #[cfg(feature = "graphics")]
         let app = app.add_plugin(graphics_plugin());
         let app = app.add_plugin(renderer_plugin());
-
+        let app = app.add_plugin(temporary_despawn_plugin());
         app
     }
 
@@ -117,7 +129,7 @@ impl App {
         window.request_redraw();
         let window_entity = world.spawn(NotSendSync::new(window));
 
-        for setup_system in &mut self.setup_systems {
+        for setup_system in &mut self.systems.setup_systems {
             setup_system.run(&mut world).unwrap()
         }
 
@@ -148,7 +160,7 @@ impl App {
 
                     time_acumulator += time_elapsed_seconds;
                     while time_acumulator >= fixed_time_step {
-                        for system in &mut self.fixed_upate_systems {
+                        for system in &mut self.systems.fixed_update_systems {
                             system.run(&mut world).unwrap()
                         }
                         apply_commands(&mut world);
@@ -159,7 +171,13 @@ impl App {
 
                     run_system(crate::Event::Draw, &mut world);
                     apply_commands(&mut world);
-                    for system in &mut self.draw_systems {
+                    for system in &mut self.systems.draw_systems {
+                        system.run(&mut world).unwrap()
+                    }
+                    apply_commands(&mut world);
+
+                    // Run systems after the last draw.
+                    for system in &mut self.systems.end_of_frame_systems {
                         system.run(&mut world).unwrap()
                     }
                     apply_commands(&mut world);

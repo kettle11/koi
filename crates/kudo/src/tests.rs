@@ -318,3 +318,18 @@ fn extra_filters() {
     .run(&world)
     .unwrap();
 }
+
+/*
+#[test]
+fn componentless_query() {
+    let mut world = World::new();
+    world.spawn(A);
+    world.spawn((A, B));
+    (|query: Query<(), With<A>>| {}).run(&world).unwrap();
+
+    println!(
+        "{}",
+        std::any::type_name::<<Query<(), With<A>> as SystemParameterFetchTrait>::>(),
+    );
+}
+*/

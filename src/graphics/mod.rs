@@ -9,8 +9,14 @@ pub use camera::*;
 mod render_layers;
 pub use render_layers::*;
 
+mod texture;
+pub use texture::*;
+
 mod mesh;
 pub use mesh::*;
+
+mod material;
+pub use material::*;
 
 mod mesh_primitives;
 pub use mesh_primitives::*;

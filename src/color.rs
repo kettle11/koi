@@ -209,3 +209,9 @@ impl Color {
         alpha: 1.0,
     };
 }
+
+impl From<(f32, f32, f32, f32)> for Color {
+    fn from(color: (f32, f32, f32, f32)) -> Self {
+        Color::new(color.0, color.1, color.2, color.3)
+    }
+}

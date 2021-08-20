@@ -4,11 +4,13 @@ version = "0.1.0"
 edition = "2018"
 
 [workspace]
-members = ["crates/*"]
+members = ["crates/*", "third_party/koi_kolor/build/kolor"]
+
 
 [features]
-default = ["graphics"]
+default = ["graphics", "drawer2d"]
 graphics = ["kgraphics"]
+drawer2d = []
 
 [dependencies]
 kapp = {path = "crates/kapp", version = "0.1.0", default-features=false}
@@ -18,7 +20,9 @@ ktasks = {path = "crates/ktasks", version = "0.1.0"}
 kmath = {path = "crates/kmath", version = "0.1.0"}
 klog = {path = "crates/klog", version = "0.1.0"}
 oorandom = "11.1.3"
-kolor = {path = "../../scratchspace/kolor/build/kolor/"}
+
+# This is copied / modified locally because it can't build presently with `glam` disabled.
+kolor = {path = "third_party/koi_kolor/build/kolor", default-features=false, features=["f32", "std"]}
 
 [target.'cfg(target_arch="wasm32")'.dependencies]
 kwasm = {path = "crates/kwasm",  version = "0.1.0"}
