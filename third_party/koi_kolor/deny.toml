@@ -1,0 +1,15 @@
+[licenses]
+allow = ["MIT", "Apache-2.0"]
+copyleft = "deny"
+confidence-threshold = 1.0
+exceptions = [
+]
+
+[bans]
+multiple-versions = "deny"
+wildcards = "deny"
+skip = [
+]
+
+[sources]
+unknown-git = "deny"

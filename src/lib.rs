@@ -29,13 +29,18 @@ pub use math::*;
 mod temporary;
 pub use temporary::*;
 
+mod input;
+pub use input::*;
+
 #[cfg(feature = "graphics")]
 mod graphics;
 #[cfg(feature = "graphics")]
 pub use graphics::*;
 
+/*
 mod experimental;
 pub use experimental::*;
+*/
 
 #[cfg(target_arch = "wasm32")]
 use kwasm::libraries::Instant;
@@ -48,6 +53,7 @@ pub struct App {
 
 pub struct Plugin {
     pub setup_systems: Vec<System>,
+    pub pre_fixed_update_systems: Vec<System>,
     pub fixed_update_systems: Vec<System>,
     pub draw_systems: Vec<System>,
     pub end_of_frame_systems: Vec<System>,
@@ -56,6 +62,8 @@ pub struct Plugin {
 impl Plugin {
     fn append(&mut self, mut other: Self) {
         self.setup_systems.append(&mut other.setup_systems);
+        self.pre_fixed_update_systems
+            .append(&mut other.pre_fixed_update_systems);
         self.fixed_update_systems
             .append(&mut other.fixed_update_systems);
         self.draw_systems.append(&mut other.draw_systems);
@@ -68,6 +76,7 @@ impl Default for Plugin {
     fn default() -> Self {
         Self {
             setup_systems: Vec::new(),
+            pre_fixed_update_systems: Vec::new(),
             fixed_update_systems: Vec::new(),
             draw_systems: Vec::new(),
             end_of_frame_systems: Vec::new(),
@@ -88,7 +97,7 @@ impl App {
         s.add_default_plugins()
     }
 
-    pub fn add_plugin(mut self, mut plugin: Plugin) -> Self {
+    pub fn add_plugin(mut self, plugin: Plugin) -> Self {
         self.systems.append(plugin);
         self
     }
@@ -96,9 +105,12 @@ impl App {
     pub fn add_default_plugins(self) -> Self {
         let app = self;
         #[cfg(feature = "graphics")]
+        let app = app.add_plugin(transform_plugin());
         let app = app.add_plugin(graphics_plugin());
         let app = app.add_plugin(renderer_plugin());
         let app = app.add_plugin(temporary_despawn_plugin());
+        let app = app.add_plugin(camera_plugin());
+        let app = app.add_plugin(camera_controls_plugin());
         app
     }
 
@@ -146,18 +158,28 @@ impl App {
             fixed_time_step: fixed_time_step,
         });
 
+        // Setup input
+        let input_entity = world.spawn(Input::new());
+
         let mut run_system = setup_and_run_function(&mut world);
 
         kapp_event_loop.run(move |event| {
             use kapp::Event;
 
+            // Update the input manager.
+            let input = world.get_component_mut::<Input>(input_entity).unwrap();
+            input.state.handle_event(&event);
+
             match event {
                 Event::WindowCloseRequested { .. } => kapp_app.quit(),
                 Event::Draw { .. } => {
+                    for system in &mut self.systems.pre_fixed_update_systems {
+                        system.run(&mut world).unwrap()
+                    }
+
                     let elapsed = start.elapsed();
                     let time_elapsed_seconds = elapsed.as_secs_f64();
                     start = Instant::now();
-
                     time_acumulator += time_elapsed_seconds;
                     while time_acumulator >= fixed_time_step {
                         for system in &mut self.systems.fixed_update_systems {

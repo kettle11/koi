@@ -3,7 +3,7 @@ pub use kolor::ColorSpace;
 // For now we're just using an f32, but maybe in the future there'd be a reason to change this.
 type FType = f32;
 
-// Color conversions in this file are computed every time an a conversion occurs.
+// Color conversions in this file are computed every time a conversion occurs.
 // It may be faster to precalculate the conversions and store them in a matrix.
 
 #[derive(Clone, Copy, Debug, PartialEq, PartialOrd)]

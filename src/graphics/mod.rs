@@ -6,6 +6,9 @@ pub use kgraphics::Pipeline;
 mod camera;
 pub use camera::*;
 
+mod camera_controls;
+pub use camera_controls::*;
+
 mod render_layers;
 pub use render_layers::*;
 
@@ -15,14 +18,28 @@ pub use texture::*;
 mod mesh;
 pub use mesh::*;
 
-mod material;
-pub use material::*;
+mod shader;
+pub use shader::*;
 
 mod mesh_primitives;
 pub use mesh_primitives::*;
 
+#[cfg(feature = "renderer")]
 mod renderer;
+#[cfg(feature = "renderer")]
 pub use renderer::*;
+
+pub fn graphics_plugin() -> Plugin {
+    Plugin {
+        setup_systems: vec![setup_graphics.system()],
+        draw_systems: vec![
+            load_shaders.system(),
+            load_textures.system(),
+            resize_window.system(),
+        ],
+        ..Default::default()
+    }
+}
 
 // Alias this type so that it's simpler to query for it.
 // On other platforms it might be possible to free `Graphics` of the `NotSendSync` requirement.
@@ -107,21 +124,35 @@ fn setup_graphics(world: &mut World) {
         .unwrap();
     let mut texture_assets = Assets::new(white_texture);
 
-    initialize_static_primitives(&mut mesh_assets, &mut graphics);
+    let default_shader = graphics
+        .new_shader(
+            include_str!("default_shaders/unlit.glsl"),
+            PipelineSettings {
+                faces_to_render: FacesToRender::Front,
+                blending: None,
+            },
+        )
+        .unwrap();
+    let mut shaders = Assets::new(default_shader);
+
+    initialize_static_primitives(&mut graphics, &mut mesh_assets);
     initialize_static_textures(&mut graphics, &mut texture_assets);
+    initialize_static_shaders(&mut graphics, &mut shaders);
+
     world.spawn(graphics);
     world.spawn(mesh_assets);
     world.spawn(texture_assets);
+    world.spawn(shaders);
 }
 
 impl GraphicsInner {
     /// koi shaders are both in the same file with #VERTEX and #FRAGMENT to annotate the vertex
     /// and fragment sections.
-    pub fn new_pipeline(
+    pub fn new_shader(
         &mut self,
         source: &str,
         pipeline_settings: PipelineSettings,
-    ) -> Result<Pipeline, PipelineError> {
+    ) -> Result<Shader, PipelineError> {
         let mut i = source.split("#VERTEX").last().unwrap().split("#FRAGMENT");
         let vertex_source = i.next().ok_or(PipelineError::MissingVertexSection)?;
         let fragment_source = i.next().ok_or(PipelineError::MissingFragmentSection)?;
@@ -147,7 +178,7 @@ impl GraphicsInner {
             .faces_to_render(pipeline_settings.faces_to_render)
             .build()
             .map_err(PipelineError::PipelineCompilationError)?;
-        Ok(pipeline)
+        Ok(Shader { pipeline })
     }
 
     pub fn new_texture(
@@ -215,14 +246,6 @@ impl GraphicsInner {
             triangle_count,
             colors,
         })
-    }
-}
-
-pub fn graphics_plugin() -> Plugin {
-    Plugin {
-        setup_systems: vec![setup_graphics.system()],
-        draw_systems: vec![resize_window.system()],
-        ..Default::default()
     }
 }
 

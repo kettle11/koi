@@ -8,9 +8,11 @@ impl<'a> Drawer2d<'a> {
         Self { commands }
     }
 
+    /*
     pub fn image(&mut self, position: Vec3, path: &str) {
         // Todo spawn something here.
         self.commands
             .spawn((Temporary, Transform::new_with_position(position)))
     }
+    */
 }

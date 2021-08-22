@@ -295,7 +295,11 @@ impl World {
             archetype_index,
             archetype_channel,
             entity_index_in_archetype,
-        } = self.remove_component_inner(entity, removing_component_id)?;
+        } = self.remove_component_inner(
+            entity,
+            removing_component_id,
+            std::any::type_name::<Component>(),
+        )?;
         let removed_component = self.archetypes[archetype_index].channels[archetype_channel]
             .as_mut_vec()
             .swap_remove(entity_index_in_archetype);
@@ -308,6 +312,7 @@ impl World {
         &mut self,
         entity: Entity,
         removing_component_id: ComponentId,
+        component_name: &'static str,
     ) -> Result<RemoveInfo, KudoError> {
         self.spawn_reserved_entities();
 
@@ -328,7 +333,7 @@ impl World {
             }
         }
         let removing_channel_index =
-            removing_channel_index.ok_or(KudoError::NoMatchingComponent)?;
+            removing_channel_index.ok_or(KudoError::NoMatchingComponent(component_name))?;
 
         let World {
             archetypes,
@@ -448,7 +453,7 @@ impl World {
                 return Ok(component);
             }
         }
-        Err(KudoError::NoMatchingComponent)
+        Err(KudoError::no_matching_component::<Component>())
     }
 
     /// Gets a single instance of a component from this [World].
@@ -468,12 +473,12 @@ impl World {
             .storage_lookup
             .matching_archetype_iterator::<1>(&filters)
             .next()
-            .ok_or(KudoError::NoMatchingComponent)?;
+            .ok_or(KudoError::no_matching_component::<Component>())?;
         Ok(self.archetypes[matching_archetype.archetype_index].channels
             [matching_archetype.channels[0].unwrap()]
         .as_mut_vec()
         .get_mut(0)
-        .ok_or(KudoError::NoMatchingComponent)?)
+        .ok_or(KudoError::no_matching_component::<Component>())?)
     }
 
     /// Clones the components and [Entity]s of the other [World] and adds them to this [World].

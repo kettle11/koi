@@ -4,6 +4,14 @@ use kudo::{HierarchyNode, Query};
 
 use crate::*;
 
+pub fn transform_plugin() -> Plugin {
+    Plugin {
+        pre_fixed_update_systems: vec![update_global_transforms.system()],
+        draw_systems: vec![update_global_transforms.system()],
+        ..Default::default()
+    }
+}
+
 #[derive(Clone, Copy, Debug, Component)]
 pub struct Transform {
     /// Position relative to parent

@@ -500,8 +500,8 @@ impl Mesh {
 }
 
 pub(crate) fn initialize_static_primitives(
-    meshes: &mut crate::Assets<Mesh>,
     graphics: &mut crate::Graphics,
+    meshes: &mut crate::Assets<Mesh>,
 ) {
     let mesh = plane();
     meshes.add_and_leak(

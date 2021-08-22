@@ -6,7 +6,7 @@ use kgraphics::*;
 
 #[derive(Clone)]
 pub struct Material {
-    pub pipeline: Handle<Pipeline>,
+    pub shader: Handle<Shader>,
     float_properties: HashMap<String, f32>,
     vec2_properties: HashMap<String, Vec2>,
     vec3_properties: HashMap<String, Vec3>,
@@ -24,21 +24,23 @@ impl Material {
 
     pub(crate) fn initialize_static_materials(
         materials: &mut Assets<Material>,
-        unlit_shader: &Handle<Pipeline>,
+        unlit_shader: &Handle<Shader>,
     ) {
         let mut unlit_material = Material::new(unlit_shader.clone());
+        unlit_material.set_base_color(Color::WHITE);
         unlit_material.set_texture("p_base_color_texture", WHITE_TEXTURE);
         materials.add_and_leak(unlit_material, &Self::UNLIT);
 
         let mut emissive_material = Material::new(Handle::default());
+        emissive_material.set_base_color(Color::WHITE);
         emissive_material.set_texture("p_base_color_texture", WHITE_TEXTURE);
         emissive_material.set_vec3("p_emissive", Vec3::new(1.0, 1.0, 1.0));
         materials.add_and_leak(emissive_material, &Self::EMISSIVE);
     }
 
-    pub fn new(pipeline: Handle<Pipeline>) -> Self {
+    pub fn new(shader: Handle<Shader>) -> Self {
         Self {
-            pipeline,
+            shader,
             float_properties: HashMap::new(),
             vec2_properties: HashMap::new(),
             vec3_properties: HashMap::new(),
@@ -100,7 +102,7 @@ impl Material {
         &self,
         render_pass: &mut RenderPass,
         pipeline: &Pipeline,
-        textures: &Assets<Texture>,
+        texture_assets: &Assets<Texture>,
     ) {
         for (name, value) in self.float_properties.iter() {
             if let Ok(property) = pipeline.get_float_property(name) {
@@ -139,7 +141,7 @@ impl Material {
         }
         for (name, (texture, texture_unit)) in self.texture_properties.iter() {
             if let Ok(property) = pipeline.get_texture_property(name) {
-                let texture = textures.get(&texture);
+                let texture = texture_assets.get(&texture);
                 render_pass.set_texture_property(&property, Some(texture), *texture_unit);
             } else {
                 println!("WARNING: Shader does not have texture property '{}'", name);

@@ -1,0 +1,29 @@
+[package]
+name = "kolor"
+version = "0.1.6"
+authors = ["Karl Bergström <karl.anton.bergstrom@gmail.com>"]
+edition = "2018"
+description = "Color conversions for games & interactive applications."
+keywords = ["game", "color", "colors", "graphics", "rgb"]
+categories = ["graphics", "computer-vision"]
+repository = "https://github.com/kabergstrom/kolor"
+readme = "../../README.md"
+license = "MIT OR Apache-2.0"
+
+[lib]
+name = "kolor"
+path = "../../kolor/src/lib.rs"
+required-features = ["f32"]
+
+[dependencies]
+serde = { optional = true, version = "1", features = ["derive"] }
+num-traits = { version = "^0.2.14", optional = true, default-features = false }
+glam = { version = "0.17.1", default-features = false, optional = true }
+
+[features]
+default = ["color-matrices", "f32", "std", "glam"]
+serde1 = ["serde", "glam/serde"]
+color-matrices = []
+f32 = []
+std = []
+libm = ["num-traits", "num-traits/libm", "glam/libm"]

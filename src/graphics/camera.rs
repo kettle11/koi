@@ -1,5 +1,12 @@
 use crate::*;
 
+pub fn camera_plugin() -> Plugin {
+    Plugin {
+        pre_fixed_update_systems: vec![resize_camera.system()],
+        ..Default::default()
+    }
+}
+
 #[derive(Clone, Debug, Component)]
 pub struct Camera {
     pub enabled: bool,

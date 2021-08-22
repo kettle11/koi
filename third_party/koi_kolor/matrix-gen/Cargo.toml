@@ -1,0 +1,13 @@
+[package]
+name = "kolor-matrix-gen"
+version = "0.1.0"
+authors = ["Karl Bergström <karl.anton.bergstrom@gmail.com>"]
+edition = "2018"
+publish = false
+license = "MIT OR Apache-2.0"
+
+[dependencies]
+kolor-64 = { version = "0.1.6", path = "../build/kolor-64", default-features = false, features = [
+    "std",
+    "f64"
+] }

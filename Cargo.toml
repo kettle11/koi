@@ -8,8 +8,9 @@ members = ["crates/*", "third_party/koi_kolor/build/kolor"]
 
 
 [features]
-default = ["graphics", "drawer2d", "png", "jpeg"]
+default = ["graphics", "renderer", "drawer2d", "png", "jpeg"]
 graphics = ["kgraphics"]
+renderer = []
 drawer2d = []
 jpeg = ["jpeg-decoder"]
 

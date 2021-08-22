@@ -1,0 +1,15 @@
+[package]
+name = "kolor-examples"
+version = "0.1.0"
+authors = ["Karl Bergström <karl.anton.bergstrom@gmail.com>"]
+edition = "2018"
+default-run = "all_examples"
+publish = false
+license = "MIT OR Apache-2.0"
+
+[[bin]]
+name = "all_examples"
+path = "./all_examples.rs"
+
+[dependencies]
+kolor = { path = "../build/kolor", version = "0.1.6" }

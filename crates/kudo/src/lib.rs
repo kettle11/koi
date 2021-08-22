@@ -47,9 +47,15 @@ mod tests;
 
 #[derive(PartialEq, Debug, Hash, Eq, Clone, Copy)]
 pub enum KudoError {
-    NoMatchingComponent,
+    NoMatchingComponent(&'static str),
     EntityMissing,
     ChannelExclusivelyLocked,
+}
+
+impl KudoError {
+    fn no_matching_component<T: ComponentTrait>() -> Self {
+        Self::NoMatchingComponent(std::any::type_name::<T>())
+    }
 }
 
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Copy, Clone)]
