@@ -4,6 +4,8 @@ use kgraphics::*;
 mod material;
 pub use material::*;
 
+use crate::graphics::texture::Texture;
+
 pub fn renderer_plugin() -> Plugin {
     Plugin {
         setup_systems: vec![setup_renderer.system()],
@@ -14,7 +16,7 @@ pub fn renderer_plugin() -> Plugin {
 
 pub fn setup_renderer(world: &mut World) {
     let mut materials = Assets::<Material>::new(Material::new(Handle::default()));
-    Material::initialize_static_materials(&mut materials, &UNLIT_SHADER);
+    Material::initialize_static_materials(&mut materials);
     world.spawn(materials);
 }
 
@@ -86,7 +88,11 @@ impl<'a, 'b: 'a> Renderer<'a, 'b> {
         }
     }
 
-    pub fn change_material(&mut self, material_handle: &'a Handle<Material>) {
+    pub fn change_material(
+        &mut self,
+        material_handle: &'a Handle<Material>,
+        optional_primary_texture: Option<&Handle<Texture>>,
+    ) {
         // Avoid unnecessary [Material] rebinds.
         if Some(material_handle) != self.material_info.as_ref().map(|m| m.material_handle) {
             // When a pipeline change occurs a bunch of uniforms need to be rebound.
@@ -143,8 +149,28 @@ impl<'a, 'b: 'a> Renderer<'a, 'b> {
                 });
             }
 
-            // // Rebind the material properties.
+            // Rebind the material properties.
             material.bind_material(self.render_pass, &shader.pipeline, self.texture_assets);
+
+            // Bind the optional primary texture
+            if let Some(primary_texture) = optional_primary_texture {
+                // This is a bit weird, but we need to make sure we're not using a
+                // texture unit that clobbers other texture units the material expects.
+                let texture_unit = material
+                    .texture_properties
+                    .get("p_base_color_texture")
+                    .map(|p| p.1)
+                    .unwrap_or(material.max_texture_unit);
+                let primary_texture = self.texture_assets.get(primary_texture);
+                self.render_pass.set_texture_property(
+                    &shader
+                        .pipeline
+                        .get_texture_property("p_base_color_texture")
+                        .unwrap(),
+                    Some(primary_texture),
+                    texture_unit,
+                );
+            }
         }
     }
 
@@ -169,6 +195,7 @@ impl<'a, 'b: 'a> Renderer<'a, 'b> {
                         &material_info.normal_attribute,
                         gpu_mesh.normals.as_ref(),
                     );
+
                     self.render_pass.set_vertex_attribute(
                         &material_info.texture_coordinate_attribute,
                         gpu_mesh.texture_coordinates.as_ref(),
@@ -196,7 +223,12 @@ pub fn render_scene(
     mesh_assets: &Assets<Mesh>,
     texture_assets: &Assets<Texture>,
     cameras: Query<(&Transform, &Camera)>,
-    renderables: Query<(&Transform, &Handle<Material>, &Handle<Mesh>)>,
+    renderables: Query<(
+        &Transform,
+        &Handle<Material>,
+        &Handle<Mesh>,
+        Option<&Handle<Texture>>,
+    )>,
 ) {
     let mut command_buffer = graphics.context.new_command_buffer();
     let frame = graphics.render_target.current_frame().unwrap();
@@ -223,8 +255,9 @@ pub fn render_scene(
                 mesh_assets,
                 texture_assets,
             );
-            for (transform, material_handle, mesh_handle) in &renderables {
-                renderer.change_material(material_handle);
+            for (transform, material_handle, mesh_handle, optional_primary_texture) in &renderables
+            {
+                renderer.change_material(material_handle, optional_primary_texture);
                 renderer.render_mesh(transform, mesh_handle);
             }
         }

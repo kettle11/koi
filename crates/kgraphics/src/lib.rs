@@ -91,20 +91,20 @@ impl Default for GraphicsContextSettings {
     }
 }
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Debug)]
 pub enum FilterMode {
     Nearest,
     Linear,
 }
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Debug)]
 pub enum WrappingMode {
     ClampToEdge,
     Repeat,
     MirrorRepeat,
 }
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Debug)]
 pub struct TextureSettings {
     pub srgb: bool,
     pub minification_filter: FilterMode,

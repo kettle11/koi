@@ -1,9 +1,17 @@
 use crate::*;
+use core::ops::Deref;
 use kgraphics::*;
 
-pub use kgraphics::Texture;
-
 use std::sync::mpsc;
+
+pub struct Texture(pub(crate) kgraphics::Texture);
+
+impl Deref for Texture {
+    type Target = kgraphics::Texture;
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
 
 struct TextureLoadMessage {
     handle: Handle<Texture>,
@@ -196,12 +204,15 @@ impl LoadableAssetTrait for Texture {
     type AssetLoader = TextureAssetLoader;
 }
 
-pub const WHITE_TEXTURE: Handle<Texture> = Handle::<Texture>::new_with_just_index(1);
-pub const BLACK_TEXTURE: Handle<Texture> = Handle::<Texture>::new_with_just_index(2);
+impl Texture {
+    pub const WHITE: Handle<Texture> = Handle::<Texture>::new_with_just_index(1);
+    pub const BLACK: Handle<Texture> = Handle::<Texture>::new_with_just_index(2);
 
-/// A texture that produces normals that all face outwards.
-/// The color is (0.5, 0.5, 1.0)
-pub const NORMAL_TEXTURE: Handle<Texture> = Handle::<Texture>::new_with_just_index(3);
+    /// A texture that produces normals that all face outwards.
+    /// The color is (0.5, 0.5, 1.0)
+    pub const NORMAL: Handle<Texture> = Handle::<Texture>::new_with_just_index(3);
+    pub const BLUE: Handle<Texture> = Handle::<Texture>::new_with_just_index(4);
+}
 
 pub fn initialize_static_textures(graphics: &mut Graphics, textures: &mut Assets<Texture>) {
     textures.add_and_leak(
@@ -217,7 +228,7 @@ pub fn initialize_static_textures(graphics: &mut Graphics, textures: &mut Assets
                 },
             )
             .unwrap(),
-        &WHITE_TEXTURE,
+        &Texture::WHITE,
     );
     textures.add_and_leak(
         graphics
@@ -232,7 +243,7 @@ pub fn initialize_static_textures(graphics: &mut Graphics, textures: &mut Assets
                 },
             )
             .unwrap(),
-        &BLACK_TEXTURE,
+        &Texture::BLACK,
     );
     textures.add_and_leak(
         graphics
@@ -247,6 +258,21 @@ pub fn initialize_static_textures(graphics: &mut Graphics, textures: &mut Assets
                 },
             )
             .unwrap(),
-        &NORMAL_TEXTURE,
+        &Texture::NORMAL,
+    );
+    textures.add_and_leak(
+        graphics
+            .new_texture(
+                Some(&[0, 0, 255, 255]),
+                1,
+                1,
+                PixelFormat::RGBA8Unorm,
+                TextureSettings {
+                    srgb: false,
+                    ..Default::default()
+                },
+            )
+            .unwrap(),
+        &Texture::BLUE,
     );
 }

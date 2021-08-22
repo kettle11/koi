@@ -52,5 +52,5 @@ void main()
     vec3 dither = ScreenSpaceDither(gl_FragCoord.xy) * p_dither_scale;
     vec3 color = pow(base_color.rgb, vec3(1.0/2.2)) + dither; 
         
-    color_out = vec4(color, base_color.a);
+    color_out = texture(p_base_color_texture, TexCoords);
 }

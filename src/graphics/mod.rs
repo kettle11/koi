@@ -1,3 +1,4 @@
+pub use crate::graphics::texture::Texture;
 use crate::*;
 use kgraphics::*;
 
@@ -23,6 +24,9 @@ pub use shader::*;
 
 mod mesh_primitives;
 pub use mesh_primitives::*;
+
+mod light;
+pub use light::*;
 
 #[cfg(feature = "renderer")]
 mod renderer;
@@ -126,7 +130,7 @@ fn setup_graphics(world: &mut World) {
 
     let default_shader = graphics
         .new_shader(
-            include_str!("default_shaders/unlit.glsl"),
+            include_str!("built_in_shaders/unlit.glsl"),
             PipelineSettings {
                 faces_to_render: FacesToRender::Front,
                 blending: None,
@@ -189,9 +193,13 @@ impl GraphicsInner {
         pixel_format: PixelFormat,
         texture_settings: kgraphics::TextureSettings,
     ) -> Result<Texture, ()> {
-        Ok(self
-            .context
-            .new_texture(width, height, data, pixel_format, texture_settings)?)
+        Ok(Texture(self.context.new_texture(
+            width,
+            height,
+            data,
+            pixel_format,
+            texture_settings,
+        )?))
     }
 
     pub fn new_gpu_mesh(&mut self, mesh_data: &MeshData) -> Result<GPUMesh, ()> {

@@ -471,7 +471,6 @@ impl GraphicsContextTrait for GraphicsContext {
             TextureType::DefaultFramebuffer => panic!("Cannot update default framebuffer"),
         };
         unsafe {
-            println!("SRGB: {:?}", texture_settings.srgb);
             let (pixel_format, inner_pixel_format, type_) =
                 crate::gl_shared::pixel_format_to_gl_format_and_inner_format_and_type(
                     pixel_format_in,

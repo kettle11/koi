@@ -24,7 +24,7 @@ impl Drop for WorkerData {
         // wasm-bindgen handles thread local storage itself.
         //#[cfg(feature = "wasm_bindgen_support")]
         //return;
-//
+        //
         //#[cfg(not(feature = "wasm_bindgen_support"))]
         /*
         unsafe {
@@ -54,7 +54,7 @@ where
 
     let stack_size = 1 << 20; // 1 MB stack size.
 
-   // #[cfg(not(feature = "wasm_bindgen_support"))]
+    // #[cfg(not(feature = "wasm_bindgen_support"))]
     let (stack_memory, stack_pointer, thread_local_storage_memory) = {
         let stack_layout =
             core::alloc::Layout::from_size_align(stack_size, WASM_PAGE_SIZE).unwrap();

@@ -118,7 +118,7 @@ impl Application {
     pub fn get_user_event_sender(&self) -> UserEventSender {
         UserEventSender {
             sender: self.platform_application.borrow().get_user_event_sender(),
-            prevent_send: std::marker::PhantomData
+            prevent_send: std::marker::PhantomData,
         }
     }
 }
@@ -157,9 +157,9 @@ impl EventLoop {
 pub struct UserEventSender {
     sender: PlatformUserEventSender,
     // This field is added to prevent this from being send.
-    // Presently the web backend is not Send due to its use 
+    // Presently the web backend is not Send due to its use
     // of thread locals but when that's correct this can be removed.
-    prevent_send: std::marker::PhantomData<std::cell::Cell<*const ()>>
+    prevent_send: std::marker::PhantomData<std::cell::Cell<*const ()>>,
 }
 
 impl UserEventSender {

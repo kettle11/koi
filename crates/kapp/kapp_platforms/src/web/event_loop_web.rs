@@ -19,7 +19,7 @@ thread_local! {
 
 fn send_event(event: Event) {
     event_receiver::send_event(event);
-   // CALLBACK.with(|c| (c.borrow_mut().as_mut().unwrap())(event))
+    // CALLBACK.with(|c| (c.borrow_mut().as_mut().unwrap())(event))
 }
 
 #[no_mangle]

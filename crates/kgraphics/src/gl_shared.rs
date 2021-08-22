@@ -75,10 +75,10 @@ fn srgb_to_linear(byte: u8) -> u8 {
 pub fn convert_srgb_data_to_linear_srgb(new_data: &mut Vec<u8>, data: &[u8], alpha: bool) {
     if alpha {
         for chunk in data.chunks(4) {
-            new_data.push(srgb_to_linear(data[0]));
-            new_data.push(srgb_to_linear(data[1]));
-            new_data.push(srgb_to_linear(data[2]));
-            new_data.push(data[3]);
+            new_data.push(srgb_to_linear(chunk[0]));
+            new_data.push(srgb_to_linear(chunk[1]));
+            new_data.push(srgb_to_linear(chunk[2]));
+            new_data.push(chunk[3]);
         }
     } else {
         for d in data {

@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 // use std::ops::{Deref, DerefMut};
 
+use crate::graphics::texture::Texture;
 use crate::*;
 use kgraphics::*;
 
@@ -12,8 +13,8 @@ pub struct Material {
     vec3_properties: HashMap<String, Vec3>,
     vec4_properties: HashMap<String, Vec4>,
     mat4_properties: HashMap<String, Mat4>,
-    texture_properties: HashMap<String, (Handle<Texture>, u8)>,
-    max_texture_unit: u8,
+    pub(crate) texture_properties: HashMap<String, (Handle<Texture>, u8)>,
+    pub(crate) max_texture_unit: u8,
 }
 
 impl Material {
@@ -22,18 +23,15 @@ impl Material {
     /// A fully emissive material
     pub const EMISSIVE: Handle<Material> = Handle::new_with_just_index(2);
 
-    pub(crate) fn initialize_static_materials(
-        materials: &mut Assets<Material>,
-        unlit_shader: &Handle<Shader>,
-    ) {
-        let mut unlit_material = Material::new(unlit_shader.clone());
+    pub(crate) fn initialize_static_materials(materials: &mut Assets<Material>) {
+        let mut unlit_material = Material::new(Shader::UNLIT);
         unlit_material.set_base_color(Color::WHITE);
-        unlit_material.set_texture("p_base_color_texture", WHITE_TEXTURE);
+        unlit_material.set_texture("p_base_color_texture", Texture::WHITE);
         materials.add_and_leak(unlit_material, &Self::UNLIT);
 
         let mut emissive_material = Material::new(Handle::default());
         emissive_material.set_base_color(Color::WHITE);
-        emissive_material.set_texture("p_base_color_texture", WHITE_TEXTURE);
+        emissive_material.set_texture("p_base_color_texture", Texture::WHITE);
         emissive_material.set_vec3("p_emissive", Vec3::new(1.0, 1.0, 1.0));
         materials.add_and_leak(emissive_material, &Self::EMISSIVE);
     }

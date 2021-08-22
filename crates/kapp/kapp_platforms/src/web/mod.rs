@@ -6,6 +6,8 @@ mod event_loop_web;
 mod keys_web;
 
 pub mod prelude {
-    pub use super::application_web::{PlatformApplication, PlatformEventLoop, PlatformUserEventSender};
+    pub use super::application_web::{
+        PlatformApplication, PlatformEventLoop, PlatformUserEventSender,
+    };
     pub use kapp_platform_common::*;
 }

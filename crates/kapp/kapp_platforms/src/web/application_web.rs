@@ -145,8 +145,6 @@ pub struct PlatformUserEventSender;
 
 impl PlatformUserEventSenderTrait for PlatformUserEventSender {
     fn send(&self, id: usize, data: usize) {
-        event_receiver::send_event(Event::UserEvent {
-            id, data
-        });
+        event_receiver::send_event(Event::UserEvent { id, data });
     }
 }

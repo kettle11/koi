@@ -68,18 +68,20 @@ impl LoadableAssetTrait for Shader {
     type Options = PipelineSettings;
 }
 
-pub const UNLIT_SHADER: Handle<Shader> = Handle::<Shader>::new_with_just_index(1);
-/*
-pub const PHYSICALLY_BASED_TRANSPARENT_SHADER: Handle<Shader> =
-    Handle::<Shader>::new_with_just_index(2);
-pub const DEPTH_ONLY_SHADER: Handle<Shader> = Handle::<Shader>::new_with_just_index(3);
-*/
-pub fn initialize_static_shaders(graphics: &mut Graphics, shaders: &mut Assets<Shader>) {
+impl Shader {
+    pub const UNLIT: Handle<Shader> = Handle::<Shader>::new_with_just_index(1);
+    pub const PHYSICALLY_BASED: Handle<Shader> = Handle::<Shader>::new_with_just_index(2);
+    pub const PHYSICALLY_BASED_TRANSPARENT: Handle<Shader> =
+        Handle::<Shader>::new_with_just_index(3);
+    pub const DEPTH_ONLY: Handle<Shader> = Handle::<Shader>::new_with_just_index(4);
+}
+
+pub(crate) fn initialize_static_shaders(graphics: &mut Graphics, shaders: &mut Assets<Shader>) {
     // Perhaps there should be a separate unblended unlit shader?
     shaders.add_and_leak(
         graphics
             .new_shader(
-                include_str!("default_shaders/unlit.glsl"),
+                include_str!("built_in_shaders/unlit.glsl"),
                 // Render front and back as this may be used for sprites
                 // that will be flipped.
                 PipelineSettings {
@@ -88,29 +90,45 @@ pub fn initialize_static_shaders(graphics: &mut Graphics, shaders: &mut Assets<S
                 },
             )
             .unwrap(),
-        &UNLIT_SHADER,
+        &Shader::UNLIT,
     );
 
-    /*
     shaders.add_and_leak(
         graphics
             .new_shader(
-                include_str!("shaders/physically_based.glsl"),
-                FacesToRender::Front,
-                Some((BlendFactor::SourceAlpha, BlendFactor::OneMinusSourceAlpha)),
+                include_str!("built_in_shaders/physically_based.glsl"),
+                PipelineSettings {
+                    faces_to_render: FacesToRender::Front,
+                    blending: Some((BlendFactor::SourceAlpha, BlendFactor::OneMinusSourceAlpha)),
+                },
             )
             .unwrap(),
-        &PHYSICALLY_BASED_TRANSPARENT_SHADER,
+        &Shader::PHYSICALLY_BASED,
     );
+
     shaders.add_and_leak(
         graphics
             .new_shader(
-                include_str!("shaders/depth_only.glsl"),
-                FacesToRender::Front,
-                None,
+                include_str!("built_in_shaders/physically_based.glsl"),
+                PipelineSettings {
+                    faces_to_render: FacesToRender::FrontAndBack,
+                    blending: Some((BlendFactor::SourceAlpha, BlendFactor::OneMinusSourceAlpha)),
+                },
             )
             .unwrap(),
-        &DEPTH_ONLY_SHADER,
+        &Shader::PHYSICALLY_BASED_TRANSPARENT,
     );
-    */
+
+    shaders.add_and_leak(
+        graphics
+            .new_shader(
+                include_str!("built_in_shaders/depth_only.glsl"),
+                PipelineSettings {
+                    faces_to_render: FacesToRender::FrontAndBack,
+                    ..Default::default()
+                },
+            )
+            .unwrap(),
+        &Shader::DEPTH_ONLY,
+    );
 }

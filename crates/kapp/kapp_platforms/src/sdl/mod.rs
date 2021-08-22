@@ -528,8 +528,8 @@ fn process_event(callback: &mut Box<dyn FnMut(Event)>, event: &SDL_Event) {
                 callback(Event::UserEvent {
                     // This cast is incorrect but probably won't cause issues for now
                     id: event.user.code as usize,
-                    data: event.user.data1 as usize
-                }); 
+                    data: event.user.data1 as usize,
+                });
             }
             _ => {}
         }

@@ -759,9 +759,7 @@ impl<T: Numeric, const R: usize, const C: usize, const V: usize> TryFrom<&[T; V]
     }
 }
 
-impl<T: Numeric, const R: usize, const C: usize> TryFrom<&[T]>
-    for Matrix<T, R, C>
-{
+impl<T: Numeric, const R: usize, const C: usize> TryFrom<&[T]> for Matrix<T, R, C> {
     type Error = TryFromSliceError;
     fn try_from(value: &[T]) -> Result<Self, Self::Error> {
         let mut v = Self::ZERO;

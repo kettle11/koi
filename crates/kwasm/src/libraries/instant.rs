@@ -18,7 +18,6 @@ pub fn date_now() -> f64 {
     result.get_value_f64()
 }
 
-
 #[derive(Copy, Clone, Debug, PartialEq, PartialOrd, Hash)]
 pub struct Instant(Duration);
 
