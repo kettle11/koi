@@ -203,16 +203,12 @@ impl<'a, 'b: 'a> Renderer<'a, 'b> {
     pub fn render_mesh(&mut self, transform: &Transform, mesh_handle: &'a Handle<Mesh>) {
         // Instead of checking this here there should always be standard material properties, just
         // for a default material.
-        if Some(mesh_handle) != self.bound_mesh {
-            if let Some(material_info) = &self.material_info {
-                let mesh = self.mesh_assets.get(mesh_handle);
+        if let Some(material_info) = &self.material_info {
+            let mesh = self.mesh_assets.get(mesh_handle);
 
-                if let Some(gpu_mesh) = &mesh.gpu_mesh {
-                    let model_matrix = transform.model();
-
-                    self.render_pass
-                        .set_mat4_property(&material_info.model_property, model_matrix.as_array());
-
+            if let Some(gpu_mesh) = &mesh.gpu_mesh {
+                // Only rebind the mesh attributes if the mesh has changed.
+                if Some(mesh_handle) != self.bound_mesh {
                     self.render_pass.set_vertex_attribute(
                         &material_info.position_attribute,
                         Some(&gpu_mesh.positions),
@@ -221,7 +217,6 @@ impl<'a, 'b: 'a> Renderer<'a, 'b> {
                         &material_info.normal_attribute,
                         gpu_mesh.normals.as_ref(),
                     );
-
                     self.render_pass.set_vertex_attribute(
                         &material_info.texture_coordinate_attribute,
                         gpu_mesh.texture_coordinates.as_ref(),
@@ -231,12 +226,15 @@ impl<'a, 'b: 'a> Renderer<'a, 'b> {
                         gpu_mesh.colors.as_ref(),
                     );
 
-                    // Render the mesh
-                    self.render_pass
-                        .draw_triangles(gpu_mesh.triangle_count, &gpu_mesh.index_buffer);
-
                     self.bound_mesh = Some(mesh_handle);
                 }
+                let model_matrix = transform.model();
+                self.render_pass
+                    .set_mat4_property(&material_info.model_property, model_matrix.as_array());
+
+                // Render the mesh
+                self.render_pass
+                    .draw_triangles(gpu_mesh.triangle_count, &gpu_mesh.index_buffer);
             }
         }
     }
@@ -282,7 +280,10 @@ pub fn render_scene(
                 mesh_assets,
                 texture_assets,
             );
-            for (transform, material_handle, mesh_handle, optional_sprite) in &renderables {
+
+            for (transform, material_handle, mesh_handle, optional_sprite) in
+                renderables.iter().skip(0)
+            {
                 renderer.change_material(material_handle);
                 if let Some(sprite) = optional_sprite {
                     renderer.prepare_sprite(sprite);
