@@ -27,6 +27,8 @@ impl Material {
         let mut unlit_material = Material::new(Shader::UNLIT);
         unlit_material.set_base_color(Color::WHITE);
         unlit_material.set_texture("p_base_color_texture", Texture::WHITE);
+        unlit_material.set_vec2("p_texture_coordinate_offset", Vec2::ZERO);
+        unlit_material.set_vec2("p_texture_coordinate_scale", Vec2::ONE);
         materials.add_and_leak(unlit_material, &Self::UNLIT);
 
         let mut emissive_material = Material::new(Handle::default());

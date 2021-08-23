@@ -12,13 +12,11 @@ pub fn vertical_quad() -> MeshData {
         [-0.5, 0.5, 0.0].into(),
     ];
 
-    // TODO: Flip texture coordinates in texture
-    // not here.
     let texture_coordinates = vec![
-        [0.0, 0.0].into(),
+        [0.0, 1.0].into(),
+        [1.0, 1.0].into(),
         [1.0, 0.0].into(),
-        [1.0, -1.0].into(),
-        [0.0, -1.0].into(),
+        [0.0, 0.0].into(),
     ];
 
     let normals = vec![

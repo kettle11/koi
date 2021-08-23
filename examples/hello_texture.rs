@@ -1,17 +1,38 @@
+use kgraphics::TextureSettings;
 use koi::*;
 
 fn main() {
     App::new().setup_and_run(|world: &mut World| {
         let textures = world.get_single_component_mut::<Assets<Texture>>().unwrap();
-        let texture = textures.load("examples/assets/tiles.png");
+        let texture = textures.load_with_options(
+            "examples/assets/tiles.png",
+            // Load the texture with filtering more appropriate for pixel art
+            TextureSettings {
+                minification_filter: FilterMode::Nearest,
+                magnification_filter: FilterMode::Nearest,
+                ..Default::default()
+            },
+        );
+        // A [SpriteMap] is a helper to make getting sprites from a texture easier.
+        let sprite_map = SpriteMap::new(texture.clone(), 18, 2, 398, 178);
 
-        world.spawn((Transform::new(), Camera::new_orthographic()));
-        world.spawn((
-            Transform::new(),
-            Mesh::VERTICAL_QUAD,
-            Material::UNLIT,
-            texture,
-        ));
+        // Enter the tile of the sprite.
+        let snow_man_sprite = sprite_map.get_sprite(5, 7);
+
+        let mut camera = Camera::new_orthographic();
+        camera.set_orthographic_height(10.0);
+
+        world.spawn((Transform::new(), camera));
+
+        // Why isn't this showing multiple?
+        for i in 0..5 {
+            world.spawn((
+                Transform::new_with_position(Vec3::X * i as f32),
+                Mesh::VERTICAL_QUAD,
+                Material::UNLIT,
+                snow_man_sprite.clone(),
+            ));
+        }
 
         |_, _| {}
     });

@@ -4,6 +4,9 @@ use kgraphics::*;
 mod material;
 pub use material::*;
 
+mod sprite;
+pub use sprite::*;
+
 use crate::graphics::texture::Texture;
 
 pub fn renderer_plugin() -> Plugin {
@@ -33,6 +36,10 @@ struct MaterialInfo<'a> {
     normal_attribute: VertexAttribute<Vec3>,
     vertex_color_attribute: VertexAttribute<Vec4>,
     texture_coordinate_attribute: VertexAttribute<Vec2>,
+    base_color_texture_property: TextureProperty,
+    texture_coordinate_offset_property: Vec2Property,
+    texture_coordinate_scale_property: Vec2Property,
+    sprite_texture_unit: u8,
 }
 
 struct Renderer<'a, 'b: 'a> {
@@ -88,11 +95,7 @@ impl<'a, 'b: 'a> Renderer<'a, 'b> {
         }
     }
 
-    pub fn change_material(
-        &mut self,
-        material_handle: &'a Handle<Material>,
-        optional_primary_texture: Option<&Handle<Texture>>,
-    ) {
+    pub fn change_material(&mut self, material_handle: &'a Handle<Material>) {
         // Avoid unnecessary [Material] rebinds.
         if Some(material_handle) != self.material_info.as_ref().map(|m| m.material_handle) {
             // When a pipeline change occurs a bunch of uniforms need to be rebound.
@@ -138,6 +141,25 @@ impl<'a, 'b: 'a> Renderer<'a, 'b> {
                     .get_vertex_attribute::<Vec4>("a_color")
                     .unwrap();
 
+                // Cache properties that may be changed per Sprite.
+                let base_color_texture_property = shader
+                    .pipeline
+                    .get_texture_property("p_base_color_texture")
+                    .unwrap();
+                let texture_coordinate_offset_property = shader
+                    .pipeline
+                    .get_vec2_property("p_texture_coordinate_offset")
+                    .unwrap();
+                let texture_coordinate_scale_property = shader
+                    .pipeline
+                    .get_vec2_property("p_texture_coordinate_scale")
+                    .unwrap();
+                let sprite_texture_unit = material
+                    .texture_properties
+                    .get("p_base_color_texture")
+                    .map(|p| p.1)
+                    .unwrap_or(material.max_texture_unit);
+
                 self.bound_shader = Some(&material.shader);
                 self.material_info = Some(MaterialInfo {
                     material_handle,
@@ -146,31 +168,35 @@ impl<'a, 'b: 'a> Renderer<'a, 'b> {
                     normal_attribute,
                     texture_coordinate_attribute,
                     vertex_color_attribute,
+                    base_color_texture_property,
+                    texture_coordinate_offset_property,
+                    texture_coordinate_scale_property,
+                    sprite_texture_unit,
                 });
             }
 
             // Rebind the material properties.
             material.bind_material(self.render_pass, &shader.pipeline, self.texture_assets);
+        }
+    }
 
-            // Bind the optional primary texture
-            if let Some(primary_texture) = optional_primary_texture {
-                // This is a bit weird, but we need to make sure we're not using a
-                // texture unit that clobbers other texture units the material expects.
-                let texture_unit = material
-                    .texture_properties
-                    .get("p_base_color_texture")
-                    .map(|p| p.1)
-                    .unwrap_or(material.max_texture_unit);
-                let primary_texture = self.texture_assets.get(primary_texture);
-                self.render_pass.set_texture_property(
-                    &shader
-                        .pipeline
-                        .get_texture_property("p_base_color_texture")
-                        .unwrap(),
-                    Some(primary_texture),
-                    texture_unit,
-                );
-            }
+    pub fn prepare_sprite(&mut self, sprite: &Sprite) {
+        if let Some(material_info) = &self.material_info {
+            let primary_texture = self.texture_assets.get(&sprite.texture_handle);
+            self.render_pass.set_texture_property(
+                &material_info.base_color_texture_property,
+                Some(primary_texture),
+                material_info.sprite_texture_unit,
+            );
+
+            self.render_pass.set_vec2_property(
+                &material_info.texture_coordinate_offset_property,
+                sprite.sprite_source_bounds.min.into(),
+            );
+            self.render_pass.set_vec2_property(
+                &material_info.texture_coordinate_scale_property,
+                sprite.sprite_source_bounds.size().into(),
+            );
         }
     }
 
@@ -227,7 +253,8 @@ pub fn render_scene(
         &Transform,
         &Handle<Material>,
         &Handle<Mesh>,
-        Option<&Handle<Texture>>,
+        //Option<&Handle<Texture>>,
+        Option<&Sprite>,
     )>,
 ) {
     let mut command_buffer = graphics.context.new_command_buffer();
@@ -255,9 +282,11 @@ pub fn render_scene(
                 mesh_assets,
                 texture_assets,
             );
-            for (transform, material_handle, mesh_handle, optional_primary_texture) in &renderables
-            {
-                renderer.change_material(material_handle, optional_primary_texture);
+            for (transform, material_handle, mesh_handle, optional_sprite) in &renderables {
+                renderer.change_material(material_handle);
+                if let Some(sprite) = optional_sprite {
+                    renderer.prepare_sprite(sprite);
+                }
                 renderer.render_mesh(transform, mesh_handle);
             }
         }

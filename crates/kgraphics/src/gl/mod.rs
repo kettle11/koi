@@ -197,12 +197,6 @@ impl Pipeline {
 }
 
 impl PipelineTrait for Pipeline {
-    /*
-    fn blending(&self) -> Option<(BlendFactor, BlendFactor)> {
-        self.blending
-    }
-    */
-
     fn get_int_property(&self, name: &str) -> Result<IntProperty, ()> {
         Ok(IntProperty {
             location: self.get_property(name, GL_INT)?,
@@ -471,27 +465,20 @@ impl GraphicsContextTrait for GraphicsContext {
             TextureType::DefaultFramebuffer => panic!("Cannot update default framebuffer"),
         };
         unsafe {
+            // Convert data to linear instead of sRGB if needed and flip the image vertically.
+            let data = prepare_image(
+                pixel_format_in,
+                texture_settings.srgb,
+                width as usize,
+                height as usize,
+                data,
+            );
+
             let (pixel_format, inner_pixel_format, type_) =
                 crate::gl_shared::pixel_format_to_gl_format_and_inner_format_and_type(
                     pixel_format_in,
                     texture_settings.srgb,
                 );
-
-            // Convert data to linear instead of sRGB if needed.
-            let mut data = data;
-            let mut converted_data = Vec::new();
-
-            if let Some(data_in) = data {
-                if texture_settings.srgb {
-                    converted_data.reserve(data_in.len());
-                    convert_srgb_data_to_linear_srgb(
-                        &mut converted_data,
-                        data_in,
-                        pixel_format_in == PixelFormat::RGBA8Unorm,
-                    );
-                    data = Some(&converted_data);
-                }
-            }
 
             self.gl.bind_texture(GL_TEXTURE_2D, Some(texture));
             self.gl.tex_image_2d(
@@ -503,7 +490,7 @@ impl GraphicsContextTrait for GraphicsContext {
                 0,                    /* border: must be 0 */
                 GLenum(pixel_format), // This doesn't necessarily need to match the internal_format
                 GLenum(type_),
-                data,
+                data.as_ref().map(|v| v.as_slice()),
             );
 
             let minification_filter = minification_filter_to_gl_enum(

@@ -10,10 +10,13 @@ uniform mat4 p_projection;
 out vec2 TexCoords;
 out vec3 WorldPosition;
 
+uniform vec2 p_texture_coordinate_offset;
+uniform vec2 p_texture_coordinate_scale;
+
 void main()
 {
     WorldPosition = vec3(p_model * vec4(a_position, 1.0));
-    TexCoords = a_texture_coordinate;
+    TexCoords = a_texture_coordinate * p_texture_coordinate_scale + p_texture_coordinate_offset;
     gl_Position = p_projection * p_view * p_model * vec4(a_position, 1.0);
 }
 
@@ -50,7 +53,7 @@ void main()
     vec4 base_color = (p_base_color * texture(p_base_color_texture, TexCoords));
   
     vec3 dither = ScreenSpaceDither(gl_FragCoord.xy) * p_dither_scale;
-    vec3 color = pow(base_color.rgb, vec3(1.0/2.2)) + dither; 
+    vec3 color = base_color.rgb + dither; 
         
-    color_out = texture(p_base_color_texture, TexCoords);
+    color_out = vec4( color, 1.0);
 }

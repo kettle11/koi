@@ -595,32 +595,25 @@ impl GraphicsContextTrait for GraphicsContext {
         pixel_format: PixelFormat,
         texture_settings: TextureSettings,
     ) {
-        // Convert data to linear instead of sRGB if needed.
-        let mut data = data;
-        let mut converted_data = Vec::new();
-
-        if let Some(data_in) = data {
-            if texture_settings.srgb {
-                converted_data.reserve(data_in.len());
-                convert_srgb_data_to_linear_srgb(
-                    &mut converted_data,
-                    data_in,
-                    pixel_format == PixelFormat::RGBA8Unorm,
-                );
-                data = Some(&converted_data);
-            }
-        }
-
-        let texture = match &texture.texture_type {
-            TextureType::Texture(js_object) => js_object,
-            TextureType::DefaultFramebuffer => panic!("Can't update default framebuffer"),
-        };
+        // Convert data to linear instead of sRGB if needed and flip the image vertically.
+        let data = prepare_image(
+            pixel_format,
+            texture_settings.srgb,
+            width as usize,
+            height as usize,
+            data,
+        );
 
         let (pixel_format, inner_pixel_format, type_) =
             pixel_format_to_gl_format_and_inner_format_and_type(
                 pixel_format,
                 texture_settings.srgb,
             );
+
+        let texture = match &texture.texture_type {
+            TextureType::Texture(js_object) => js_object,
+            TextureType::DefaultFramebuffer => panic!("Can't update default framebuffer"),
+        };
 
         let minification_filter = minification_filter_to_gl_enum(
             texture_settings.minification_filter,

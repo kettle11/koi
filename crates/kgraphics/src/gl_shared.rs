@@ -87,6 +87,70 @@ pub fn convert_srgb_data_to_linear_srgb(new_data: &mut Vec<u8>, data: &[u8], alp
     }
 }
 
+unsafe fn flip_image_inner<COMPONENT: Copy, const CHANNELS: usize>(
+    data: &mut [u8],
+    width: usize,
+    height: usize,
+) {
+    // Check that the data is the correct size.
+    debug_assert!(data.len() == std::mem::size_of::<COMPONENT>() * CHANNELS * width * height);
+    let data: &mut [[COMPONENT; CHANNELS]] = std::mem::transmute(data);
+    for y in 0..height / 2 {
+        for x in 0..width {
+            let y2 = height - y - 1;
+            let index0 = y * width + x;
+            let index1 = y2 * width + x;
+            let swap = data[index0];
+            data[index0] = data[index1];
+            data[index1] = swap;
+        }
+    }
+}
+
+pub unsafe fn flip_image(pixel_format: PixelFormat, width: usize, height: usize, data: &mut [u8]) {
+    match pixel_format {
+        PixelFormat::R8Unorm => flip_image_inner::<u8, 1>(data, width, height),
+        PixelFormat::RG8Unorm => flip_image_inner::<u8, 2>(data, width, height),
+        PixelFormat::RGB8Unorm => flip_image_inner::<u8, 3>(data, width, height),
+        PixelFormat::RGBA8Unorm => flip_image_inner::<u8, 4>(data, width, height),
+        PixelFormat::Depth16 | PixelFormat::Depth24 | PixelFormat::Depth32F => {
+            flip_image_inner::<f32, 1>(data, width, height)
+        }
+    }
+}
+
+pub unsafe fn prepare_image(
+    pixel_format: PixelFormat,
+    srgb: bool,
+    width: usize,
+    height: usize,
+    data_in: Option<&[u8]>,
+) -> Option<Vec<u8>> {
+    data_in.map(|data_in| {
+        let mut converted_data = Vec::new();
+        converted_data.reserve(data_in.len());
+
+        if srgb {
+            convert_srgb_data_to_linear_srgb(
+                &mut converted_data,
+                data_in,
+                pixel_format == PixelFormat::RGBA8Unorm,
+            );
+        } else {
+            converted_data.extend(data_in);
+        }
+        /*
+        flip_image(
+            pixel_format,
+            width as usize,
+            height as usize,
+            &mut converted_data,
+        );
+        */
+        converted_data
+    })
+}
+
 // Useful reference: https://webgl2fundamentals.org/webgl/lessons/webgl-data-textures.html
 pub fn pixel_format_to_gl_format_and_inner_format_and_type(
     pixel_format: PixelFormat,
@@ -109,20 +173,6 @@ pub fn pixel_format_to_gl_format_and_inner_format_and_type(
         PixelFormat::RGB8Unorm => RGB8,
         PixelFormat::RGBA8Unorm => RGBA8,
     };
-
-    // TODO: Maybe there should just be an additional set of sRGB formats like seems to have already
-    // been started with [PixelFormat::RGBA8UnormSrgb].
-    // Arguably the sRGB conversion is a "feature" so maybe it's not necessary.
-    /*
-    if srgb {
-        inner_format = match inner_format {
-            R8 | RG8 | RGB8 | RGBA8 => {
-                SRGB8_ALPHA8
-            },
-            _ => inner_format,
-        };
-    }
-    */
 
     let type_ = match pixel_format {
         PixelFormat::Depth16 => UNSIGNED_SHORT,
