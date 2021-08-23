@@ -1,5 +1,5 @@
 [package]
-name = "kudo"
+name = "kecs"
 version = "0.1.0"
 edition = "2018"
 
@@ -11,4 +11,4 @@ scheduler = ["ktasks"]
 
 [dependencies]
 ktasks = {path = "../ktasks", optional = true}
-kudo_derive = {path = "kudo_derive"}
+kecs_derive = {path = "kecs_derive"}

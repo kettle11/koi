@@ -89,7 +89,7 @@ pub struct Handle<T> {
 unsafe impl<T> Send for Handle<T> {}
 unsafe impl<T> Sync for Handle<T> {}
 
-use kudo::*;
+use kecs::*;
 impl<T: 'static> ComponentTrait for Handle<T> {
     fn clone_components(
         _entity_migrator: &mut EntityMigrator,

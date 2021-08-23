@@ -1,11 +1,11 @@
 use crate::*;
 
 pub trait ComponentBundleTrait: 'static + Send + Sync {
-    fn add_to_entity(self, world: &mut World, entity: Entity) -> Result<(), KudoError>;
+    fn add_to_entity(self, world: &mut World, entity: Entity) -> Result<(), KecsError>;
 }
 
 impl<C: ComponentTrait> ComponentBundleTrait for C {
-    fn add_to_entity(self, world: &mut World, entity: Entity) -> Result<(), KudoError> {
+    fn add_to_entity(self, world: &mut World, entity: Entity) -> Result<(), KecsError> {
         (self,).add_to_entity(world, entity)
     }
 }
@@ -29,11 +29,11 @@ pub(crate) fn add_components_to_entity_inner(
     world: &mut World,
     entity: Entity,
     components_and_component_ids: &mut [(&mut dyn AnyComponentTrait, ComponentId)],
-) -> Result<(), KudoError> {
+) -> Result<(), KecsError> {
     let entity_location = world
         .entities
         .get_entity_location(entity)
-        .ok_or(KudoError::EntityMissing)?;
+        .ok_or(KecsError::EntityMissing)?;
 
     components_and_component_ids.sort_unstable_by_key(|(_, component_id)| *component_id);
     let old_archetype = &world.archetypes[entity_location.archetype_index];
@@ -125,7 +125,7 @@ macro_rules! component_bundle_tuple_impls {
         impl< $( $tuple: ComponentTrait,)*> ComponentBundleTrait for ($( $tuple,)*)
         {
             #[allow(non_snake_case)]
-            fn add_to_entity(self, world: &mut World, entity: Entity) -> Result<(), KudoError> {
+            fn add_to_entity(self, world: &mut World, entity: Entity) -> Result<(), KecsError> {
                 $(let mut $tuple = Some(self.$index);)*
                 let mut components_and_component_ids = [$((&mut $tuple as &mut dyn AnyComponentTrait, ComponentId(TypeId::of::<$tuple>())),)*];
                 add_components_to_entity_inner(world, entity, &mut components_and_component_ids)

@@ -1,5 +1,5 @@
 [package]
-name = "kudo_derive_impl"
+name = "kecs_derive_impl"
 version = "0.1.0"
 authors = ["Ian Kettlewell <ian.kettlewell@gmail.com>"]
 edition = "2018"

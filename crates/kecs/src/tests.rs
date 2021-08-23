@@ -296,7 +296,7 @@ fn no_matching_component() {
     let world = World::new();
     assert_eq!(
         (|_: &A| {}).run(&world),
-        Err(KudoError::no_matching_component::<A>())
+        Err(KecsError::no_matching_component::<A>())
     );
 }
 

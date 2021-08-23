@@ -30,7 +30,7 @@ pub use component_bundle::*;
 mod query;
 pub use query::*;
 
-pub use kudo_derive::*;
+pub use kecs_derive::*;
 /*
 mod scheduler;
 pub use scheduler::*;
@@ -46,13 +46,13 @@ pub use hierarchy::*;
 mod tests;
 
 #[derive(PartialEq, Debug, Hash, Eq, Clone, Copy)]
-pub enum KudoError {
+pub enum KecsError {
     NoMatchingComponent(&'static str),
     EntityMissing,
     ChannelExclusivelyLocked,
 }
 
-impl KudoError {
+impl KecsError {
     fn no_matching_component<T: ComponentTrait>() -> Self {
         Self::NoMatchingComponent(std::any::type_name::<T>())
     }

@@ -1,4 +1,4 @@
-use kudo::*;
+use kecs::*;
 use std::ops::{Deref, DerefMut};
 
 /// Ensure a component can only be accessed on the thread that created it.

@@ -51,7 +51,7 @@ impl<I: Iterator> Iterator for ChainedIterator<I> {
             min += i_min;
             // This function is designed under the assumption that all
             // iterators passed in implement size_hint, which works fine
-            // for kudo's purposes.
+            // for kecs's purposes.
             max += i_max.unwrap();
         }
         (min, Some(max))

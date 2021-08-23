@@ -14,9 +14,9 @@ pub struct Color {
     pub alpha: FType,
 }
 
-impl kudo::ComponentTrait for Color {
+impl kecs::ComponentTrait for Color {
     fn clone_components(
-        _entity_migrator: &mut kudo::EntityMigrator,
+        _entity_migrator: &mut kecs::EntityMigrator,
         items: &[Self],
     ) -> Option<Vec<Self>> {
         Some(items.into())

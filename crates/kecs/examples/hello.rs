@@ -1,4 +1,4 @@
-use kudo::*;
+use kecs::*;
 
 struct A;
 impl ComponentTrait for A {}

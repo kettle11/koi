@@ -218,7 +218,7 @@ impl Scheduler {
     pub fn add_system<PARAMS, S: IntoSystemTrait<PARAMS>>(
         &mut self,
         system: S,
-    ) -> Result<(), KudoError> {
+    ) -> Result<(), KecsError> {
         let system = system.system()?;
         let system_index = self.systems.len();
         match &system.function {

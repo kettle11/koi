@@ -1,5 +1,5 @@
 use kapp::*;
-use kudo::*;
+use kecs::*;
 
 #[derive(NotCloneComponent)]
 pub struct Input {

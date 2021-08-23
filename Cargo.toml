@@ -17,7 +17,7 @@ jpeg = ["jpeg-decoder"]
 
 [dependencies]
 kapp = {path = "crates/kapp", version = "0.1.0", default-features=false}
-kudo = {path = "crates/kudo", version = "0.1.0"}
+kecs = {path = "crates/kecs", version = "0.1.0"}
 kgraphics = {path = "crates/kgraphics", version = "0.1.0", optional = true}
 ktasks = {path = "crates/ktasks", version = "0.1.0"}
 kmath = {path = "crates/kmath", version = "0.1.0"}

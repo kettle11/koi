@@ -1,6 +1,6 @@
 use std::ops::Mul;
 
-use kudo::{HierarchyNode, Query};
+use kecs::{HierarchyNode, Query};
 
 use crate::*;
 

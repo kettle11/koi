@@ -129,27 +129,27 @@ impl Archetype {
     pub(crate) fn get_read_channel<T: 'static>(
         &self,
         channel_index: usize,
-    ) -> Result<RwLockReadGuard<Vec<T>>, KudoError> {
+    ) -> Result<RwLockReadGuard<Vec<T>>, KecsError> {
         self.channels[channel_index]
             .data
             .as_any()
             .downcast_ref::<RwLock<Vec<T>>>()
             .unwrap()
             .read()
-            .map_err(|_| KudoError::ChannelExclusivelyLocked)
+            .map_err(|_| KecsError::ChannelExclusivelyLocked)
     }
 
     pub(crate) fn get_write_channel<T: 'static>(
         &self,
         channel_index: usize,
-    ) -> Result<RwLockWriteGuard<Vec<T>>, KudoError> {
+    ) -> Result<RwLockWriteGuard<Vec<T>>, KecsError> {
         self.channels[channel_index]
             .data
             .as_any()
             .downcast_ref::<RwLock<Vec<T>>>()
             .unwrap()
             .write()
-            .map_err(|_| KudoError::ChannelExclusivelyLocked)
+            .map_err(|_| KecsError::ChannelExclusivelyLocked)
     }
 }
 
@@ -221,7 +221,7 @@ impl World {
 
     /// Remove an [Entity] from the [World].
     /// If the [Entity] is not in the [World] an [EntityMissing] error is returned.
-    pub fn despawn(&mut self, entity: Entity) -> Result<(), KudoError> {
+    pub fn despawn(&mut self, entity: Entity) -> Result<(), KecsError> {
         self.spawn_reserved_entities();
 
         let entity_location = self.entities.free(entity)?;
@@ -259,37 +259,37 @@ impl World {
 
     /// Add a single component to the [Entity].
     /// Replaces components of the same type that are already on the [Entity].
-    /// Returns [KudoError::EntityMissing] if the [Entity] does not exist in the [World].
+    /// Returns [KecsError::EntityMissing] if the [Entity] does not exist in the [World].
     pub fn add_component<Component: ComponentTrait>(
         &mut self,
         entity: Entity,
         component: Component,
-    ) -> Result<(), KudoError> {
+    ) -> Result<(), KecsError> {
         self.spawn_reserved_entities();
         (component,).add_to_entity(self, entity)
     }
 
     /// Add all of components in the bundle to this [Entity].
     /// Replaces components of the same type that are already on the [Entity].
-    /// Returns [KudoError::EntityMissing] if the [Entity] does not exist in the [World].
+    /// Returns [KecsError::EntityMissing] if the [Entity] does not exist in the [World].
     pub fn add_components<Components: ComponentBundleTrait>(
         &mut self,
         entity: Entity,
         components: Components,
-    ) -> Result<(), KudoError> {
+    ) -> Result<(), KecsError> {
         self.spawn_reserved_entities();
         components.add_to_entity(self, entity)
     }
 
     /// Remove a single component from this [Entity] and returns it.
     ///
-    /// Returns [KudoError::EntityMissing] if the [Entity] does not exist in the [World].
+    /// Returns [KecsError::EntityMissing] if the [Entity] does not exist in the [World].
     ///
-    /// Returns [KudoError::NoMatchingComponent] if the [Entity] does not have the component.
+    /// Returns [KecsError::NoMatchingComponent] if the [Entity] does not have the component.
     pub fn remove_component<Component: ComponentTrait>(
         &mut self,
         entity: Entity,
-    ) -> Result<Component, KudoError> {
+    ) -> Result<Component, KecsError> {
         let removing_component_id = get_component_id::<Component>();
         let RemoveInfo {
             archetype_index,
@@ -313,13 +313,13 @@ impl World {
         entity: Entity,
         removing_component_id: ComponentId,
         component_name: &'static str,
-    ) -> Result<RemoveInfo, KudoError> {
+    ) -> Result<RemoveInfo, KecsError> {
         self.spawn_reserved_entities();
 
         let entity_location = self
             .entities
             .get_entity_location(entity)
-            .ok_or(KudoError::EntityMissing)?;
+            .ok_or(KecsError::EntityMissing)?;
 
         let old_archetype = &mut self.archetypes[entity_location.archetype_index];
         let mut new_component_ids = Vec::with_capacity(old_archetype.channels.len() - 1);
@@ -333,7 +333,7 @@ impl World {
             }
         }
         let removing_channel_index =
-            removing_channel_index.ok_or(KudoError::NoMatchingComponent(component_name))?;
+            removing_channel_index.ok_or(KecsError::NoMatchingComponent(component_name))?;
 
         let World {
             archetypes,
@@ -438,11 +438,11 @@ impl World {
     pub fn get_component_mut<Component: ComponentTrait>(
         &mut self,
         entity: Entity,
-    ) -> Result<&mut Component, KudoError> {
+    ) -> Result<&mut Component, KecsError> {
         let entity_location = self
             .entities
             .get_entity_location(entity)
-            .ok_or(KudoError::EntityMissing)?;
+            .ok_or(KecsError::EntityMissing)?;
 
         let removing_component_id = get_component_id::<Component>();
 
@@ -453,15 +453,15 @@ impl World {
                 return Ok(component);
             }
         }
-        Err(KudoError::no_matching_component::<Component>())
+        Err(KecsError::no_matching_component::<Component>())
     }
 
     /// Gets a single instance of a component from this [World].
-    /// If the component does not exist then [KudoError::NoMatchingComponent] is returned.
+    /// If the component does not exist then [KecsError::NoMatchingComponent] is returned.
     /// If multple of the same component exist then an arbitrary one is returned.
     pub fn get_single_component_mut<Component: ComponentTrait>(
         &mut self,
-    ) -> Result<&mut Component, KudoError> {
+    ) -> Result<&mut Component, KecsError> {
         let filters = [(
             Some(0),
             Filter {
@@ -473,12 +473,12 @@ impl World {
             .storage_lookup
             .matching_archetype_iterator::<1>(&filters)
             .next()
-            .ok_or_else(KudoError::no_matching_component::<Component>)?;
+            .ok_or_else(KecsError::no_matching_component::<Component>)?;
         self.archetypes[matching_archetype.archetype_index].channels
             [matching_archetype.channels[0].unwrap()]
         .as_mut_vec()
         .get_mut(0)
-        .ok_or_else(KudoError::no_matching_component::<Component>)
+        .ok_or_else(KecsError::no_matching_component::<Component>)
     }
 
     /// Clones the components and [Entity]s of the other [World] and adds them to this [World].

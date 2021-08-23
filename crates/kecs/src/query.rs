@@ -135,7 +135,7 @@ pub(crate) fn get_meta_data<const CHANNEL_COUNT: usize>(
     world: &World,
     filters: &[(Option<usize>, Filter)],
     mutable: [bool; CHANNEL_COUNT],
-) -> Result<SystemParameterMetaData, KudoError> {
+) -> Result<SystemParameterMetaData, KecsError> {
     let mut archetypes = Vec::new();
     let mut channels = Vec::new();
 
@@ -160,7 +160,7 @@ pub(crate) fn get_meta_data<const CHANNEL_COUNT: usize>(
 // Manual implementations for Query<'_, A> because it's easier to type Query<'a, A> instead of
 // Query<'a, (A,)> to get all entities with a single component.
 impl<A: QueryParameterTrait, FILTERS: FilterTrait> SystemParameterTrait for Query<'_, A, FILTERS> {
-    fn get_meta_data(world: &World) -> Result<SystemParameterMetaData, KudoError> {
+    fn get_meta_data(world: &World) -> Result<SystemParameterMetaData, KecsError> {
         let mut filters = vec![(Some(0), A::filter())];
         FILTERS::append_filters(&mut filters);
         let mutable = [A::mutable()];
@@ -176,7 +176,7 @@ impl<'a, A: QueryParameterTrait, FILTERS: FilterTrait> SystemParameterFetchTrait
     fn fetch(
         world: &'a World,
         meta_data: &SystemParameterMetaData,
-    ) -> Result<Self::FetchResult, KudoError> {
+    ) -> Result<Self::FetchResult, KecsError> {
         let mut fetch = Vec::new();
         for (archetype_index, channel) in meta_data.archetypes.iter().zip(meta_data.channels.iter())
         {
@@ -213,7 +213,7 @@ macro_rules! query_impls {
 
         #[allow(unused_mut, unused)]
         impl<FILTERS: FilterTrait, $( $tuple: QueryParameterTrait,)*> SystemParameterTrait for Query<'_, ($( $tuple,)*), FILTERS> {
-            fn get_meta_data(world: &World) -> Result<SystemParameterMetaData, KudoError> {
+            fn get_meta_data(world: &World) -> Result<SystemParameterMetaData, KecsError> {
                 let mut filters = vec![$( (Some($index), $tuple::filter()),)*];
                 FILTERS::append_filters(&mut filters);
                 let mutable = [$( $tuple::mutable(),)*];
@@ -225,7 +225,7 @@ macro_rules! query_impls {
         impl<'a, FILTERS: FilterTrait, $( $tuple: QueryParameterTrait,)*> SystemParameterFetchTrait<'a> for Query<'_, ($( $tuple,)*), FILTERS> {
             type FetchResult = Option<Query<'a, ($( $tuple,)*)>>;
 
-            fn fetch(world: &'a World, meta_data: &SystemParameterMetaData) -> Result<Self::FetchResult, KudoError> {
+            fn fetch(world: &'a World, meta_data: &SystemParameterMetaData) -> Result<Self::FetchResult, KecsError> {
                 let mut fetch = Vec::new();
                 for (archetype_index, channels) in meta_data.archetypes.iter().zip( meta_data.channels.chunks_exact($count)) {
                     let archetype = &world.archetypes[*archetype_index];
@@ -363,7 +363,7 @@ pub trait QueryParameterFetchTrait<'a> {
     fn fetch(
         archetype: &'a Archetype,
         channel_index: Option<usize>,
-    ) -> Result<Self::FetchResult, KudoError>;
+    ) -> Result<Self::FetchResult, KecsError>;
 }
 
 pub trait GetIteratorsTrait<'a> {
@@ -392,7 +392,7 @@ impl<'a, T: ComponentTrait> QueryParameterFetchTrait<'a> for &T {
     fn fetch(
         archetype: &'a Archetype,
         channel_index: Option<usize>,
-    ) -> Result<Self::FetchResult, KudoError> {
+    ) -> Result<Self::FetchResult, KecsError> {
         archetype.get_read_channel(channel_index.unwrap())
     }
 }
@@ -431,7 +431,7 @@ impl<'a, T: ComponentTrait> QueryParameterFetchTrait<'a> for &mut T {
     fn fetch(
         archetype: &'a Archetype,
         channel_index: Option<usize>,
-    ) -> Result<Self::FetchResult, KudoError> {
+    ) -> Result<Self::FetchResult, KecsError> {
         archetype.get_write_channel(channel_index.unwrap())
     }
 }
@@ -471,7 +471,7 @@ impl<'a, Q: QueryParameterFetchTrait<'a>> QueryParameterFetchTrait<'a> for Optio
     fn fetch(
         archetype: &'a Archetype,
         channel_index: Option<usize>,
-    ) -> Result<Self::FetchResult, KudoError> {
+    ) -> Result<Self::FetchResult, KecsError> {
         Ok(if let Some(channel_index) = channel_index {
             Some(Q::fetch(archetype, Some(channel_index))?)
         } else {

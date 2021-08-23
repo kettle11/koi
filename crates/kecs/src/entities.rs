@@ -1,4 +1,4 @@
-use crate::KudoError;
+use crate::KecsError;
 use core::sync::atomic::{AtomicI64, Ordering};
 
 #[derive(Debug, Clone, Copy, Hash, Eq, Ord, PartialEq, PartialOrd)]
@@ -107,7 +107,7 @@ impl Entities {
     }
 
     /// Frees an [Entity] to allow its index to be reused.
-    pub fn free(&mut self, entity: Entity) -> Result<EntityLocation, KudoError> {
+    pub fn free(&mut self, entity: Entity) -> Result<EntityLocation, KecsError> {
         let (generation, entity_location) =
             &mut self.generation_and_entity_location[entity.index as usize];
         if *generation == entity.generation {
@@ -120,7 +120,7 @@ impl Entities {
                 return Ok(entity_location);
             }
         }
-        Err(KudoError::EntityMissing)
+        Err(KecsError::EntityMissing)
     }
 
     /// Reserves an [Entity] and its [EntityLocation] will be assigned later.

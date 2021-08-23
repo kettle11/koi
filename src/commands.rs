@@ -1,4 +1,4 @@
-pub use kudo::*;
+pub use kecs::*;
 
 enum Command {
     DespawnEntity(Entity),
@@ -25,7 +25,7 @@ impl Commands {
         let mut component_bundle = Some(component_bundle);
         self.0.push(Command::RunSystem(
             (move |world: &mut World| {
-                // kudo doesn't support FnOnce systems yet, so use an Option here
+                // kecs doesn't support FnOnce systems yet, so use an Option here
                 // to make this closure FnMut.
                 world.spawn(component_bundle.take().unwrap());
             })

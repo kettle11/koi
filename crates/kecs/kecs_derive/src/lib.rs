@@ -8,7 +8,7 @@ pub fn derive_component(item: proc_macro::TokenStream) -> proc_macro::TokenStrea
     // println!("TOKENS: {:#?}", rust_tokens);
     let mut parser = Parser::new(&rust_tokens);
     let parse_result = parser.parse().expect("Could not parse");
-    let output_string = kudo_derive_impl::kudo_component_impl(&parse_result);
+    let output_string = kecs_derive_impl::kecs_component_impl(&parse_result);
 
     //println!("OUTPUT STRING: {}", output_string);
 
@@ -23,7 +23,7 @@ pub fn derive_non_clone_component(item: proc_macro::TokenStream) -> proc_macro::
     // println!("TOKENS: {:#?}", rust_tokens);
     let mut parser = Parser::new(&rust_tokens);
     let parse_result = parser.parse().expect("Could not parse");
-    let output_string = kudo_derive_impl::kudo_non_clone_component_impl(&parse_result);
+    let output_string = kecs_derive_impl::kecs_non_clone_component_impl(&parse_result);
 
     // println!("OUTPUT STRING: {}", output_string);
 

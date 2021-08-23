@@ -1,4 +1,4 @@
-use kudo::*;
+use kecs::*;
 
 /// Time elapsed since last draw call
 #[derive(NotCloneComponent)]

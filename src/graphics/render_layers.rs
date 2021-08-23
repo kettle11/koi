@@ -1,4 +1,4 @@
-use kudo::*;
+use kecs::*;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Component)]
 /// Used to configure which layers [Entity]s will render on.

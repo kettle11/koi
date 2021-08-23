@@ -39,7 +39,7 @@ pub trait IntoSystemTrait<PARAMETERS> {
 }
 
 pub trait RunSystemTrait<'return_lifetime, PARAMETERS, RETURN: 'return_lifetime> {
-    fn run(self, world: &'return_lifetime World) -> Result<RETURN, KudoError>;
+    fn run(self, world: &'return_lifetime World) -> Result<RETURN, KecsError>;
 }
 
 /// [AsSystemArg] introduces an extra layer of indirection that allows things like
@@ -61,7 +61,7 @@ macro_rules! system_tuple_impls {
             FnMut( $( <<$tuple as SystemParameterFetchTrait<'return_lifetime>>::FetchResult as AsSystemArg>::Arg ),*) -> RETURN,
         {
             #[allow(non_snake_case, unused_variables)]
-            fn run(mut self, world: &'return_lifetime World) -> Result<RETURN, KudoError> {
+            fn run(mut self, world: &'return_lifetime World) -> Result<RETURN, KecsError> {
                 fn call_inner<$($tuple,)* RETURN>(
                     mut f: impl FnMut($($tuple,)*) -> RETURN,
                     $($tuple: $tuple,)*
@@ -117,15 +117,15 @@ macro_rules! system_tuple_impls {
 }
 
 pub enum System {
-    Exclusive(Box<dyn FnMut(&mut World) -> Result<(), KudoError> + Send + Sync>),
+    Exclusive(Box<dyn FnMut(&mut World) -> Result<(), KecsError> + Send + Sync>),
     NonExclusive {
-        system: Box<dyn FnMut(&World) -> Result<(), KudoError> + Send + Sync>,
-        meta_data: Box<dyn Fn(&World) -> Result<Vec<ArchetypeAccess>, KudoError> + Send + Sync>,
+        system: Box<dyn FnMut(&World) -> Result<(), KecsError> + Send + Sync>,
+        meta_data: Box<dyn Fn(&World) -> Result<Vec<ArchetypeAccess>, KecsError> + Send + Sync>,
     },
 }
 
 impl System {
-    pub fn run(&mut self, world: &mut World) -> Result<(), KudoError> {
+    pub fn run(&mut self, world: &mut World) -> Result<(), KecsError> {
         match self {
             Self::Exclusive(system) => system(world),
             Self::NonExclusive { system, .. } => system(world),
@@ -134,7 +134,7 @@ impl System {
 }
 
 pub trait SystemParameterTrait: for<'a> SystemParameterFetchTrait<'a> {
-    fn get_meta_data(world: &World) -> Result<SystemParameterMetaData, KudoError>;
+    fn get_meta_data(world: &World) -> Result<SystemParameterMetaData, KecsError>;
 }
 
 pub trait SystemParameterFetchTrait<'a> {
@@ -143,12 +143,12 @@ pub trait SystemParameterFetchTrait<'a> {
     fn fetch(
         world: &'a World,
         meta_data: &SystemParameterMetaData,
-    ) -> Result<Self::FetchResult, KudoError>;
+    ) -> Result<Self::FetchResult, KecsError>;
 }
 
 // Get an arbitrary instance of T from the [World].
 impl<T: ComponentTrait> SystemParameterTrait for &T {
-    fn get_meta_data(world: &World) -> Result<SystemParameterMetaData, KudoError> {
+    fn get_meta_data(world: &World) -> Result<SystemParameterMetaData, KecsError> {
         let mut matching_archetypes = world.storage_lookup.matching_archetype_iterator::<1>(&[(
             Some(0),
             Filter {
@@ -161,7 +161,7 @@ impl<T: ComponentTrait> SystemParameterTrait for &T {
             channels,
         } = matching_archetypes
             .next()
-            .ok_or_else(KudoError::no_matching_component::<T>)?;
+            .ok_or_else(KecsError::no_matching_component::<T>)?;
         Ok(SystemParameterMetaData {
             archetypes: vec![archetype_index],
             channels: vec![(channels[0].map(|c| (c, false)))],
@@ -175,12 +175,12 @@ impl<'a, T: ComponentTrait> SystemParameterFetchTrait<'a> for &T {
     fn fetch(
         world: &'a World,
         meta_data: &SystemParameterMetaData,
-    ) -> Result<Self::FetchResult, KudoError> {
+    ) -> Result<Self::FetchResult, KecsError> {
         let (archetype_index, channel_index) = (
             meta_data
                 .archetypes
                 .get(0)
-                .ok_or_else(KudoError::no_matching_component::<T>)?,
+                .ok_or_else(KecsError::no_matching_component::<T>)?,
             meta_data.channels[0].unwrap().0,
         );
 
@@ -196,7 +196,7 @@ impl<'b, T: ComponentTrait> AsSystemArg<'b> for RwLockReadGuard<'_, Vec<T>> {
 }
 
 impl<T: ComponentTrait> SystemParameterTrait for &mut T {
-    fn get_meta_data(world: &World) -> Result<SystemParameterMetaData, KudoError> {
+    fn get_meta_data(world: &World) -> Result<SystemParameterMetaData, KecsError> {
         let mut matching_archetypes = world.storage_lookup.matching_archetype_iterator::<1>(&[(
             Some(0),
             Filter {
@@ -209,7 +209,7 @@ impl<T: ComponentTrait> SystemParameterTrait for &mut T {
             channels,
         } = matching_archetypes
             .next()
-            .ok_or_else(KudoError::no_matching_component::<T>)?;
+            .ok_or_else(KecsError::no_matching_component::<T>)?;
         Ok(SystemParameterMetaData {
             archetypes: vec![archetype_index],
             channels: vec![(channels[0].map(|c| (c, true)))],
@@ -223,7 +223,7 @@ impl<'a, T: ComponentTrait> SystemParameterFetchTrait<'a> for &mut T {
     fn fetch(
         world: &'a World,
         meta_data: &SystemParameterMetaData,
-    ) -> Result<Self::FetchResult, KudoError> {
+    ) -> Result<Self::FetchResult, KecsError> {
         let (archetype_index, channel_index) =
             (meta_data.archetypes[0], meta_data.channels[0].unwrap().0);
         world.archetypes[archetype_index].get_write_channel::<T>(channel_index)

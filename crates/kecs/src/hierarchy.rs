@@ -66,7 +66,7 @@ impl HierarchyNode {
         world: &mut World,
         parent: Option<Entity>,
         child: Entity,
-    ) -> Result<(), KudoError> {
+    ) -> Result<(), KecsError> {
         let mut add_hierarchy_to_parent = false;
         let mut add_hierarchy_to_child = false;
 
@@ -142,7 +142,7 @@ impl HierarchyNode {
 
     /// Removes a child from the parent [Entity].
     /// If the [Child] is not a child of the parent then nothing happens and `remove_child` returns `Ok`.
-    pub fn remove_child(world: &mut World, parent: Entity, child: Entity) -> Result<(), KudoError> {
+    pub fn remove_child(world: &mut World, parent: Entity, child: Entity) -> Result<(), KecsError> {
         let (previous, next) = {
             let child = world.get_component_mut::<HierarchyNode>(child)?;
 
@@ -176,8 +176,8 @@ impl HierarchyNode {
     }
 
     /// Remove an [Entity], all its components, and all of its descendent [Entity]s, from the [World].
-    /// A [KudoError] is returned if the entity does not exist.
-    pub fn despawn_hierarchy(world: &mut World, entity: Entity) -> Result<(), KudoError> {
+    /// A [KecsError] is returned if the entity does not exist.
+    pub fn despawn_hierarchy(world: &mut World, entity: Entity) -> Result<(), KecsError> {
         if let Ok(hierarchy_node) = world
             .get_component_mut::<HierarchyNode>(entity)
             .map(|h| h.clone_hierarchy())
