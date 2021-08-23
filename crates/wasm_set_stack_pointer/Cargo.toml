@@ -1,0 +1,10 @@
+[package]
+name = "wasm_set_stack_pointer"
+version = "0.1.0"
+authors = ["Ian Kettlewell <ian.kettlewell@gmail.com>"]
+edition = "2018"
+license = "Zlib OR Apache-2.0 OR MIT"
+
+[target.wasm32-unknown-unknown]
+rustc-link-lib = ["libset_stack_pointer"]
+rustc-link-search = ["./"]
