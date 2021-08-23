@@ -279,7 +279,7 @@ impl PlatformApplicationTrait for PlatformApplication {
 
     fn set_window_title(&mut self, window_id: WindowId, title: &str) {
         unsafe {
-            let title = NSString::new(&title);
+            let title = NSString::new(title);
             let () = msg(window_id.raw() as *mut Object, Sels::setTitle, (title.raw,));
         }
     }

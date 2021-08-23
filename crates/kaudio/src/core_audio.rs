@@ -161,7 +161,7 @@ pub fn begin_audio_thread(
     unsafe {
         // Can this be used to enumerate available audio devices? Or is that a separate thing?
         let component = AudioComponentFindNext(std::ptr::null_mut(), &audio_component_description);
-        if component == std::ptr::null_mut() {
+        if component.is_null() {
             panic!("Could not find audio device");
         }
 
@@ -304,7 +304,7 @@ unsafe extern "C" fn callback(
     // Call user callback.
     ((*callback_wrapper).audio_source)(data, stream_info);
 
-    return 0;
+    0
 }
 
 struct CallbackWrapper {

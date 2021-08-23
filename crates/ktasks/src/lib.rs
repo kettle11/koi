@@ -357,12 +357,9 @@ impl<'a> Worker<'a> {
             match data {
                 Poll::Ready(data) => {
                     *task_shared_state.result.lock().unwrap() = Some(data);
-                    task_shared_state
-                        .waker
-                        .lock()
-                        .unwrap()
-                        .take()
-                        .map(|w| w.wake());
+                    if let Some(w) = task_shared_state.waker.lock().unwrap().take() {
+                        w.wake()
+                    }
                     true
                 }
                 Poll::Pending => false,
@@ -396,12 +393,9 @@ impl<'a> Worker<'a> {
             match data {
                 Poll::Ready(data) => {
                     *task_shared_state.result.lock().unwrap() = Some(data);
-                    task_shared_state
-                        .waker
-                        .lock()
-                        .unwrap()
-                        .take()
-                        .map(|w| w.wake());
+                    if let Some(w) = task_shared_state.waker.lock().unwrap().take() {
+                        w.wake()
+                    }
                     true
                 }
                 Poll::Pending => false,
@@ -433,12 +427,9 @@ impl<'a> Worker<'a> {
             match data {
                 Poll::Ready(data) => {
                     *task_shared_state.result.lock().unwrap() = Some(data);
-                    task_shared_state
-                        .waker
-                        .lock()
-                        .unwrap()
-                        .take()
-                        .map(|w| w.wake());
+                    if let Some(w) = task_shared_state.waker.lock().unwrap().take() {
+                        w.wake()
+                    }
                     true
                 }
                 Poll::Pending => false,
@@ -464,7 +455,7 @@ impl<'a> Worker<'a> {
             loop {
                 let task = self.local_task_queue.0.lock().unwrap().pop_front();
                 if let Some(task) = task {
-                    task.run(&self);
+                    task.run(self);
                     ran_a_task = true;
                 } else {
                     break;
@@ -475,7 +466,7 @@ impl<'a> Worker<'a> {
             loop {
                 let task = self.task_queue.lock().unwrap().pop_front();
                 if let Some(task) = task {
-                    task.run(&self);
+                    task.run(self);
                     ran_a_task = true;
                 } else {
                     break;
@@ -489,7 +480,7 @@ impl<'a> Worker<'a> {
                 let task = q.lock().unwrap().pop_front();
                 if let Some(task) = task {
                     //  kwasm::log(&format!("WORKER {:?}: Stealing task!", self.id));
-                    task.run(&self);
+                    task.run(self);
                     ran_a_task = true;
                     // Only steal a single task before checking my own queue
                     break;
@@ -524,14 +515,14 @@ impl<'a> Worker<'a> {
             // First run tasks from my local queue.
             let task = self.local_task_queue.0.lock().unwrap().pop_front();
             if let Some(task) = task {
-                task.run(&self);
+                task.run(self);
                 ran_a_task = true;
             }
 
             // Then run tasks from my local queue that are stealable
             let task = self.task_queue.lock().unwrap().pop_front();
             if let Some(task) = task {
-                task.run(&self);
+                task.run(self);
                 ran_a_task = true;
             }
         }

@@ -473,12 +473,12 @@ impl World {
             .storage_lookup
             .matching_archetype_iterator::<1>(&filters)
             .next()
-            .ok_or(KudoError::no_matching_component::<Component>())?;
-        Ok(self.archetypes[matching_archetype.archetype_index].channels
+            .ok_or_else(KudoError::no_matching_component::<Component>)?;
+        self.archetypes[matching_archetype.archetype_index].channels
             [matching_archetype.channels[0].unwrap()]
         .as_mut_vec()
         .get_mut(0)
-        .ok_or(KudoError::no_matching_component::<Component>())?)
+        .ok_or_else(KudoError::no_matching_component::<Component>)
     }
 
     /// Clones the components and [Entity]s of the other [World] and adds them to this [World].

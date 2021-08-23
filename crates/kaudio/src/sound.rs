@@ -12,7 +12,7 @@ impl Sound {
 }
 
 /// Resample interleaved audio.
-pub fn resample(data: &Vec<f32>, channels: usize, old_rate: f32, new_rate: f32) -> Vec<f32> {
+pub fn resample(data: &[f32], channels: usize, old_rate: f32, new_rate: f32) -> Vec<f32> {
     let step = old_rate / new_rate;
 
     let mut samples = Vec::with_capacity(new_rate as usize * channels);

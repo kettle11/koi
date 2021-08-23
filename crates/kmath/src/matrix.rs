@@ -333,7 +333,7 @@ impl<T: Numeric, const R: usize, const C: usize> Matrix<T, R, C> {
                 }
             }
         }
-        return false;
+        false
     }
 
     // This should probably just return an array

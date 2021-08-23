@@ -15,7 +15,7 @@ pub struct SystemParameterMetaData {
 
 impl SystemParameterMetaData {
     pub fn append_meta_data(&self, archetype_access: &mut Vec<ArchetypeAccess>) {
-        if self.archetypes.len() > 0 {
+        if !self.archetypes.is_empty() {
             let channel_count = self.channels.len() / self.archetypes.len();
             for (archetype_index, channels) in self
                 .archetypes
@@ -161,7 +161,7 @@ impl<T: ComponentTrait> SystemParameterTrait for &T {
             channels,
         } = matching_archetypes
             .next()
-            .ok_or(KudoError::no_matching_component::<T>())?;
+            .ok_or_else(KudoError::no_matching_component::<T>)?;
         Ok(SystemParameterMetaData {
             archetypes: vec![archetype_index],
             channels: vec![(channels[0].map(|c| (c, false)))],
@@ -180,7 +180,7 @@ impl<'a, T: ComponentTrait> SystemParameterFetchTrait<'a> for &T {
             meta_data
                 .archetypes
                 .get(0)
-                .ok_or(KudoError::no_matching_component::<T>())?,
+                .ok_or_else(KudoError::no_matching_component::<T>)?,
             meta_data.channels[0].unwrap().0,
         );
 
@@ -209,7 +209,7 @@ impl<T: ComponentTrait> SystemParameterTrait for &mut T {
             channels,
         } = matching_archetypes
             .next()
-            .ok_or(KudoError::no_matching_component::<T>())?;
+            .ok_or_else(KudoError::no_matching_component::<T>)?;
         Ok(SystemParameterMetaData {
             archetypes: vec![archetype_index],
             channels: vec![(channels[0].map(|c| (c, true)))],

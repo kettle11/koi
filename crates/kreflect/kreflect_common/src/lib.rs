@@ -165,9 +165,13 @@ pub fn token_stream_to_rust_tokens(
                     }
                     Delimiter::None => (None, None),
                 };
-                open.map(|t| rust_tokens.push(t));
+                if let Some(t) = open {
+                    rust_tokens.push(t)
+                }
                 token_stream_to_rust_tokens(g.stream(), rust_tokens);
-                close.map(|t| rust_tokens.push(t));
+                if let Some(t) = close {
+                    rust_tokens.push(t)
+                }
             }
             TokenTree::Literal(l) => {
                 let s = l.to_string();
@@ -250,7 +254,7 @@ impl<'a> TypeParamBounds<'a> {
             match &bound {
                 TypeParamBound::Lifetime(i) => {
                     string.push('\'');
-                    string += &i;
+                    string += i;
                 }
                 TypeParamBound::Trait(path) => string += &path.as_string(),
             }
@@ -421,12 +425,12 @@ pub enum Value<'a> {
 }
 
 pub struct Parser<'a> {
-    tokens: &'a Vec<Token<'a>>,
+    tokens: &'a [Token<'a>],
     i: usize,
 }
 
 impl<'a> Parser<'a> {
-    pub fn new(tokens: &'a Vec<Token<'a>>) -> Self {
+    pub fn new(tokens: &'a [Token<'a>]) -> Self {
         Self { tokens, i: 0 }
     }
 
@@ -445,7 +449,7 @@ impl<'a> Parser<'a> {
 
     fn check_for_token(&mut self, expect: Token<'a>) -> Option<&'a Token<'a>> {
         let t = self.tokens.get(self.i)?;
-        if std::mem::discriminant(t) == std::mem::discriminant(&&expect) {
+        if std::mem::discriminant(t) == std::mem::discriminant(&expect) {
             self.i += 1;
             Some(t)
         } else {
@@ -622,13 +626,11 @@ impl<'a> Parser<'a> {
                 self.advance();
                 let mut types = Vec::new();
                 loop {
-                    match self.peek()? {
-                        Token::CloseParentheses => {
-                            self.advance();
-                            break;
-                        }
-                        _ => {}
+                    if let Some(Token::CloseParentheses) = self.peek() {
+                        self.advance();
+                        break;
                     }
+
                     let _type = self._type()?;
                     types.push(_type);
                     self.check_for_token(Token::Comma);
@@ -791,51 +793,49 @@ impl<'a> Parser<'a> {
     /// Returns empty if there are no generic parameters.
     fn generic_params(&mut self) -> Option<GenericParams<'a>> {
         let mut generic_params = Vec::new();
-        match self.peek() {
-            Some(Token::LessThan) => {
-                self.advance();
-                loop {
-                    match self.peek() {
-                        Some(Token::Identifier(identifier)) => {
-                            self.advance();
-                            generic_params.push(GenericParam::Type {
-                                identifier: identifier.clone(),
-                                type_bounds: if self.check_for_token(Token::Colon).is_some() {
-                                    self.type_param_bounds()?
-                                } else {
-                                    TypeParamBounds(Vec::new())
-                                },
-                            })
-                        }
-                        Some(Token::SingleQuote) => {
-                            self.advance();
-                            let identifier = self
-                                .check_for_identifier()
-                                .expect("Expected identifier after '\''")
-                                .clone();
-
-                            // Should check for bounds here.
-                            generic_params.push(GenericParam::Lifetime { identifier })
-                        }
-                        Some(Token::Const) => {
-                            self.advance();
-                            let identifier = self.check_for_identifier().unwrap();
-                            self.check_for_token(Token::Colon).unwrap();
-                            let _type = self._type().unwrap();
-                            generic_params.push(GenericParam::Const { identifier, _type })
-                        }
-                        Some(Token::GreaterThan) => {
-                            self.advance();
-                            break;
-                        }
-                        other => panic!("Unexpected token in generic params: {:?}", other),
+        if let Some(Token::LessThan) = self.peek() {
+            self.advance();
+            loop {
+                match self.peek() {
+                    Some(Token::Identifier(identifier)) => {
+                        self.advance();
+                        generic_params.push(GenericParam::Type {
+                            identifier: identifier.clone(),
+                            type_bounds: if self.check_for_token(Token::Colon).is_some() {
+                                self.type_param_bounds()?
+                            } else {
+                                TypeParamBounds(Vec::new())
+                            },
+                        })
                     }
+                    Some(Token::SingleQuote) => {
+                        self.advance();
+                        let identifier = self
+                            .check_for_identifier()
+                            .expect("Expected identifier after '\''")
+                            .clone();
 
-                    self.check_for_token(Token::Comma);
+                        // Should check for bounds here.
+                        generic_params.push(GenericParam::Lifetime { identifier })
+                    }
+                    Some(Token::Const) => {
+                        self.advance();
+                        let identifier = self.check_for_identifier().unwrap();
+                        self.check_for_token(Token::Colon).unwrap();
+                        let _type = self._type().unwrap();
+                        generic_params.push(GenericParam::Const { identifier, _type })
+                    }
+                    Some(Token::GreaterThan) => {
+                        self.advance();
+                        break;
+                    }
+                    other => panic!("Unexpected token in generic params: {:?}", other),
                 }
+
+                self.check_for_token(Token::Comma);
             }
-            _ => {}
         }
+
         Some(GenericParams(generic_params))
     }
 
@@ -1020,10 +1020,10 @@ impl<'a> GenericParams<'a> {
                 match generic_parameter {
                     GenericParam::Lifetime { identifier, .. } => {
                         string.push('\'');
-                        string += &identifier
+                        string += identifier
                     }
-                    GenericParam::Type { identifier, .. } => string += &identifier,
-                    GenericParam::Const { identifier, .. } => string += &identifier,
+                    GenericParam::Type { identifier, .. } => string += identifier,
+                    GenericParam::Const { identifier, .. } => string += identifier,
                 }
                 string.push(',');
             }
@@ -1091,7 +1091,7 @@ impl<'a> Path<'a> {
                 PathSegmentType::Super => "super",
                 PathSegmentType::Named(name) => name,
             };
-            if segment.args.len() > 0 {
+            if !segment.args.is_empty() {
                 string += "<";
                 for arg in &segment.args {
                     string += &arg.as_string();

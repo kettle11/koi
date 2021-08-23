@@ -33,8 +33,7 @@ pub fn closest_point_on_line_segment<T: NumericFloat, const DIMENSIONS: usize>(
     let h = (ba.dot(pa) / ba.dot(ba))
         .numeric_max(T::ZERO)
         .numeric_min(T::ONE);
-    let position = line_segment.a + (ba * h);
-    position
+    line_segment.a + (ba * h)
 }
 
 /// A rectangle in 2D, a rectangular prism in 3D.

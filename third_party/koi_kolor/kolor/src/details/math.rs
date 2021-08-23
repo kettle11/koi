@@ -262,7 +262,7 @@ mod math {
 
             let inv_det = 1.0 / det;
 
-            let result = Self {
+            Self {
                 x_axis: Vec3::new(
                     (m11 * m22 - m21 * m12) * inv_det,
                     (m12 * m20 - m10 * m22) * inv_det,
@@ -278,9 +278,7 @@ mod math {
                     (m10 * m02 - m00 * m12) * inv_det,
                     (m00 * m11 - m10 * m01) * inv_det,
                 ),
-            };
-
-            result
+            }
         }
     }
 

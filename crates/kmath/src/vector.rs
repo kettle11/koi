@@ -381,13 +381,13 @@ impl<T> Deref for Vector<T, 2> {
     type Target = XY<T>;
 
     fn deref(&self) -> &Self::Target {
-        unsafe { std::mem::transmute(self.0.as_ptr()) }
+        unsafe { &*(self.0.as_ptr() as *const _) }
     }
 }
 
 impl<T> DerefMut for Vector<T, 2> {
     fn deref_mut(&mut self) -> &mut Self::Target {
-        unsafe { std::mem::transmute(self.0.as_mut_ptr()) }
+        unsafe { &mut *(self.0.as_mut_ptr() as *mut _) }
     }
 }
 
@@ -395,13 +395,13 @@ impl<T> Deref for Vector<T, 3> {
     type Target = XYZ<T>;
 
     fn deref(&self) -> &Self::Target {
-        unsafe { std::mem::transmute(self.0.as_ptr()) }
+        unsafe { &*(self.0.as_ptr() as *const _) }
     }
 }
 
 impl<T> DerefMut for Vector<T, 3> {
     fn deref_mut(&mut self) -> &mut Self::Target {
-        unsafe { std::mem::transmute(self.0.as_mut_ptr()) }
+        unsafe { &mut *(self.0.as_mut_ptr() as *mut _) }
     }
 }
 
@@ -409,12 +409,12 @@ impl<T> Deref for Vector<T, 4> {
     type Target = XYZW<T>;
 
     fn deref(&self) -> &Self::Target {
-        unsafe { std::mem::transmute(self.0.as_ptr()) }
+        unsafe { &*(self.0.as_ptr() as *const _) }
     }
 }
 
 impl<T> DerefMut for Vector<T, 4> {
     fn deref_mut(&mut self) -> &mut Self::Target {
-        unsafe { std::mem::transmute(self.0.as_mut_ptr()) }
+        unsafe { &mut *(self.0.as_mut_ptr() as *mut _) }
     }
 }

@@ -4,7 +4,7 @@ pub fn load_wav_from_bytes(bytes: &[u8]) -> Result<crate::Sound, hound::Error> {
     let mut reader = hound::WavReader::new(bytes)?;
 
     let spec = reader.spec();
-    let mut samples = match spec.sample_format {
+    let mut samples: Vec<f32> = match spec.sample_format {
         hound::SampleFormat::Float => reader.samples::<f32>().map(|x| x.unwrap()).collect(),
         hound::SampleFormat::Int => match spec.bits_per_sample {
             8 => reader
@@ -44,7 +44,7 @@ pub fn load_wav(path: &str) -> Result<crate::Sound, hound::Error> {
     let mut reader = hound::WavReader::new(file)?;
 
     let spec = reader.spec();
-    let mut samples = match spec.sample_format {
+    let mut samples: Vec<f32> = match spec.sample_format {
         hound::SampleFormat::Float => reader.samples::<f32>().map(|x| x.unwrap()).collect(),
         hound::SampleFormat::Int => match spec.bits_per_sample {
             8 => reader
