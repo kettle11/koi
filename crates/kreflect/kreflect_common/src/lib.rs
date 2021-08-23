@@ -512,9 +512,14 @@ impl<'a> Parser<'a> {
                                     let identifier = self.check_for_identifier()?;
                                     args.push(GenericArgument::Lifetime(identifier))
                                 }
-                                _ => {
+                                Token::Identifier(_) => {
                                     let _type = self._type()?;
                                     args.push(GenericArgument::Type(_type))
+                                }
+                                _ => {
+                                    // An expression?
+                                    let expression = self.expression()?;
+                                    args.push(GenericArgument::Expression(expression));
                                 }
                             }
                             self.check_for_token(Token::Comma);
@@ -793,7 +798,6 @@ impl<'a> Parser<'a> {
                     match self.peek() {
                         Some(Token::Identifier(identifier)) => {
                             self.advance();
-                            // Should check for bounds here
                             generic_params.push(GenericParam::Type {
                                 identifier: identifier.clone(),
                                 type_bounds: if self.check_for_token(Token::Colon).is_some() {
@@ -1033,6 +1037,7 @@ impl<'a> GenericParams<'a> {
 pub enum GenericArgument<'a> {
     Type(Type<'a>),
     Lifetime(Cow<'a, str>),
+    Expression(Expression<'a>),
 }
 
 impl<'a> GenericArgument<'a> {
@@ -1040,6 +1045,7 @@ impl<'a> GenericArgument<'a> {
         match self {
             GenericArgument::Type(t) => t.as_string(),
             GenericArgument::Lifetime(l) => format!("'{}", l.to_string()),
+            GenericArgument::Expression(e) => e.as_string(),
         }
     }
 }
