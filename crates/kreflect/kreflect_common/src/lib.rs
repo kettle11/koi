@@ -512,14 +512,17 @@ impl<'a> Parser<'a> {
                                     let identifier = self.check_for_identifier()?;
                                     args.push(GenericArgument::Lifetime(identifier))
                                 }
-                                Token::Identifier(_) => {
-                                    let _type = self._type()?;
-                                    args.push(GenericArgument::Type(_type))
-                                }
                                 _ => {
-                                    // An expression?
-                                    let expression = self.expression()?;
-                                    args.push(GenericArgument::Expression(expression));
+                                    let _type = self._type();
+                                    match _type {
+                                        Some(t) => {
+                                            args.push(GenericArgument::Type(t));
+                                        }
+                                        None => {
+                                            let expression = self.expression()?;
+                                            args.push(GenericArgument::Expression(expression));
+                                        }
+                                    }
                                 }
                             }
                             self.check_for_token(Token::Comma);
@@ -665,10 +668,7 @@ impl<'a> Parser<'a> {
                     _type: Box::new(_type),
                 }
             }
-            _ => panic!(
-                "Parsing of this type not implemented in kreflect yet: {:?}",
-                self.peek()
-            ),
+            _ => None?,
         })
     }
 
