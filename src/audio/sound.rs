@@ -17,7 +17,7 @@ impl Sound {
 
     pub fn new_from_slice(slice: &[f32]) -> Self {
         let frames = oddio::Frames::from_slice(SAMPLE_RATE, slice);
-        Sound { frames: frames }
+        Sound { frames }
     }
 
     pub fn load_immediate_bytes(bytes: &[u8], extension: Option<&str>, scale: f32) -> Option<Self> {

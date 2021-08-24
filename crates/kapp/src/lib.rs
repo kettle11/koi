@@ -4,7 +4,6 @@
 //! ```no_run
 //! use kapp::*;
 //!
-//! fn main() {
 //!     // Initialize the Application and EventLoop
 //!     let (app, event_loop) = initialize();
 //!
@@ -19,7 +18,6 @@
 //!          }
 //!          _ => println!("Received event: {:?}", event),
 //!     });
-//! }
 //! ```
 //!
 //! # User Input
@@ -34,17 +32,16 @@
 //! ```no_run
 //! use kapp::*;
 //!
-//! fn main() {
-//!     let (mut app, event_loop) = initialize();
-//!     let _window = app.new_window().build().unwrap();
+//! let (mut app, event_loop) = initialize();
+//! let _window = app.new_window().build().unwrap();
 //!
-//!     event_loop.run( move |event| match event {
-//!         Event::KeyDown { key, .. } => println!("Key pressed: {:?}", key),
-//!         Event::KeyUp { key, .. } => println!("Key up: {:?}", key),
-//!         Event::PointerMoved { x, y, .. } => println!("Pointer moved: {:?},{:?}", x, y),
-//!         _ => {},
-//!     });
-//! }
+//! event_loop.run( move |event| match event {
+//!     Event::KeyDown { key, .. } => println!("Key pressed: {:?}", key),
+//!     Event::KeyUp { key, .. } => println!("Key up: {:?}", key),
+//!     Event::PointerMoved { x, y, .. } => println!("Pointer moved: {:?},{:?}", x, y),
+//!     _ => {},
+//! });
+//!
 //! ```
 //!
 //! # GL Rendering

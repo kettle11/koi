@@ -64,8 +64,7 @@ impl EventLoop {
         F: 'static + Future<Output = ()>,
     {
         let events = Events::new();
-        let mut program =
-            AsyncProgram::new(events.clone(), run_function(application.clone(), events));
+        let mut program = AsyncProgram::new(events.clone(), run_function(application, events));
 
         // A proper context and waker need to be setup here.
         self.run(move |event| {

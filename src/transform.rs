@@ -281,7 +281,7 @@ pub fn update_global_transforms(mut query: Query<(Option<&HierarchyNode>, &mut T
             if let Some(last_child) = node.last_child() {
                 if node.parent().is_none() {
                     let parent_transform = &transform.global_transform;
-                    parents.push((parent_transform.clone(), *last_child));
+                    parents.push((*parent_transform, *last_child));
                     continue;
                 }
             }
@@ -299,23 +299,21 @@ fn update_descendent_transforms(
     child_entity: Entity,
     parent_matrix: &Mat4,
 ) {
-    if let Some((hierarchy_node, transform)) = query.get_entity_components_mut(child_entity) {
-        if let Some(hierarchy_node) = hierarchy_node {
-            let last_child = *hierarchy_node.last_child();
-            let previous_sibling = hierarchy_node.previous_sibling().clone();
+    if let Some((Some(hierarchy_node), transform)) = query.get_entity_components_mut(child_entity) {
+        let last_child = *hierarchy_node.last_child();
+        let previous_sibling = *hierarchy_node.previous_sibling();
 
-            let my_model_matrix = transform.model();
-            let my_global_matrix = *parent_matrix * my_model_matrix;
-            transform.global_transform = GlobalTransform::from_mat4(my_global_matrix);
+        let my_model_matrix = transform.model();
+        let my_global_matrix = *parent_matrix * my_model_matrix;
+        transform.global_transform = GlobalTransform::from_mat4(my_global_matrix);
 
-            // Iterate through descendent transforms
-            if let Some(child) = last_child {
-                update_descendent_transforms(query, child, &my_global_matrix);
-            }
-            // Iterate through sibling transforms
-            if let Some(previous_sibling) = previous_sibling {
-                update_descendent_transforms(query, previous_sibling, parent_matrix);
-            }
+        // Iterate through descendent transforms
+        if let Some(child) = last_child {
+            update_descendent_transforms(query, child, &my_global_matrix);
+        }
+        // Iterate through sibling transforms
+        if let Some(previous_sibling) = previous_sibling {
+            update_descendent_transforms(query, previous_sibling, parent_matrix);
         }
     }
 }

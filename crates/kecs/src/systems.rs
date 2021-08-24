@@ -83,7 +83,7 @@ macro_rules! system_tuple_impls {
                 FnMut( $( $tuple ),*) +
                 FnMut( $( <<$tuple as SystemParameterFetchTrait>::FetchResult as AsSystemArg>::Arg ),*),
         {
-            #[allow(non_snake_case, unused_variables, unused_mut)]
+            #[allow(non_snake_case, unused_variables, unused_mut, clippy::too_many_arguments)]
             fn system(mut self) -> System {
                 // This trick to get `rustc` to accept calling the FnMut is from Bevy:
                 // https://github.com/bevyengine/bevy/blob/f6dbc25bd92ea81b4c7948c6f3f41f6411e97d78/crates/bevy_ecs/src/system/function_system.rs#L432

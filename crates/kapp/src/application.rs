@@ -19,12 +19,12 @@ pub fn initialize() -> (Application, EventLoop) {
     let state_tracker = Rc::new(RefCell::new(StateTracker::new()));
     (
         Application {
-            platform_application: platform_application.clone(),
+            platform_application,
             state_tracker: state_tracker.clone(),
         },
         EventLoop {
             platform_event_loop,
-            state_tracker: state_tracker.clone(),
+            state_tracker,
         },
     )
 }
@@ -140,12 +140,9 @@ impl EventLoop {
             state_tracker.borrow_mut().handle_event(&event);
             callback(event.clone());
 
-            match event {
-                Event::Draw { .. } => {
-                    state_tracker.borrow_mut().clear();
-                }
-                _ => {}
-            };
+            if let Event::Draw { .. } = event {
+                state_tracker.borrow_mut().clear();
+            }
         };
         self.platform_event_loop.run(Box::new(callback_wrapper));
     }

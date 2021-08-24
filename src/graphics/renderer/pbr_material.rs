@@ -42,8 +42,8 @@ pub fn new_pbr_material(shader: Handle<Shader>, pbr_properties: PBRProperties) -
         .unwrap_or(Texture::WHITE);
     material.set_texture("p_base_color_texture", base_color_texture);
 
-    material.set_float("p_metallic", pbr_properties.metallic.into());
-    material.set_float("p_roughness", pbr_properties.roughness.into());
+    material.set_float("p_metallic", pbr_properties.metallic);
+    material.set_float("p_roughness", pbr_properties.roughness);
 
     let metallic_roughness_texture = pbr_properties
         .metallic_roughness_texture
@@ -51,7 +51,7 @@ pub fn new_pbr_material(shader: Handle<Shader>, pbr_properties: PBRProperties) -
         .unwrap_or(Texture::WHITE);
     material.set_texture("p_metallic_roughness_texture", metallic_roughness_texture);
 
-    material.set_float("p_ambient", pbr_properties.ambient.into());
+    material.set_float("p_ambient", pbr_properties.ambient);
     let ambient_texture = pbr_properties
         .ambient_texture
         .clone()

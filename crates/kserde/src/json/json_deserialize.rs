@@ -309,23 +309,20 @@ impl<'a, CONTEXT> JSONDeserializer<'a, CONTEXT> {
 
         let mut position = 10.0;
         // Parse fraction
-        match self.iter.peek() {
-            Some((_, '.')) => {
-                self.iter.next();
-                // Parse fraction
-                loop {
-                    if let Some((_, c)) = self.iter.peek().cloned() {
-                        if let Some(digit) = c.to_digit(10) {
-                            number += digit as f64 / position;
-                            position *= 10.0;
-                            self.iter.next();
-                            continue;
-                        }
+        if let Some((_, '.')) = self.iter.peek() {
+            self.iter.next();
+            // Parse fraction
+            loop {
+                if let Some((_, c)) = self.iter.peek().cloned() {
+                    if let Some(digit) = c.to_digit(10) {
+                        number += digit as f64 / position;
+                        position *= 10.0;
+                        self.iter.next();
+                        continue;
                     }
-                    break;
                 }
+                break;
             }
-            _ => {}
         }
 
         // Parse exponent
@@ -345,13 +342,8 @@ impl<'a, CONTEXT> JSONDeserializer<'a, CONTEXT> {
                 };
 
                 // Skip leading zeroes
-                loop {
-                    match self.iter.peek() {
-                        Some((_, '0')) => {
-                            self.iter.next();
-                        }
-                        _ => break,
-                    }
+                while let Some((_, '0')) = self.iter.peek() {
+                    self.iter.next();
                 }
 
                 let mut exponent = 0.0;

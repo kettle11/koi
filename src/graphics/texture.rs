@@ -91,7 +91,7 @@ pub fn new_texture_from_jpeg_bytes(
 
 #[cfg(feature = "png")]
 pub fn png_data_from_bytes(bytes: &[u8]) -> TextureLoadData {
-    let reader = std::io::BufReader::new(&bytes as &[u8]);
+    let reader = std::io::BufReader::new(bytes);
     let mut decoder = png::Decoder::new(reader);
 
     // This line reduces 16-bit or greater images to 8 bit.

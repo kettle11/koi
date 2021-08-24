@@ -107,6 +107,7 @@ impl App {
         self
     }
 
+    #[allow(clippy::let_and_return)]
     pub fn add_default_plugins(self) -> Self {
         let app = self;
         let app = app.add_plugin(transform_plugin());
@@ -119,8 +120,6 @@ impl App {
         let app = app.add_plugin(temporary_despawn_plugin());
         let app = app.add_plugin(camera_plugin());
         let app = app.add_plugin(camera_controls_plugin());
-
-        #[allow(clippy::let_and_return)]
         app
     }
 
