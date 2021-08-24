@@ -1,10 +1,23 @@
 use crate::*;
-use std::sync::Arc;
 
 mod sound;
 pub use sound::*;
 
+mod listener;
+pub use listener::*;
+
+mod audio_source;
+pub use audio_source::*;
+
 pub(crate) const SAMPLE_RATE: u32 = 44100;
+
+pub fn audio_plugin() -> Plugin {
+    Plugin {
+        setup_systems: vec![setup_audio.system()],
+        end_of_frame_systems: vec![move_sources.system()],
+        ..Default::default()
+    }
+}
 
 pub fn setup_audio(world: &mut World) {
     let placeholder_sound = Sound::new_from_slice(&[0.0]);
@@ -32,11 +45,7 @@ pub fn setup_audio(world: &mut World) {
         audio_thread.provide_samples(samples);
     });
     world.spawn(sound_assets);
-    world.spawn(Audio { scene_handle })
-}
-
-pub struct Audio {
-    scene_handle: oddio::Handle<oddio::Adapt<oddio::SpatialScene>>,
+    world.spawn(AudioManager { scene_handle });
 }
 
 struct AudioThread {
@@ -48,4 +57,9 @@ impl AudioThread {
         let frames = oddio::frame_stereo(samples);
         oddio::run(&self.scene, 44100, frames);
     }
+}
+
+#[derive(NotCloneComponent)]
+pub struct AudioManager {
+    scene_handle: oddio::Handle<oddio::Adapt<oddio::SpatialScene>>,
 }

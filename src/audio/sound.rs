@@ -2,7 +2,7 @@ use crate::*;
 use std::sync::Arc;
 
 pub struct Sound {
-    frames: Arc<oddio::Frames<f32>>,
+    pub(super) frames: Arc<oddio::Frames<f32>>,
 }
 
 impl Sound {
@@ -59,8 +59,8 @@ struct SoundLoadMessage {
     sound: Sound,
 }
 pub struct SoundAssetLoader {
-    sender: Mutex<mpsc::Sender<SoundLoadMessage>>,
-    receiver: Mutex<mpsc::Receiver<SoundLoadMessage>>,
+    sender: SyncGuard<mpsc::Sender<SoundLoadMessage>>,
+    receiver: SyncGuard<mpsc::Receiver<SoundLoadMessage>>,
 }
 
 impl LoadableAssetTrait for Sound {
@@ -72,8 +72,8 @@ impl AssetLoader<Sound> for SoundAssetLoader {
     fn new() -> Self {
         let (sender, receiver) = mpsc::channel();
         Self {
-            sender: Mutex::new(sender),
-            receiver: Mutex::new(receiver),
+            sender: SyncGuard::new(sender),
+            receiver: SyncGuard::new(receiver),
         }
     }
 
@@ -84,7 +84,7 @@ impl AssetLoader<Sound> for SoundAssetLoader {
         _options: <Sound as LoadableAssetTrait>::Options,
     ) {
         let path = path.to_owned();
-        let sender = self.sender.lock().unwrap().clone();
+        let sender = self.sender.inner().clone();
 
         ktasks::spawn(async move {
             let extension = std::path::Path::new(&path)
@@ -104,13 +104,7 @@ pub fn load_sounds(sounds: &mut Assets<Sound>) {
     // A Vec doesn't need to be allocated here.
     // This is just a way to not borrow the AssetLoader and Assets at
     // the same time.
-    let messages: Vec<SoundLoadMessage> = sounds
-        .asset_loader
-        .receiver
-        .lock()
-        .unwrap()
-        .try_iter()
-        .collect();
+    let messages: Vec<SoundLoadMessage> = sounds.asset_loader.receiver.inner().try_iter().collect();
     for message in messages.into_iter() {
         println!("SOUND LOADED");
         sounds.replace_placeholder(&message.handle, message.sound);

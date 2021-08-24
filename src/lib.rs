@@ -37,12 +37,10 @@ mod graphics;
 #[cfg(feature = "graphics")]
 pub use graphics::*;
 
-/*
 #[cfg(feature = "audio")]
 mod audio;
 #[cfg(feature = "audio")]
 pub use audio::*;
-*/
 
 /*
 mod experimental;
@@ -111,10 +109,13 @@ impl App {
 
     pub fn add_default_plugins(self) -> Self {
         let app = self;
-        #[cfg(feature = "graphics")]
         let app = app.add_plugin(transform_plugin());
+        #[cfg(feature = "graphics")]
         let app = app.add_plugin(graphics_plugin());
+        #[cfg(feature = "renderer")]
         let app = app.add_plugin(renderer_plugin());
+        #[cfg(feature = "audio")]
+        let app = app.add_plugin(audio_plugin());
         let app = app.add_plugin(temporary_despawn_plugin());
         let app = app.add_plugin(camera_plugin());
         let app = app.add_plugin(camera_controls_plugin());
