@@ -1,0 +1,13 @@
+[package]
+name = "kserde"
+version = "0.1.0"
+authors = ["Ian Kettlewell <ian.kettlewell@gmail.com>"]
+edition = "2018"
+exclude = ["tests/*", "examples/*"]
+license = "Zlib OR Apache-2.0 OR MIT"
+keywords = ["serialization", "deserialization", "serde", "json"]
+categories = ["encoding"]
+description = "A tiny serialization / deserialization crate"
+
+[dependencies]
+kserde_derive = {path = "kserde_derive", optional = true}

@@ -1,0 +1,21 @@
+{
+    "string": "Mesh Primitive",
+    "hello": "Hello नमस्ते Hola こんにちは",
+    "number": 1729,
+    "number0": 1.0715553661644266e-07,
+    "array": [
+        0,
+        1,
+        2,
+        3
+    ],
+    "null": null,
+    "bool": true,
+    "object": {
+        "member0": 0,
+        "member1": false,
+        "member3": [
+            1000
+        ]
+    }
+}
