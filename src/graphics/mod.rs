@@ -2,7 +2,7 @@ pub use crate::graphics::texture::Texture;
 use crate::*;
 use kgraphics::*;
 
-pub use kgraphics::{FilterMode, Pipeline, WrappingMode};
+pub use kgraphics::{BlendFactor, FilterMode, Pipeline, WrappingMode};
 
 mod camera;
 pub use camera::*;

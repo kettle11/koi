@@ -20,8 +20,9 @@ pub struct Material {
 impl Material {
     pub const DEFAULT: Handle<Material> = Handle::new_with_just_index(0);
     pub const UNLIT: Handle<Material> = Handle::new_with_just_index(1);
+    pub const PHYSICALLY_BASED: Handle<Material> = Handle::new_with_just_index(2);
     /// A fully emissive material
-    pub const EMISSIVE: Handle<Material> = Handle::new_with_just_index(2);
+    pub const EMISSIVE: Handle<Material> = Handle::new_with_just_index(3);
 
     pub(crate) fn initialize_static_materials(materials: &mut Assets<Material>) {
         let mut unlit_material = Material::new(Shader::UNLIT);
@@ -30,6 +31,11 @@ impl Material {
         unlit_material.set_vec2("p_texture_coordinate_offset", Vec2::ZERO);
         unlit_material.set_vec2("p_texture_coordinate_scale", Vec2::ONE);
         materials.add_and_leak(unlit_material, &Self::UNLIT);
+
+        materials.add_and_leak(
+            new_pbr_material(Shader::PHYSICALLY_BASED, PBRProperties::default()),
+            &Self::PHYSICALLY_BASED,
+        );
 
         let mut emissive_material = Material::new(Handle::default());
         emissive_material.set_base_color(Color::WHITE);

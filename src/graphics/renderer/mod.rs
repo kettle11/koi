@@ -4,6 +4,9 @@ use kgraphics::*;
 mod material;
 pub use material::*;
 
+mod pbr_material;
+pub use pbr_material::*;
+
 mod sprite;
 pub use sprite::*;
 
@@ -18,7 +21,8 @@ pub fn renderer_plugin() -> Plugin {
 }
 
 pub fn setup_renderer(world: &mut World) {
-    let mut materials = Assets::<Material>::new(Material::new(Handle::default()));
+    let default_material = new_pbr_material(Shader::PHYSICALLY_BASED, PBRProperties::default());
+    let mut materials = Assets::<Material>::new(default_material);
     Material::initialize_static_materials(&mut materials);
     world.spawn(materials);
 }
@@ -42,7 +46,7 @@ struct MaterialInfo<'a> {
     sprite_texture_unit: u8,
 }
 
-struct Renderer<'a, 'b: 'a> {
+struct Renderer<'a, 'b: 'a, 'c: 'a> {
     render_pass: &'a mut RenderPass<'b>,
     camera_info: CameraInfo,
     shader_assets: &'a Assets<Shader>,
@@ -52,9 +56,10 @@ struct Renderer<'a, 'b: 'a> {
     bound_mesh: Option<&'a Handle<Mesh>>,
     bound_shader: Option<&'a Handle<Shader>>,
     material_info: Option<MaterialInfo<'a>>,
+    lights: &'a Query<'c, (&'static Transform, &'static Light)>,
 }
 
-impl<'a, 'b: 'a> Renderer<'a, 'b> {
+impl<'a, 'b: 'a, 'c: 'a> Renderer<'a, 'b, 'c> {
     pub fn new(
         render_pass: &'a mut RenderPass<'b>,
         camera_transform: &'a Transform,
@@ -63,6 +68,7 @@ impl<'a, 'b: 'a> Renderer<'a, 'b> {
         material_assets: &'a Assets<Material>,
         mesh_assets: &'a Assets<Mesh>,
         texture_assets: &'a Assets<Texture>,
+        lights: &'a Query<'c, (&'static Transform, &'static Light)>,
     ) -> Self {
         let camera_info = Self::get_camera_info(camera_transform, camera);
 
@@ -79,6 +85,7 @@ impl<'a, 'b: 'a> Renderer<'a, 'b> {
             bound_mesh: None,
             bound_shader: None,
             material_info: None,
+            lights,
         }
     }
 
@@ -92,6 +99,87 @@ impl<'a, 'b: 'a> Renderer<'a, 'b> {
             projection_matrix,
             view_matrix,
             camera_position,
+        }
+    }
+
+    fn bind_light_info(&mut self, shader: &Shader) {
+        for (i, (transform, light)) in self.lights.iter().enumerate() {
+            let transform = transform.global_transform;
+
+            if transform.position.is_nan() {
+                dbg!("Light position is NaN");
+                continue;
+            }
+
+            self.render_pass.set_vec3_property(
+                &shader
+                    .pipeline
+                    .get_vec3_property(&format!("p_lights[{:?}].position", i))
+                    .unwrap(),
+                (transform.position).into(),
+            );
+
+            self.render_pass.set_vec3_property(
+                &shader
+                    .pipeline
+                    .get_vec3_property(&format!("p_lights[{:?}].direction", i))
+                    .unwrap(),
+                (transform.forward()).into(),
+            );
+
+            self.render_pass.set_float_property(
+                &shader
+                    .pipeline
+                    .get_float_property(&format!("p_lights[{:?}].ambient", i))
+                    .unwrap(),
+                light.ambient_light_amount,
+            );
+
+            // TODO: Make a color property and convert it into the framebuffer's color space first.
+            let color = light.color.to_rgb_color(crate::color_spaces::LINEAR_SRGB);
+            let color_and_intensity = (
+                color.red * light.intensity,
+                color.green * light.intensity,
+                color.green * light.intensity,
+            );
+            self.render_pass.set_vec3_property(
+                &shader
+                    .pipeline
+                    .get_vec3_property(&format!("p_lights[{:?}].color_and_intensity", i))
+                    .unwrap(),
+                color_and_intensity,
+            );
+
+            // Set if the light has shadows enabled.
+            // Harcoded to false for now
+            self.render_pass.set_int_property(
+                &shader
+                    .pipeline
+                    .get_int_property(&format!("p_lights[{:?}].shadows_enabled", i))
+                    .unwrap(),
+                0,
+            );
+
+            self.render_pass.set_int_property(
+                &shader
+                    .pipeline
+                    .get_int_property(&format!("p_lights[{:?}].mode", i))
+                    .unwrap(),
+                match light.light_mode {
+                    LightMode::Directional => 0,
+                    LightMode::Point { .. } => 1,
+                },
+            );
+
+            if let LightMode::Point { radius } = light.light_mode {
+                self.render_pass.set_float_property(
+                    &shader
+                        .pipeline
+                        .get_float_property(&format!("p_lights[{:?}].radius", i))
+                        .unwrap(),
+                    radius,
+                );
+            }
         }
     }
 
@@ -160,6 +248,7 @@ impl<'a, 'b: 'a> Renderer<'a, 'b> {
                     .map(|p| p.1)
                     .unwrap_or(material.max_texture_unit);
 
+                self.bind_light_info(shader);
                 self.bound_shader = Some(&material.shader);
                 self.material_info = Some(MaterialInfo {
                     material_handle,
@@ -254,6 +343,7 @@ pub fn render_scene(
         //Option<&Handle<Texture>>,
         Option<&Sprite>,
     )>,
+    lights: Query<(&'static Transform, &'static Light)>,
 ) {
     let mut command_buffer = graphics.context.new_command_buffer();
     let frame = graphics.render_target.current_frame().unwrap();
@@ -279,6 +369,7 @@ pub fn render_scene(
                 material_assets,
                 mesh_assets,
                 texture_assets,
+                &lights,
             );
 
             for (transform, material_handle, mesh_handle, optional_sprite) in

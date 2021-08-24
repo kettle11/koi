@@ -602,4 +602,15 @@ impl World {
             .entities
             .truncate_free_entities_after_cloning(old_entities);
     }
+
+    /// Get a [Query] from the [World] without running a system 
+    pub fn query<'a, PARAMS: QueryParametersTrait>(
+        &'a self,
+    ) -> Result<<Query<'_, PARAMS> as systems::SystemParameterFetchTrait<'_>>::FetchResult, KecsError>
+    where
+        Query<'a, PARAMS>: SystemParameterTrait,
+    {
+        let meta_data = <Query<PARAMS> as SystemParameterTrait>::get_meta_data(self)?;
+        <Query<PARAMS> as SystemParameterFetchTrait>::fetch(self, &meta_data)
+    }
 }

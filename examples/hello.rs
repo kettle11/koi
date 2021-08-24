@@ -7,14 +7,20 @@ struct Thingy;
 fn main() {
     App::new().setup_and_run(|world: &mut World| {
         // Setup things here.
-        let thingy = world.spawn(Thingy);
-
         let mut camera = Camera::new();
         camera.clear_color = Some(Color::RED);
         world.spawn((Transform::new(), camera, CameraControls::new()));
         world.spawn((
-            Transform::new_with_position(Vec3::new(0.0, 0.0, 3.0)),
+            Transform::new_with_position(Vec3::new(0.0, 0.0, -3.0)),
             Mesh::CUBE,
+            Material::PHYSICALLY_BASED,
+        ));
+
+        // Spawn a light
+        world.spawn((
+            Light::new(LightMode::Directional, Color::WHITE, 1.0),
+            Transform::new_with_position([0., 8.0, 8.0].into()),
+            Mesh::SPHERE,
             Material::UNLIT,
         ));
 
