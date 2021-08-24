@@ -32,6 +32,9 @@ pub use temporary::*;
 mod input;
 pub use input::*;
 
+mod world_assets;
+pub use world_assets::*;
+
 #[cfg(feature = "graphics")]
 mod graphics;
 #[cfg(feature = "graphics")]
@@ -118,7 +121,9 @@ impl App {
         #[cfg(feature = "audio")]
         let app = app.add_plugin(audio_plugin());
         let app = app.add_plugin(temporary_despawn_plugin());
+        #[cfg(feature = "graphics")]
         let app = app.add_plugin(camera_plugin());
+        #[cfg(feature = "graphics")]
         let app = app.add_plugin(camera_controls_plugin());
         app
     }

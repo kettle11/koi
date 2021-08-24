@@ -603,7 +603,7 @@ impl World {
             .truncate_free_entities_after_cloning(old_entities);
     }
 
-    /// Get a [Query] from the [World] without running a system 
+    /// Get a [Query] from the [World] without running a system
     pub fn query<'a, PARAMS: QueryParametersTrait>(
         &'a self,
     ) -> Result<<Query<'_, PARAMS> as systems::SystemParameterFetchTrait<'_>>::FetchResult, KecsError>

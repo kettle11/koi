@@ -8,7 +8,7 @@ members = ["crates/*", "third_party/koi_kolor/build/kolor"]
 
 
 [features]
-default = ["audio", "graphics", "renderer", "drawer2d", "png", "jpeg"]
+default = ["audio", "graphics", "renderer", "drawer2d", "png", "jpeg", "gltf"]
 graphics = ["kgraphics"]
 audio = ["oddio", "kaudio"]
 renderer = []

@@ -33,8 +33,44 @@ impl Commands {
         ))
     }
 
+    pub fn add_world(&mut self, world: World) {
+        let mut new_world = Some(world);
+        self.0.push(Command::RunSystem(
+            (move |world: &mut World| {
+                // kecs doesn't support FnOnce systems yet, so use an Option here
+                // to make this closure FnMut.
+                let mut new_world = new_world.take().unwrap();
+                world.add_world(&mut new_world);
+            })
+            .system(),
+        ))
+    }
+
     pub fn set_parent(&mut self, parent: Option<Entity>, child: Entity) {
         self.0.push(Command::SetParent { parent, child });
+    }
+
+    pub fn add_component(&mut self, entity: Entity, component: impl ComponentTrait) {
+        let mut component = Some(component);
+        self.0.push(Command::RunSystem(
+            (move |world: &mut World| {
+                // kecs doesn't support FnOnce systems yet, so use an Option here
+                // to make this closure FnMut.
+                let _ = world.add_component(entity, component.take().unwrap());
+            })
+            .system(),
+        ))
+    }
+
+    pub fn remove_component<Component: ComponentTrait>(&mut self, entity: Entity) {
+        self.0.push(Command::RunSystem(
+            (move |world: &mut World| {
+                // kecs doesn't support FnOnce systems yet, so use an Option here
+                // to make this closure FnMut.
+                let _ = world.remove_component::<Component>(entity);
+            })
+            .system(),
+        ))
     }
 }
 
