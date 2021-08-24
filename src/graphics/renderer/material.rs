@@ -147,7 +147,7 @@ impl Material {
         }
         for (name, (texture, texture_unit)) in self.texture_properties.iter() {
             if let Ok(property) = pipeline.get_texture_property(name) {
-                let texture = texture_assets.get(&texture);
+                let texture = texture_assets.get(texture);
                 render_pass.set_texture_property(&property, Some(texture), *texture_unit);
             } else {
                 println!("WARNING: Shader does not have texture property '{}'", name);

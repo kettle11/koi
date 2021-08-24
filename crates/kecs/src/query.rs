@@ -262,6 +262,7 @@ macro_rules! query_iterator_impls {
                 MultiIterator::<($( $tuple::IteratorMut,)*)>::new(($( self.$index.get_iterator_mut(),)*))
             }
             fn get_components(&'a self, index: usize) -> <Self::Iterator as Iterator>::Item {
+                #[allow(clippy::unused_unit)]
                 ($( self.$index.get_components(index),)*)
             }
             fn get_components_mut(&'a mut self, index: usize) -> <Self::IteratorMut as Iterator>::Item {

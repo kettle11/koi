@@ -12,7 +12,7 @@ impl Sound {
         I::IntoIter: ExactSizeIterator,
     {
         let frames = oddio::Frames::from_iter(SAMPLE_RATE, iter);
-        Sound { frames: frames }
+        Sound { frames }
     }
 
     pub fn new_from_slice(slice: &[f32]) -> Self {

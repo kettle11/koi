@@ -55,7 +55,6 @@ pub fn new_pbr_material(shader: Handle<Shader>, pbr_properties: PBRProperties) -
     let ambient_texture = pbr_properties
         .ambient_texture
         .clone()
-        .clone()
         .unwrap_or(Texture::WHITE);
     material.set_texture("p_ambient_texture", ambient_texture);
 
@@ -71,10 +70,7 @@ pub fn new_pbr_material(shader: Handle<Shader>, pbr_properties: PBRProperties) -
             .to_rgb_color(color_spaces::LINEAR_SRGB);
         Vec3::new(rgb_color.red, rgb_color.green, rgb_color.blue)
     });
-    let p_emissive_texture = pbr_properties
-        .emissive_texture
-        .clone()
-        .unwrap_or(Texture::WHITE);
+    let p_emissive_texture = pbr_properties.emissive_texture.unwrap_or(Texture::WHITE);
     material.set_texture("p_emissive_texture", p_emissive_texture);
 
     material

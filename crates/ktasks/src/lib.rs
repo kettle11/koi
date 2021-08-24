@@ -102,6 +102,9 @@ struct WorkerWaker(Arc<(Mutex<bool>, Condvar)>);
 
 impl WorkerWaker {
     fn new() -> Self {
+        // The docs for Condvar show using a [Mutex], but clippy recommends otherwise.
+        // Which is correct?
+        #[allow(clippy::mutex_atomic)]
         Self(Arc::new((Mutex::new(false), Condvar::new())))
     }
 

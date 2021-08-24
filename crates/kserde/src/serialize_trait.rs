@@ -127,7 +127,7 @@ impl<S: Serializer, STRING: std::ops::Deref<Target = str>, V: Serialize<S>> Seri
 {
     fn serialize(&self, serializer: &mut S) {
         serializer.begin_object();
-        for (key, value) in self.into_iter() {
+        for (key, value) in self.iter() {
             serializer.property(key, value);
         }
         serializer.end_object();

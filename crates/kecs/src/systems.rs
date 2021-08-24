@@ -60,8 +60,9 @@ macro_rules! system_tuple_impls {
             FnMut( $( $tuple ),*) -> RETURN +
             FnMut( $( <<$tuple as SystemParameterFetchTrait<'return_lifetime>>::FetchResult as AsSystemArg>::Arg ),*) -> RETURN,
         {
-            #[allow(non_snake_case, unused_variables)]
+            #[allow(non_snake_case, unused_variables, clippy::too_many_arguments)]
             fn run(mut self, world: &'return_lifetime World) -> Result<RETURN, KecsError> {
+                #[allow(clippy::too_many_arguments)]
                 fn call_inner<$($tuple,)* RETURN>(
                     mut f: impl FnMut($($tuple,)*) -> RETURN,
                     $($tuple: $tuple,)*

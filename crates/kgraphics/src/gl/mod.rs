@@ -186,7 +186,7 @@ impl Pipeline {
     ) -> Result<Option<gl_native::UniformLocation>, ()> {
         if let Some(uniform) = self.uniforms.get(name) {
             if uniform.uniform_type == type_.0 {
-                Ok(Some(uniform.location.clone()))
+                Ok(Some(uniform.location))
             } else {
                 Err(())
             }
@@ -418,11 +418,8 @@ impl GraphicsContextTrait for GraphicsContext {
         unsafe {
             let buffer = self.gl.create_buffer().unwrap();
             self.gl.bind_buffer(GL_ARRAY_BUFFER, Some(buffer));
-            self.gl.buffer_data_u8_slice(
-                GL_ARRAY_BUFFER.0,
-                slice_to_bytes(&data),
-                GL_STATIC_DRAW.0,
-            );
+            self.gl
+                .buffer_data_u8_slice(GL_ARRAY_BUFFER.0, slice_to_bytes(data), GL_STATIC_DRAW.0);
             Ok(DataBuffer {
                 buffer,
                 phantom: std::marker::PhantomData,
@@ -440,7 +437,7 @@ impl GraphicsContextTrait for GraphicsContext {
             self.gl.bind_buffer(GL_ELEMENT_ARRAY_BUFFER, Some(buffer));
             self.gl.buffer_data_u8_slice(
                 GL_ELEMENT_ARRAY_BUFFER.0,
-                slice_to_bytes(&data),
+                slice_to_bytes(data),
                 GL_STATIC_DRAW.0,
             );
             Ok(IndexBuffer { buffer })
@@ -490,7 +487,7 @@ impl GraphicsContextTrait for GraphicsContext {
                 0,                    /* border: must be 0 */
                 GLenum(pixel_format), // This doesn't necessarily need to match the internal_format
                 GLenum(type_),
-                data.as_ref().map(|v| v.as_slice()),
+                data.as_deref(),
             );
 
             let minification_filter = minification_filter_to_gl_enum(
@@ -678,7 +675,7 @@ impl GraphicsContextTrait for GraphicsContext {
                             self.gl.disable(GL_BLEND);
                         }
 
-                        self.gl.gl.ClearDepth(1.0 as f64);
+                        self.gl.gl.ClearDepth(1.0);
                     }
                     SetVertexAttribute((attribute, buffer)) => {
                         if buffer.is_none() {

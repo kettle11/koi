@@ -156,7 +156,7 @@ impl<'a, S: Serializer> Serialize<S> for Thing<'a> {
             }
             Self::Number(n) => serializer.f64(*n),
             Self::Bool(b) => serializer.bool(*b),
-            Self::String(s) => serializer.string(&s),
+            Self::String(s) => serializer.string(s),
             Self::Null => serializer.null(),
         }
     }
@@ -186,7 +186,7 @@ impl<'a, S: Serializer> Serialize<S> for ThingOwned {
             }
             Self::Number(n) => serializer.f64(*n),
             Self::Bool(b) => serializer.bool(*b),
-            Self::String(s) => serializer.string(&s),
+            Self::String(s) => serializer.string(s),
             Self::Null => serializer.null(),
         }
     }

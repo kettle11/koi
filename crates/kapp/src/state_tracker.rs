@@ -40,7 +40,7 @@ impl StateTracker {
                 self.keys_down_since_last_frame.insert(*key, *timestamp);
             }
             Event::KeyUp { key, .. } => {
-                self.keys_pressed.remove(&key);
+                self.keys_pressed.remove(key);
             }
             Event::PointerDown {
                 button, timestamp, ..
@@ -54,7 +54,7 @@ impl StateTracker {
             } => {
                 self.pointer_buttons_released_since_last_frame
                     .insert(*button, *timestamp);
-                self.pointer_buttons_pressed.remove(&button);
+                self.pointer_buttons_pressed.remove(button);
             }
             Event::PointerMoved { x, y, .. } => self.pointer_position = (*x, *y),
             Event::MouseMotion {
@@ -85,7 +85,7 @@ impl StateTracker {
     pub fn keys_down(&self, keys: &[Key]) -> bool {
         let mut pressed = true;
         for key in keys {
-            pressed |= self.keys_down_since_last_frame.contains_key(&key)
+            pressed |= self.keys_down_since_last_frame.contains_key(key)
         }
         pressed
     }

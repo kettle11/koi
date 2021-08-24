@@ -1010,6 +1010,7 @@ impl<const R: usize, const C: usize> Div<Matrix<f32, R, C>> for f32 {
     type Output = Matrix<f32, R, C>;
 
     #[inline]
+    #[allow(clippy::suspicious_arithmetic_impl)]
     fn div(self, other: Matrix<f32, R, C>) -> Self::Output {
         other.reciprocal() * self
     }
@@ -1019,6 +1020,7 @@ impl<const R: usize, const C: usize> Div<Matrix<f64, R, C>> for f64 {
     type Output = Matrix<f64, R, C>;
 
     #[inline]
+    #[allow(clippy::suspicious_arithmetic_impl)]
     fn div(self, other: Matrix<f64, R, C>) -> Self::Output {
         other.reciprocal() * self
     }

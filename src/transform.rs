@@ -301,7 +301,7 @@ fn update_descendent_transforms(
 ) {
     if let Some((hierarchy_node, transform)) = query.get_entity_components_mut(child_entity) {
         if let Some(hierarchy_node) = hierarchy_node {
-            let last_child = hierarchy_node.last_child().clone();
+            let last_child = *hierarchy_node.last_child();
             let previous_sibling = hierarchy_node.previous_sibling().clone();
 
             let my_model_matrix = transform.model();

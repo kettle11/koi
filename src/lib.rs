@@ -119,6 +119,8 @@ impl App {
         let app = app.add_plugin(temporary_despawn_plugin());
         let app = app.add_plugin(camera_plugin());
         let app = app.add_plugin(camera_controls_plugin());
+
+        #[allow(clippy::let_and_return)]
         app
     }
 
@@ -163,7 +165,7 @@ impl App {
         world.spawn(Time {
             // Set the delta_time to fixed_time_delta so that a fixed update runs for the first frame.
             delta_seconds_f64: fixed_time_step,
-            fixed_time_step: fixed_time_step,
+            fixed_time_step,
         });
 
         // Setup input

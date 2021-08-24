@@ -173,7 +173,7 @@ impl Color {
     pub const WHITE: Color = Color {
         x: 0.950470,
         y: 1.0000,
-        z: 1.088830,
+        z: 1.08883,
         alpha: 1.0,
     };
 

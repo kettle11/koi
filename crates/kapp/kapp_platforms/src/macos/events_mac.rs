@@ -125,6 +125,7 @@ extern "C" fn window_did_change_backing_properties(
         let old_backing_scale: f64 = msg(old_backing_scale, Sels::floatValue, ());
         let backing_scale = get_backing_scale(window as *mut Object);
 
+        #[allow(clippy::float_cmp)]
         if old_backing_scale != backing_scale {
             self::submit_event(Event::WindowScaleChanged {
                 scale: backing_scale,

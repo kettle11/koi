@@ -193,6 +193,7 @@ impl GL {
     }
     */
 
+    #[allow(clippy::too_many_arguments)]
     pub unsafe fn tex_image_2d(
         &self,
         target: GLenum,
@@ -420,8 +421,7 @@ impl GL {
             self.gl
                 .GetShaderInfoLog(shader.0, length, &mut length, log.as_mut_ptr());
             log.truncate(length as usize);
-            let log = String::from_utf8(log).unwrap();
-            log
+            String::from_utf8(log).unwrap()
         } else {
             String::from("")
         }
@@ -455,8 +455,7 @@ impl GL {
             self.gl
                 .GetProgramInfoLog(program.0, length, &mut length, log.as_mut_ptr());
             log.truncate(length as usize);
-            let log = String::from_utf8(log).unwrap();
-            log
+            String::from_utf8(log).unwrap()
         } else {
             String::from("")
         }

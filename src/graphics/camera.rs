@@ -42,7 +42,7 @@ impl Camera {
             z_near: 1.0,
             z_far: 500.0,
             orthographic_height: 1.0,
-            vertical_field_of_view_radians: (72.0 as f32).to_radians(),
+            vertical_field_of_view_radians: (72.0_f32).to_radians(),
             render_layers: RenderLayers::DEFAULT,
         };
         camera.update_projection_matrix();
@@ -60,7 +60,7 @@ impl Camera {
             z_near: 0.0,
             z_far: 500.0,
             orthographic_height: 1.0,
-            vertical_field_of_view_radians: (60.0 as f32).to_radians(),
+            vertical_field_of_view_radians: (60.0_f32).to_radians(),
             render_layers: RenderLayers::DEFAULT,
         };
         camera.update_projection_matrix();

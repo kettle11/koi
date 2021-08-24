@@ -64,7 +64,7 @@ impl<CONTEXT> Serializer for JSONSerializer<CONTEXT> {
     }
 
     fn begin_array(&mut self) {
-        self.s.push_str("[");
+        self.s.push('[');
         self.just_began_object_or_array = true;
     }
 

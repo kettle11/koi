@@ -118,7 +118,7 @@ pub fn png_data_from_bytes(bytes: &[u8]) -> TextureLoadData {
 
 #[cfg(feature = "jpeg")]
 pub fn jpeg_data_from_bytes(bytes: &[u8]) -> TextureLoadData {
-    let reader = std::io::BufReader::new(&bytes as &[u8]);
+    let reader = std::io::BufReader::new(bytes);
 
     let mut decoder = jpeg_decoder::Decoder::new(reader);
     let pixels = decoder.decode().expect("failed to decode image");
@@ -167,7 +167,7 @@ impl AssetLoader<Texture> for TextureAssetLoader {
                 Some("png") => {
                     let bytes = crate::fetch_bytes(&path)
                         .await
-                        .expect(&format!("Failed to open file: {}", path));
+                        .unwrap_or_else(|_| panic!("Failed to open file: {}", path));
                     let texture_load_data = png_data_from_bytes(&bytes);
 
                     TextureLoadMessage {
@@ -180,7 +180,7 @@ impl AssetLoader<Texture> for TextureAssetLoader {
                 Some("jpg") | Some("jpeg") => {
                     let bytes = crate::fetch_bytes(&path)
                         .await
-                        .expect(&format!("Failed to open file: {}", path));
+                        .unwrap_or_else(|_| panic!("Failed to open file: {}", path));
                     let texture_load_data = jpeg_data_from_bytes(&bytes);
                     TextureLoadMessage {
                         texture_load_data,

@@ -82,7 +82,7 @@ pub fn ray_with_tri(ray: Ray, vertex0: Vec3, vertex1: Vec3, vertex2: Vec3) -> (b
     let s = ray.origin - vertex0;
     let u = f * Vec3::dot(s, h);
 
-    if u < 0.0 || u > 1.0 {
+    if !(0.0..=1.0).contains(&u) {
         return (false, 0., Vec3::ZERO);
     }
 

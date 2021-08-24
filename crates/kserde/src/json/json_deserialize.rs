@@ -248,11 +248,10 @@ impl<'a, CONTEXT> JSONDeserializer<'a, CONTEXT> {
 
                                     let slice = self.source.get(start + 1..start + 5)?;
                                     let u1 = u32::from_str_radix(slice, 16).ok()?;
-                                    if u1 < 0xDC00 || u1 > 0xDFFF {
+                                    if !(0xDC00..=0xDFFF).contains(&u1) {
                                         return None;
                                     }
-                                    let n = (u32::from(u - 0xD800) << 10 | u32::from(u1 - 0xDC00))
-                                        + 0x1_0000;
+                                    let n = ((u - 0xD800) << 10 | (u1 - 0xDC00)) + 0x1_0000;
 
                                     for _ in 0..4 {
                                         self.iter.next();
@@ -374,7 +373,7 @@ impl<'a, CONTEXT> JSONDeserializer<'a, CONTEXT> {
                     _ => return None,
                 }
 
-                number = number * (10.0f64).powf(exponent * sign);
+                number *= (10.0f64).powf(exponent * sign);
             }
             _ => {}
         }

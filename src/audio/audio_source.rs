@@ -78,7 +78,7 @@ pub fn move_sources(
 ) {
     // For now only one `Listener` is supported.
     if let Some((listener, listener_transform)) = listener.iter_mut().next() {
-        let listener_transform = listener_transform.cloned().unwrap_or(Transform::new());
+        let listener_transform = listener_transform.cloned().unwrap_or_else(Transform::new);
 
         let q: [f32; 4] = listener_transform.rotation.into();
         let mut spatial_scene_control = audio.scene_handle.control::<oddio::SpatialScene, _>();
@@ -126,12 +126,12 @@ pub fn move_sources(
                 // Skip playing placeholder sounds until they're ready.
                 // This has the effect of delaying a sound.
                 // A fancier scheme could skip the placeholder sound ahead by the appropriate amount.
-                if sounds.is_placeholder(&sound_handle) {
+                if sounds.is_placeholder(sound_handle) {
                     i += 1;
                     continue;
                 }
 
-                let sound = sounds.get(&sound_handle);
+                let sound = sounds.get(sound_handle);
                 let spatial_options = oddio::SpatialOptions {
                     position,
                     velocity,

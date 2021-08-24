@@ -137,7 +137,7 @@ impl<'a> RenderPassTrait for RenderPass<'a> {
     }
 
     fn set_float_property(&mut self, property: &FloatProperty, value: f32) {
-        if let Some(uniform_location) = property.location.clone() {
+        if let Some(uniform_location) = property.location {
             let handle = self.command_buffer.uniforms.push(value);
             self.command_buffer
                 .actions
@@ -149,7 +149,7 @@ impl<'a> RenderPassTrait for RenderPass<'a> {
     }
 
     fn set_int_property(&mut self, property: &IntProperty, value: i32) {
-        if let Some(uniform_location) = property.location.clone() {
+        if let Some(uniform_location) = property.location {
             let handle = self.command_buffer.uniforms.push(value);
             self.command_buffer
                 .actions
@@ -161,7 +161,7 @@ impl<'a> RenderPassTrait for RenderPass<'a> {
     }
 
     fn set_vec2_property(&mut self, property: &Vec2Property, value: (f32, f32)) {
-        if let Some(uniform_location) = property.location.clone() {
+        if let Some(uniform_location) = property.location {
             let handle = self.command_buffer.uniforms.push(value);
             self.command_buffer
                 .actions
@@ -173,7 +173,7 @@ impl<'a> RenderPassTrait for RenderPass<'a> {
     }
 
     fn set_vec3_property(&mut self, property: &Vec3Property, value: (f32, f32, f32)) {
-        if let Some(uniform_location) = property.location.clone() {
+        if let Some(uniform_location) = property.location {
             let handle = self.command_buffer.uniforms.push(value);
             self.command_buffer
                 .actions
@@ -185,7 +185,7 @@ impl<'a> RenderPassTrait for RenderPass<'a> {
     }
 
     fn set_vec4_property(&mut self, property: &Vec4Property, value: (f32, f32, f32, f32)) {
-        if let Some(uniform_location) = property.location.clone() {
+        if let Some(uniform_location) = property.location {
             let handle = self.command_buffer.uniforms.push(value);
             self.command_buffer
                 .actions
@@ -197,7 +197,7 @@ impl<'a> RenderPassTrait for RenderPass<'a> {
     }
 
     fn set_mat4_property(&mut self, property: &Mat4Property, value: &[f32; 16]) {
-        if let Some(uniform_location) = property.location.clone() {
+        if let Some(uniform_location) = property.location {
             let handle = self.command_buffer.uniforms.push(*value);
             self.command_buffer
                 .actions
@@ -229,7 +229,7 @@ impl<'a> RenderPassTrait for RenderPass<'a> {
         // The minimum number of texture units is 16
         // In the future this could cache bindings and if they're already the same this command could be ignored
         debug_assert!(texture_unit < 16);
-        if let Some(uniform_location) = property.location.clone() {
+        if let Some(uniform_location) = property.location {
             self.command_buffer
                 .actions
                 .push(CommandBufferAction::SetTextureUnit((
