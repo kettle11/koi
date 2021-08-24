@@ -103,6 +103,10 @@ impl<'a, 'b: 'a, 'c: 'a> Renderer<'a, 'b, 'c> {
     }
 
     fn bind_light_info(&mut self, shader: &Shader) {
+        self.render_pass.set_int_property(
+            &shader.pipeline.get_int_property("p_light_count").unwrap(),
+            self.lights.iter().count() as i32,
+        );
         for (i, (transform, light)) in self.lights.iter().enumerate() {
             let transform = transform.global_transform;
 

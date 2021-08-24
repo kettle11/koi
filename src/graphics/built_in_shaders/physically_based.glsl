@@ -218,6 +218,7 @@ void main()
     float z = gl_FragCoord.z / gl_FragCoord.w;
     float fog_factor = (z - p_fog_start) / (p_fog_end - p_fog_start);
     fog_factor = clamp(fog_factor, 0.0, 1.0 );
+    fog_factor = 0.0;
     
     vec3 color = p_fog_color;
     float alpha = 1.0;
