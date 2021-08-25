@@ -14,6 +14,7 @@ pub struct EntityLocation {
     pub index_within_archetype: usize,
 }
 /// Manages the mapping of [Entity]s to [Archetype]s.
+#[derive(Debug)]
 pub(crate) struct Entities {
     // If the [EntityLocation] is [None] then the [Entity] is despawned.
     generation_and_entity_location: Vec<(u32, Option<EntityLocation>)>,
@@ -52,17 +53,9 @@ impl Entities {
         );
     }
 
-    pub fn clone_entities(&mut self) -> Self {
-        Self {
-            generation_and_entity_location: self.generation_and_entity_location.clone(),
-            free_entities: self.free_entities.clone(),
-            available_free_indices: AtomicI64::new(*self.available_free_indices.get_mut()),
-        }
-    }
-
     /// Creates a new [Entity] and sets its [EntityLocation]
     pub fn new_entity(&mut self, entity_location: Option<EntityLocation>) -> Entity {
-        if let Some(free_entity) = self.free_entities.pop() {
+        let entity = if let Some(free_entity) = self.free_entities.pop() {
             // Generation does not need to be incremented because it's incremented during `free`.
             self.generation_and_entity_location[free_entity.index as usize] =
                 (free_entity.generation, entity_location);
@@ -74,23 +67,9 @@ impl Entities {
                 index: self.generation_and_entity_location.len() as u32 - 1,
                 generation: 0,
             }
-        }
+        };
+        entity
     }
-
-    /*
-    pub fn assign_entity_location(&mut self, entity: Entity, entity_location: EntityLocation) {
-        // An [Entity] may be assigning to an index reserved by calling "reserve",
-        // in which case `generation_and_entity_location` may need to be resized.
-        let need_to_allocate =
-            (entity.index + 1) - self.generation_and_entity_location.len() as u32;
-        if need_to_allocate > 0 {
-            self.generation_and_entity_location
-                .extend((0..need_to_allocate).map(|_| (0, None)))
-        }
-        self.generation_and_entity_location[entity.index as usize] =
-            (entity.generation, Some(entity_location))
-    }
-    */
 
     pub fn get_entity_location(&self, entity: Entity) -> Option<EntityLocation> {
         let (generation, location) = &self.generation_and_entity_location[entity.index as usize];
@@ -172,13 +151,14 @@ impl<'a> EntityMigrator<'a> {
     }
 
     pub fn migrate(&self, old_entity: Entity) -> Entity {
-        if old_entity.index < self.free_entities.len() as u32 {
+        let new_entity = if old_entity.index < self.free_entities.len() as u32 {
             self.free_entities[self.free_entities.len() - old_entity.index as usize]
         } else {
             Entity {
                 generation: 0,
                 index: self.offset + (old_entity.index - self.free_entities.len() as u32),
             }
-        }
+        };
+        new_entity
     }
 }

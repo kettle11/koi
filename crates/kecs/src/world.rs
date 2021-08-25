@@ -244,6 +244,7 @@ impl World {
         {
             self.entities
                 .get_entity_location_mut(*swapped_entity)
+                .as_mut()
                 .unwrap()
                 .index_within_archetype = entity_location.index_within_archetype;
         }
@@ -423,6 +424,7 @@ impl World {
         if let Some(swapped_entity) = source_archetype.entities.get(index_within_archetype) {
             entities
                 .get_entity_location_mut(*swapped_entity)
+                .as_mut()
                 .unwrap()
                 .index_within_archetype = index_within_archetype;
         }
@@ -507,10 +509,10 @@ impl World {
             ..
         } = source;
 
+        let migrator_offset = destination.entities.len() as u32;
         destination
             .entities
             .reserve_space_for_entity_cloning(old_entities);
-        destination.entities = old_entities.clone_entities();
 
         {
             let World {
@@ -523,8 +525,7 @@ impl World {
 
             let mut free_entities = Vec::new();
             std::mem::swap(&mut free_entities, &mut old_entities.free_entities);
-            let mut entity_migrator =
-                EntityMigrator::new(&free_entities, old_entities.len() as u32);
+            let mut entity_migrator = EntityMigrator::new(&free_entities, migrator_offset);
 
             for old_archetype in old_archetypes {
                 let mut new_channels = Vec::new();
@@ -563,17 +564,16 @@ impl World {
                                 .append_channel(&mut *source_channel.data)
                         }
 
-                        // Append entities to this [Archetype]
-                        new_archetype
-                            .entities
-                            .append(&mut old_archetype.entities.clone());
-
-                        // Update [Entity] location
-                        for entity in &new_archetype.entities {
-                            new_entities
-                                .get_entity_location_mut(*entity)
-                                .unwrap()
-                                .archetype_index = new_archetype_index;
+                        // Append entities to this [Archetype] and update the [Entity] location
+                        new_archetype.entities.reserve(old_archetype.entities.len());
+                        for old_entity in &old_archetype.entities {
+                            let new_entity = entity_migrator.migrate(*old_entity);
+                            *new_entities.get_entity_location_mut(new_entity) =
+                                Some(EntityLocation {
+                                    index_within_archetype: new_archetype.entities.len(),
+                                    archetype_index: new_archetype_index,
+                                });
+                            new_archetype.entities.push(new_entity);
                         }
                     })
                     .or_insert_with_key(|component_ids| {
@@ -582,15 +582,19 @@ impl World {
                         // Create a new [Archetype]
                         let mut new_archetype = Archetype::new(new_archetype_index);
                         new_archetype.channels.append(&mut new_channels);
-                        new_archetype.entities = old_archetype.entities.clone();
 
-                        // Update [Entity] location
-                        for entity in &new_archetype.entities {
-                            new_entities
-                                .get_entity_location_mut(*entity)
-                                .unwrap()
-                                .archetype_index = new_archetype_index;
+                        // Append entities to this [Archetype] and update the [Entity] location
+                        new_archetype.entities.reserve(old_archetype.entities.len());
+                        for old_entity in &old_archetype.entities {
+                            let new_entity = entity_migrator.migrate(*old_entity);
+                            *new_entities.get_entity_location_mut(new_entity) =
+                                Some(EntityLocation {
+                                    index_within_archetype: new_archetype.entities.len(),
+                                    archetype_index: new_archetype_index,
+                                });
+                            new_archetype.entities.push(new_entity);
                         }
+
                         new_storage_lookup.new_archetype(new_archetype_index, component_ids);
                         new_archetypes.push(new_archetype);
                         new_archetype_index
