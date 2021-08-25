@@ -321,7 +321,7 @@ impl<'a, 'b: 'a, 'c: 'a> Renderer<'a, 'b, 'c> {
 
                     self.bound_mesh = Some(mesh_handle);
                 }
-                let model_matrix = transform.model();
+                let model_matrix = transform.global_transform.model();
                 self.render_pass
                     .set_mat4_property(&material_info.model_property, model_matrix.as_array());
 
