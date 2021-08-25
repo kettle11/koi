@@ -14,9 +14,9 @@ pub fn world_assets_plugin() -> Plugin {
     }
 }
 
-fn setup_prefabs(commands: &mut Commands) {
+fn setup_prefabs(world: &mut World) {
     let assets = Assets::<World>::new(World::new());
-    commands.spawn(assets);
+    world.spawn(assets);
 }
 
 fn load_prefabs_system(

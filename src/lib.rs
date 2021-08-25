@@ -113,6 +113,7 @@ impl App {
     #[allow(clippy::let_and_return)]
     pub fn add_default_plugins(self) -> Self {
         let app = self;
+        let app = app.add_plugin(world_assets_plugin());
         let app = app.add_plugin(transform_plugin());
         #[cfg(feature = "graphics")]
         let app = app.add_plugin(graphics_plugin());

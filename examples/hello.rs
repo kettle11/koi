@@ -1,9 +1,5 @@
 use koi::*;
 
-// Custom components need to derive "Component".
-#[derive(Component, Clone)]
-struct Thingy;
-
 fn main() {
     App::new().setup_and_run(|world: &mut World| {
         // Setup things here.
