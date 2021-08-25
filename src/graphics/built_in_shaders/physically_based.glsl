@@ -355,10 +355,10 @@ void main()
     }
     
     // This should be applied before the shader instead.
-    color = mix(color, p_fog_color, fog_factor );
+  //  color = mix(color, p_fog_color, fog_factor );
     color += emissive;
 
-    color += debug_color * 0.6;
+  //  color += debug_color * 0.6;
 
     // HDR tonemapping
    // color = color / (color + vec3(1.0));
@@ -366,7 +366,7 @@ void main()
     // gamma correct
     vec3 dither = ScreenSpaceDither(gl_FragCoord.xy) * p_dither_scale;
     
-    color = pow(color, vec3(1.0/2.2)) + dither; 
+   // color = pow(color, vec3(1.0/2.2)) + dither; 
         
     color_out = vec4(color, alpha);
 }

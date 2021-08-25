@@ -20,8 +20,8 @@ impl Default for PBRProperties {
         Self {
             base_color: Color::WHITE,
             base_color_texture: Some(Texture::WHITE),
-            metallic: 0.0,
-            roughness: 0.8,
+            metallic: 1.0,
+            roughness: 1.0,
             metallic_roughness_texture: Some(Texture::WHITE),
             ambient: 1.0,
             ambient_texture: Some(Texture::WHITE),
