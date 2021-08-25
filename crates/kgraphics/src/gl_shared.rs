@@ -64,7 +64,7 @@ pub const TEXTURE0: c_uint = 0x84C0;
 #[inline]
 fn srgb_to_linear(byte: u8) -> u8 {
     let u = byte as f64 / 255.0;
-    if u <= 0.04045 {
+    let u = if u <= 0.04045 {
         u / 12.92
     } else {
         f64::powf((u + 0.055) / 1.055, 2.4)
@@ -154,7 +154,6 @@ pub unsafe fn prepare_image(
 // Useful reference: https://webgl2fundamentals.org/webgl/lessons/webgl-data-textures.html
 pub fn pixel_format_to_gl_format_and_inner_format_and_type(
     pixel_format: PixelFormat,
-    srgb: bool,
 ) -> (c_uint, c_uint, c_uint) {
     let format = match pixel_format {
         PixelFormat::R8Unorm => RED,

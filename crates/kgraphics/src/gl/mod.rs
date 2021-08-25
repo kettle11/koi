@@ -474,7 +474,6 @@ impl GraphicsContextTrait for GraphicsContext {
             let (pixel_format, inner_pixel_format, type_) =
                 crate::gl_shared::pixel_format_to_gl_format_and_inner_format_and_type(
                     pixel_format_in,
-                    texture_settings.srgb,
                 );
 
             self.gl.bind_texture(GL_TEXTURE_2D, Some(texture));

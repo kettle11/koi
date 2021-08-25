@@ -605,10 +605,7 @@ impl GraphicsContextTrait for GraphicsContext {
         );
 
         let (pixel_format, inner_pixel_format, type_) =
-            pixel_format_to_gl_format_and_inner_format_and_type(
-                pixel_format,
-                texture_settings.srgb,
-            );
+            pixel_format_to_gl_format_and_inner_format_and_type(pixel_format);
 
         let texture = match &texture.texture_type {
             TextureType::Texture(js_object) => js_object,
