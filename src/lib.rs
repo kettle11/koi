@@ -134,7 +134,7 @@ impl App {
         setup_and_run_function: impl Fn(&mut World) -> S,
     ) {
         // Todo: Base this on number of cores
-        ktasks::create_workers(3);
+        ktasks::create_workers(4);
 
         let mut world = World::new();
         world.spawn(Commands::new());
@@ -145,7 +145,7 @@ impl App {
         let window_width = 1600;
         let window_height = 1200;
 
-        // For now only a single
+        // For now only a single window is suppported.
         let window = kapp_app
             .new_window()
             .title("Koi")
@@ -188,6 +188,8 @@ impl App {
             match event {
                 Event::WindowCloseRequested { .. } => kapp_app.quit(),
                 Event::Draw { .. } => {
+                    //   ktasks::run_only_local_tasks();
+
                     for system in &mut self.systems.pre_fixed_update_systems {
                         system.run(&mut world).unwrap()
                     }

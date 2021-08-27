@@ -31,7 +31,11 @@ extern "C" {
         entry_point: u32,
         stack_pointer: u32,
         thread_local_storage_pointer: u32,
+        promise_worker_stack_pointer: u32,
+        promise_worker_thread_local_storage_pointer: u32,
     );
+    #[cfg(target_feature = "atomics")]
+    pub(crate) fn kwasm_run_promise(entry_point_pointer: u32);
 }
 
 fn kwasm_call_js_with_args0(function_object: u32, this: u32, args: &[u32]) -> u32 {
@@ -67,6 +71,15 @@ pub struct JSObjectDynamicInner(JSObject);
 #[derive(Debug, Clone)]
 pub struct JSObjectDynamic(Rc<JSObjectDynamicInner>);
 
+impl JSObjectDynamic {
+    /// Leaks the value if there's only one reference to it, otherwise panics.
+    pub unsafe fn leak(self) -> u32 {
+        let index = self.index();
+        let inner = Rc::try_unwrap(self.0).unwrap();
+        std::mem::forget(inner);
+        index
+    }
+}
 impl Deref for JSObjectDynamic {
     type Target = JSObject;
     fn deref(&self) -> &Self::Target {

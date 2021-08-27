@@ -1,6 +1,5 @@
 pub use crate::*;
 use std::cell::RefCell;
-use kwasm::*;
 
 type AudioOutputFormat = f32;
 
@@ -37,6 +36,8 @@ pub fn begin_audio_thread(
 ) {
     #[cfg(target_feature = "atomics")]
     {
+        use kwasm::*;
+
         let worklet_js_code = JSObjectFromString::new(include_str!("web_worklet.js").into());
 
         let (entry_point, stack_pointer, thread_local_storage_memory) = unsafe {
@@ -61,10 +62,10 @@ pub fn begin_audio_thread(
         );
     }
 
-    #[cfg(not(target_feature = "atomics"))] {
+    #[cfg(not(target_feature = "atomics"))]
+    {
         let _ = audio_callback;
     }
-
 }
 
 /*

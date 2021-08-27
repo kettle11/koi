@@ -1,81 +1,68 @@
+use once_cell::{sync::Lazy, unsync::OnceCell};
+
 use crate::*;
-use std::task::{Context, Poll, Waker};
-use std::{future::Future, sync::Arc};
-use std::{pin::Pin, sync::Mutex};
+
+pub(crate) struct FetchLibraryInner {
+    pub(crate) fetch_local: JSObjectDynamic,
+    pub(crate) fetch_on_worker: JSObjectDynamic,
+}
 
 thread_local! {
-    static FETCH_FUNCTION: JSObjectFromString = JSObjectFromString::new(include_str!("fetch.js"));
+    static FETCH_CALL: JSObjectFromString = JSObjectFromString::new(r#"
+        function f(path) {
+                console.log("CALLING FETCH");
+                
+            let url = new URL(path, self.kwasm_base_uri).href
+            return fetch(url)
+                .then(response => {
+                    console.log("JS: HERE IN FETCH");
+                    return response.arrayBuffer();
+                })
+        };
+        f
+        "#);
+
+
+    static READY_DATA_FOR_TRANSFER: JSObjectFromString = JSObjectFromString::new(r#"
+        function f(result) {
+            let pointer = self.kwasm_exports.kwasm_reserve_space(result.byteLength);
+            let destination = new Uint8Array(kwasm_memory.buffer, pointer, result.byteLength);
+            destination.set(new Uint8Array(result));
+        };
+        f
+        "#);
 }
 
 pub async fn fetch(path: &str) -> Result<Vec<u8>, ()> {
-    FetchFuture {
-        inner: Arc::new(Mutex::new(Inner {
-            path: path.to_string(),
-            running: false,
-            result: None,
-            waker: None,
-        })),
-    }
-    .await
+    crate::libraries::console::log("FETCHING0");
+
+    let path = path.to_owned();
+    let js_future = crate::JSFuture::new(
+        move || {
+            // This runs on the other thread.
+            crate::libraries::console::log("HELLO FROM THE WORKER!");
+            crate::libraries::console::log(&path);
+            let path = JSString::new(&path);
+            FETCH_CALL.with(|fetch_call| fetch_call.call_1_arg(&JSObject::NULL, &path).unwrap())
+        },
+        |js_object| {
+            crate::libraries::console::log("COMPLETING FETCH");
+
+            READY_DATA_FOR_TRANSFER.with(|f| f.call_1_arg(&JSObject::NULL, &js_object));
+            let result = DATA_FROM_HOST.with(|d| d.take());
+            Some(Box::new(result))
+        },
+    );
+    let data = js_future.await;
+    let data: Vec<u8> = *data.downcast().unwrap();
+    Ok(data)
 }
 
-struct Inner {
-    path: String,
-    running: bool,
-    result: Option<Vec<u8>>,
-    waker: Option<Waker>,
-}
-
-struct FetchFuture {
-    // This needs to be shared with a closure passed to the host
-    // that fills in the result and drops the closure later.
-    inner: Arc<Mutex<Inner>>,
-}
-
-impl<'a> Future for FetchFuture {
-    type Output = Result<Vec<u8>, ()>;
-
-    fn poll(self: Pin<&mut Self>, cx: &mut Context) -> Poll<Self::Output> {
-        let mut inner = self.inner.lock().unwrap();
-
-        // Begin the task.
-        if !inner.running {
-            let raw_ptr = Arc::into_raw(self.inner.clone());
-            inner.running = true;
-
-            let js_string = JSString::new(&inner.path);
-
-            FETCH_FUNCTION
-                .with(|f| f.call_raw(&JSObject::NULL, &[js_string.index(), raw_ptr as u32]));
-        }
-
-        if let Some(v) = inner.result.take() {
-            Poll::Ready(Ok(v))
-        } else {
-            inner.waker = Some(cx.waker().clone());
-            Poll::Pending
-        }
-    }
-}
-
-/// Called by the host to reserve scratch space to pass data into kwasm.
-/// returns a pointer to the allocated data.
-#[no_mangle]
-extern "C" fn kwasm_complete_fetch(inner_data: u32) {
-    unsafe {
-        let arc = Arc::<Mutex<Inner>>::from_raw(inner_data as *const Mutex<Inner>);
-
-        let waker = {
-            let mut inner = arc.lock().unwrap();
-
-            DATA_FROM_HOST.with(|d| {
-                let data = d.take();
-                inner.result = Some(data);
-            });
-            inner.waker.take().unwrap()
-        };
-
-        // Drop the lock before we wake the task that will also try to access the lock.
-        waker.wake(); // Wake up our task.
-    }
-}
+/*
+|| FETCH_CALL.with(|fetch_call| fetch_call.deref().clone()),
+|js_value| {
+    READY_DATA_FOR_TRANSFER.with(|f| f.call_1_arg(&JSObject::NULL, &js_value));
+    let result = DATA_FROM_HOST.with(|d| d.take());
+    Box::new(result)
+},
+*/

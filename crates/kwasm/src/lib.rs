@@ -8,6 +8,7 @@
 //! Kwasm uses eval to initialize Javascript code from Rust libraries.
 
 use std::cell::RefCell;
+use std::ffi::c_void;
 use std::ops::Deref;
 
 pub mod libraries {
@@ -29,11 +30,49 @@ pub use js_object::*;
 #[cfg(target_feature = "atomics")]
 pub mod web_worker;
 
+mod js_future;
+pub(crate) use js_future::*;
+
 #[cfg(target_feature = "atomics")]
 use std::sync::Once;
 
 use libraries::eval;
 pub use panic_hook::setup_panic_hook;
+
+#[cfg_attr(
+    feature = "wasm_bindgen_support",
+    wasm_bindgen(module = "/js/kwasm.js")
+)]
+extern "C" {
+    pub(crate) fn kwasm_new_string(data: *const u8, data_length: u32) -> u32;
+    pub(crate) fn kwasm_free_js_object(object: u32);
+    pub(crate) fn kwasm_js_object_property(function_object: u32, property: u32) -> u32;
+    pub(crate) fn kwasm_get_js_object_value_u32(object: u32) -> u32;
+    pub(crate) fn kwasm_get_js_object_value_f64(object: u32) -> f64;
+
+    pub(crate) fn kwasm_call_js_with_args(
+        function_object: u32,
+        this: u32,
+        args_data: *const c_void,
+        data_length: u32,
+    ) -> u32;
+    pub(crate) fn kwasm_call_js_with_args_raw(
+        function_object: u32,
+        this: u32,
+        args_data: *const c_void,
+        data_length: u32,
+    ) -> u32;
+    #[cfg(target_feature = "atomics")]
+    pub(crate) fn kwasm_new_worker(
+        entry_point: u32,
+        stack_pointer: u32,
+        thread_local_storage_pointer: u32,
+        promise_worker_stack_pointer: u32,
+        promise_worker_thread_local_storage_pointer: u32,
+    );
+    #[cfg(target_feature = "atomics")]
+    pub(crate) fn kwasm_run_promise(entry_point_pointer: u32);
+}
 
 thread_local! {
     /// Data sent from the host.

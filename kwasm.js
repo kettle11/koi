@@ -6,6 +6,10 @@ function kwasm_stuff() {
     var kwasm_js_objects = [null, self];
     var kwasm_js_objects_free_indices = [];
 
+    if (typeof document !== 'undefined') {
+        self.kwasm_base_uri = document.baseURI;
+    }
+
     self.kwasm_get_object = function (index) {
         return kwasm_js_objects[index];
     }
@@ -21,7 +25,7 @@ function kwasm_stuff() {
     };
 
     self.kwasm_pass_string_to_client = function (string) {
-        // Unfortunately this can't write directly to Wasm memory (yet).
+        // Unfortunately TextEncoder can't write directly to Wasm memory (yet).
         // See this issue: https://github.com/whatwg/encoding/issues/172
         const string_data = encoder.encode(string);
         let length = string_data.byteLength;
@@ -30,12 +34,16 @@ function kwasm_stuff() {
         client_string.set(string_data);
     };
 
+    self.kwasm_free_js_object = function (index) {
+        if (index > 1) {
+            kwasm_js_objects[index] = null;
+            kwasm_js_objects_free_indices.push(index);
+        }
+    }
+
     let kwasm_import_functions = {
         kwasm_free_js_object: function (index) {
-            if (index > 1) {
-                kwasm_js_objects[index] = null;
-                kwasm_js_objects_free_indices.push(index);
-            }
+            self.kwasm_free_js_object(index);
         },
         kwasm_new_string: function (data, data_length) {
             const message_data = new Uint8Array(self.kwasm_memory.buffer, data, data_length);
@@ -87,37 +95,69 @@ function kwasm_stuff() {
         kwasm_get_js_object_value_u32: function (object_index) {
             return kwasm_js_objects[object_index];
         },
-        kwasm_new_worker: function (entry_point, stack_pointer, thread_local_storage_pointer) {
+        // Returns this value as a f64
+        kwasm_get_js_object_value_f64: function (object_index) {
+            return kwasm_js_objects[object_index];
+        },
+        kwasm_new_worker: function (entry_point, stack_pointer, thread_local_storage_pointer,
+            promise_worker_stack_pointer, promise_worker_thread_local_storage_pointer) {
             let worker = new Worker(kwasm_stuff_blob);
             worker.postMessage({
                 kwasm_memory: self.kwasm_memory,
                 kwasm_module: self.kwasm_module,
                 entry_point: entry_point,
                 stack_pointer: stack_pointer,
-                thread_local_storage_pointer: thread_local_storage_pointer
+                thread_local_storage_pointer: thread_local_storage_pointer,
+                promise_worker_stack_pointer: promise_worker_stack_pointer,
+                promise_worker_thread_local_storage_pointer: promise_worker_thread_local_storage_pointer,
+                kwasm_base_uri: document.baseURI
             });
-        }
+        },
+        kwasm_run_promise: function (promise_inner_future_ptr) {
+            if (self.kwasm_is_worker) {
+                console.log("SENDING PROMISE TO PROMISE THREAD");
+                self.kwasm_promise_worker.postMessage({
+                    promise_inner_future_ptr: promise_inner_future_ptr
+                })
+            } else {
+                console.log("RUNNING PROMISE ON THIS THREAD");
+                run_future(promise_inner_future_ptr);
+            }
+        },
     };
 
+    function run_future(promise_inner_future_ptr) {
+
+        console.log("RUNNING FUTURE");
+        let function_to_run_index = self.kwasm_exports.kwasm_promise_begin(promise_inner_future_ptr);
+        let function_to_run = self.kwasm_get_object(function_to_run_index);
+
+        console.log("FUNCTION TO RUN");
+        console.log(function_to_run);
+        function_to_run.then((result) => {
+            let result_js_object = self.kwasm_new_js_object(result);
+            self.kwasm_exports.kwasm_promise_complete(promise_inner_future_ptr, result_js_object);
+            self.kwasm_free_js_object(function_to_run);
+        });
+        return;
+    }
 
     // Load and setup the WebAssembly library.
     // This is called when using `kwasm` without wasm-bindgen.
     function initialize(wasm_library_path) {
-        self.kwasm_memory = new WebAssembly.Memory({ initial: 32, maximum: 16384, shared: true });
-
         let imports = {
-            env: {
-                memory: self.kwasm_memory,
-            }
+            env: {}
         };
 
         imports.env = Object.assign(imports.env, kwasm_import_functions);
 
         fetch(wasm_library_path).then(response =>
             response.arrayBuffer()
-        ).then(bytes =>
-            WebAssembly.instantiate(bytes, imports)
-        ).then(results => {
+        ).then(bytes => {
+            self.kwasm_memory = new WebAssembly.Memory({ initial: (bytes.byteLength / 64000) + 1, maximum: 16384, shared: true });
+            imports.env.memory = self.kwasm_memory;
+            return WebAssembly.instantiate(bytes, imports)
+        }).then(results => {
             // If this module exports memory use that instead.
             if (results.instance.exports.memory) {
                 self.kwasm_memory = results.instance.exports.memory;
@@ -126,7 +166,7 @@ function kwasm_stuff() {
             self.kwasm_module = results.module;
 
             // Setup thread-local storage for the main thread
-            if (self.kwasm_exports.kwasm_alloc_thread_local_storage) {
+            if (kwasm_exports.kwasm_alloc_thread_local_storage) {
                 const thread_local_storage = kwasm_exports.kwasm_alloc_thread_local_storage();
                 self.kwasm_exports.__wasm_init_tls(thread_local_storage);
             }
@@ -136,8 +176,17 @@ function kwasm_stuff() {
         });
     }
 
-    // If we're a worker thread we'll use this.
+    // If we're a worker thread we'll use this to setup.
     onmessage = function (e) {
+        console.log("RECEIVED MESSAGE");
+        console.log(e);
+        if (e.data.promise_inner_future_ptr) {
+            run_future(e.data.promise_inner_future_ptr);
+            return;
+        }
+
+        self.kwasm_is_worker = true;
+        self.kwasm_base_uri = e.data.kwasm_base_uri;
         let imports = {
             env: {}
         };
@@ -161,15 +210,7 @@ function kwasm_stuff() {
                 imports[item.module][item.name] = e.data.kwasm_memory;
                 memory_assigned = true;
             }
-
-            // This is a bit hacky to make sure that kwasm bindings still work 
-            // in a worker thread even though `wasm-bindgen` mangles the include name.
-            // if (item.name.includes("kwasmmessagetohost")) {
-            //     imports[item.module][item.name] = kwasm_message_to_host;
-            // }
         });
-
-        // imports.env.kwasm_message_to_host = kwasm_message_to_host;
 
         if (!memory_assigned) {
             imports.env = {
@@ -189,7 +230,44 @@ function kwasm_stuff() {
                 self.kwasm_exports.__wasm_init_tls(e.data.thread_local_storage_pointer);
             }
 
-            self.kwasm_exports.kwasm_web_worker_entry_point(e.data.entry_point);
+            // Create an extra web worker to handle promises per-worker. 
+            // This is done because a regular worker may be blocked within the wasm which doesn't give 
+            // complete promises a chance to alert the wasm code.
+            // This is a bit tailored to the needs of `koi`, but that's OK for now.
+            if (e.data.promise_worker_stack_pointer) {
+                var kwasm_stuff_blob = URL.createObjectURL(new Blob(
+                    ['(', kwasm_stuff.toString(), ')()'],
+                    { type: 'application/javascript' }
+                ));
+
+                let kwasm_promise_worker = new Worker(kwasm_stuff_blob);
+                kwasm_promise_worker.postMessage({
+                    kwasm_memory: e.data.kwasm_memory,
+                    kwasm_module: e.data.kwasm_module,
+                    stack_pointer: e.data.promise_worker_stack_pointer,
+                    kwasm_base_uri: self.kwasm_base_uri,
+                    thread_local_storage_pointer: e.data.promise_worker_thread_local_storage_pointer,
+                });
+                let entry_point = e.data.entry_point;
+
+                // Wait on a message from the promise worker before instantiating
+                // This avoids a bug in Chrome where the promise worker doesn't get created
+                // if the parent worker blocks too soon.
+                kwasm_promise_worker.onmessage = (e) => {
+                    console.log("entry_point" + entry_point);
+                    self.kwasm_exports.kwasm_web_worker_entry_point(entry_point)
+                }
+                self.kwasm_promise_worker = kwasm_promise_worker;
+            } else {
+                console.log("SETTING UP PROMISE WORKER ------------");
+                this.postMessage("worker setup");
+            }
+
+            //if (e.data.entry_point) {
+            //    //   setTimeout(function () {
+            //    self.kwasm_exports.kwasm_web_worker_entry_point(e.data.entry_point)
+            //    //  }, 5000);
+            //}
         });
     }
 
@@ -213,6 +291,8 @@ const kwasm_call_js_with_args_raw = kwasm.kwasm_call_js_with_args_raw;
 const kwasm_call_js_with_args = kwasm.kwasm_call_js_with_args;
 const kwasm_js_object_property = kwasm.kwasm_js_object_property;
 const kwasm_get_js_object_value_u32 = kwasm.kwasm_get_js_object_value_u32;
+const kwasm_get_js_object_value_f64 = kwasm.kwasm_get_js_object_value_f64;
+
 const kwasm_new_worker = kwasm.kwasm_new_worker;
 export {
     kwasm_free_js_object as kwasm_free_js_object,
@@ -221,6 +301,7 @@ export {
     kwasm_call_js_with_args as kwasm_call_js_with_args,
     kwasm_js_object_property as kwasm_js_object_property,
     kwasm_get_js_object_value_u32 as kwasm_get_js_object_value_u32,
+    kwasm_get_js_object_value_f64 as kwasm_get_js_object_value_f64,
     kwasm_new_worker as kwasm_new_worker
 };
 export function kwasm_initialize_wasmbindgen(module, memory) {

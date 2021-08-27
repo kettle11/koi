@@ -2,7 +2,7 @@ use koi::*;
 
 fn main() {
     App::new().setup_and_run(|world: &mut World| {
-        let mut camera = Camera::new();
+        let camera = Camera::new();
         // camera.clear_color = Some(Color::new(0.5, 0.0, 0.0, 1.0));
         // Spawn a camera
         world.spawn((Transform::new(), camera, CameraControls::new()));
@@ -17,10 +17,16 @@ fn main() {
             Material::UNLIT,
         ));
 
+        world.spawn((
+            Transform::new_with_position(Vec3::new(0.0, 0.0, -3.0)),
+            Mesh::CUBE,
+            Material::PHYSICALLY_BASED,
+        ));
+
         // Spawn a loaded gltf
         let worlds = world.get_single_component_mut::<Assets<World>>().unwrap();
-        let gltf_world = worlds.load(&"../koi/assets/one_angery_dragon_boi/scene.gltf");
-        let gltf = world.spawn(gltf_world);
+        let gltf_world = worlds.load(&"one_angery_dragon_boi/scene.gltf");
+        world.spawn(gltf_world);
 
         // Set a parent to scale the thing down.
         // Why doesn't this work?

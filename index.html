@@ -1,0 +1,11 @@
+<html>
+
+<body style="margin:0; overflow-y: hidden;overflow-x: hidden;">
+    <canvas id="canvas" style="width:100vw; height: 100vh;" oncontextmenu="return false;"></canvas>
+    <script type="module">
+        import initialize from './kwasm.js';
+        initialize("target/wasm32-unknown-unknown/release/examples/gltf.wasm");
+    </script>
+</body>
+
+</html>

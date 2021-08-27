@@ -596,13 +596,15 @@ impl GraphicsContextTrait for GraphicsContext {
         texture_settings: TextureSettings,
     ) {
         // Convert data to linear instead of sRGB if needed and flip the image vertically.
-        let data = prepare_image(
-            pixel_format,
-            texture_settings.srgb,
-            width as usize,
-            height as usize,
-            data,
-        );
+        let data = unsafe {
+            prepare_image(
+                pixel_format,
+                texture_settings.srgb,
+                width as usize,
+                height as usize,
+                data,
+            )
+        };
 
         let (pixel_format, inner_pixel_format, type_) =
             pixel_format_to_gl_format_and_inner_format_and_type(pixel_format);

@@ -91,14 +91,16 @@ function kwasm_stuff() {
         kwasm_get_js_object_value_f64: function (object_index) {
             return kwasm_js_objects[object_index];
         },
-        kwasm_new_worker: function (entry_point, stack_pointer, thread_local_storage_pointer) {
+        kwasm_new_worker: function (entry_point, stack_pointer, thread_local_storage_pointer, kwasm_fetch_worker_index) {
+            let kwasm_promise_worker = self.kwasm_get_object(kwasm_fetch_worker_index);
             let worker = new Worker(kwasm_stuff_blob);
             worker.postMessage({
                 kwasm_memory: self.kwasm_memory,
                 kwasm_module: self.kwasm_module,
                 entry_point: entry_point,
                 stack_pointer: stack_pointer,
-                thread_local_storage_pointer: thread_local_storage_pointer
+                thread_local_storage_pointer: thread_local_storage_pointer,
+                kwasm_promise_worker: kwasm_promise_worker,
             });
         }
     };
@@ -140,6 +142,7 @@ function kwasm_stuff() {
 
     // If we're a worker thread we'll use this.
     onmessage = function (e) {
+        if (e.data.is_)
         let imports = {
             env: {}
         };
@@ -180,6 +183,7 @@ function kwasm_stuff() {
         }
 
         self.kwasm_memory = e.data.kwasm_memory;
+        self.kwasm_promise_worker = e.data.kwasm_promise_worker;
 
         WebAssembly.instantiate(e.data.kwasm_module, imports).then(results => {
             self.kwasm_exports = results.exports;

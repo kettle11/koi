@@ -23,9 +23,9 @@ impl CameraControls {
     pub fn new() -> Self {
         Self {
             velocity: Vec3::ZERO,
-            acceleration: 4000.0,
-            max_speed: 10.2,
-            friction: 0.001,
+            acceleration: 10000.0,
+            max_speed: 30000.2,
+            friction: 0.0001,
             last_mouse_position: None,
             rotation_sensitivity: 1.5,
         }

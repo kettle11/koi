@@ -475,7 +475,11 @@ async fn get_buffer<T: Clone>(
 
     if let Some(uri) = &buffer.uri {
         let path = Path::new(path).parent().unwrap().join(uri);
+        klog::log!("FETCHING BUFFER!");
+
         let bytes = crate::fetch_bytes(path.to_str().unwrap()).await.unwrap();
+        klog::log!("GOT BUFFER BYTES!");
+
         // This probably performs an unnecessary copy
         unsafe {
             reinterpet_buffer::<T>(

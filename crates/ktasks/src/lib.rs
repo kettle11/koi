@@ -63,16 +63,20 @@ pub fn create_workers(count: u32) {
             worker_waker.clone(),
         );
 
+        klog::log!("Here in ktasks");
+
         // Create workers for other threads.
         // Only create workers for non-WebAssembly platforms, or WebAssembly if atomics are enabled.
         #[cfg(any(not(target_arch = "wasm32"), target_feature = "atomics"))]
         for (i, task_queue) in queues.iter().cloned().enumerate().skip(1) {
+            klog::log!("Here in ktasks 1");
+
             let main_thread_local_task_queue = main_thread_local_task_queue.clone();
             let mut other_task_queues = queues.clone();
             other_task_queues.swap_remove(i);
             let worker_waker = worker_waker.clone();
             let closure = move || {
-                // println!("ID: {:?}", i);
+                klog::log!("CREATED WORKER WITH ID: {:?}", i);
                 create_worker(
                     i,
                     task_queue,
@@ -81,8 +85,9 @@ pub fn create_workers(count: u32) {
                     worker_waker,
                 );
 
-                // Run the other threads forever waiting for work.
+                // Run forever waiting for work.
                 WORKER.with(|w| {
+                    klog::log!("RUNNING WORKER FOREVER: {:?}", i);
                     w.borrow().run_forever();
                 });
             };
@@ -111,17 +116,25 @@ impl WorkerWaker {
     fn wake_one(&self) {
         // Notify other threads that work is available to steal.
         let (lock, condvar) = &*self.0;
-        let mut new_task = lock.lock().unwrap();
-        *new_task = true;
-        condvar.notify_one();
+        loop {
+            if let Ok(mut new_task) = lock.try_lock() {
+                *new_task = true;
+                condvar.notify_one();
+                break;
+            }
+        }
     }
 
     fn wake_all(&self) {
         // Notify other threads that work is available to steal.
         let (lock, condvar) = &*self.0;
-        let mut new_task = lock.lock().unwrap();
-        *new_task = true;
-        condvar.notify_all();
+        loop {
+            if let Ok(mut new_task) = lock.try_lock() {
+                *new_task = true;
+                condvar.notify_all();
+                break;
+            }
+        }
     }
 
     fn wait(&self) {
@@ -164,6 +177,7 @@ enum JoinHandleInnerTask<'a> {
 pub struct JoinHandle<'a, T> {
     shared_state: Arc<SharedState<T>>,
     task: Cell<Option<JoinHandleInnerTask<'a>>>,
+    worker_waker: WorkerWaker,
     phantom: std::marker::PhantomData<T>,
 }
 
@@ -184,7 +198,8 @@ impl<T: 'static> JoinHandle<'static, T> {
                     local_task_queue.0.lock().unwrap().push_back(Arc::new(task));
                 }
                 JoinHandleInnerTask::NonLocal(task) => {
-                    WORKER.with(|w| w.borrow().enqueue_task(task))
+                    WORKER.with(|w| w.borrow().enqueue_task(task));
+                    self.worker_waker.wake_one();
                 }
             }
         }
@@ -215,16 +230,7 @@ impl<T: 'static> Future for JoinHandle<'static, T> {
 
         // Now the task can be scheduled.
         // It can only be scheduled once.
-        if let Some(task) = self.task.take() {
-            match task {
-                JoinHandleInnerTask::Local(task, local_task_queue) => {
-                    local_task_queue.0.lock().unwrap().push_back(Arc::new(task));
-                }
-                JoinHandleInnerTask::NonLocal(task) => {
-                    WORKER.with(|w| w.borrow().enqueue_task(task))
-                }
-            }
-        }
+        self.run();
 
         // Is there a better way to actually poll the task instantly instead of always adding it to the queue.
         self.inner_poll()
@@ -372,6 +378,7 @@ impl<'a> Worker<'a> {
         JoinHandle {
             shared_state,
             task: Cell::new(Some(JoinHandleInnerTask::NonLocal(task))),
+            worker_waker: self.new_task.clone(),
             phantom: std::marker::PhantomData,
         }
     }
@@ -408,6 +415,7 @@ impl<'a> Worker<'a> {
         let main_thread_queue = WORKER.with(|w| w.borrow().main_thread_local_task_queue.clone());
         JoinHandle {
             shared_state,
+            worker_waker: self.new_task.clone(),
             task: Cell::new(Some(JoinHandleInnerTask::Local(task, main_thread_queue))),
             phantom: std::marker::PhantomData,
         }
@@ -442,6 +450,7 @@ impl<'a> Worker<'a> {
         let local_task_queue = WORKER.with(|worker| worker.borrow().local_task_queue.clone());
         JoinHandle {
             shared_state,
+            worker_waker: self.new_task.clone(),
             task: Cell::new(Some(JoinHandleInnerTask::Local(task, local_task_queue))),
             phantom: std::marker::PhantomData,
         }
@@ -476,7 +485,7 @@ impl<'a> Worker<'a> {
                 }
             }
 
-            // println!("WORKER {:?}: No tasks in my queue", self.id);
+            // klog::log!("WORKER {:?}: No tasks in my queue", self.id);
 
             // If I'm out of work then try to take tasks from other worker's queues
             for q in self.other_task_queues.iter() {
@@ -492,10 +501,10 @@ impl<'a> Worker<'a> {
 
             // If no tasks were available then go to sleep until tasks are available
             if !ran_a_task {
-                //   println!("WORKER {:?}: Waiting for tasks to steal", self.id);
+                klog::log!("WORKER {:?}: Waiting for tasks to steal", self.id);
                 // If I reach here then block until other tasks are enqueued.
                 self.new_task.wait();
-                // println!("WORKER {:?}: Woken up to steal a task", self.id);
+                klog::log!("WORKER {:?}: Woken up to steal a task", self.id);
             }
         }
     }
@@ -510,6 +519,29 @@ impl<'a> Worker<'a> {
     }
     */
 
+    pub fn run_only_local_tasks(&self) {
+        let mut ran_a_task = true;
+        while ran_a_task {
+            ran_a_task = false;
+
+            // First run tasks from my local queue.
+            let task = self.local_task_queue.0.lock().unwrap().pop_front();
+            if let Some(task) = task {
+                task.run(self);
+                ran_a_task = true;
+            }
+
+            // Run tasks enque
+            if self.other_task_queues.len() == 0 {
+                let task = self.task_queue.lock().unwrap().pop_front();
+                if let Some(task) = task {
+                    task.run(self);
+                    ran_a_task = true;
+                }
+            }
+        }
+    }
+
     pub fn run_current_thread_tasks(&self) {
         let mut ran_a_task = true;
         while ran_a_task {
@@ -522,16 +554,13 @@ impl<'a> Worker<'a> {
                 ran_a_task = true;
             }
 
-            // Then run tasks from my local queue that are stealable
+            // Run tasks enque
             let task = self.task_queue.lock().unwrap().pop_front();
             if let Some(task) = task {
                 task.run(self);
                 ran_a_task = true;
             }
         }
-
-        // Wake other workers in case we've created tasks for them.
-        self.new_task.wake_one();
     }
 }
 
@@ -561,6 +590,12 @@ pub fn run_current_thread_tasks() {
     WORKER.with(|w| w.borrow().run_current_thread_tasks())
 }
 
+/// Runs only tasks that *must* be run on the local thread.
+/// This is useful to avoid doing much work on the main thread.
+pub fn run_only_local_tasks() {
+    WORKER.with(|w| w.borrow().run_only_local_tasks())
+}
+
 // This needs to store the TaskQueue to push to and the parent task to wake.
 // In what scenarios would a waker be cloned?
 // Does the parent task need to be stored in an option that's taken when waking the parent?
@@ -572,18 +607,18 @@ mod worker_enqueue_waker {
     struct WakerData<'a> {
         task: Arc<Task<'a>>,
         task_queue: TaskQueue<'a>,
-        //worker_waker: WorkerWaker,
+        worker_waker: WorkerWaker,
     }
 
     pub(crate) fn create<'a>(
         task: Arc<Task<'a>>,
         task_queue: TaskQueue<'a>,
-        _worker_waker: WorkerWaker,
+        worker_waker: WorkerWaker,
     ) -> Waker {
         let waker_data = Arc::new(WakerData {
             task,
             task_queue,
-            //worker_waker,
+            worker_waker,
         });
         let raw_waker = RawWaker::new(Arc::into_raw(waker_data) as *const (), &VTABLE);
         unsafe { Waker::from_raw(raw_waker) }
@@ -600,7 +635,6 @@ mod worker_enqueue_waker {
 
     // This consumes the data pointer
     unsafe fn wake(worker_data: *const ()) {
-        println!("WAKING");
         let worker_data = Arc::from_raw(worker_data as *const WakerData);
 
         worker_data
@@ -611,14 +645,14 @@ mod worker_enqueue_waker {
 
         // Run current thread tasks here to run the awoken task.
         // This also means that single-threaded systems will run the task without
-        // needing to be workn up.
+        // needing to be woken up.
         run_current_thread_tasks();
+
+        worker_data.worker_waker.wake_all();
     }
 
     // Do not consume the data pointer
     unsafe fn wake_by_ref(worker_data: *const ()) {
-        println!("WAKING BY REF");
-
         let worker_data = Arc::from_raw(worker_data as *const WakerData);
         //  let task_active = worker_data.task.inner_task.lock().unwrap().is_some();
 
@@ -630,13 +664,16 @@ mod worker_enqueue_waker {
             .push_back(worker_data.task.clone());
         //  }
 
-        // Is this into_raw call correct
-        Arc::into_raw(worker_data);
-
+        klog::log!("WAKING UP!");
         // Run current thread tasks here to run the awoken task.
         // This also means that single-threaded systems will run the task without
         // needing to be workn up.
         run_current_thread_tasks();
+
+        worker_data.worker_waker.wake_all();
+
+        // Is this into_raw call correct
+        Arc::into_raw(worker_data);
     }
 
     unsafe fn drop(worker_data: *const ()) {
@@ -682,12 +719,10 @@ mod worker_enqueue_waker_local {
 
     // This consumes the data pointer
     unsafe fn wake(worker_data: *const ()) {
-        println!("WAKING");
         let worker_data = Arc::from_raw(worker_data as *const WakerData);
         // let task_active = worker_data.task.inner_task.is_some();
 
         // if task_active {
-        // println!("TASK ACTIVE");
         worker_data
             .task_queue
             .0
@@ -703,8 +738,6 @@ mod worker_enqueue_waker_local {
 
     // Do not consume the data pointer
     unsafe fn wake_by_ref(worker_data: *const ()) {
-        println!("WAKING BY REF");
-
         let worker_data = Arc::from_raw(worker_data as *const WakerData);
         //  let task_active = worker_data.task.inner_task.is_some();
 

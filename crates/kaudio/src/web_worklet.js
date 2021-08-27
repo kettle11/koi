@@ -71,7 +71,6 @@ function run_on_worklet() {
 
 
 function setup_worklet(entry_point, stack_pointer, thread_local_storage_pointer) {
-
     document.onpointerdown = (event) => {
         if (!audio_running) {
             setup_worklet();
@@ -81,7 +80,7 @@ function setup_worklet(entry_point, stack_pointer, thread_local_storage_pointer)
         async function setup_worklet() {
             const audioContext = new AudioContext({ sampleRate: 44100 });
 
-            var blobURL = URL.createObjectURL(new Blob(
+            let blobURL = URL.createObjectURL(new Blob(
                 ['(', run_on_worklet.toString(), ')()'],
                 { type: 'application/javascript' }
             ));
@@ -93,16 +92,16 @@ function setup_worklet(entry_point, stack_pointer, thread_local_storage_pointer)
                 outputChannelCount: [2],
             });
             worklet.connect(audioContext.destination);
-            let message = {};
-
             // Smuggling these values via document properties
             // is hack for now, but it requires a specific index.html setup
             // and should be replaced.
-            message.kwasm_memory = self.kwasm_memory;
-            message.kwasm_module = self.kwasm_module;
-            message.entry_point = entry_point;
-            message.stack_pointer = stack_pointer;
-            message.thread_local_storage_pointer = thread_local_storage_pointer;
+            let message = {
+                kwasm_memory: self.kwasm_memory,
+                kwasm_module: self.kwasm_module,
+                entry_point: entry_point,
+                stack_pointer: stack_pointer,
+                thread_local_storage_pointer: thread_local_storage_pointer,
+            };
 
             worklet.port.postMessage(message);
         }

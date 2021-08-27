@@ -180,7 +180,7 @@ var gl_web_object = {
     },
     run_command_buffer(commands_ptr, commands_length, f32_data_ptr, f32_data_length, u32_data_ptr, u32_data_length) {
         const commands = new Uint8Array(self.kwasm_memory.buffer, commands_ptr, commands_length);
-        console.log("COMMAND BUFFER LENGTH: " + commands_length);
+        //: " + commands_length);
         const f32_data = new Float32Array(self.kwasm_memory.buffer, f32_data_ptr, f32_data_length);
         const u32_data = new Uint32Array(self.kwasm_memory.buffer, u32_data_ptr, u32_data_length);
 

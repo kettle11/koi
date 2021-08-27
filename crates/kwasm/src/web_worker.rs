@@ -1,5 +1,10 @@
 use crate::*;
+use std::any::Any;
+use std::task::{Context, Poll, Waker};
 use std::usize;
+use std::{future::Future, sync::Arc};
+use std::{pin::Pin, sync::Mutex};
+
 #[allow(unused)]
 use wasm_set_stack_pointer;
 
@@ -100,9 +105,23 @@ pub fn spawn<F>(f: F)
 where
     F: FnOnce() + Send + 'static,
 {
+    crate::libraries::console::log("SPAWNING NEW WORKER!");
+
     unsafe {
+        // Create a separate worker for fetch
+
         let (entry_point, stack_pointer, thread_local_storage_memory) = create_worker_data(f);
-        kwasm_new_worker(entry_point, stack_pointer, thread_local_storage_memory);
+
+        let (_, promise_worker_stack_pointer, promsise_worker_thread_local_storage_memory) =
+            create_worker_data(|| {});
+
+        kwasm_new_worker(
+            entry_point,
+            stack_pointer,
+            thread_local_storage_memory,
+            promise_worker_stack_pointer,
+            promsise_worker_thread_local_storage_memory,
+        );
     }
 }
 
