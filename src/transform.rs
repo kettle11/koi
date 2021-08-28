@@ -271,20 +271,25 @@ pub fn update_global_transforms(mut query: Query<(Option<&HierarchyNode>, &mut T
     // This is a bit inefficient in that all hierarchies are updated, regardless of if they changed.
 
     for (node, transform) in &mut query {
-        transform.global_transform = GlobalTransform {
-            position: transform.position,
-            rotation: transform.rotation,
-            scale: transform.scale,
-        };
-
         if let Some(node) = node {
             if let Some(last_child) = node.last_child() {
                 if node.parent().is_none() {
+                    transform.global_transform = GlobalTransform {
+                        position: transform.position,
+                        rotation: transform.rotation,
+                        scale: transform.scale,
+                    };
                     let parent_transform = &transform.global_transform;
                     parents.push((*parent_transform, *last_child));
                     continue;
                 }
             }
+        } else {
+            transform.global_transform = GlobalTransform {
+                position: transform.position,
+                rotation: transform.rotation,
+                scale: transform.scale,
+            };
         }
     }
 

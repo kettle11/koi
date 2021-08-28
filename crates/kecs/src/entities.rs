@@ -3,8 +3,8 @@ use core::sync::atomic::{AtomicI64, Ordering};
 
 #[derive(Debug, Clone, Copy, Hash, Eq, Ord, PartialEq, PartialOrd)]
 pub struct Entity {
-    index: u32,
-    generation: u32,
+    pub(crate) index: u32,
+    pub(crate) generation: u32,
 }
 
 /// Where the [Entity] is stored in the [World]
@@ -68,6 +68,9 @@ impl Entities {
                 generation: 0,
             }
         };
+        if entity.index == 12 {
+            dbg!()
+        }
         entity
     }
 
@@ -138,14 +141,14 @@ impl Entities {
     }
 }
 
-pub struct EntityMigrator<'a> {
-    free_entities: &'a [Entity],
+pub struct EntityMigrator {
+    free_entities: Vec<Entity>,
     offset: u32,
 }
-impl<'a> EntityMigrator<'a> {
-    pub fn new(free_entities: &'a [Entity], offset: u32) -> Self {
+impl EntityMigrator {
+    pub fn new(free_entities: &[Entity], offset: u32) -> Self {
         Self {
-            free_entities,
+            free_entities: free_entities.into(),
             offset,
         }
     }
@@ -159,6 +162,10 @@ impl<'a> EntityMigrator<'a> {
                 index: self.offset + (old_entity.index - self.free_entities.len() as u32),
             }
         };
+
+        if new_entity.index == 12 {
+            dbg!()
+        }
         new_entity
     }
 }

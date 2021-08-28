@@ -301,6 +301,8 @@ impl World {
             removing_component_id,
             std::any::type_name::<Component>(),
         )?;
+
+        // Is this swap-removing the wrong entity? 
         let removed_component = self.archetypes[archetype_index].channels[archetype_channel]
             .as_mut_vec()
             .swap_remove(entity_index_in_archetype);
@@ -434,6 +436,23 @@ impl World {
             archetype_index: destination_archetype.index_in_world,
             index_within_archetype: destination_archetype.entities.len() - 1,
         });
+        if entity.index == 12 {
+            println!(
+                "SETTING TO: {:?}",
+                EntityLocation {
+                    archetype_index: destination_archetype.index_in_world,
+                    index_within_archetype: destination_archetype.entities.len() - 1,
+                }
+            );
+            println!(
+                "NEW LOCATION: {:#?}",
+                entities.get_entity_location_mut(entity)
+            );
+            println!(
+                "DESTINATION ARCHETYPE: {:#?}",
+                destination_archetype.entities
+            )
+        }
     }
 
     /// This will return None if the `Entity` does not exist or the `Entity` does not have the component.
@@ -484,7 +503,7 @@ impl World {
     }
 
     /// Clones the components and [Entity]s of the other [World] and adds them to this [World].
-    pub fn add_world(&mut self, other: &mut World) {
+    pub fn add_world<'a>(&'a mut self, other: &mut World) -> EntityMigrator {
         self.spawn_reserved_entities();
         World::clone_world_into_world(other, self)
     }
@@ -500,7 +519,10 @@ impl World {
     }
 
     /// An internal helper used by [clone_world] and [add_world]
-    fn clone_world_into_world(source: &mut World, destination: &mut World) {
+    fn clone_world_into_world<'a>(
+        source: &mut World,
+        destination: &'a mut World,
+    ) -> EntityMigrator {
         destination.spawn_reserved_entities();
 
         let World {
@@ -514,7 +536,7 @@ impl World {
             .entities
             .reserve_space_for_entity_cloning(old_entities);
 
-        {
+        let entity_migrator = {
             let World {
                 archetypes: new_archetypes,
                 components_ids_to_archetype_index: new_components_ids_to_archetype_index,
@@ -523,9 +545,8 @@ impl World {
                 ..
             } = destination;
 
-            let mut free_entities = Vec::new();
-            std::mem::swap(&mut free_entities, &mut old_entities.free_entities);
-            let mut entity_migrator = EntityMigrator::new(&free_entities, migrator_offset);
+            let mut entity_migrator =
+                EntityMigrator::new(&&mut old_entities.free_entities, migrator_offset);
 
             for old_archetype in old_archetypes {
                 let mut new_channels = Vec::new();
@@ -600,11 +621,12 @@ impl World {
                         new_archetype_index
                     });
             }
-            std::mem::swap(&mut free_entities, &mut old_entities.free_entities);
-        }
+            entity_migrator
+        };
         destination
             .entities
             .truncate_free_entities_after_cloning(old_entities);
+        entity_migrator
     }
 
     /// Get a [Query] from the [World] without running a system

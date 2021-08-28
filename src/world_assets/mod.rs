@@ -56,21 +56,52 @@ fn load_prefabs_system(
         log!("REPLACING WORLD PREFAB");
 
         worlds.replace_placeholder(&handle, world.unwrap());
+        log!("REPLACED PREFAB!");
     }
 }
 
 /// Spawns worlds as they load.
-fn delayed_spawn_system(
-    commands: &mut Commands,
-    spawn_when_loaded: Query<(&Handle<World>,)>,
-    worlds: &mut Assets<World>,
-) {
-    for (entity, world) in spawn_when_loaded.entities_and_components() {
-        if !worlds.is_placeholder(world) {
-            commands.remove_component::<Handle<World>>(*entity);
-            let new_world = worlds.get_mut(world).clone_world();
-            commands.add_world(new_world);
+/// Top-level nodes will have their parents set to the [Entity] with the [Handle<World>]
+/// This does not yet handle situations where the spawning worlds don't have [HierarchyNode]'s on their top-level components.
+fn delayed_spawn_system(world: &mut World) {
+    let mut worlds_to_add = Vec::new();
+
+    (|spawn_when_loaded: Query<(&Handle<World>,)>, worlds: &mut Assets<World>| {
+        for (entity, world) in spawn_when_loaded.entities_and_components() {
+            if !worlds.is_placeholder(world) {
+                let new_world = worlds.get_mut(world).clone_world();
+                worlds_to_add.push((*entity, new_world));
+            }
         }
+    })
+    .run(world)
+    .unwrap();
+
+    for (parent_entity, mut new_world) in worlds_to_add {
+        let top_level_nodes: Vec<Entity> = (|transform_nodes: Query<&HierarchyNode>| {
+            transform_nodes
+                .entities_and_components()
+                .filter_map(|(entity, hierarchy_node)| {
+                    if hierarchy_node.parent().is_none() {
+                        Some(*entity)
+                    } else {
+                        None
+                    }
+                })
+                .collect()
+        })
+        .run(&mut new_world)
+        .unwrap();
+
+        let entity_migrator = world.add_world(&mut new_world);
+        for top_level_entity in top_level_nodes {
+            let new_top_level_entity = entity_migrator.migrate(top_level_entity);
+            HierarchyNode::set_parent(world, Some(parent_entity), new_top_level_entity).unwrap();
+        }
+        // Remove the [Handle<World>] to prevent further spawns.
+        world
+            .remove_component::<Handle<World>>(parent_entity)
+            .unwrap();
     }
 }
 
@@ -180,7 +211,7 @@ async fn load_world(path: &str) -> Option<PrefabLoadMessageData> {
             klog::log!("ABOUT TO DECODE GLTF1");
 
             let mesh_primitive_data = load_mesh_primitive_data(path, &gltf, None).await;
-            
+
             klog::log!("DECODED GLTF, SENDING RETURN MESSAGE");
             PrefabLoadMessageData::GlTf {
                 path: path.to_string(),

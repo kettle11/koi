@@ -59,7 +59,7 @@ pub fn new_texture_from_png_bytes(
     texture_settings: TextureSettings,
     bytes: &[u8],
 ) -> Texture {
-    let texture_load_data = png_data_from_bytes(bytes);
+    let texture_load_data = png_data_from_bytes(bytes, texture_settings.srgb);
     graphics
         .new_texture(
             Some(&texture_load_data.data),
@@ -77,7 +77,7 @@ pub fn new_texture_from_jpeg_bytes(
     texture_settings: TextureSettings,
     bytes: &[u8],
 ) -> Texture {
-    let texture_load_data = jpeg_data_from_bytes(bytes);
+    let texture_load_data = jpeg_data_from_bytes(bytes, texture_settings.srgb);
     graphics
         .new_texture(
             Some(&texture_load_data.data),
@@ -89,7 +89,11 @@ pub fn new_texture_from_jpeg_bytes(
         .unwrap()
 }
 
-fn extend_pixels_with_alpha(pixels: Vec<u8>) -> Vec<u8> {
+fn extend_pixels_1_with_alpha(pixels: Vec<u8>) -> Vec<u8> {
+    pixels.iter().flat_map(|a| [*a, 0, 0, 255]).collect()
+}
+
+fn extend_pixels_3_with_alpha(pixels: Vec<u8>) -> Vec<u8> {
     pixels
         .chunks_exact(3)
         .flat_map(|a| [a[0], a[1], a[2], 255])
@@ -97,7 +101,7 @@ fn extend_pixels_with_alpha(pixels: Vec<u8>) -> Vec<u8> {
 }
 
 #[cfg(feature = "png")]
-pub fn png_data_from_bytes(bytes: &[u8]) -> TextureLoadData {
+pub fn png_data_from_bytes(bytes: &[u8], srgb: bool) -> TextureLoadData {
     let reader = std::io::BufReader::new(bytes);
     let mut decoder = png::Decoder::new(reader);
 
@@ -107,19 +111,35 @@ pub fn png_data_from_bytes(bytes: &[u8]) -> TextureLoadData {
     let mut pixels = vec![0; reader.output_buffer_size()];
     let metadata = reader.next_frame(&mut pixels).unwrap();
 
+    println!("PIXEL FORMAT: {:?}", metadata.color_type);
+
     let pixel_format = match metadata.color_type {
         // png::ColorType::Rgb => PixelFormat::RGB8Unorm,
         png::ColorType::Rgba => PixelFormat::RGBA8Unorm,
-        png::ColorType::Grayscale => PixelFormat::R8Unorm,
+        png::ColorType::Grayscale => {
+            // Convert to RGBA sRGB8_ALPHA8 is the only color renderable format
+            // which is required for mipmap generation
+            if srgb {
+                pixels = extend_pixels_1_with_alpha(pixels);
+                PixelFormat::RGBA8Unorm
+            } else {
+                PixelFormat::R8Unorm
+            }
+        }
         png::ColorType::Rgb => {
-            // Convert to RGBA because sRGB8 textures aren't color renderable with OpenGL
-            // and therefor can't use built-in mipmap generation.
-            pixels = extend_pixels_with_alpha(pixels);
-            PixelFormat::RGBA8Unorm
+            // Convert to RGBA sRGB8_ALPHA8 is the only color renderable format
+            // which is required for mipmap generation
+            if srgb {
+                pixels = extend_pixels_3_with_alpha(pixels);
+                PixelFormat::RGBA8Unorm
+            } else {
+                PixelFormat::RGB8Unorm
+            }
         }
         //  png::ColorType::GrayscaleAlpha => PixelFormat::RG8Unorm, // Is this correct?
         _ => unimplemented!("Unsupported PNG pixel format: {:?}", metadata.color_type,),
     };
+
     TextureLoadData {
         data: pixels,
         pixel_format,
@@ -129,7 +149,7 @@ pub fn png_data_from_bytes(bytes: &[u8]) -> TextureLoadData {
 }
 
 #[cfg(feature = "jpeg")]
-pub fn jpeg_data_from_bytes(bytes: &[u8]) -> TextureLoadData {
+pub fn jpeg_data_from_bytes(bytes: &[u8], srgb: bool) -> TextureLoadData {
     let reader = std::io::BufReader::new(bytes);
 
     let mut decoder = jpeg_decoder::Decoder::new(reader);
@@ -138,12 +158,25 @@ pub fn jpeg_data_from_bytes(bytes: &[u8]) -> TextureLoadData {
 
     let pixel_format = match metadata.pixel_format {
         jpeg_decoder::PixelFormat::RGB24 => {
-            // Convert to RGBA because sRGB8 textures aren't color renderable with OpenGL
-            // and therefor can't use built-in mipmap generation.
-            pixels = extend_pixels_with_alpha(pixels);
-            PixelFormat::RGBA8Unorm
+            // Convert to RGBA sRGB8_ALPHA8 is the only color renderable format
+            // which is required for mipmap generation
+            if srgb {
+                pixels = extend_pixels_3_with_alpha(pixels);
+                PixelFormat::RGBA8Unorm
+            } else {
+                PixelFormat::RGB8Unorm
+            }
         }
-        jpeg_decoder::PixelFormat::L8 => PixelFormat::R8Unorm,
+        jpeg_decoder::PixelFormat::L8 => {
+            // Convert to RGBA sRGB8_ALPHA8 is the only color renderable format
+            // which is required for mipmap generation
+            if srgb {
+                pixels = extend_pixels_1_with_alpha(pixels);
+                PixelFormat::RGBA8Unorm
+            } else {
+                PixelFormat::R8Unorm
+            }
+        }
         jpeg_decoder::PixelFormat::CMYK32 => {
             panic!("CMYK is currently unsupported")
         } // _ => unimplemented!("Unsupported Jpeg pixel format: {:?}", metadata.pixel_format,),
@@ -179,13 +212,14 @@ impl AssetLoader<Texture> for TextureAssetLoader {
                 .extension()
                 .and_then(std::ffi::OsStr::to_str);
 
+            println!("LOADING PATH: {:?}", path);
             let result = match extension {
                 #[cfg(feature = "png")]
                 Some("png") => {
                     let bytes = crate::fetch_bytes(&path)
                         .await
                         .unwrap_or_else(|_| panic!("Failed to open file: {}", path));
-                    let texture_load_data = png_data_from_bytes(&bytes);
+                    let texture_load_data = png_data_from_bytes(&bytes, options.srgb);
 
                     TextureLoadMessage {
                         texture_load_data,
@@ -198,7 +232,7 @@ impl AssetLoader<Texture> for TextureAssetLoader {
                     let bytes = crate::fetch_bytes(&path)
                         .await
                         .unwrap_or_else(|_| panic!("Failed to open file: {}", path));
-                    let texture_load_data = jpeg_data_from_bytes(&bytes);
+                    let texture_load_data = jpeg_data_from_bytes(&bytes, options.srgb);
                     TextureLoadMessage {
                         texture_load_data,
                         handle,

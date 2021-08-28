@@ -316,8 +316,8 @@ fn get_texture(
         let byte_length = buffer_view.byte_length;
         let bytes = &data.unwrap()[byte_offset..byte_offset + byte_length];
         let image_data = match image.mime_type.as_ref().unwrap() {
-            kgltf::ImageMimeType::ImageJpeg => jpeg_data_from_bytes(bytes),
-            kgltf::ImageMimeType::ImagePng => png_data_from_bytes(bytes),
+            kgltf::ImageMimeType::ImageJpeg => jpeg_data_from_bytes(bytes, srgb),
+            kgltf::ImageMimeType::ImagePng => png_data_from_bytes(bytes, srgb),
         };
 
         textures.add(
@@ -356,7 +356,6 @@ fn initialize_nodes<'a>(
     let node = &nodes[node];
     let transform: Transform = if let Some(matrix) = &node.matrix {
         let transform = Transform::from_mat4(matrix.try_into().unwrap());
-
         transform
     } else {
         Transform::new_with_position_rotation_scale(
@@ -509,6 +508,9 @@ async fn get_buffer<T: Clone>(
 }
 
 unsafe fn bytes_to_buffer<T: Clone>(bytes: &[u8]) -> Vec<T> {
+    println!("ABOUT TO DO BYTE CAST");
     let (_prefix, shorts, _suffix) = bytes.align_to::<T>();
-    shorts.into()
+    let result = shorts.into();
+    println!("BYTE CAST PERFORMED");
+    result
 }
