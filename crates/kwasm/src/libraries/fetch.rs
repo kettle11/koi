@@ -9,13 +9,10 @@ pub(crate) struct FetchLibraryInner {
 
 thread_local! {
     static FETCH_CALL: JSObjectFromString = JSObjectFromString::new(r#"
-        function f(path) {
-                console.log("CALLING FETCH");
-                
+        function f(path) {                
             let url = new URL(path, self.kwasm_base_uri).href
             return fetch(url)
                 .then(response => {
-                    console.log("JS: HERE IN FETCH");
                     return response.arrayBuffer();
                 })
         };
@@ -34,19 +31,15 @@ thread_local! {
 }
 
 pub async fn fetch(path: &str) -> Result<Vec<u8>, ()> {
-    crate::libraries::console::log("FETCHING0");
-
     let path = path.to_owned();
     let js_future = crate::JSFuture::new(
         move || {
             // This runs on the other thread.
-            crate::libraries::console::log("HELLO FROM THE WORKER!");
-            crate::libraries::console::log(&path);
+
             let path = JSString::new(&path);
             FETCH_CALL.with(|fetch_call| fetch_call.call_1_arg(&JSObject::NULL, &path).unwrap())
         },
         |js_object| {
-            crate::libraries::console::log("COMPLETING FETCH");
 
             READY_DATA_FOR_TRANSFER.with(|f| f.call_1_arg(&JSObject::NULL, &js_object));
             let result = DATA_FROM_HOST.with(|d| d.take());

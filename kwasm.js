@@ -115,25 +115,19 @@ function kwasm_stuff() {
         },
         kwasm_run_promise: function (promise_inner_future_ptr) {
             if (self.kwasm_is_worker) {
-                console.log("SENDING PROMISE TO PROMISE THREAD");
                 self.kwasm_promise_worker.postMessage({
                     promise_inner_future_ptr: promise_inner_future_ptr
                 })
             } else {
-                console.log("RUNNING PROMISE ON THIS THREAD");
                 run_future(promise_inner_future_ptr);
             }
         },
     };
 
     function run_future(promise_inner_future_ptr) {
-
-        console.log("RUNNING FUTURE");
         let function_to_run_index = self.kwasm_exports.kwasm_promise_begin(promise_inner_future_ptr);
         let function_to_run = self.kwasm_get_object(function_to_run_index);
 
-        console.log("FUNCTION TO RUN");
-        console.log(function_to_run);
         function_to_run.then((result) => {
             let result_js_object = self.kwasm_new_js_object(result);
             self.kwasm_exports.kwasm_promise_complete(promise_inner_future_ptr, result_js_object);
@@ -178,8 +172,6 @@ function kwasm_stuff() {
 
     // If we're a worker thread we'll use this to setup.
     onmessage = function (e) {
-        console.log("RECEIVED MESSAGE");
-        console.log(e);
         if (e.data.promise_inner_future_ptr) {
             run_future(e.data.promise_inner_future_ptr);
             return;
@@ -254,12 +246,10 @@ function kwasm_stuff() {
                 // This avoids a bug in Chrome where the promise worker doesn't get created
                 // if the parent worker blocks too soon.
                 kwasm_promise_worker.onmessage = (e) => {
-                    console.log("entry_point" + entry_point);
                     self.kwasm_exports.kwasm_web_worker_entry_point(entry_point)
                 }
                 self.kwasm_promise_worker = kwasm_promise_worker;
             } else {
-                console.log("SETTING UP PROMISE WORKER ------------");
                 this.postMessage("worker setup");
             }
 

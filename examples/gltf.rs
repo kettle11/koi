@@ -25,7 +25,7 @@ fn main() {
 
         // Spawn a loaded gltf
         let worlds = world.get_single_component_mut::<Assets<World>>().unwrap();
-        let gltf_world = worlds.load(&"one_angery_dragon_boi/scene.gltf");
+        let gltf_world = worlds.load(&"assets/one_angery_dragon_boi/scene.gltf");
         world.spawn(gltf_world);
 
         // Set a parent to scale the thing down.

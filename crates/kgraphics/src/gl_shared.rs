@@ -119,6 +119,7 @@ pub unsafe fn flip_image(pixel_format: PixelFormat, width: usize, height: usize,
     }
 }
 
+/*
 pub unsafe fn prepare_image(
     pixel_format: PixelFormat,
     srgb: bool,
@@ -150,11 +151,17 @@ pub unsafe fn prepare_image(
         converted_data
     })
 }
+*/
 
 // Useful reference: https://webgl2fundamentals.org/webgl/lessons/webgl-data-textures.html
 pub fn pixel_format_to_gl_format_and_inner_format_and_type(
     pixel_format: PixelFormat,
+    srgb: bool,
 ) -> (c_uint, c_uint, c_uint) {
+    if srgb {
+        debug_assert!(pixel_format == PixelFormat::RGBA8Unorm);
+        return (RGBA, SRGB8_ALPHA8, UNSIGNED_BYTE);
+    }
     let format = match pixel_format {
         PixelFormat::R8Unorm => RED,
         PixelFormat::RG8Unorm => RG,

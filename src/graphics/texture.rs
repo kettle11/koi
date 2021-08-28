@@ -89,6 +89,13 @@ pub fn new_texture_from_jpeg_bytes(
         .unwrap()
 }
 
+fn extend_pixels_with_alpha(pixels: Vec<u8>) -> Vec<u8> {
+    pixels
+        .chunks_exact(3)
+        .flat_map(|a| [a[0], a[1], a[2], 255])
+        .collect()
+}
+
 #[cfg(feature = "png")]
 pub fn png_data_from_bytes(bytes: &[u8]) -> TextureLoadData {
     let reader = std::io::BufReader::new(bytes);
@@ -104,7 +111,12 @@ pub fn png_data_from_bytes(bytes: &[u8]) -> TextureLoadData {
         // png::ColorType::Rgb => PixelFormat::RGB8Unorm,
         png::ColorType::Rgba => PixelFormat::RGBA8Unorm,
         png::ColorType::Grayscale => PixelFormat::R8Unorm,
-        png::ColorType::Rgb => PixelFormat::RGB8Unorm,
+        png::ColorType::Rgb => {
+            // Convert to RGBA because sRGB8 textures aren't color renderable with OpenGL
+            // and therefor can't use built-in mipmap generation.
+            pixels = extend_pixels_with_alpha(pixels);
+            PixelFormat::RGBA8Unorm
+        }
         //  png::ColorType::GrayscaleAlpha => PixelFormat::RG8Unorm, // Is this correct?
         _ => unimplemented!("Unsupported PNG pixel format: {:?}", metadata.color_type,),
     };
@@ -121,11 +133,16 @@ pub fn jpeg_data_from_bytes(bytes: &[u8]) -> TextureLoadData {
     let reader = std::io::BufReader::new(bytes);
 
     let mut decoder = jpeg_decoder::Decoder::new(reader);
-    let pixels = decoder.decode().expect("failed to decode image");
+    let mut pixels = decoder.decode().expect("failed to decode image");
     let metadata = decoder.info().unwrap();
 
     let pixel_format = match metadata.pixel_format {
-        jpeg_decoder::PixelFormat::RGB24 => PixelFormat::RGB8Unorm,
+        jpeg_decoder::PixelFormat::RGB24 => {
+            // Convert to RGBA because sRGB8 textures aren't color renderable with OpenGL
+            // and therefor can't use built-in mipmap generation.
+            pixels = extend_pixels_with_alpha(pixels);
+            PixelFormat::RGBA8Unorm
+        }
         jpeg_decoder::PixelFormat::L8 => PixelFormat::R8Unorm,
         jpeg_decoder::PixelFormat::CMYK32 => {
             panic!("CMYK is currently unsupported")

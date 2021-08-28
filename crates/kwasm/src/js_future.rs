@@ -38,7 +38,6 @@ extern "C" fn kwasm_promise_complete(js_future_inner: u32, result: u32) {
         inner.result = Some(result.unwrap());
         inner.waker.take().unwrap()
     };
-    crate::libraries::console::log("CALLING WAKER");
     waker.wake();
 }
 
