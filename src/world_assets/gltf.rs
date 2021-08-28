@@ -178,6 +178,17 @@ pub(super) async fn load_mesh_primitive_data(
     gltf: &kgltf::GlTf,
     data: Option<&[u8]>,
 ) -> Vec<MeshPrimitiveData> {
+    let mut buffers = Vec::with_capacity(gltf.buffers.len());
+    for buffer in &gltf.buffers {
+        buffers.push(if let Some(uri) = &buffer.uri {
+            let path = Path::new(path).parent().unwrap().join(uri);
+            klog::log!("FETCHING BUFFER!: {:?}", path);
+            Some(crate::fetch_bytes(path.to_str().unwrap()).await.unwrap())
+        } else {
+            None
+        })
+    }
+
     let mut meshes = Vec::with_capacity(gltf.meshes.len());
     for mesh in &gltf.meshes {
         let mut primitives = Vec::with_capacity(mesh.primitives.len());
@@ -202,15 +213,15 @@ pub(super) async fn load_mesh_primitive_data(
                 match attribute.as_str() {
                     "POSITION" => {
                         positions =
-                            Some(get_buffer::<Vec3>(path, &gltf, &data, *accessor_index).await);
+                            Some(get_buffer::<Vec3>(&gltf, &data, &buffers, *accessor_index).await);
                     }
                     "TEXCOORD_0" => {
                         texture_coordinates =
-                            Some(get_buffer::<Vec2>(path, &gltf, &data, *accessor_index).await);
+                            Some(get_buffer::<Vec2>(&gltf, &data, &buffers, *accessor_index).await);
                     }
                     "NORMAL" => {
                         normals =
-                            Some(get_buffer::<Vec3>(path, &gltf, &data, *accessor_index).await);
+                            Some(get_buffer::<Vec3>(&gltf, &data, &buffers, *accessor_index).await);
                     }
                     "COLOR_0" => {
                         // COLOR_0 can be different accessor types according to the spec.
@@ -218,12 +229,14 @@ pub(super) async fn load_mesh_primitive_data(
                         match accessor_type {
                             kgltf::AccessorType::Vec4 => {
                                 colors = Some(
-                                    get_buffer::<Vec4>(path, &gltf, &data, *accessor_index).await,
+                                    get_buffer::<Vec4>(&gltf, &data, &buffers, *accessor_index)
+                                        .await,
                                 );
                             }
                             kgltf::AccessorType::Vec3 => {
                                 let colors_vec3 =
-                                    get_buffer::<Vec3>(path, &gltf, &data, *accessor_index).await;
+                                    get_buffer::<Vec3>(&gltf, &data, &buffers, *accessor_index)
+                                        .await;
                                 colors = Some(colors_vec3.iter().map(|v| v.extend(1.0)).collect());
                             }
                             _ => unimplemented!(),
@@ -237,7 +250,7 @@ pub(super) async fn load_mesh_primitive_data(
                 }
             }
 
-            let indices = get_indices(&path, &gltf, &data, primitive.indices.unwrap()).await;
+            let indices = get_indices(&gltf, &data, &buffers, primitive.indices.unwrap()).await;
 
             let mesh_data = MeshData {
                 positions: positions.unwrap(),
@@ -401,9 +414,9 @@ fn initialize_nodes<'a>(
 }
 
 async fn get_indices(
-    path: &str,
     gltf: &kgltf::GlTf,
     data: &Option<&[u8]>,
+    buffers: &[Option<Vec<u8>>],
     accessor: usize,
 ) -> Vec<[u32; 3]> {
     let accessor = &gltf.accessors[accessor];
@@ -416,12 +429,8 @@ async fn get_indices(
     let byte_offset = accessor.byte_offset + buffer_view.byte_offset;
     let byte_length = buffer_view.byte_length;
 
-    let mut _temp_bytes = None;
-    let bytes = if let Some(uri) = &buffer.uri {
-        let path = Path::new(path).parent().unwrap().join(uri);
-        let b = crate::fetch_bytes(path.to_str().unwrap()).await.unwrap();
-        _temp_bytes = Some(b);
-        &_temp_bytes.as_ref().unwrap()[byte_offset..byte_offset + byte_length]
+    let bytes = if buffer.uri.is_some() {
+        &buffers[buffer_view.buffer].as_ref().unwrap()[byte_offset..byte_offset + byte_length]
     } else {
         &data.as_ref().unwrap()[byte_offset..byte_offset + byte_length]
     };
@@ -458,9 +467,9 @@ async fn get_indices(
 }
 
 async fn get_buffer<T: Clone>(
-    path: &str,
     gltf: &kgltf::GlTf,
     data: &Option<&[u8]>,
+    buffers: &[Option<Vec<u8>>],
     accessor: usize,
 ) -> Vec<T> {
     let accessor = &gltf.accessors[accessor];
@@ -471,25 +480,27 @@ async fn get_buffer<T: Clone>(
     let buffer = &gltf.buffers[buffer_view.buffer];
 
     let byte_offset = accessor.byte_offset + buffer_view.byte_offset;
-    //let byte_length = buffer_view.byte_length;
+    // let byte_length = buffer_view.byte_length;
 
-    if let Some(uri) = &buffer.uri {
-        let path = Path::new(path).parent().unwrap().join(uri);
-        klog::log!("FETCHING BUFFER!");
+    /*
+    let bytes = if let Some(uri) = &buffer.uri {
+        buffers[buffer_view.buffer].as_ref().unwrap()[byte_offset..byte_offset + byte_length];
+    } else {
+        &data.as_ref().unwrap()[byte_offset..byte_offset + byte_length]
+    };
+    */
 
-        let bytes = crate::fetch_bytes(path.to_str().unwrap()).await.unwrap();
-        klog::log!("GOT BUFFER BYTES!");
-
-        // This probably performs an unnecessary copy
+    if buffer.uri.is_some() {
+        let bytes = buffers[buffer_view.buffer].as_ref().unwrap();
         unsafe {
-            reinterpet_buffer::<T>(
+            bytes_to_buffer::<T>(
                 &bytes[byte_offset..byte_offset + count * std::mem::size_of::<T>()],
             )
         }
     } else {
         // Use the built in data buffer
         unsafe {
-            reinterpet_buffer::<T>(
+            bytes_to_buffer::<T>(
                 &data.as_ref().unwrap()
                     [byte_offset..byte_offset + count * std::mem::size_of::<T>()],
             )
@@ -497,7 +508,7 @@ async fn get_buffer<T: Clone>(
     }
 }
 
-unsafe fn reinterpet_buffer<T: Clone>(bytes: &[u8]) -> Vec<T> {
+unsafe fn bytes_to_buffer<T: Clone>(bytes: &[u8]) -> Vec<T> {
     let (_prefix, shorts, _suffix) = bytes.align_to::<T>();
     shorts.into()
 }
