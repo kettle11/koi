@@ -9,12 +9,13 @@ use std::cell::RefCell;
 thread_local!(
     static PROGRAM_CALLBACK: RefCell<Box<dyn 'static + FnMut(Event)>> =
         RefCell::new(Box::new(|_| {
-            panic!("KAPP INTERNAL ERROR: Sent event to unitialized user-callback")
+            //panic!("KAPP INTERNAL ERROR: Sent event to unitialized user-callback")
         }));
     static OVERFLOW_EVENTS: RefCell<Vec<Event>> = RefCell::new(Vec::new());
 );
 
 pub fn set_callback(callback: Box<dyn FnMut(Event)>) {
+    println!("SETTING CALLBACK");
     PROGRAM_CALLBACK.with(|p| {
         let _ = p.replace(callback);
     });
