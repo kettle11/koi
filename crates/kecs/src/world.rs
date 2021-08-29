@@ -17,6 +17,7 @@ pub(crate) trait ComponentChannelVecTrait: Send + Sync {
         &mut self,
         entity_migrator: &mut EntityMigrator,
     ) -> Option<Box<dyn ComponentChannelVecTrait>>;
+    fn len(&mut self) -> usize;
 }
 
 impl<T: ComponentTrait> ComponentChannelVecTrait for RwLock<Vec<T>> {
@@ -70,6 +71,9 @@ impl<T: ComponentTrait> ComponentChannelVecTrait for RwLock<Vec<T>> {
             entity_migrator,
             self.get_mut().unwrap(),
         )?)))
+    }
+    fn len(&mut self) -> usize {
+        self.get_mut().unwrap().len()
     }
 }
 
@@ -302,14 +306,14 @@ impl World {
             std::any::type_name::<Component>(),
         )?;
 
-        // Is this swap-removing the wrong entity? 
+        // Is this swap-removing the wrong entity?
         let removed_component = self.archetypes[archetype_index].channels[archetype_channel]
             .as_mut_vec()
             .swap_remove(entity_index_in_archetype);
         Ok(removed_component)
     }
 
-    // The inner imeplementation of "remove".
+    // The inner implementation of "remove".
     // This can prevent a large amount of monomorphized code.
     fn remove_component_inner(
         &mut self,
@@ -400,17 +404,32 @@ impl World {
         entity: Entity,
         index_within_archetype: usize,
     ) {
-        if !source_archetype.channels.is_empty() {
-            let mut current_index = 0;
-            for destination_channel in &mut destination_archetype.channels {
-                let source_channel = &mut source_archetype.channels[current_index];
-                if source_channel.component_id == destination_channel.component_id {
-                    source_channel
-                        .data
-                        .migrate_component(index_within_archetype, &mut *destination_channel.data);
-                    current_index += 1;
-                    if source_archetype.channels.len() == current_index {
-                        break;
+        if !source_archetype.channels.is_empty() && !destination_archetype.channels.is_empty() {
+            let mut source_channel_index = 0;
+            let mut destination_channel_index = 0;
+            let source_channel_len = source_archetype.channels.len();
+            while source_channel_index != source_channel_len {
+                let source_channel = &mut source_archetype.channels[source_channel_index];
+                let destination_channel =
+                    &mut destination_archetype.channels[destination_channel_index];
+
+                match source_channel
+                    .component_id
+                    .cmp(&destination_channel.component_id)
+                {
+                    std::cmp::Ordering::Equal => {
+                        source_channel.data.migrate_component(
+                            index_within_archetype,
+                            &mut *destination_channel.data,
+                        );
+                        source_channel_index += 1;
+                        destination_channel_index += 1;
+                    }
+                    std::cmp::Ordering::Less => {
+                        source_channel_index += 1;
+                    }
+                    std::cmp::Ordering::Greater => {
+                        destination_channel_index += 1;
                     }
                 }
             }
@@ -436,23 +455,6 @@ impl World {
             archetype_index: destination_archetype.index_in_world,
             index_within_archetype: destination_archetype.entities.len() - 1,
         });
-        if entity.index == 12 {
-            println!(
-                "SETTING TO: {:?}",
-                EntityLocation {
-                    archetype_index: destination_archetype.index_in_world,
-                    index_within_archetype: destination_archetype.entities.len() - 1,
-                }
-            );
-            println!(
-                "NEW LOCATION: {:#?}",
-                entities.get_entity_location_mut(entity)
-            );
-            println!(
-                "DESTINATION ARCHETYPE: {:#?}",
-                destination_archetype.entities
-            )
-        }
     }
 
     /// This will return None if the `Entity` does not exist or the `Entity` does not have the component.

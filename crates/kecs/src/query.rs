@@ -82,10 +82,7 @@ impl<'a, PARAMETERS: QueryParametersTrait, FILTERS: FilterTrait> Query<'a, PARAM
     }
 
     pub fn get_entity_components_mut<'b>(&'b mut self, entity: Entity) -> Option<<<<PARAMETERS as QueryParametersFetchTrait<'a>>::FetchResult as GetIteratorsTrait<'b>>::IteratorMut as Iterator>::Item>{
-        println!("ENTITIES: {:#?}", self.entities);
         let entity_location = self.entities.get_entity_location(entity)?;
-        println!("ENTITY LOCATION: {:#?}", entity_location);
-        println!("ENTITY: {:#?}", entity);
         let archetype_borrow_index = self
             .fetch
             .binary_search_by_key(&entity_location.archetype_index, |archetype_borrow| {

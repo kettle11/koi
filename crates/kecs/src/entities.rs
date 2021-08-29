@@ -68,9 +68,7 @@ impl Entities {
                 generation: 0,
             }
         };
-        if entity.index == 12 {
-            dbg!()
-        }
+
         entity
     }
 
