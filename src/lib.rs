@@ -95,6 +95,7 @@ impl Default for Plugin {
 pub enum Event {
     FixedUpdate,
     Draw,
+    KappEvent(kapp::Event),
 }
 
 impl App {
@@ -184,6 +185,8 @@ impl App {
             // Update the input manager.
             let input = world.get_component_mut::<Input>(input_entity).unwrap();
             input.state.handle_event(&event);
+
+            run_system(crate::Event::KappEvent(event.clone()), &mut world);
 
             match event {
                 Event::WindowCloseRequested { .. } => kapp_app.quit(),

@@ -2,9 +2,7 @@ use koi::*;
 
 fn main() {
     App::new().setup_and_run(|world: &mut World| {
-        let mut camera = Camera::new();
-        //camera.clear_color = Some(Color::new(0.5, 0.0, 0.0, 1.0));
-        // camera.clear_color = Some(Color::WHITE);
+        let camera = Camera::new();
 
         // Spawn a camera
         world.spawn((
@@ -23,39 +21,45 @@ fn main() {
             Material::UNLIT,
         ));
 
-        world.spawn((
-            Transform::new_with_position(Vec3::new(0.0, 0.0, -3.0)),
-            Mesh::CUBE,
-            Material::PHYSICALLY_BASED,
-        ));
-
         // Spawn a loaded gltf
         let worlds = world.get_single_component_mut::<Assets<World>>().unwrap();
         let gltf_world = worlds.load(&"assets/tv/scene.gltf");
-        let gltf = world.spawn((Transform::new(), gltf_world));
+        let _ = world.spawn((Transform::new(), gltf_world));
 
-        // Set a parent to scale the thing down.
-        let parent = world.spawn(Transform::new_with_scale(Vec3::fill(0.1)));
-        HierarchyNode::set_parent(world, Some(parent), gltf).unwrap();
-
-        |event: Event, world: &mut World| match event {
+        let mut camera_distance_scale = 1.0;
+        move |event: Event, world: &mut World| match event {
             Event::FixedUpdate => {
+                // Scale the camera to contain the scene's contents.
                 let bounding_box = calculate_bounding_box_of_scene.run(world).unwrap();
-                (|mut cameras: Query<(&mut Transform, &Camera, &mut CameraControls)>| {
-                    for (transform, camera, camera_controls) in &mut cameras {
+                (|mut cameras: Query<(&mut Transform, &mut CameraControls)>| {
+                    for (transform, camera_controls) in &mut cameras {
                         match &mut camera_controls.mode {
                             CameraControlsMode::Orbit { target } => {
                                 *target = bounding_box.center();
                                 let max_axis = bounding_box.size().max_component();
                                 let diff = transform.position - *target;
-                                transform.position = diff.normalized() * max_axis * 1.2 + *target;
+                                transform.position =
+                                    diff.normalized() * max_axis * 1.2 * camera_distance_scale
+                                        + *target;
                             }
                             _ => {}
                         }
                     }
                 })
-                .run(world);
+                .run(world)
+                .unwrap();
             }
+            Event::KappEvent(event) => match event {
+                kapp::Event::Scroll { delta_y, .. } => {
+                    let delta_y = delta_y as f32;
+                    let change = -delta_y / 300.0 + 1.0;
+                    camera_distance_scale *= change;
+                }
+                kapp::Event::PinchGesture { delta, .. } => {
+                    camera_distance_scale *= (-delta + 1.0) as f32;
+                }
+                _ => {}
+            },
             _ => {}
         }
     });
