@@ -90,7 +90,7 @@ pub fn new_texture_from_jpeg_bytes(
 }
 
 fn extend_pixels_1_with_alpha(pixels: Vec<u8>) -> Vec<u8> {
-    pixels.iter().flat_map(|a| [*a, 0, 0, 255]).collect()
+    pixels.iter().flat_map(|a| [*a, *a, *a, 255]).collect()
 }
 
 fn extend_pixels_3_with_alpha(pixels: Vec<u8>) -> Vec<u8> {

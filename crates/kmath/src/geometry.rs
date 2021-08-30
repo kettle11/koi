@@ -91,7 +91,8 @@ impl<T: Numeric + PartialOrd + 'static, const DIMENSIONS: usize> BoundingBox<T, 
     }
 
     /// Creates a new `BoundingBox` that encompasses `self` and `other`
-    pub fn union(self, other: Self) -> Self {
+    /// Also referred to as a `union` operation
+    pub fn join(self, other: Self) -> Self {
         Self {
             min: self.min.min(other.min),
             max: self.max.max(other.max),

@@ -115,7 +115,10 @@ pub(super) fn load_gltf_as_world(
             let transparent = match material.alpha_mode {
                 kgltf::MaterialAlphaMode::Blend => true,
                 kgltf::MaterialAlphaMode::Opaque => false,
-                kgltf::MaterialAlphaMode::Mask => unimplemented!(),
+                kgltf::MaterialAlphaMode::Mask => {
+                    klog::log!("NOT YET HANDLED GLTF MASK MATERIAL");
+                    true
+                }
             };
 
             let shader = if unlit {
@@ -143,10 +146,7 @@ pub(super) fn load_gltf_as_world(
     for mesh_primitive_data in &mesh_primitive_data {
         let mut primitives = Vec::with_capacity(mesh_primitive_data.primitives.len());
         for (mesh_data, material_index) in &mesh_primitive_data.primitives {
-            let new_mesh = meshes.add(Mesh {
-                gpu_mesh: Some(graphics.new_gpu_mesh(&mesh_data).unwrap()),
-                mesh_data: Some(mesh_data.clone()),
-            });
+            let new_mesh = meshes.add(Mesh::new(graphics, mesh_data.clone()));
             primitives.push((new_mesh, *material_index));
         }
         mesh_primitives.push(primitives);
@@ -508,9 +508,7 @@ async fn get_buffer<T: Clone>(
 }
 
 unsafe fn bytes_to_buffer<T: Clone>(bytes: &[u8]) -> Vec<T> {
-    println!("ABOUT TO DO BYTE CAST");
     let (_prefix, shorts, _suffix) = bytes.align_to::<T>();
     let result = shorts.into();
-    println!("BYTE CAST PERFORMED");
     result
 }

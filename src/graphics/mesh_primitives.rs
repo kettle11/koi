@@ -501,53 +501,17 @@ pub(crate) fn initialize_static_primitives(
     graphics: &mut crate::Graphics,
     meshes: &mut crate::Assets<Mesh>,
 ) {
-    let mesh = plane();
-    meshes.add_and_leak(
-        Mesh {
-            gpu_mesh: Some(graphics.new_gpu_mesh(&mesh).unwrap()),
-            mesh_data: Some(mesh),
-        },
-        &Mesh::PLANE,
-    );
-    let mesh = vertical_quad();
-    meshes.add_and_leak(
-        Mesh {
-            gpu_mesh: Some(graphics.new_gpu_mesh(&mesh).unwrap()),
-            mesh_data: Some(mesh),
-        },
-        &Mesh::VERTICAL_QUAD,
-    );
+    let mesh_data = plane();
+    meshes.add_and_leak(Mesh::new(graphics, mesh_data), &Mesh::PLANE);
+    let mesh_data = vertical_quad();
+    meshes.add_and_leak(Mesh::new(graphics, mesh_data), &Mesh::VERTICAL_QUAD);
 
-    let mesh = cube();
-    meshes.add_and_leak(
-        Mesh {
-            gpu_mesh: Some(graphics.new_gpu_mesh(&mesh).unwrap()),
-            mesh_data: Some(mesh),
-        },
-        &Mesh::CUBE,
-    );
-    let mesh = uv_sphere(20, 20, Vec2::ONE);
-    meshes.add_and_leak(
-        Mesh {
-            gpu_mesh: Some(graphics.new_gpu_mesh(&mesh).unwrap()),
-            mesh_data: Some(mesh),
-        },
-        &Mesh::SPHERE,
-    );
-    let mesh = ring(0.1, 1.0, 8, 20);
-    meshes.add_and_leak(
-        Mesh {
-            gpu_mesh: Some(graphics.new_gpu_mesh(&mesh).unwrap()),
-            mesh_data: Some(mesh),
-        },
-        &Mesh::RING,
-    );
-    let mesh = triangle();
-    meshes.add_and_leak(
-        Mesh {
-            gpu_mesh: Some(graphics.new_gpu_mesh(&mesh).unwrap()),
-            mesh_data: Some(mesh),
-        },
-        &Mesh::TRIANGLE,
-    );
+    let mesh_data = cube();
+    meshes.add_and_leak(Mesh::new(graphics, mesh_data), &Mesh::CUBE);
+    let mesh_data = uv_sphere(20, 20, Vec2::ONE);
+    meshes.add_and_leak(Mesh::new(graphics, mesh_data), &Mesh::SPHERE);
+    let mesh_data = ring(0.1, 1.0, 8, 20);
+    meshes.add_and_leak(Mesh::new(graphics, mesh_data), &Mesh::RING);
+    let mesh_data = triangle();
+    meshes.add_and_leak(Mesh::new(graphics, mesh_data), &Mesh::TRIANGLE);
 }

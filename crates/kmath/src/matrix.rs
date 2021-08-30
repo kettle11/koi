@@ -450,7 +450,7 @@ impl<T: NumericFloat> Matrix<T, 4, 4> {
         .into()
     }
 
-    fn extract_rotation_scale(&self) -> (Quaternion<T>, Vector<T, 3>) {
+    pub fn extract_rotation_scale(&self) -> (Quaternion<T>, Vector<T, 3>) {
         let scale: Vector<T, 3> = [
             self.column(0).length(),
             self.column(1).length(),

@@ -408,7 +408,11 @@ impl World {
             let mut source_channel_index = 0;
             let mut destination_channel_index = 0;
             let source_channel_len = source_archetype.channels.len();
-            while source_channel_index != source_channel_len {
+            let destination_channel_len = destination_archetype.channels.len();
+
+            while source_channel_index != source_channel_len
+                && destination_channel_index != destination_channel_len
+            {
                 let source_channel = &mut source_archetype.channels[source_channel_index];
                 let destination_channel =
                     &mut destination_archetype.channels[destination_channel_index];

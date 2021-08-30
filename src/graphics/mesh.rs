@@ -4,6 +4,19 @@ use kgraphics::*;
 pub struct Mesh {
     pub gpu_mesh: Option<GPUMesh>,
     pub mesh_data: Option<MeshData>,
+    pub bounding_box: Option<BoundingBox<f32, 3>>,
+}
+
+impl Mesh {
+    pub fn new(graphics: &mut Graphics, mesh_data: MeshData) -> Self {
+        let gpu_mesh = graphics.new_gpu_mesh(&mesh_data).unwrap();
+        let bounding_box = BoundingBox::<f32, 3>::from_points(&mesh_data.positions);
+        Mesh {
+            gpu_mesh: Some(gpu_mesh),
+            mesh_data: Some(mesh_data),
+            bounding_box: Some(bounding_box),
+        }
+    }
 }
 
 #[derive(Clone, Debug, Component)]

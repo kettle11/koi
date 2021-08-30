@@ -36,11 +36,8 @@ pub use renderer::*;
 pub fn graphics_plugin() -> Plugin {
     Plugin {
         setup_systems: vec![setup_graphics.system()],
-        draw_systems: vec![
-            load_shaders.system(),
-            load_textures.system(),
-            resize_window.system(),
-        ],
+        draw_systems: vec![load_shaders.system(), resize_window.system()],
+        end_of_frame_systems: vec![load_textures.system()],
         ..Default::default()
     }
 }
@@ -111,6 +108,9 @@ fn setup_graphics(world: &mut World) {
     let mut mesh_assets = Assets::<Mesh>::new(Mesh {
         gpu_mesh: Some(default_mesh),
         mesh_data: Some(MeshData::default()),
+
+        // The default mesh is empty so give it no bounding-box.
+        bounding_box: None,
     });
 
     // Initialize asset stores and their placeholders.

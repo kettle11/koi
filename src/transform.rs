@@ -46,9 +46,14 @@ impl GlobalTransform {
             scale,
         }
     }
-}
 
-impl GlobalTransform {
+    pub fn transform_bounding_box(&self, bounding_box: BoundingBox<f32, 3>) -> BoundingBox<f32, 3> {
+        let model = self.model();
+        let min = model.transform_point(bounding_box.min);
+        let max = model.transform_point(bounding_box.max);
+        BoundingBox { min, max }
+    }
+
     pub fn new() -> Self {
         Self {
             position: Vec3::ZERO,
@@ -246,6 +251,13 @@ impl Transform {
     #[inline]
     pub fn back(&self) -> Vec3 {
         self.rotation.rotate_vector3(Vec3::Z)
+    }
+
+    pub fn transform_bounding_box(&self, bounding_box: BoundingBox<f32, 3>) -> BoundingBox<f32, 3> {
+        let model = self.model();
+        let min = model.transform_point(bounding_box.min);
+        let max = model.transform_point(bounding_box.max);
+        BoundingBox { min, max }
     }
 
     /// Set the global position of this [Transform]
