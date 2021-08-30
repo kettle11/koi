@@ -111,8 +111,6 @@ pub fn png_data_from_bytes(bytes: &[u8], srgb: bool) -> TextureLoadData {
     let mut pixels = vec![0; reader.output_buffer_size()];
     let metadata = reader.next_frame(&mut pixels).unwrap();
 
-    println!("PIXEL FORMAT: {:?}", metadata.color_type);
-
     let pixel_format = match metadata.color_type {
         // png::ColorType::Rgb => PixelFormat::RGB8Unorm,
         png::ColorType::Rgba => PixelFormat::RGBA8Unorm,

@@ -3,12 +3,15 @@ use koi::*;
 fn main() {
     App::new().setup_and_run(|world: &mut World| {
         let camera = Camera::new();
+        let mut camera_controls =
+            CameraControls::new_with_mode(CameraControlsMode::Orbit { target: Vec3::ZERO });
+        camera_controls.rotate_button = PointerButton::Primary;
 
         // Spawn a camera
         world.spawn((
             Transform::new_with_position(Vec3::new(0., 0., 4.0)),
             camera,
-            CameraControls::new_with_mode(CameraControlsMode::Orbit { target: Vec3::ZERO }),
+            camera_controls,
         ));
 
         let mut light_transform = Transform::new_with_position([0., 8.0, 8.0].into());
@@ -23,14 +26,57 @@ fn main() {
 
         // Spawn a loaded gltf
         let worlds = world.get_single_component_mut::<Assets<World>>().unwrap();
-        let gltf_world = worlds.load(&"assets/tv/scene.gltf");
-        let _ = world.spawn((Transform::new(), gltf_world));
+        let gltf_world = worlds.load(&"assets/one_angery_dragon_boi/scene.gltf");
 
+        let mut loaded = false;
         let mut camera_distance_scale = 1.0;
+
         move |event: Event, world: &mut World| match event {
             Event::FixedUpdate => {
-                // Scale the camera to contain the scene's contents.
+                if !loaded {
+                    let new_world = (|worlds: &mut Assets<World>| {
+                        if !worlds.is_placeholder(&gltf_world) {
+                            loaded = true;
+                            Some(worlds.get_mut(&gltf_world).clone_world())
+                        } else {
+                            None
+                        }
+                    })
+                    .run(world)
+                    .unwrap();
+
+                    if let Some(mut new_world) = new_world {
+                        world.add_world(&mut new_world);
+                        update_global_transforms.run(world).unwrap();
+
+                        let bounding_box = calculate_bounding_box_of_scene.run(world).unwrap();
+                        // Position cameras to keep the object in frame.
+                        (|mut cameras: Query<(&mut Transform, &mut CameraControls)>| {
+                            for (transform, camera_controls) in &mut cameras {
+                                match &mut camera_controls.mode {
+                                    CameraControlsMode::Orbit { target } => {
+                                        *target = bounding_box.center();
+                                        let max_axis = bounding_box.size().max_component();
+
+                                        transform.position = Vec3::new(1.0, 1.0, -1.0).normalized()
+                                            * max_axis
+                                            * 1.2
+                                            * camera_distance_scale
+                                            + *target;
+                                    }
+                                    _ => {}
+                                }
+                            }
+                        })
+                        .run(world)
+                        .unwrap();
+                    }
+                }
+
                 let bounding_box = calculate_bounding_box_of_scene.run(world).unwrap();
+
+                // Scale the camera to contain the scene's contents.
+
                 (|mut cameras: Query<(&mut Transform, &mut CameraControls)>| {
                     for (transform, camera_controls) in &mut cameras {
                         match &mut camera_controls.mode {

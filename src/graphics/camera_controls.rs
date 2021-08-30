@@ -24,6 +24,7 @@ pub struct CameraControls {
     pub friction: f32,
     pub rotation_sensitivity: f32,
     pub mode: CameraControlsMode,
+    pub rotate_button: PointerButton,
 }
 
 impl CameraControls {
@@ -36,6 +37,7 @@ impl CameraControls {
             last_mouse_position: None,
             rotation_sensitivity: 1.5,
             mode: CameraControlsMode::Fly,
+            rotate_button: PointerButton::Secondary,
         }
     }
 
@@ -53,18 +55,20 @@ pub fn update_camera_controls(
 ) {
     for (controls, camera, transform) in &mut query {
         // Handle rotation with the mouse
-        let (pitch, yaw) = if input.pointer_button(PointerButton::Secondary) {
+        let (pitch, yaw) = if input.pointer_button(controls.rotate_button) {
             let position = input.pointer_position();
-            let position = Vec2::new(position.0 as f32, position.1 as f32);
+
+            let (view_width, view_height) = camera.get_view_size();
+            let position = Vec2::new(
+                position.0 as f32 / view_width as f32,
+                position.1 as f32 / view_height as f32,
+            );
 
             let rotation_pitch_and_yaw =
                 if let Some(last_mouse_position) = controls.last_mouse_position {
-                    let (view_width, view_height) = camera.get_view_size();
-                    let (view_width, view_height) = (view_width as f32, view_height as f32);
-
                     let difference = position - last_mouse_position;
-                    let pitch = -(difference[1] / view_height);
-                    let yaw = -(difference[0] / view_width);
+                    let pitch = -difference[1];
+                    let yaw = -difference[0];
 
                     (pitch, yaw)
                 } else {

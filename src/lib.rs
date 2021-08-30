@@ -45,6 +45,7 @@ mod audio;
 #[cfg(feature = "audio")]
 pub use audio::*;
 
+pub use kapp::{Key, PointerButton};
 /*
 mod experimental;
 pub use experimental::*;
