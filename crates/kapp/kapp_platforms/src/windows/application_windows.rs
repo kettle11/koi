@@ -362,6 +362,7 @@ impl PlatformEventLoopTrait for PlatformEventLoop {
 }
 
 // TODO
+#[derive(Clone)]
 pub struct PlatformUserEventSender;
 
 impl PlatformUserEventSenderTrait for PlatformUserEventSender {

@@ -7,6 +7,6 @@ mod utils_windows;
 mod external_windows;
 
 pub mod prelude {
-    pub use super::application_windows::{PlatformApplication, PlatformEventLoop};
+    pub use super::application_windows::{PlatformApplication, PlatformEventLoop, PlatformUserEventSender};
     pub use kapp_platform_common::*;
 }

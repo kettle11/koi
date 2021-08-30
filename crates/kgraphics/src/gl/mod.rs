@@ -86,7 +86,7 @@ struct Uniform {
     location: gl_native::UniformLocation,
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 struct VertexAttributeInfo {
     // attribute_type: u32, // A GL num
     byte_size: u32,
@@ -301,6 +301,8 @@ impl<'a> PipelineBuilderTrait for PipelineBuilder<'a> {
             for i in 0..vertex_attribute_count {
                 let attribute = self.g.gl.get_active_attribute(program, i).unwrap();
 
+                // Notably the attribute location index is *not* the index passed into `GetActiveAttrib`
+                let attribute_location = self.g.gl.get_attribute_location(program, &attribute.name);
                 let byte_size = match attribute.attribute_type {
                     GL_FLOAT => 4,
                     GL_FLOAT_VEC2 => 8,
@@ -315,7 +317,7 @@ impl<'a> PipelineBuilderTrait for PipelineBuilder<'a> {
                     VertexAttributeInfo {
                         // attribute_type: attribute.attribute_type.0,
                         byte_size,
-                        index: i as u32,
+                        index: attribute_location as u32,
                     },
                 );
             }
