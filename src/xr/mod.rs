@@ -14,15 +14,9 @@ mod open_xr;
 type InnerXR = open_xr::OpenXR;
 
 pub fn xr_plugin() -> Plugin {
-    /*
-        pub setup_systems: Vec<System>,
-        pub pre_fixed_update_systems: Vec<System>,
-        pub fixed_update_systems: Vec<System>,
-        pub draw_systems: Vec<System>,
-        pub end_of_frame_systems: Vec<System>,
-    } */
     Plugin {
         setup_systems: vec![setup_xr.system()],
+        on_kapp_events: vec![web_xr::on_kapp_events.system()],
         fixed_update_systems: vec![update_xr_transforms.system()],
         ..Default::default()
     }
@@ -30,14 +24,6 @@ pub fn xr_plugin() -> Plugin {
 thread_local!(
     static USER_EVENT_SENDER: RefCell<Option<kapp::UserEventSender>> = RefCell::new(None);
 );
-
-/// Begin rendering an XR frame.
-#[no_mangle]
-extern "C" fn koi_begin_xr_frame() {
-    USER_EVENT_SENDER.with(|s| {
-        s.borrow().as_ref().unwrap().send(0, 0);
-    })
-}
 
 pub type XR = NotSendSync<InnerXR>;
 

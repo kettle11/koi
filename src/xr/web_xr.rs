@@ -6,6 +6,7 @@ pub struct WebXR {
     start_xr: JSObjectDynamic,
     end_xr: JSObjectDynamic,
     get_device_transform: JSObjectDynamic,
+    get_view_info: JSObjectDynamic,
 }
 
 impl WebXR {
@@ -19,11 +20,13 @@ impl WebXR {
             let start_xr = js.get_property("start_xr");
             let end_xr = js.get_property("end_xr");
             let get_device_transform = js.get_property("get_device_transform");
+            let get_view_info = js.get_property("get_view_info");
 
             Ok(Self {
                 start_xr,
                 end_xr,
                 get_device_transform,
+                get_view_info,
             })
         }
     }
@@ -44,4 +47,33 @@ impl WebXR {
             Mat4::try_from(data).unwrap()
         })
     }
+
+    pub fn draw(&mut self) {
+        log!("DRAWING XR!");
+    }
+}
+
+// For now arbitrary IDs will be used to differntiate custom user events.
+pub(crate) const XR_EVENT_ID: usize = 8434232;
+
+pub(super) fn on_kapp_events(xr: &mut XR, events: &KappEvents) {
+    match events.last() {
+        Some(KappEvent::UserEvent {
+            id: XR_EVENT_ID,
+            data,
+        }) => {
+            log!("XR EVENT!");
+            xr.draw();
+        }
+        _ => {}
+    }
+}
+
+/// Begin rendering an XR frame.
+#[no_mangle]
+extern "C" fn koi_begin_xr_frame() {
+    log!("BEGIN XR FRAME!");
+    super::USER_EVENT_SENDER.with(|s| {
+        s.borrow().as_ref().unwrap().send(XR_EVENT_ID, 0);
+    })
 }

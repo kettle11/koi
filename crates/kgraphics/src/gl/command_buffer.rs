@@ -78,10 +78,10 @@ impl CommandBufferTrait for CommandBuffer {
     /// all textures will bind to the default framebuffer.
     fn begin_render_pass<'a>(
         &'a mut self,
-        color_texture: Option<&Texture>,
-        depth_texture: Option<&Texture>,
-        stencil_texture: Option<&Texture>,
-        clear_color: Option<(f32, f32, f32, f32)>,
+        _color_texture: Option<&Texture>,
+        _depth_texture: Option<&Texture>,
+        _stencil_texture: Option<&Texture>,
+        _clear_color: Option<(f32, f32, f32, f32)>,
     ) -> RenderPass<'a> {
         /*
         match color_texture {

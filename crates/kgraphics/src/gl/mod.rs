@@ -567,7 +567,7 @@ impl GraphicsContextTrait for GraphicsContext {
     }
 
     fn commit_command_buffer(&mut self, mut command_buffer: CommandBuffer) {
-        let mut temp_framebuffer = None;
+        // let mut temp_framebuffer = None;
         unsafe {
             use CommandBufferAction::*;
             for command in command_buffer.actions.iter().cloned() {
@@ -758,9 +758,11 @@ impl GraphicsContextTrait for GraphicsContext {
                 }
             }
             // Delete the framebuffer if we've created one.
+            /*
             if let Some(temp_framebuffer) = temp_framebuffer {
                 self.gl.delete_framebuffer(temp_framebuffer);
             }
+            */
 
             command_buffer.clear();
             self.old_command_buffers.push(command_buffer);

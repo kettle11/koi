@@ -34,6 +34,9 @@ function on_session_started(session) {
 
 let last_frame = null;
 let last_pose = null;
+let xr_framebuffer = null;
+let gl_layer = null;
+
 // XRFrame: https://developer.mozilla.org/en-US/docs/Web/API/XRFrame
 function on_xr_frame(time, frame) {
     last_farme = frame;
@@ -48,17 +51,23 @@ function on_xr_frame(time, frame) {
     let pose = frame.getViewerPose(xr_reference_space);
     last_pose = pose;
 
+    gl_layer = session.renderState.baseLayer;
+    xr_framebuffer = gl_layer.framebuffer;
+
     // Getting the pose may fail if, for example, tracking is lost. So we
     // have to check to make sure that we got a valid pose before attempting
     // to render with it. If not in this case we'll just leave the
     // framebuffer cleared, so tracking loss means the scene will simply
     // disappear.
-    if (pose) {
-        let glLayer = session.renderState.baseLayer;
 
+    self.kwasm_exports.koi_begin_xr_frame();
+
+
+    if (pose) {
         // If we do have a valid pose, bind the WebGL layer's framebuffer,
         // which is where any content to be displayed on the XRDevice must be
         // rendered.
+        /*
         gl.bindFramebuffer(gl.FRAMEBUFFER, glLayer.framebuffer);
 
         // Update the clear color so that we can observe the color in the
@@ -69,7 +78,7 @@ function on_xr_frame(time, frame) {
 
         // Clear the framebuffer
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-
+        */
         console.log(pose);
         // Normally you'd loop through each of the views reported by the frame
         // and draw them into the corresponding viewport here, but we're
@@ -92,7 +101,6 @@ function on_xr_frame(time, frame) {
 // discarded.
 function onSessionEnded(event) {
     xr_session = null;
-
     gl = null;
 }
 
@@ -124,12 +132,25 @@ let kxr = {
             xr_session = null;
         }
     },
-    get_view_transform(view_index) {
-        pass_4x4_matrix_to_wasm(last_pose.views[view_index].transform.matrix)
+    get_view_count() {
+        last_pose.views.length
+    },
+    get_view_info(view_index) {
+        let view = last_pose.views[view_index];
+        let matrix = view.transform.matrix;
+        let pointer = self.kwasm_exports.kwasm_reserve_space(20 * 4);
+        let viewport = gl_layer.getViewport(view);
+
+        const client_data = new Float32Array(self.kwasm_memory.buffer, pointer, 20);
+        client_data.set(matrix);
+        client_data.set([viewport.x, viewport.y, viewport.width, viewport.height]);
     },
     get_device_transform() {
         let viewer_pose = last_frame.getViewerPose();
         pass_4x4_matrix_to_wasm(viewer_pose.transform.matrix)
-    }
+    },
+    get_xr_framebuffer() {
+        self.kwasm_new_js_object(xr_framebuffer)
+    },
 };
 kxr

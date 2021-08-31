@@ -350,7 +350,6 @@ pub fn render_scene(
     lights: Query<(&'static Transform, &'static Light)>,
 ) {
     let mut command_buffer = graphics.context.new_command_buffer();
-    let frame = graphics.render_target.current_frame().unwrap();
 
     for (camera_transform, camera) in &cameras {
         let clear_color = camera.clear_color.map(|c| {

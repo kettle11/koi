@@ -1,3 +1,5 @@
+use std::ops::{Deref, DerefMut};
+
 pub use kecs::*;
 pub use klog::*;
 pub use kmath::*;
@@ -76,6 +78,7 @@ pub struct Plugin {
     pub fixed_update_systems: Vec<System>,
     pub draw_systems: Vec<System>,
     pub end_of_frame_systems: Vec<System>,
+    pub on_kapp_events: Vec<System>,
 }
 
 impl Plugin {
@@ -88,6 +91,7 @@ impl Plugin {
         self.draw_systems.append(&mut other.draw_systems);
         self.end_of_frame_systems
             .append(&mut other.end_of_frame_systems);
+        self.on_kapp_events.append(&mut other.on_kapp_events);
     }
 }
 
@@ -99,6 +103,7 @@ impl Default for Plugin {
             fixed_update_systems: Vec::new(),
             draw_systems: Vec::new(),
             end_of_frame_systems: Vec::new(),
+            on_kapp_events: Vec::new(),
         }
     }
 }
@@ -107,6 +112,23 @@ pub enum Event {
     FixedUpdate,
     Draw,
     KappEvent(kapp::Event),
+}
+
+/// Raw events from `kapp`, cleared at the end of every frame.
+#[derive(Component, Clone)]
+pub struct KappEvents(pub Vec<KappEvent>);
+
+impl Deref for KappEvents {
+    type Target = Vec<KappEvent>;
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+impl DerefMut for KappEvents {
+    fn deref_mut(&mut self) -> &mut Vec<kapp::Event> {
+        &mut self.0
+    }
 }
 
 impl App {
@@ -152,6 +174,7 @@ impl App {
 
         let mut world = World::new();
         world.spawn(Commands::new());
+        let kapp_events_entity = world.spawn(KappEvents(Vec::new()));
 
         // For now `kapp` is integrated directly into `koi`
         let (kapp_app, kapp_event_loop) = kapp::initialize();
@@ -201,6 +224,14 @@ impl App {
             let input = world.get_component_mut::<Input>(input_entity).unwrap();
             input.state.handle_event(&event);
 
+            world
+                .get_component_mut::<KappEvents>(kapp_events_entity)
+                .unwrap()
+                .push(event.clone());
+            for system in &mut self.systems.on_kapp_events {
+                system.run(&mut world).unwrap()
+            }
+
             run_system(crate::Event::KappEvent(event.clone()), &mut world);
 
             match event {
@@ -244,6 +275,11 @@ impl App {
                         .get_component_mut::<NotSendSync<kapp::Window>>(window_entity)
                         .unwrap()
                         .request_redraw();
+
+                    world
+                        .get_component_mut::<KappEvents>(kapp_events_entity)
+                        .unwrap()
+                        .clear();
                 }
                 _ => {}
             }
