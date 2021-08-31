@@ -787,6 +787,7 @@ impl<'a> PipelineBuilderTrait for PipelineBuilder<'a> {
             let attribute_name = kwasm::get_string_from_host();
             
             // Passing the name immediately back to JS probably isn't the best here.
+            // Notably the attribute location index is *not* the index passed into `GetActiveAttrib`
             let attribute_location = self
                 .g
                 .js
