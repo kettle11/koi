@@ -6,7 +6,7 @@ use std::{pin::Pin, sync::Mutex};
 
 #[no_mangle]
 extern "C" fn kwasm_promise_begin(js_future_inner: u32) -> u32 {
-    let mut arc: Arc<Mutex<JSFutureInner>> =
+    let arc: Arc<Mutex<JSFutureInner>> =
         unsafe { Arc::from_raw(js_future_inner as *mut std::ffi::c_void as *mut _) };
     let function_to_run = {
         let run_on_promise_thread = {
@@ -23,12 +23,12 @@ extern "C" fn kwasm_promise_begin(js_future_inner: u32) -> u32 {
 #[no_mangle]
 extern "C" fn kwasm_promise_complete(js_future_inner: u32, result: u32) {
     let result = unsafe { JSObject::new_raw(result) };
-    let mut arc: Arc<Mutex<JSFutureInner>> =
+    let arc: Arc<Mutex<JSFutureInner>> =
         unsafe { Arc::from_raw(js_future_inner as *mut std::ffi::c_void as *mut _) };
 
     let waker = {
         let on_completion = {
-            let mut inner = arc.lock().unwrap();
+            let inner = arc.lock().unwrap();
             inner.on_completion
         };
 
@@ -70,16 +70,6 @@ impl JSFuture {
                 waker: None,
             })),
         }
-    }
-
-    pub fn complete<T: Sync + Send + 'static>(&self, data: T) {
-        let waker = {
-            let mut inner = self.inner.lock().unwrap();
-            let result = Box::new(data);
-            inner.result = Some(result);
-            inner.waker.take().unwrap()
-        };
-        waker.wake();
     }
 }
 

@@ -70,7 +70,6 @@ extern "C" {
         promise_worker_stack_pointer: u32,
         promise_worker_thread_local_storage_pointer: u32,
     );
-    #[cfg(target_feature = "atomics")]
     pub(crate) fn kwasm_run_promise(entry_point_pointer: u32);
 }
 

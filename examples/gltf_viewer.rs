@@ -25,9 +25,6 @@ fn main() {
             Material::UNLIT,
         ));
 
-        // Spawn a loaded gltf
-        let worlds = world.get_single_component_mut::<Assets<World>>().unwrap();
-
         #[cfg(target_arch = "wasm32")]
         let path = {
             let path = kwasm::libraries::eval(
@@ -39,9 +36,10 @@ fn main() {
             kwasm::get_string_from_host()
         };
         #[cfg(not(target_arch = "wasm32"))]
-        let path = "assets/silent_ash/scene.gltf".to_string();
+        let path = "/Users/ian/Workspace/koi2/assets/Sponza/glTF/Sponza.gltf".to_string();
 
-        log!("GLTF PATH: {:?}", path);
+        // Begin loading a GlTf
+        let worlds = world.get_single_component_mut::<Assets<World>>().unwrap();
         let gltf_world = worlds.load(&path);
 
         let mut loaded = false;
