@@ -45,7 +45,7 @@ mod audio;
 #[cfg(feature = "audio")]
 pub use audio::*;
 
-pub use kapp::{Key, PointerButton};
+pub use kapp::{Event as KappEvent, Key, PointerButton};
 /*
 mod experimental;
 pub use experimental::*;
@@ -57,7 +57,9 @@ use kwasm::libraries::Instant;
 use std::time::Instant;
 
 #[cfg(target_arch = "wasm32")]
-use kwasm;
+pub use kwasm;
+
+pub use klog;
 
 pub struct App {
     systems: Plugin,

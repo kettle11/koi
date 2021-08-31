@@ -122,7 +122,7 @@ pub fn update_camera_controls(
                 let up = transform.up();
 
                 let scale = controls.panning_scale * 3.0;
-                let position = match &mut controls.mode {
+                match &mut controls.mode {
                     CameraControlsMode::Orbit { target } => {
                         let offset = left * difference.x * scale + up * difference.y * scale;
                         *target += offset;
