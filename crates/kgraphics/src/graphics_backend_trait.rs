@@ -59,6 +59,12 @@ pub trait CommandBufferTrait {
     /// Gets the number of actions encoded in the `CommandBuffer`
     fn len(&self) -> usize;
 
+    fn begin_render_pass_with_framebuffer<'a>(
+        &'a mut self,
+        framebuffer: &Framebuffer,
+        clear_color: Option<(f32, f32, f32, f32)>,
+    ) -> RenderPass<'a>;
+
     /// If the color_texture binds to the DefaultFramebuffer then
     /// all textures will bind to the default framebuffer.
     fn begin_render_pass<'a>(

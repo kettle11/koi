@@ -26,8 +26,14 @@ pub struct UniformLocation(GLInt);
 pub struct VertexArray(GLInt);
 
 #[derive(Clone, PartialEq, Debug, Copy)]
-
 pub struct Framebuffer(GLInt);
+
+impl Default for Framebuffer {
+    fn default() -> Self {
+        Self(0)
+    }
+}
+
 pub struct GL {
     pub(crate) gl: gl33::GlFns,
 }
@@ -255,9 +261,8 @@ impl GL {
         self.gl.Clear(GLbitfield(mask));
     }
 
-    pub unsafe fn bind_framebuffer(&self, target: GLenum, framebuffer: Option<Framebuffer>) {
-        self.gl
-            .BindFramebuffer(target, framebuffer.map_or(0, |v| v.0));
+    pub unsafe fn bind_framebuffer(&self, target: GLenum, framebuffer: Framebuffer) {
+        self.gl.BindFramebuffer(target, framebuffer.0);
     }
     pub unsafe fn framebuffer_texture_2d(
         &self,

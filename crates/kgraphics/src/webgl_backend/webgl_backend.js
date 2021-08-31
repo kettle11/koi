@@ -191,7 +191,7 @@ var gl_web_object = {
         let length = commands.length;
         let f32_offset = 0;
         let u32_offset = 0;
-        let temp_framebuffer = null;
+        //let temp_framebuffer = null;
 
         for (i = 0; i < length; i++) {
             //console.log("COMMAND " + commands[i]);
@@ -208,14 +208,19 @@ var gl_web_object = {
                 }
                 case 1: {
                     // BindFramebuffer
-                    let use_custom_framebuffer = u32_data[u32_offset++];
+                    let framebuffer_index = u32_data[u32_offset++];
                     let color_framebuffer_index = u32_data[u32_offset++];
                     let depth_framebuffer_index = u32_data[u32_offset++];
                     let stencil_framebuffer_index = u32_data[u32_offset++];
 
+                    let framebuffer_object = self.kwasm_get_object(framebuffer_index);
+                    gl.bindFramebuffer(gl.FRAMEBUFFER, framebuffer_object);
+
+                    /*
                     if (use_custom_framebuffer === 0) {
                         gl.bindFramebuffer(gl.FRAMEBUFFER, null);
                     } else {
+                    
                         // Create a new framebuffer whenever a framebuffer is bound.
                         // This might not be the best idea on some platforms.
                         let framebuffer = gl.createFramebuffer();
@@ -249,9 +254,9 @@ var gl_web_object = {
                         if (temp_framebuffer) {
                             gl.deleteFramebuffer(temp_framebuffer);
                         }
-
                         temp_framebuffer = framebuffer;
                     }
+                    */
                     break;
                 }
                 case 2: {
@@ -431,9 +436,11 @@ var gl_web_object = {
         }
 
         // Delete the framebuffer if we've created one.
+        /*
         if (temp_framebuffer) {
             gl.deleteFramebuffer(temp_framebuffer);
         }
+        */
         // console.log("DONE WITH COMMANDS");
 
     }

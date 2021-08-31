@@ -362,29 +362,26 @@ pub fn render_scene(
         });
 
         let mut render_pass =
-            command_buffer.begin_render_pass(Some(&frame), Some(&frame), None, clear_color);
+            command_buffer.begin_render_pass_with_framebuffer(&Default::default(), clear_color);
 
+        let mut renderer = Renderer::new(
+            &mut render_pass,
+            camera_transform,
+            camera,
+            shader_assets,
+            material_assets,
+            mesh_assets,
+            texture_assets,
+            &lights,
+        );
+
+        for (transform, material_handle, mesh_handle, optional_sprite) in renderables.iter().skip(0)
         {
-            let mut renderer = Renderer::new(
-                &mut render_pass,
-                camera_transform,
-                camera,
-                shader_assets,
-                material_assets,
-                mesh_assets,
-                texture_assets,
-                &lights,
-            );
-
-            for (transform, material_handle, mesh_handle, optional_sprite) in
-                renderables.iter().skip(0)
-            {
-                renderer.change_material(material_handle);
-                if let Some(sprite) = optional_sprite {
-                    renderer.prepare_sprite(sprite);
-                }
-                renderer.render_mesh(transform, mesh_handle);
+            renderer.change_material(material_handle);
+            if let Some(sprite) = optional_sprite {
+                renderer.prepare_sprite(sprite);
             }
+            renderer.render_mesh(transform, mesh_handle);
         }
     }
 

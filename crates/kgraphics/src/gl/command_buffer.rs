@@ -12,7 +12,7 @@ pub struct RenderPass<'a> {
 pub(super) enum CommandBufferAction {
     Clear((f32, f32, f32, f32)),
     // None represents the default framebuffer
-    BindFramebuffer(Option<FrameBufferBinding>),
+    BindFramebuffer(Framebuffer),
     ChangePipeline(Pipeline),
     SetVertexAttribute((VertexAttributeInfo, Option<gl_native::Buffer>)),
     SetIndexBuffer(IndexBuffer),
@@ -57,6 +57,23 @@ impl CommandBufferTrait for CommandBuffer {
         self.actions.len()
     }
 
+    fn begin_render_pass_with_framebuffer<'a>(
+        &'a mut self,
+        framebuffer: &Framebuffer,
+        clear_color: Option<(f32, f32, f32, f32)>,
+    ) -> RenderPass<'a> {
+        self.actions
+            .push(CommandBufferAction::BindFramebuffer(framebuffer.clone()));
+        if let Some((r, g, b, a)) = clear_color {
+            self.actions.push(CommandBufferAction::Clear((
+                r as f32, g as f32, b as f32, a as f32,
+            )));
+        }
+        RenderPass {
+            command_buffer: self,
+        }
+    }
+
     /// If the color_texture binds to the default framebuffer then
     /// all textures will bind to the default framebuffer.
     fn begin_render_pass<'a>(
@@ -66,6 +83,7 @@ impl CommandBufferTrait for CommandBuffer {
         stencil_texture: Option<&Texture>,
         clear_color: Option<(f32, f32, f32, f32)>,
     ) -> RenderPass<'a> {
+        /*
         match color_texture {
             Some(Texture {
                 texture_type: TextureType::DefaultFramebuffer,
@@ -110,6 +128,8 @@ impl CommandBufferTrait for CommandBuffer {
         RenderPass {
             command_buffer: self,
         }
+        */
+        todo!()
     }
 }
 

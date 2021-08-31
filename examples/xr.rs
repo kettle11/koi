@@ -15,7 +15,7 @@ fn setup_and_run(world: &mut World) -> impl FnMut(Event, &mut koi::World) {
         CameraControls::new(),
     ));
 
-    let mut light = Light::new(LightMode::Directional, Color::WHITE, 1.0);
+    let light = Light::new(LightMode::Directional, Color::WHITE, 1.0);
 
     // Spawn a light
     world.spawn((

@@ -13,6 +13,15 @@ pub struct RenderTarget {
 }
 
 #[derive(Debug)]
+pub struct Framebuffer(Option<JSObjectDynamic>);
+
+impl Default for Framebuffer {
+    fn default() -> Self {
+        Self(None)
+    }
+}
+
+#[derive(Debug)]
 enum TextureType {
     Texture(JSObjectDynamic),
     DefaultFramebuffer,
@@ -372,6 +381,29 @@ impl CommandBufferTrait for CommandBuffer {
         0
     }
 
+    fn begin_render_pass_with_framebuffer<'a>(
+        &'a mut self,
+        framebuffer: &Framebuffer,
+        clear_color: Option<(f32, f32, f32, f32)>,
+    ) -> RenderPass<'a> {
+        self.commands.push(Command::BindFramebuffer);
+        self.u32_data.extend_from_slice(&[
+            framebuffer.0.as_ref().map_or(0, |o| o.index()),
+            0,
+            0,
+            0,
+        ]);
+
+        if let Some((r, g, b, a)) = clear_color {
+            self.commands.push(Command::Clear);
+            self.f32_data.extend_from_slice(&[r, g, b, a]);
+        }
+
+        RenderPass {
+            command_buffer: self,
+        }
+    }
+
     /// If the color_texture binds to the DefaultFramebuffer then
     /// all textures will bind to the default framebuffer.
     fn begin_render_pass<'a>(
@@ -381,6 +413,10 @@ impl CommandBufferTrait for CommandBuffer {
         stencil_texture: Option<&Texture>,
         clear_color: Option<(f32, f32, f32, f32)>,
     ) -> RenderPass<'a> {
+        debug_assert!(
+            color_texture.is_none() && depth_texture.is_none() && stencil_texture.is_none(),
+            "Configurable render textures are disabled for now"
+        );
         self.commands.push(Command::BindFramebuffer);
         match color_texture {
             Some(Texture {

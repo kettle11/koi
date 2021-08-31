@@ -15,6 +15,7 @@ use std::collections::HashMap;
 mod bump_allocator;
 use bump_allocator::*;
 
+pub use gl::gl_native::Framebuffer;
 pub struct GraphicsContext {
     old_command_buffers: Vec<CommandBuffer>,
     gl_context: GLContext,
@@ -575,6 +576,10 @@ impl GraphicsContextTrait for GraphicsContext {
                         self.gl.clear_color(r, g, b, a);
                         self.gl.clear(GL_COLOR_BUFFER_BIT.0 | GL_DEPTH_BUFFER_BIT.0);
                     }
+                    BindFramebuffer(framebuffer) => {
+                        self.gl.bind_framebuffer(GL_FRAMEBUFFER, framebuffer);
+                    }
+                    /*
                     BindFramebuffer(None) => {
                         self.gl.bind_framebuffer(GL_FRAMEBUFFER, None);
                     }
@@ -583,6 +588,8 @@ impl GraphicsContextTrait for GraphicsContext {
                         depth,
                         stencil,
                     })) => {
+
+
                         // I wonder if this causes slow-down on some platforms?
                         let framebuffer = self.gl.create_framebuffer().unwrap();
 
@@ -613,7 +620,9 @@ impl GraphicsContextTrait for GraphicsContext {
                         }
 
                         temp_framebuffer = Some(framebuffer);
+
                     }
+                    */
                     ChangePipeline(pipeline) => {
                         // Requiring a clone of the pipeline all over the place is not good.
                         self.gl.use_program(Some(pipeline.program));
