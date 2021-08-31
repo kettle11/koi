@@ -180,9 +180,7 @@ var gl_web_object = {
         self.kwasm_pass_string_to_client(info.name);
         return info.type;
     },
-    get_attribute_location(program_index, name_index) {
-        let program = self.kwasm_get_object(program_index);
-        let name = self.kwasm_get_object(name_index);
+    get_attribute_location(program, name) {
         let location = gl.getAttribLocation(program, name);
         return location;
     },
