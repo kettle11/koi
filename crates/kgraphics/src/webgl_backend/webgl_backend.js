@@ -162,12 +162,10 @@ var gl_web_object = {
         let program = self.kwasm_get_object(program_index);
         let active_info = gl.getActiveUniform(program, uniform_index);
         self.kwasm_pass_string_to_client(active_info.name);
-        console.log("GET ACTIVE UNIFORM: " + active_info.name);
         return active_info.type;
     },
     get_uniform_location(program, name) {
         let result = gl.getUniformLocation(program, name);
-        console.log("UNIFORM LOCATION  [" + name + "]: " + result);
         return result;
     },
     get_program_parameter(program_index, parameter) {

@@ -32,6 +32,7 @@ fn main() {
                 Event::Draw => {
                     // Things that occur before rendering can go here.
                 }
+                _ => {}
             }
         }
     });

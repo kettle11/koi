@@ -45,6 +45,11 @@ mod audio;
 #[cfg(feature = "audio")]
 pub use audio::*;
 
+#[cfg(feature = "xr")]
+mod xr;
+#[cfg(feature = "xr")]
+pub use xr::*;
+
 pub use kapp::{Event as KappEvent, Key, PointerButton};
 /*
 mod experimental;
@@ -133,6 +138,8 @@ impl App {
         let app = app.add_plugin(camera_plugin());
         #[cfg(feature = "graphics")]
         let app = app.add_plugin(camera_controls_plugin());
+        #[cfg(feature = "xr")]
+        let app = app.add_plugin(xr_plugin());
         app
     }
 
@@ -148,6 +155,8 @@ impl App {
 
         // For now `kapp` is integrated directly into `koi`
         let (kapp_app, kapp_event_loop) = kapp::initialize();
+
+        world.spawn(NotSendSync::new(kapp_app.clone()));
 
         let window_width = 1600;
         let window_height = 1200;

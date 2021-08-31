@@ -146,7 +146,8 @@ function kwasm_stuff() {
         fetch(wasm_library_path).then(response =>
             response.arrayBuffer()
         ).then(bytes => {
-            self.kwasm_memory = new WebAssembly.Memory({ initial: (bytes.byteLength / 64000) + 1, maximum: 16384, shared: true });
+            // 5 is arbitrary here
+            self.kwasm_memory = new WebAssembly.Memory({ initial: (bytes.byteLength / 64000) + 5, maximum: 16384, shared: true });
             imports.env.memory = self.kwasm_memory;
             return WebAssembly.instantiate(bytes, imports)
         }).then(results => {

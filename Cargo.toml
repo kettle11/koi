@@ -13,6 +13,7 @@ graphics = ["kgraphics"]
 audio = ["oddio", "kaudio"]
 renderer = []
 drawer2d = []
+xr = []
 jpeg = ["jpeg-decoder"]
 gltf = ["kgltf"]
 
