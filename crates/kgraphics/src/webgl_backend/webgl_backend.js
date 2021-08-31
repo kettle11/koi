@@ -178,6 +178,12 @@ var gl_web_object = {
         self.kwasm_pass_string_to_client(info.name);
         return info.type;
     },
+    get_attribute_location(program_index, name_index) {
+        let program = self.kwasm_get_object(program_index);
+        let name = self.kwasm_get_object(name_index);
+        let location = gl.getAttribLocation(program, name);
+        return location;
+    },
     run_command_buffer(commands_ptr, commands_length, f32_data_ptr, f32_data_length, u32_data_ptr, u32_data_length) {
         const commands = new Uint8Array(self.kwasm_memory.buffer, commands_ptr, commands_length);
         //: " + commands_length);

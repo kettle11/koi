@@ -442,6 +442,7 @@ struct WebGLJS {
     get_program_parameter: JSObjectDynamic,
     get_attribute_name_and_type: JSObjectDynamic,
     run_command_buffer: JSObjectDynamic,
+    get_attribute_location: JSObjectDynamic
 }
 
 impl WebGLJS {
@@ -464,6 +465,7 @@ impl WebGLJS {
             get_program_parameter: o.get_property("get_program_parameter"),
             get_attribute_name_and_type: o.get_property("get_attribute_name_and_type"),
             run_command_buffer: o.get_property("run_command_buffer"),
+            get_attribute_location: o.get_property("get_attribute_location"),
         }
     }
 }
@@ -783,11 +785,20 @@ impl<'a> PipelineBuilderTrait for PipelineBuilder<'a> {
             };
 
             let attribute_name = kwasm::get_string_from_host();
-
+            
+            // Passing the name immediately back to JS probably isn't the best here.
+            let attribute_location = self
+                .g
+                .js
+                .get_attribute_location
+                .call_2_arg(&JSObject::NULL, &program, &JSString::new(&attribute_name))
+                .unwrap()
+                .get_value_u32();
+            
             vertex_attributes.insert(
                 attribute_name,
                 VertexAttributeInfo {
-                    index: i as u32,
+                    index: attribute_location,
                     byte_size,
                 },
             );
