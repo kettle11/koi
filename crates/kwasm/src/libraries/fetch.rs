@@ -2,11 +2,6 @@ use once_cell::{sync::Lazy, unsync::OnceCell};
 
 use crate::*;
 
-pub(crate) struct FetchLibraryInner {
-    pub(crate) fetch_local: JSObjectDynamic,
-    pub(crate) fetch_on_worker: JSObjectDynamic,
-}
-
 thread_local! {
     static FETCH_CALL: JSObjectFromString = JSObjectFromString::new(r#"
         function f(path) {                
@@ -40,7 +35,6 @@ pub async fn fetch(path: &str) -> Result<Vec<u8>, ()> {
             FETCH_CALL.with(|fetch_call| fetch_call.call_1_arg(&JSObject::NULL, &path).unwrap())
         },
         |js_object| {
-
             READY_DATA_FOR_TRANSFER.with(|f| f.call_1_arg(&JSObject::NULL, &js_object));
             let result = DATA_FROM_HOST.with(|d| d.take());
             Some(Box::new(result))

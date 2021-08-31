@@ -25,6 +25,8 @@ pub struct CameraControls {
     pub rotation_sensitivity: f32,
     pub mode: CameraControlsMode,
     pub rotate_button: PointerButton,
+    pub panning_mouse_button: Option<PointerButton>,
+    pub panning_scale: f32,
 }
 
 impl CameraControls {
@@ -38,6 +40,8 @@ impl CameraControls {
             rotation_sensitivity: 1.5,
             mode: CameraControlsMode::Fly,
             rotate_button: PointerButton::Secondary,
+            panning_mouse_button: None,
+            panning_scale: 1.0,
         }
     }
 
@@ -54,27 +58,21 @@ pub fn update_camera_controls(
     mut query: Query<(&mut CameraControls, &mut Camera, &mut Transform)>,
 ) {
     for (controls, camera, transform) in &mut query {
+        let position = input.pointer_position();
+        let (view_width, view_height) = camera.get_view_size();
+        let position = Vec2::new(
+            position.0 as f32 / view_width as f32,
+            position.1 as f32 / view_height as f32,
+        );
+        let difference = if let Some(last_mouse_position) = controls.last_mouse_position {
+            position - last_mouse_position
+        } else {
+            Vec2::ZERO
+        };
+
         // Handle rotation with the mouse
         let (pitch, yaw) = if input.pointer_button(controls.rotate_button) {
-            let position = input.pointer_position();
-
-            let (view_width, view_height) = camera.get_view_size();
-            let position = Vec2::new(
-                position.0 as f32 / view_width as f32,
-                position.1 as f32 / view_height as f32,
-            );
-
-            let rotation_pitch_and_yaw =
-                if let Some(last_mouse_position) = controls.last_mouse_position {
-                    let difference = position - last_mouse_position;
-                    let pitch = -difference[1];
-                    let yaw = -difference[0];
-
-                    (pitch, yaw)
-                } else {
-                    (0.0, 0.0)
-                };
-            controls.last_mouse_position = Some(position);
+            let rotation_pitch_and_yaw = (-difference[1], -difference[0]);
             rotation_pitch_and_yaw
         } else {
             controls.last_mouse_position = None;
@@ -118,6 +116,26 @@ pub fn update_camera_controls(
             controls.velocity = controls.velocity.normalized() * controls.max_speed;
         }
 
+        if let Some(panning_mouse_button) = controls.panning_mouse_button {
+            if input.pointer_button(panning_mouse_button) {
+                let left = transform.left();
+                let up = transform.up();
+
+                let scale = controls.panning_scale * 3.0;
+                let position = match &mut controls.mode {
+                    CameraControlsMode::Orbit { target } => {
+                        let offset = left * difference.x * scale + up * difference.y * scale;
+                        *target += offset;
+                        transform.position += offset;
+                    }
+                    _ => {
+                        let offset = left * difference.x * scale + up * difference.y * scale;
+                        transform.position += offset;
+                    }
+                };
+            }
+        }
+
         match &mut controls.mode {
             CameraControlsMode::Fly => {
                 let rotation_pitch = Quat::from_yaw_pitch_roll(0., pitch, 0.);
@@ -147,5 +165,6 @@ pub fn update_camera_controls(
                 transform.look_at(*target, Vec3::Y);
             }
         }
+        controls.last_mouse_position = Some(position);
     }
 }

@@ -113,7 +113,7 @@ function receive_message(command, data) {
                 self.kwasm_exports.kapp_on_key_up(event.timeStamp);
             }
 
-            canvas.on_wheel_callback = function (event) {
+            canvas.onwheel = function (event) {
                 if (event.ctrl_key) {
                     // This is a bit weird, but if a pinch gesture is performed
                     // the ctrl modifier is set.
@@ -124,7 +124,7 @@ function receive_message(command, data) {
                     // Is this a good idea at all?
                     // Should this library even make such adjustments?
                     // Is there a way to find an actual scale factor instead of a guess?
-
+                    event.preventDefault();
                     self.kwasm_exports.kapp_on_pinch(-event.deltaY * 0.02, event.timeStamp);
                 } else {
                     self.kwasm_exports.kapp_on_scroll(-event.deltaX, -event.deltaY, event.timeStamp);

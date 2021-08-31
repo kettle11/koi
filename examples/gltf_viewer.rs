@@ -6,6 +6,7 @@ fn main() {
         let mut camera_controls =
             CameraControls::new_with_mode(CameraControlsMode::Orbit { target: Vec3::ZERO });
         camera_controls.rotate_button = PointerButton::Primary;
+        camera_controls.panning_mouse_button = Some(PointerButton::Secondary);
 
         // Spawn a camera
         world.spawn((
@@ -26,7 +27,22 @@ fn main() {
 
         // Spawn a loaded gltf
         let worlds = world.get_single_component_mut::<Assets<World>>().unwrap();
-        let gltf_world = worlds.load(&"assets/one_angery_dragon_boi/scene.gltf");
+
+        #[cfg(target_arch = "wasm32")]
+        let path = {
+            let path = kwasm::libraries::eval(
+                r#"
+            let string = window.location.search;
+            self.kwasm_pass_string_to_client(string.substring(1));
+            "#,
+            );
+            kwasm::get_string_from_host()
+        };
+        #[cfg(not(target_arch = "wasm32"))]
+        let path = "assets/silent_ash/scene.gltf".to_string();
+
+        log!("GLTF PATH: {:?}", path);
+        let gltf_world = worlds.load(&path);
 
         let mut loaded = false;
         let mut camera_distance_scale = 1.0;
@@ -50,7 +66,8 @@ fn main() {
                         update_global_transforms.run(world).unwrap();
 
                         let bounding_box = calculate_bounding_box_of_scene.run(world).unwrap();
-                        // Position cameras to keep the object in frame.
+
+                        // Once the object is loaded position the camera to keep the object in frame.
                         (|mut cameras: Query<(&mut Transform, &mut CameraControls)>| {
                             for (transform, camera_controls) in &mut cameras {
                                 match &mut camera_controls.mode {
@@ -76,12 +93,11 @@ fn main() {
                 let bounding_box = calculate_bounding_box_of_scene.run(world).unwrap();
 
                 // Scale the camera to contain the scene's contents.
-
                 (|mut cameras: Query<(&mut Transform, &mut CameraControls)>| {
                     for (transform, camera_controls) in &mut cameras {
+                        camera_controls.panning_scale = camera_distance_scale;
                         match &mut camera_controls.mode {
                             CameraControlsMode::Orbit { target } => {
-                                *target = bounding_box.center();
                                 let max_axis = bounding_box.size().max_component();
                                 let diff = transform.position - *target;
                                 transform.position =
