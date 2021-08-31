@@ -11,6 +11,6 @@ pub fn eval(source: &str) -> Option<JSObjectDynamic> {
         if e.is_null() {
             e.swap(&JS_SELF.get_property(&"eval"));
         }
-        e.call_1_arg(&JSObject::NULL, &source_str)
+        e.call_1_arg(&source_str)
     })
 }

@@ -479,7 +479,7 @@ impl GraphicsContextTrait for GraphicsContext {
 
         let msaa_enabled = if settings.samples > 0 { 1 } else { 0 };
         // Initialize context
-        js.new.call_raw(&JSObject::NULL, &[msaa_enabled]);
+        js.new.call_raw(&[msaa_enabled]);
         Ok(Self {
             js,
             old_command_buffers: Vec::new(),
@@ -501,27 +501,19 @@ impl GraphicsContextTrait for GraphicsContext {
     }
 
     fn resize(&mut self, _window: &impl HasRawWindowHandle, width: u32, height: u32) {
-        self.js.resize.call_raw(&JSObject::NULL, &[width, height]);
+        self.js.resize.call_raw(&[width, height]);
     }
     fn new_vertex_function(&self, source: &str) -> Result<VertexFunction, String> {
         let source = "#version 300 es\n".to_owned() + source;
         let source = JSString::new(&source);
-        let js_object = self
-            .js
-            .new_vertex_function
-            .call_1_arg(&JSObject::NULL, &source)
-            .unwrap();
+        let js_object = self.js.new_vertex_function.call_1_arg(&source).unwrap();
         Ok(VertexFunction { js_object })
     }
 
     fn new_fragment_function(&self, source: &str) -> Result<FragmentFunction, String> {
         let source = "#version 300 es\nprecision highp float;\n".to_owned() + source;
         let source = JSString::new(&source);
-        let js_object = self
-            .js
-            .new_fragment_function
-            .call_1_arg(&JSObject::NULL, &source)
-            .unwrap();
+        let js_object = self.js.new_fragment_function.call_1_arg(&source).unwrap();
         Ok(FragmentFunction { js_object })
     }
 
@@ -529,13 +521,10 @@ impl GraphicsContextTrait for GraphicsContext {
         let js_object = self
             .js
             .new_data_buffer
-            .call_raw(
-                &JSObject::NULL,
-                &[
-                    data.as_ptr() as u32,
-                    (data.len() * std::mem::size_of::<T>()) as u32,
-                ],
-            )
+            .call_raw(&[
+                data.as_ptr() as u32,
+                (data.len() * std::mem::size_of::<T>()) as u32,
+            ])
             .unwrap();
 
         Ok(DataBuffer {
@@ -545,23 +534,19 @@ impl GraphicsContextTrait for GraphicsContext {
     }
 
     fn delete_data_buffer<T>(&self, data_buffer: DataBuffer<T>) {
-        self.js
-            .delete_buffer
-            .call_1_arg(&JSObject::NULL, &data_buffer.js_object);
+        self.js.delete_buffer.call_1_arg(&data_buffer.js_object);
     }
 
     fn new_index_buffer(&self, data: &[u32]) -> Result<IndexBuffer, ()> {
         let js_object = self
             .js
             .new_index_buffer
-            .call_raw(&JSObject::NULL, &[data.as_ptr() as u32, data.len() as u32])
+            .call_raw(&[data.as_ptr() as u32, data.len() as u32])
             .unwrap();
         Ok(IndexBuffer(js_object))
     }
     fn delete_index_buffer(&self, index_buffer: IndexBuffer) {
-        self.js
-            .delete_buffer
-            .call_1_arg(&JSObject::NULL, &index_buffer.0);
+        self.js.delete_buffer.call_1_arg(&index_buffer.0);
     }
 
     fn new_texture(
@@ -572,7 +557,7 @@ impl GraphicsContextTrait for GraphicsContext {
         pixel_format: PixelFormat,
         texture_settings: TextureSettings,
     ) -> Result<Texture, ()> {
-        let js_object = self.js.new_texture.call(&JSObject::NULL).unwrap();
+        let js_object = self.js.new_texture.call().unwrap();
 
         let texture = Texture {
             texture_type: TextureType::Texture(js_object),
@@ -629,32 +614,27 @@ impl GraphicsContextTrait for GraphicsContext {
 
         let (data_ptr, data_len) = data.map_or((0, 0), |d| (d.as_ptr() as u32, d.len() as u32));
 
-        self.js.update_texture.call_raw(
-            &JSObject::NULL,
-            &[
-                texture.index(),
-                inner_pixel_format,
-                width,
-                height,
-                pixel_format,
-                type_,
-                data_ptr,
-                data_len,
-                minification_filter,
-                magnification_filter,
-                mipmaps,
-                wrapping_horizontal,
-                wrapping_vertical,
-            ],
-        );
+        self.js.update_texture.call_raw(&[
+            texture.index(),
+            inner_pixel_format,
+            width,
+            height,
+            pixel_format,
+            type_,
+            data_ptr,
+            data_len,
+            minification_filter,
+            magnification_filter,
+            mipmaps,
+            wrapping_horizontal,
+            wrapping_vertical,
+        ]);
     }
 
     fn delete_texture(&self, texture: Texture) {
         match texture.texture_type {
             TextureType::Texture(js_object) => {
-                self.js
-                    .delete_texture
-                    .call_1_arg(&JSObject::NULL, &js_object);
+                self.js.delete_texture.call_1_arg(&js_object);
             }
             TextureType::DefaultFramebuffer => {
                 panic!("Can't delete default framebuffer");
@@ -687,17 +667,14 @@ impl GraphicsContextTrait for GraphicsContext {
     }
     fn commit_command_buffer(&mut self, mut command_buffer: CommandBuffer) {
         // Run [CommandBuffer] here
-        self.js.run_command_buffer.call_raw(
-            &JSObject::NULL,
-            &[
-                command_buffer.commands.as_ptr() as u32,
-                command_buffer.commands.len() as u32,
-                command_buffer.f32_data.as_ptr() as u32,
-                (command_buffer.f32_data.len()) as u32,
-                command_buffer.u32_data.as_ptr() as u32,
-                (command_buffer.u32_data.len()) as u32,
-            ],
-        );
+        self.js.run_command_buffer.call_raw(&[
+            command_buffer.commands.as_ptr() as u32,
+            command_buffer.commands.len() as u32,
+            command_buffer.f32_data.as_ptr() as u32,
+            (command_buffer.f32_data.len()) as u32,
+            command_buffer.u32_data.as_ptr() as u32,
+            (command_buffer.u32_data.len()) as u32,
+        ]);
 
         // panic!();
 
@@ -714,7 +691,6 @@ impl<'a> PipelineBuilderTrait for PipelineBuilder<'a> {
             .js
             .new_program
             .call_2_arg(
-                &JSObject::NULL,
                 &self.vertex.unwrap().js_object,
                 &self.fragment.unwrap().js_object,
             )
@@ -726,7 +702,7 @@ impl<'a> PipelineBuilderTrait for PipelineBuilder<'a> {
             .g
             .js
             .get_program_parameter
-            .call_raw(&JSObject::NULL, &[program.index(), ACTIVE_UNIFORMS])
+            .call_raw(&[program.index(), ACTIVE_UNIFORMS])
             .unwrap()
             .get_value_u32();
 
@@ -735,17 +711,18 @@ impl<'a> PipelineBuilderTrait for PipelineBuilder<'a> {
                 .g
                 .js
                 .get_uniform_name_and_type
-                .call_raw(&JSObject::NULL, &[program.index(), i])
+                .call_raw(&[program.index(), i])
                 .unwrap()
                 .get_value_u32();
             let uniform_name = kwasm::get_string_from_host();
 
             // Passing the name immediately back to JS probably isn't the best here.
-            if let Some(uniform_location) = self.g.js.get_uniform_location.call_2_arg(
-                &JSObject::NULL,
-                &program,
-                &JSString::new(&uniform_name),
-            ) {
+            if let Some(uniform_location) = self
+                .g
+                .js
+                .get_uniform_location
+                .call_2_arg(&program, &JSString::new(&uniform_name))
+            {
                 uniforms.insert(
                     uniform_name,
                     Uniform {
@@ -761,7 +738,7 @@ impl<'a> PipelineBuilderTrait for PipelineBuilder<'a> {
             .g
             .js
             .get_program_parameter
-            .call_raw(&JSObject::NULL, &[program.index(), ACTIVE_ATTRIBUTES])
+            .call_raw(&[program.index(), ACTIVE_ATTRIBUTES])
             .unwrap()
             .get_value_u32();
 
@@ -770,7 +747,7 @@ impl<'a> PipelineBuilderTrait for PipelineBuilder<'a> {
                 .g
                 .js
                 .get_attribute_name_and_type
-                .call_raw(&JSObject::NULL, &[program.index(), i])
+                .call_raw(&[program.index(), i])
                 .unwrap()
                 .get_value_u32();
 
@@ -787,11 +764,12 @@ impl<'a> PipelineBuilderTrait for PipelineBuilder<'a> {
 
             // Passing the name immediately back to JS probably isn't the best here.
             // Notably the attribute location index is *not* the index passed into `GetActiveAttrib`
-            if let Some(attribute_location) = self.g.js.get_attribute_location.call_2_arg(
-                &JSObject::NULL,
-                &program,
-                &JSString::new(&attribute_name),
-            ) {
+            if let Some(attribute_location) = self
+                .g
+                .js
+                .get_attribute_location
+                .call_2_arg(&program, &JSString::new(&attribute_name))
+            {
                 let attribute_location = attribute_location.get_value_u32();
 
                 vertex_attributes.insert(

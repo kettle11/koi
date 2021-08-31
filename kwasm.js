@@ -53,11 +53,10 @@ function kwasm_stuff() {
         // Calls a function but directly passes the u32 args instead of turning
         // them into JS objects first.
         // This expects that the function will return a u32.
-        kwasm_call_js_with_args_raw: function (function_object, this_object, arg_data_ptr, args_length) {
+        kwasm_call_js_with_args_raw: function (function_object, arg_data_ptr, args_length) {
             const args = new Uint32Array(self.kwasm_memory.buffer, arg_data_ptr, args_length);
             let f = kwasm_js_objects[function_object];
-            let this_object0 = kwasm_js_objects[this_object];
-            let result = f.call(this_object0, ...args);
+            let result = f.call(null, ...args);
             if (result == undefined) {
                 return 0;
             } else {
@@ -65,15 +64,14 @@ function kwasm_stuff() {
             }
             result
         },
-        kwasm_call_js_with_args: function (function_object, this_object, arg_data_ptr, args_length) {
+        kwasm_call_js_with_args: function (function_object, arg_data_ptr, args_length) {
             const args = new Uint32Array(self.kwasm_memory.buffer, arg_data_ptr, args_length);
             let f = kwasm_js_objects[function_object];
-            let this_object0 = kwasm_js_objects[this_object];
             // Convert to Array first because Uint32Array's version of map
             // expects a typed array as the return value.
             let args0 = Array.from(args);
             let args1 = args0.map(a => kwasm_js_objects[a]);
-            let result = f.call(this_object0, ...args1);
+            let result = f.call(null, ...args1);
             if (result == undefined) {
                 return 0;
             } else {

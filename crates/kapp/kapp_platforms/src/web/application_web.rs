@@ -7,7 +7,7 @@ thread_local! {
 }
 
 fn call_js_function(command: HostCommands) {
-    KAPP_JS_FUNCTION.with(|f| f.call_raw(&JSObject::NULL, &[command as u32]));
+    KAPP_JS_FUNCTION.with(|f| f.call_raw(&[command as u32]));
 }
 
 pub struct PlatformApplication {}

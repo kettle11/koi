@@ -56,10 +56,7 @@ pub fn begin_audio_thread(
         // The function pointer is a fat pointer, which JS can't handle.
         // So the external Box makes a thin pointer that's passed to JS
         // The pointer is passed to JS and then passed into the other thread when it initializes.
-        worklet_js_code.call_raw(
-            &JSObject::NULL,
-            &[entry_point, stack_pointer, thread_local_storage_memory],
-        );
+        worklet_js_code.call_raw(&[entry_point, stack_pointer, thread_local_storage_memory]);
     }
 
     #[cfg(not(target_feature = "atomics"))]

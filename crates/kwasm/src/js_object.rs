@@ -4,22 +4,20 @@ use std::{borrow::Borrow, cell::Cell, ffi::c_void, ops::Deref, rc::Rc};
 #[cfg(feature = "wasm_bindgen_support")]
 use wasm_bindgen::prelude::*;
 
-fn kwasm_call_js_with_args0(function_object: u32, this: u32, args: &[u32]) -> u32 {
+fn kwasm_call_js_with_args0(function_object: u32, args: &[u32]) -> u32 {
     unsafe {
         kwasm_call_js_with_args(
             function_object,
-            this,
             args.as_ptr() as *const c_void,
             args.len() as u32,
         )
     }
 }
 
-fn kwasm_call_js_with_args_raw0(function_object: u32, this: u32, args: &[u32]) -> u32 {
+fn kwasm_call_js_with_args_raw0(function_object: u32, args: &[u32]) -> u32 {
     unsafe {
         kwasm_call_js_with_args_raw(
             function_object,
-            this,
             args.as_ptr() as *const c_void,
             args.len() as u32,
         )
@@ -114,33 +112,27 @@ impl JSObject {
     }
 
     /// Call a function with each u32 passed as a separate argument to the JavaScript side.
-    pub fn call_raw(&self, this: &JSObject, args: &[u32]) -> Option<JSObjectDynamic> {
-        let result = kwasm_call_js_with_args_raw0(self.index(), this.index(), args);
+    pub fn call_raw(&self, args: &[u32]) -> Option<JSObjectDynamic> {
+        let result = kwasm_call_js_with_args_raw0(self.index(), args);
         Self::check_result(result)
     }
 
     /// Call this as a function with one arg.
-    pub fn call(&self, this: &JSObject) -> Option<JSObjectDynamic> {
-        let result = kwasm_call_js_with_args0(self.index(), this.index(), &[]);
+    pub fn call(&self) -> Option<JSObjectDynamic> {
+        let result = kwasm_call_js_with_args0(self.index(), &[]);
         Self::check_result(result)
     }
 
     /// Call this as a function with one arg.
-    pub fn call_1_arg(&self, this: &JSObject, argument: &JSObject) -> Option<JSObjectDynamic> {
-        let result = kwasm_call_js_with_args0(self.index(), this.index(), &[argument.index()]);
+    pub fn call_1_arg(&self, argument: &JSObject) -> Option<JSObjectDynamic> {
+        let result = kwasm_call_js_with_args0(self.index(), &[argument.index()]);
 
         Self::check_result(result)
     }
 
     /// Call this as a function with one arg.
-    pub fn call_2_arg(
-        &self,
-        this: &JSObject,
-        arg0: &JSObject,
-        arg1: &JSObject,
-    ) -> Option<JSObjectDynamic> {
-        let result =
-            kwasm_call_js_with_args0(self.index(), this.index(), &[arg0.index(), arg1.index()]);
+    pub fn call_2_arg(&self, arg0: &JSObject, arg1: &JSObject) -> Option<JSObjectDynamic> {
+        let result = kwasm_call_js_with_args0(self.index(), &[arg0.index(), arg1.index()]);
 
         Self::check_result(result)
     }

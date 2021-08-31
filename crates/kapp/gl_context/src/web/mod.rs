@@ -12,7 +12,7 @@ enum HostCommands {
 }
 
 fn send_command_to_js(command: HostCommands) {
-    KAPP_GL_FUNCTION.with(|f| f.call_raw(&JSObject::NULL, &[command as u32]));
+    KAPP_GL_FUNCTION.with(|f| f.call_raw(&[command as u32]));
 }
 
 impl GLContextBuilder {

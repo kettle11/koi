@@ -52,13 +52,11 @@ extern "C" {
 
     pub(crate) fn kwasm_call_js_with_args(
         function_object: u32,
-        this: u32,
         args_data: *const c_void,
         data_length: u32,
     ) -> u32;
     pub(crate) fn kwasm_call_js_with_args_raw(
         function_object: u32,
-        this: u32,
         args_data: *const c_void,
         data_length: u32,
     ) -> u32;

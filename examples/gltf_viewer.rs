@@ -27,7 +27,7 @@ fn main() {
 
         #[cfg(target_arch = "wasm32")]
         let path = {
-            let path = kwasm::libraries::eval(
+            kwasm::libraries::eval(
                 r#"
             let string = window.location.search;
             self.kwasm_pass_string_to_client(string.substring(1));

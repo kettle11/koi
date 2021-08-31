@@ -1,9 +1,5 @@
 use crate::*;
-use std::any::Any;
-use std::task::{Context, Poll, Waker};
 use std::usize;
-use std::{future::Future, sync::Arc};
-use std::{pin::Pin, sync::Mutex};
 
 #[allow(unused)]
 use wasm_set_stack_pointer;

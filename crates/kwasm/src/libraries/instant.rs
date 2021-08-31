@@ -9,12 +9,12 @@ thread_local! {
 }
 
 pub fn now() -> f64 {
-    let result = PERFORMANCE_NOW.with(|f| f.call(&JSObject::NULL)).unwrap();
+    let result = PERFORMANCE_NOW.with(|f| f.call()).unwrap();
     result.get_value_f64()
 }
 
 pub fn date_now() -> f64 {
-    let result = DATE_NOW.with(|f| f.call(&JSObject::NULL)).unwrap();
+    let result = DATE_NOW.with(|f| f.call()).unwrap();
     result.get_value_f64()
 }
 

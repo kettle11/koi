@@ -30,10 +30,10 @@ pub async fn fetch(path: &str) -> Result<Vec<u8>, ()> {
             // This runs on the other thread.
 
             let path = JSString::new(&path);
-            FETCH_CALL.with(|fetch_call| fetch_call.call_1_arg(&JSObject::NULL, &path).unwrap())
+            FETCH_CALL.with(|fetch_call| fetch_call.call_1_arg(&path).unwrap())
         },
         |js_object| {
-            READY_DATA_FOR_TRANSFER.with(|f| f.call_1_arg(&JSObject::NULL, &js_object));
+            READY_DATA_FOR_TRANSFER.with(|f| f.call_1_arg(&js_object));
             let result = DATA_FROM_HOST.with(|d| d.take());
             Some(Box::new(result))
         },

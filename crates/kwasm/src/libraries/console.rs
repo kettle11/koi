@@ -16,11 +16,11 @@ pub fn error(string: &str) {
 }
 
 pub fn log_js_string(js_string: &JSString) {
-    CONSOLE_LOG.with(|f| f.call_1_arg(&JSObject::NULL, js_string));
+    CONSOLE_LOG.with(|f| f.call_1_arg(js_string));
 }
 
 pub fn error_js_string(js_string: &JSString) {
     CONSOLE_ERROR.with(|f| {
-        f.call_1_arg(&JSObject::NULL, js_string);
+        f.call_1_arg(js_string);
     })
 }
