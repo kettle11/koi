@@ -145,7 +145,8 @@ impl GL {
     pub fn get_attribute_location(&self, program: Program, name: &str) -> i32 {
         let c_string = CString::new(name).unwrap();
         unsafe {
-            self.gl.GetAttribLocation(program.0, c_string.as_ptr() as *const u8)
+            self.gl
+                .GetAttribLocation(program.0, c_string.as_ptr() as *const u8)
         }
     }
 

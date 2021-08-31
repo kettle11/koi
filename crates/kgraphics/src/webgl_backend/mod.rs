@@ -442,7 +442,7 @@ struct WebGLJS {
     get_program_parameter: JSObjectDynamic,
     get_attribute_name_and_type: JSObjectDynamic,
     run_command_buffer: JSObjectDynamic,
-    get_attribute_location: JSObjectDynamic
+    get_attribute_location: JSObjectDynamic,
 }
 
 impl WebGLJS {
@@ -741,20 +741,19 @@ impl<'a> PipelineBuilderTrait for PipelineBuilder<'a> {
             let uniform_name = kwasm::get_string_from_host();
 
             // Passing the name immediately back to JS probably isn't the best here.
-            let uniform_location = self
-                .g
-                .js
-                .get_uniform_location
-                .call_2_arg(&JSObject::NULL, &program, &JSString::new(&uniform_name))
-                .unwrap();
-
-            uniforms.insert(
-                uniform_name,
-                Uniform {
-                    uniform_type,
-                    location: uniform_location,
-                },
-            );
+            if let Some(uniform_location) = self.g.js.get_uniform_location.call_2_arg(
+                &JSObject::NULL,
+                &program,
+                &JSString::new(&uniform_name),
+            ) {
+                uniforms.insert(
+                    uniform_name,
+                    Uniform {
+                        uniform_type,
+                        location: uniform_location,
+                    },
+                );
+            }
         }
 
         let mut vertex_attributes = HashMap::new();
@@ -785,24 +784,24 @@ impl<'a> PipelineBuilderTrait for PipelineBuilder<'a> {
             };
 
             let attribute_name = kwasm::get_string_from_host();
-            
+
             // Passing the name immediately back to JS probably isn't the best here.
             // Notably the attribute location index is *not* the index passed into `GetActiveAttrib`
-            let attribute_location = self
-                .g
-                .js
-                .get_attribute_location
-                .call_2_arg(&JSObject::NULL, &program, &JSString::new(&attribute_name))
-                .unwrap()
-                .get_value_u32();
-            
-            vertex_attributes.insert(
-                attribute_name,
-                VertexAttributeInfo {
-                    index: attribute_location,
-                    byte_size,
-                },
-            );
+            if let Some(attribute_location) = self.g.js.get_attribute_location.call_2_arg(
+                &JSObject::NULL,
+                &program,
+                &JSString::new(&attribute_name),
+            ) {
+                let attribute_location = attribute_location.get_value_u32();
+
+                vertex_attributes.insert(
+                    attribute_name,
+                    VertexAttributeInfo {
+                        index: attribute_location,
+                        byte_size,
+                    },
+                );
+            }
         }
 
         Ok(Pipeline {

@@ -487,7 +487,6 @@ fn process_key_event(w_param: WPARAM, l_param: LPARAM) -> (UINT, Key, bool) {
 
 pub fn run(callback: Box<dyn FnMut(kapp_platform_common::Event)>) {
     unsafe {
-        
         event_receiver::set_callback(callback);
 
         let mut message: MSG = std::mem::zeroed();
