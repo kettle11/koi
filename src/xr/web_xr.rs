@@ -76,6 +76,7 @@ pub(super) fn on_kapp_events(xr: &mut XR, events: &KappEvents) {
 }
 
 /// Begin rendering an XR frame.
+/// Issues a KappEvent::UserEvent to wake up the main event loop.
 #[no_mangle]
 extern "C" fn koi_begin_xr_frame() {
     log!("BEGIN XR FRAME!");

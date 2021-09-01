@@ -193,6 +193,7 @@ impl App {
             .unwrap();
 
         window.request_redraw();
+
         let window_entity = world.spawn(NotSendSync::new(window));
 
         for setup_system in &mut self.systems.setup_systems {
@@ -237,7 +238,7 @@ impl App {
             match event {
                 Event::WindowCloseRequested { .. } => kapp_app.quit(),
                 Event::Draw { .. } => {
-                    //   ktasks::run_only_local_tasks();
+                    ktasks::run_only_local_tasks();
 
                     for system in &mut self.systems.pre_fixed_update_systems {
                         system.run(&mut world).unwrap()

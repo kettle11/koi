@@ -352,35 +352,41 @@ pub fn render_scene(
     let mut command_buffer = graphics.context.new_command_buffer();
 
     for (camera_transform, camera) in &cameras {
-        let clear_color = camera.clear_color.map(|c| {
-            // Presently the output needs to be in non-linear sRGB.
-            // However that means that blending with the clear-color will be incorrect.
-            // A post-processing pass is needed to convert into the appropriate output space.
-            let c = c.to_rgb_color(color_spaces::ENCODED_SRGB);
-            (c.red, c.green, c.blue, c.alpha)
-        });
-
-        let mut render_pass =
-            command_buffer.begin_render_pass_with_framebuffer(&Default::default(), clear_color);
-
-        let mut renderer = Renderer::new(
-            &mut render_pass,
-            camera_transform,
-            camera,
-            shader_assets,
-            material_assets,
-            mesh_assets,
-            texture_assets,
-            &lights,
-        );
-
-        for (transform, material_handle, mesh_handle, optional_sprite) in renderables.iter().skip(0)
+        // Check that this camera targets the target currently being rendered.
+        if graphics.current_camera_target.is_some()
+            && graphics.current_camera_target == camera.camera_target
         {
-            renderer.change_material(material_handle);
-            if let Some(sprite) = optional_sprite {
-                renderer.prepare_sprite(sprite);
+            let clear_color = camera.clear_color.map(|c| {
+                // Presently the output needs to be in non-linear sRGB.
+                // However that means that blending with the clear-color will be incorrect.
+                // A post-processing pass is needed to convert into the appropriate output space.
+                let c = c.to_rgb_color(color_spaces::ENCODED_SRGB);
+                (c.red, c.green, c.blue, c.alpha)
+            });
+
+            let mut render_pass =
+                command_buffer.begin_render_pass_with_framebuffer(&Default::default(), clear_color);
+
+            let mut renderer = Renderer::new(
+                &mut render_pass,
+                camera_transform,
+                camera,
+                shader_assets,
+                material_assets,
+                mesh_assets,
+                texture_assets,
+                &lights,
+            );
+
+            for (transform, material_handle, mesh_handle, optional_sprite) in
+                renderables.iter().skip(0)
+            {
+                renderer.change_material(material_handle);
+                if let Some(sprite) = optional_sprite {
+                    renderer.prepare_sprite(sprite);
+                }
+                renderer.render_mesh(transform, mesh_handle);
             }
-            renderer.render_mesh(transform, mesh_handle);
         }
     }
 

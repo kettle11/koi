@@ -22,6 +22,19 @@ pub struct Camera {
     /// Only relevant for perspective projections.
     vertical_field_of_view_radians: f32,
     pub render_layers: RenderLayers,
+    pub camera_target: Option<CameraTarget>,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub enum WindowId {
+    Primary,
+    KappWindowId(kapp::WindowId),
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub enum CameraTarget {
+    Window(WindowId),
+    XRDevice(usize),
 }
 
 #[derive(Clone, Debug)]
@@ -44,6 +57,7 @@ impl Camera {
             orthographic_height: 1.0,
             vertical_field_of_view_radians: (72.0_f32).to_radians(),
             render_layers: RenderLayers::DEFAULT,
+            camera_target: Some(CameraTarget::Window(WindowId::Primary)),
         };
         camera.update_projection_matrix();
         camera
@@ -62,6 +76,7 @@ impl Camera {
             orthographic_height: 1.0,
             vertical_field_of_view_radians: (60.0_f32).to_radians(),
             render_layers: RenderLayers::DEFAULT,
+            camera_target: Some(CameraTarget::Window(WindowId::Primary)),
         };
         camera.update_projection_matrix();
         camera

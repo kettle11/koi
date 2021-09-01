@@ -36,6 +36,7 @@ pub use renderer::*;
 pub fn graphics_plugin() -> Plugin {
     Plugin {
         setup_systems: vec![setup_graphics.system()],
+        pre_fixed_update_systems: vec![assign_current_camera_target.system()],
         draw_systems: vec![load_shaders.system(), resize_window.system()],
         end_of_frame_systems: vec![load_textures.system()],
         ..Default::default()
@@ -51,6 +52,9 @@ pub struct GraphicsInner {
     pub context: GraphicsContext,
     // For now there's an assumption of one window.
     pub render_target: RenderTarget,
+    /// This target is assigned based on which source initialized this draw iteration.
+    pub current_camera_target: Option<CameraTarget>,
+    pub primary_window_id: kapp::WindowId,
 }
 
 pub struct PipelineSettings {
@@ -102,6 +106,8 @@ fn setup_graphics(world: &mut World) {
     let mut graphics = NotSendSync::new(GraphicsInner {
         context,
         render_target,
+        current_camera_target: None,
+        primary_window_id: main_window.id,
     });
 
     let default_mesh = graphics.new_gpu_mesh(&MeshData::default()).unwrap();
@@ -147,6 +153,19 @@ fn setup_graphics(world: &mut World) {
     world.spawn(mesh_assets);
     world.spawn(texture_assets);
     world.spawn(shaders);
+}
+
+fn assign_current_camera_target(graphics: &mut Graphics, events: &KappEvents) {
+    match events.last() {
+        Some(KappEvent::Draw { window_id }) => {
+            graphics.current_camera_target = Some(if graphics.primary_window_id == *window_id {
+                CameraTarget::Window(WindowId::Primary)
+            } else {
+                CameraTarget::Window(WindowId::KappWindowId(*window_id))
+            });
+        }
+        _ => panic!("Unexpected last Kapp event"),
+    }
 }
 
 impl GraphicsInner {
