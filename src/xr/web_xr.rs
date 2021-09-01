@@ -7,6 +7,7 @@ pub struct WebXR {
     end_xr: JSObjectDynamic,
     get_device_transform: JSObjectDynamic,
     get_view_info: JSObjectDynamic,
+    get_view_count: JSObjectDynamic,
 }
 
 impl WebXR {
@@ -27,6 +28,7 @@ impl WebXR {
                 end_xr,
                 get_device_transform,
                 get_view_info,
+                get_view_count: js.get_property("get_view_count"),
             })
         }
     }
@@ -49,6 +51,10 @@ impl WebXR {
     }
 
     pub fn draw(&mut self) {
+        let view_count = self.get_view_count.call().unwrap().get_value_u32();
+        
+        // Need to get view information here and call appropriate render functions.
+        log!("VIEW COUNT: {:?}", view_count);
         log!("DRAWING XR!");
     }
 }

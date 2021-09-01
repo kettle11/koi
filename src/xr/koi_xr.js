@@ -133,7 +133,7 @@ let kxr = {
         }
     },
     get_view_count() {
-        last_pose.views.length
+        return last_pose.views.length;
     },
     get_view_info(view_index) {
         let view = last_pose.views[view_index];
