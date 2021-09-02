@@ -79,7 +79,7 @@ pub struct Plugin {
     pub draw_systems: Vec<System>,
     pub end_of_frame_systems: Vec<System>,
     pub on_kapp_events: Vec<System>,
-    pub additional_control_flow: Vec<Box<dyn FnMut(&mut KoiState, KappEvent)>>,
+    pub additional_control_flow: Vec<Box<dyn FnMut(&mut KoiState, KappEvent) -> bool>>,
 }
 
 impl Plugin {
@@ -273,22 +273,25 @@ impl KoiState {
             system.run(&mut self.world).unwrap()
         }
 
-        (self.run_system)(crate::Event::KappEvent(event.clone()), &mut self.world);
-        match event {
-            KappEvent::Draw { .. } => {
-                self.draw();
-            }
-            _ => {}
-        }
-
         // Run additional control flow.
         // This is used by things like XR that need to control overall program flow.
+        let mut consumed_event = false;
         let mut swap = Vec::new();
         std::mem::swap(&mut self.systems.additional_control_flow, &mut swap);
         for additional_control_flow in &mut swap {
-            (additional_control_flow)(self, event.clone())
+            consumed_event = (additional_control_flow)(self, event.clone()) | consumed_event;
         }
         std::mem::swap(&mut self.systems.additional_control_flow, &mut swap);
+
+        if !consumed_event {
+            (self.run_system)(crate::Event::KappEvent(event.clone()), &mut self.world);
+            match event {
+                KappEvent::Draw { .. } => {
+                    self.draw();
+                }
+                _ => {}
+            }
+        }
     }
 
     pub fn draw(&mut self) {
@@ -323,12 +326,6 @@ impl KoiState {
             system.run(&mut self.world).unwrap()
         }
         apply_commands(&mut self.world);
-
-        // This ensures a continuous redraw.
-        self.world
-            .get_component_mut::<NotSendSync<kapp::Window>>(self.window_entity)
-            .unwrap()
-            .request_redraw();
 
         self.world
             .get_component_mut::<KappEvents>(self.kapp_events_entity)

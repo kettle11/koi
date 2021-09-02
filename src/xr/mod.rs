@@ -53,24 +53,6 @@ pub struct XRHead;
 #[derive(Component, Clone)]
 pub struct XRController;
 
-#[derive(Clone)]
-pub struct MultiviewView {
-    x: f32,
-    y: f32,
-    width: f32,
-    height: f32,
-    /// Transform relative to the [MultiViewCamera]
-    transform: Transform,
-    projection_matrix: Mat4,
-}
-
-/// A camera that renders to multiple viewports at once.
-/// Used for [XR].
-#[derive(Component, Clone)]
-pub struct MultiViewCamera {
-    views: Vec<MultiviewView>,
-}
-
 pub fn update_xr_transforms(
     xr: &mut XR,
     mut heads: Query<(&XRHead, &mut Transform)>,

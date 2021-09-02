@@ -38,9 +38,14 @@ pub fn graphics_plugin() -> Plugin {
         setup_systems: vec![setup_graphics.system()],
         pre_fixed_update_systems: vec![assign_current_camera_target.system()],
         draw_systems: vec![load_shaders.system(), resize_window.system()],
-        end_of_frame_systems: vec![load_textures.system()],
+        end_of_frame_systems: vec![load_textures.system(), request_window_redraw.system()],
         ..Default::default()
     }
+}
+
+/// Ensure that the primary window redraws continuously.
+fn request_window_redraw(window: &mut NotSendSync<kapp::Window>) {
+    window.request_redraw();
 }
 
 // Alias this type so that it's simpler to query for it.
@@ -54,7 +59,19 @@ pub struct GraphicsInner {
     pub render_target: RenderTarget,
     /// This target is assigned based on which source initialized this draw iteration.
     pub current_camera_target: Option<CameraTarget>,
-    pub primary_window_id: kapp::WindowId,
+    /// This can vary based on if a window or XR headset is primary.
+    pub primary_camera_target: CameraTarget,
+    /// Views the primary camera should use instead of its default view.
+    /// This is used by XR devices.
+    pub override_views: Vec<CameraView>,
+}
+
+#[derive(Clone, Debug)]
+pub struct CameraView {
+    pub projection_matrix: Mat4,
+    /// How this view should be offset from the camera transform.
+    pub offset_transform: Mat4,
+    pub output_rectangle: BoundingBox<f32, 2>,
 }
 
 pub struct PipelineSettings {
@@ -107,7 +124,8 @@ fn setup_graphics(world: &mut World) {
         context,
         render_target,
         current_camera_target: None,
-        primary_window_id: main_window.id,
+        primary_camera_target: CameraTarget::Window(main_window.id),
+        override_views: Vec::new(),
     });
 
     let default_mesh = graphics.new_gpu_mesh(&MeshData::default()).unwrap();
@@ -158,11 +176,7 @@ fn setup_graphics(world: &mut World) {
 fn assign_current_camera_target(graphics: &mut Graphics, events: &KappEvents) {
     match events.last() {
         Some(KappEvent::Draw { window_id }) => {
-            graphics.current_camera_target = Some(if graphics.primary_window_id == *window_id {
-                CameraTarget::Window(WindowId::Primary)
-            } else {
-                CameraTarget::Window(WindowId::KappWindowId(*window_id))
-            });
+            graphics.current_camera_target = Some(CameraTarget::Window(*window_id));
         }
         // Ignore user events because they're likely related to WebXR which may assign the CameraTarget.
         Some(KappEvent::UserEvent { .. }) => {}

@@ -351,11 +351,18 @@ pub fn render_scene(
 ) {
     let mut command_buffer = graphics.context.new_command_buffer();
 
+    let is_primary_camera_target =
+        graphics.current_camera_target == Some(graphics.primary_camera_target);
     for (camera_transform, camera) in &cameras {
+        // Check that the camera is setup to render to the current CameraTarget.
+        let camera_should_render = (graphics.current_camera_target.is_some()
+            && graphics.current_camera_target == camera.camera_target)
+            || (is_primary_camera_target && camera.camera_target == Some(CameraTarget::Primary));
+
         // Check that this camera targets the target currently being rendered.
-        if graphics.current_camera_target.is_some()
-            && graphics.current_camera_target == camera.camera_target
-        {
+        if camera_should_render {
+            log!("RENDERING!");
+
             let clear_color = camera.clear_color.map(|c| {
                 // Presently the output needs to be in non-linear sRGB.
                 // However that means that blending with the clear-color will be incorrect.

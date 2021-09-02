@@ -8,6 +8,7 @@ pub struct WebXR {
     get_device_transform: JSObjectDynamic,
     get_view_info: JSObjectDynamic,
     get_view_count: JSObjectDynamic,
+    running: bool,
 }
 
 impl WebXR {
@@ -29,6 +30,7 @@ impl WebXR {
                 get_device_transform,
                 get_view_info,
                 get_view_count: js.get_property("get_view_count"),
+                running: false,
             })
         }
     }
@@ -64,51 +66,54 @@ impl WebXR {
 // For now arbitrary IDs will be used to differntiate custom user events.
 pub(crate) const XR_EVENT_ID: usize = 8434232;
 
-pub(super) fn xr_control_flow(koi_state: &mut KoiState, event: KappEvent) {
+pub(super) fn xr_control_flow(koi_state: &mut KoiState, event: KappEvent) -> bool {
     match event {
         KappEvent::UserEvent {
             id: XR_EVENT_ID,
             data,
         } => {
             // Update the current thing being rendered.
-            let graphics = koi_state
-                .world
-                .get_single_component_mut::<Graphics>()
-                .unwrap();
-            graphics.current_camera_target = Some(CameraTarget::XRDevice(0));
-
-            // Update any XR related components in the World
-            (|xr: &mut XR,
-              mut xr_heads: Query<(&mut Transform, &XRHead)>,
-              mut multi_view_cameras: Query<&mut MultiViewCamera>| {
-                // Update the location of the head.
-                let device_transform = xr.get_device_transform();
-                for (transform, _) in &mut xr_heads {
-                    *transform = Transform::from_mat4(device_transform);
-                }
+            (|xr: &mut XR, graphics: &mut Graphics| {
+                graphics.current_camera_target = Some(CameraTarget::XRDevice(0));
+                graphics.primary_camera_target = CameraTarget::XRDevice(0);
 
                 let view_count = xr.get_view_count.call().unwrap().get_value_u32();
-
-                // This allocation should be removed in favor of something else.
-                //let mut multiview_views = Vec::new();
+                graphics.override_views.clear();
                 for view_index in 0..view_count {
                     xr.get_view_info.call_raw(&[view_index]);
                     kwasm::DATA_FROM_HOST.with(|data| unsafe {
                         let data = data.borrow_mut();
                         let data: &[f32] =
                             std::slice::from_raw_parts(data.as_ptr() as *const f32, 16 * 2 + 4);
-                        // log!("DATA: {:?}", data);
-                        let transform_matrix = Mat4::try_from(&data[0..16]).unwrap();
+                        let offset_transform = Mat4::try_from(&data[0..16]).unwrap();
                         let projection_matrix = Mat4::try_from(&data[16..32]).unwrap();
                         let viewport = &data[32..36];
 
                         log!("PROJECTION MATRIX: {:?}", projection_matrix);
                         log!("VIEWPORT: {:?}", viewport);
+                        let multiview_view = CameraView {
+                            output_rectangle: BoundingBox::new_with_min_corner_and_size(
+                                Vec2::new(viewport[0], viewport[1]),
+                                Vec2::new(viewport[2], viewport[3]),
+                            ),
+                            offset_transform,
+                            projection_matrix,
+                        };
+                        graphics.override_views.push(multiview_view)
                     });
                 }
+            })
+            .run(&mut koi_state.world)
+            .unwrap();
 
-                for multi_view_camera in &mut multi_view_cameras {
-                    multi_view_camera.views.clear();
+            // Update any XR related components in the World
+            (|xr: &mut XR, mut xr_heads: Query<(&mut Transform, &XRHead, Option<&mut Camera>)>| {
+                xr.running = true;
+
+                // Update the location of the head.
+                let device_transform = xr.get_device_transform();
+                for (transform, _, camera) in &mut xr_heads {
+                    *transform = Transform::from_mat4(device_transform);
                 }
             })
             .run(&mut koi_state.world)
@@ -116,16 +121,25 @@ pub(super) fn xr_control_flow(koi_state: &mut KoiState, event: KappEvent) {
 
             // Issue a draw request from the XR device.
             koi_state.draw();
+            return true;
+        }
+        KappEvent::Draw { .. } => {
+            let xr = koi_state.world.get_single_component_mut::<XR>().unwrap();
+            // If we're running XR suppress regular draw events.
+            if xr.running {
+                return true;
+            }
         }
         _ => {}
     }
+    return false;
 }
 
 /// Begin rendering an XR frame.
 /// Issues a KappEvent::UserEvent to wake up the main event loop.
 #[no_mangle]
 extern "C" fn koi_begin_xr_frame() {
-    log!("BEGIN XR FRAME!");
+    // log!("BEGIN XR FRAME!");
     super::USER_EVENT_SENDER.with(|s| {
         s.borrow().as_ref().unwrap().send(XR_EVENT_ID, 0);
     })
