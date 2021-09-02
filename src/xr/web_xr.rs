@@ -87,11 +87,29 @@ pub(super) fn xr_control_flow(koi_state: &mut KoiState, event: KappEvent) {
                     *transform = Transform::from_mat4(device_transform);
                 }
 
-                let view_count = self.get_view_count.call().unwrap().get_value_u32();
+                let view_count = xr.get_view_count.call().unwrap().get_value_u32();
 
                 // This allocation should be removed in favor of something else.
-                let mut multiview_views = Vec::new();
-                
+                //let mut multiview_views = Vec::new();
+                for view_index in 0..view_count {
+                    xr.get_view_info.call_raw(&[view_index]);
+                    kwasm::DATA_FROM_HOST.with(|data| unsafe {
+                        let data = data.borrow_mut();
+                        let data: &[f32] =
+                            std::slice::from_raw_parts(data.as_ptr() as *const f32, 16 * 2 + 4);
+                        // log!("DATA: {:?}", data);
+                        let transform_matrix = Mat4::try_from(&data[0..16]).unwrap();
+                        let projection_matrix = Mat4::try_from(&data[16..32]).unwrap();
+                        let viewport = &data[32..36];
+
+                        log!("PROJECTION MATRIX: {:?}", projection_matrix);
+                        log!("VIEWPORT: {:?}", viewport);
+                    });
+                }
+
+                for multi_view_camera in &mut multi_view_cameras {
+                    multi_view_camera.views.clear();
+                }
             })
             .run(&mut koi_state.world)
             .unwrap();

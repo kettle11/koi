@@ -39,7 +39,7 @@ let gl_layer = null;
 
 // XRFrame: https://developer.mozilla.org/en-US/docs/Web/API/XRFrame
 function on_xr_frame(time, frame) {
-    last_farme = frame;
+    last_frame = frame;
 
     let session = frame.session;
 
@@ -138,18 +138,27 @@ let kxr = {
     get_view_info(view_index) {
         // https://developer.mozilla.org/en-US/docs/Web/API/XRView
         let view = last_pose.views[view_index];
-        let projection_matrix = view.projection_matrix.matrix;
+        let projection_matrix = view.projectionMatrix;
         let transform_matrix = view.transform.matrix;
-        let pointer = self.kwasm_exports.kwasm_reserve_space(20 * 4);
+
+        // Two matrices and a viewport rectangle.
+        let floats_count = 16 * 2 + 4;
+        let pointer = self.kwasm_exports.kwasm_reserve_space(floats_count * 4);
         let viewport = gl_layer.getViewport(view);
 
-        const client_data = new Float32Array(self.kwasm_memory.buffer, pointer, 20);
-        client_data.set(transform_matrix);
-        client_data.set([viewport.x, viewport.y, viewport.width, viewport.height]);
+        const client_data = new Float32Array(self.kwasm_memory.buffer, pointer, floats_count);
+        let offset = 0;
+        client_data.set(transform_matrix, offset);
+
+        offset += 16;
+        client_data.set(projection_matrix, offset);
+
+        offset += 16;
+        client_data.set([viewport.x, viewport.y, viewport.width, viewport.height], offset);
+        offset += 4;
     },
     get_device_transform() {
-        let viewer_pose = last_frame.getViewerPose();
-        pass_4x4_matrix_to_wasm(viewer_pose.transform.matrix)
+        pass_4x4_matrix_to_wasm(last_pose.transform.matrix)
     },
     get_xr_framebuffer() {
         self.kwasm_new_js_object(xr_framebuffer)
