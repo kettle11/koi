@@ -16,8 +16,8 @@ type InnerXR = open_xr::OpenXR;
 pub fn xr_plugin() -> Plugin {
     Plugin {
         setup_systems: vec![setup_xr.system()],
-        on_kapp_events: vec![web_xr::on_kapp_events.system()],
         fixed_update_systems: vec![update_xr_transforms.system()],
+        additional_control_flow: vec![Box::new(web_xr::xr_control_flow)],
         ..Default::default()
     }
 }

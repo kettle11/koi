@@ -38,6 +38,7 @@ impl GlobalTransform {
     pub fn model(&self) -> Mat4 {
         Mat4::from_translation_rotation_scale(self.position, self.rotation, self.scale)
     }
+
     pub fn from_mat4(mat4: Mat4) -> Self {
         let (position, rotation, scale) = mat4.to_translation_rotation_scale();
         Self {

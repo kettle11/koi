@@ -79,6 +79,7 @@ pub struct Plugin {
     pub draw_systems: Vec<System>,
     pub end_of_frame_systems: Vec<System>,
     pub on_kapp_events: Vec<System>,
+    pub additional_control_flow: Vec<Box<dyn FnMut(&mut KoiState, KappEvent)>>,
 }
 
 impl Plugin {
@@ -92,6 +93,8 @@ impl Plugin {
         self.end_of_frame_systems
             .append(&mut other.end_of_frame_systems);
         self.on_kapp_events.append(&mut other.on_kapp_events);
+        self.additional_control_flow
+            .append(&mut other.additional_control_flow);
     }
 }
 
@@ -104,6 +107,7 @@ impl Default for Plugin {
             draw_systems: Vec::new(),
             end_of_frame_systems: Vec::new(),
             on_kapp_events: Vec::new(),
+            additional_control_flow: Vec::new(),
         }
     }
 }
@@ -201,8 +205,8 @@ impl App {
         }
 
         // Setup time tracking
-        let mut start = Instant::now();
-        let mut time_acumulator = 0.0;
+        let start = Instant::now();
+        let time_acumulator = 0.0;
 
         // Hard-coded to 60 fixed updates per second for now.
         let fixed_time_step = 1.0 / 60.0;
@@ -216,74 +220,119 @@ impl App {
         // Setup input
         let input_entity = world.spawn(Input::new());
 
-        let mut run_system = setup_and_run_function(&mut world);
+        let run_system = Box::new(setup_and_run_function(&mut world));
 
+        let mut koi_state = KoiState {
+            world,
+            systems: self.systems,
+            start,
+            time_acumulator,
+            fixed_time_step,
+            run_system,
+            input_entity,
+            window_entity,
+            kapp_events_entity,
+        };
         kapp_event_loop.run(move |event| {
-            use kapp::Event;
-
-            // Update the input manager.
-            let input = world.get_component_mut::<Input>(input_entity).unwrap();
-            input.state.handle_event(&event);
-
-            world
-                .get_component_mut::<KappEvents>(kapp_events_entity)
-                .unwrap()
-                .push(event.clone());
-            for system in &mut self.systems.on_kapp_events {
-                system.run(&mut world).unwrap()
-            }
-
-            run_system(crate::Event::KappEvent(event.clone()), &mut world);
-
+            koi_state.handle_event(event.clone());
             match event {
-                Event::WindowCloseRequested { .. } => kapp_app.quit(),
-                Event::Draw { .. } => {
-                    ktasks::run_only_local_tasks();
-
-                    for system in &mut self.systems.pre_fixed_update_systems {
-                        system.run(&mut world).unwrap()
-                    }
-
-                    let elapsed = start.elapsed();
-                    let time_elapsed_seconds = elapsed.as_secs_f64();
-                    start = Instant::now();
-                    time_acumulator += time_elapsed_seconds;
-                    while time_acumulator >= fixed_time_step {
-                        for system in &mut self.systems.fixed_update_systems {
-                            system.run(&mut world).unwrap()
-                        }
-                        apply_commands(&mut world);
-                        run_system(crate::Event::FixedUpdate, &mut world);
-                        apply_commands(&mut world);
-                        time_acumulator -= fixed_time_step;
-                    }
-
-                    run_system(crate::Event::Draw, &mut world);
-                    apply_commands(&mut world);
-                    for system in &mut self.systems.draw_systems {
-                        system.run(&mut world).unwrap()
-                    }
-                    apply_commands(&mut world);
-
-                    // Run systems after the last draw.
-                    for system in &mut self.systems.end_of_frame_systems {
-                        system.run(&mut world).unwrap()
-                    }
-                    apply_commands(&mut world);
-
-                    // This ensures a continuous redraw.
-                    world
-                        .get_component_mut::<NotSendSync<kapp::Window>>(window_entity)
-                        .unwrap()
-                        .request_redraw();
-
-                    world
-                        .get_component_mut::<KappEvents>(kapp_events_entity)
-                        .unwrap()
-                        .clear();
-                }
+                KappEvent::WindowCloseRequested { .. } => kapp_app.quit(),
+                KappEvent::Draw { .. } => {}
                 _ => {}
             }
         })
+    }
+}
+
+pub struct KoiState {
+    pub world: World,
+    pub systems: Plugin,
+    pub start: Instant,
+    pub time_acumulator: f64,
+    pub fixed_time_step: f64,
+    pub run_system: Box<dyn FnMut(Event, &mut World)>,
+    pub input_entity: Entity,
+    pub window_entity: Entity,
+    pub kapp_events_entity: Entity,
+}
+
+impl KoiState {
+    fn handle_event(&mut self, event: KappEvent) {
+        let input = self
+            .world
+            .get_component_mut::<Input>(self.input_entity)
+            .unwrap();
+        input.state.handle_event(&event);
+
+        self.world
+            .get_component_mut::<KappEvents>(self.kapp_events_entity)
+            .unwrap()
+            .push(event.clone());
+
+        for system in &mut self.systems.on_kapp_events {
+            system.run(&mut self.world).unwrap()
+        }
+
+        (self.run_system)(crate::Event::KappEvent(event.clone()), &mut self.world);
+        match event {
+            KappEvent::Draw { .. } => {
+                self.draw();
+            }
+            _ => {}
+        }
+
+        // Run additional control flow.
+        // This is used by things like XR that need to control overall program flow.
+        let mut swap = Vec::new();
+        std::mem::swap(&mut self.systems.additional_control_flow, &mut swap);
+        for additional_control_flow in &mut swap {
+            (additional_control_flow)(self, event.clone())
+        }
+        std::mem::swap(&mut self.systems.additional_control_flow, &mut swap);
+    }
+
+    pub fn draw(&mut self) {
+        for system in &mut self.systems.pre_fixed_update_systems {
+            system.run(&mut self.world).unwrap()
+        }
+
+        let elapsed = self.start.elapsed();
+        let time_elapsed_seconds = elapsed.as_secs_f64();
+        self.start = Instant::now();
+        self.time_acumulator += time_elapsed_seconds;
+
+        while self.time_acumulator >= self.fixed_time_step {
+            for system in &mut self.systems.fixed_update_systems {
+                system.run(&mut self.world).unwrap()
+            }
+            apply_commands(&mut self.world);
+            (self.run_system)(crate::Event::FixedUpdate, &mut self.world);
+            apply_commands(&mut self.world);
+            self.time_acumulator -= self.fixed_time_step;
+        }
+
+        (self.run_system)(crate::Event::Draw, &mut self.world);
+        apply_commands(&mut self.world);
+        for system in &mut self.systems.draw_systems {
+            system.run(&mut self.world).unwrap()
+        }
+        apply_commands(&mut self.world);
+
+        // Run systems after the last draw.
+        for system in &mut self.systems.end_of_frame_systems {
+            system.run(&mut self.world).unwrap()
+        }
+        apply_commands(&mut self.world);
+
+        // This ensures a continuous redraw.
+        self.world
+            .get_component_mut::<NotSendSync<kapp::Window>>(self.window_entity)
+            .unwrap()
+            .request_redraw();
+
+        self.world
+            .get_component_mut::<KappEvents>(self.kapp_events_entity)
+            .unwrap()
+            .clear();
     }
 }

@@ -79,7 +79,7 @@ function on_xr_frame(time, frame) {
         // Clear the framebuffer
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
         */
-        console.log(pose);
+        //console.log(pose);
         // Normally you'd loop through each of the views reported by the frame
         // and draw them into the corresponding viewport here, but we're
         // keeping this sample slim so we're not bothering to draw any
@@ -136,13 +136,15 @@ let kxr = {
         return last_pose.views.length;
     },
     get_view_info(view_index) {
+        // https://developer.mozilla.org/en-US/docs/Web/API/XRView
         let view = last_pose.views[view_index];
-        let matrix = view.transform.matrix;
+        let projection_matrix = view.projection_matrix.matrix;
+        let transform_matrix = view.transform.matrix;
         let pointer = self.kwasm_exports.kwasm_reserve_space(20 * 4);
         let viewport = gl_layer.getViewport(view);
 
         const client_data = new Float32Array(self.kwasm_memory.buffer, pointer, 20);
-        client_data.set(matrix);
+        client_data.set(transform_matrix);
         client_data.set([viewport.x, viewport.y, viewport.width, viewport.height]);
     },
     get_device_transform() {

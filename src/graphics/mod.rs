@@ -164,6 +164,8 @@ fn assign_current_camera_target(graphics: &mut Graphics, events: &KappEvents) {
                 CameraTarget::Window(WindowId::KappWindowId(*window_id))
             });
         }
+        // Ignore user events because they're likely related to WebXR which may assign the CameraTarget.
+        Some(KappEvent::UserEvent { .. }) => {}
         _ => panic!("Unexpected last Kapp event"),
     }
 }

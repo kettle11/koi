@@ -41,7 +41,7 @@ impl WebXR {
         self.end_xr.call();
     }
 
-    pub fn get_device_transform(&mut self) -> Mat4 {
+    fn get_device_transform(&mut self) -> Mat4 {
         self.get_device_transform.call();
         kwasm::DATA_FROM_HOST.with(|d| unsafe {
             let d = d.borrow();
@@ -50,26 +50,54 @@ impl WebXR {
         })
     }
 
-    pub fn draw(&mut self) {
+    /*
+    fn draw(&mut self) {
         let view_count = self.get_view_count.call().unwrap().get_value_u32();
-        
+
         // Need to get view information here and call appropriate render functions.
         log!("VIEW COUNT: {:?}", view_count);
         log!("DRAWING XR!");
     }
+    */
 }
 
 // For now arbitrary IDs will be used to differntiate custom user events.
 pub(crate) const XR_EVENT_ID: usize = 8434232;
 
-pub(super) fn on_kapp_events(xr: &mut XR, events: &KappEvents) {
-    match events.last() {
-        Some(KappEvent::UserEvent {
+pub(super) fn xr_control_flow(koi_state: &mut KoiState, event: KappEvent) {
+    match event {
+        KappEvent::UserEvent {
             id: XR_EVENT_ID,
             data,
-        }) => {
-            log!("XR EVENT!");
-            xr.draw();
+        } => {
+            // Update the current thing being rendered.
+            let graphics = koi_state
+                .world
+                .get_single_component_mut::<Graphics>()
+                .unwrap();
+            graphics.current_camera_target = Some(CameraTarget::XRDevice(0));
+
+            // Update any XR related components in the World
+            (|xr: &mut XR,
+              mut xr_heads: Query<(&mut Transform, &XRHead)>,
+              mut multi_view_cameras: Query<&mut MultiViewCamera>| {
+                // Update the location of the head.
+                let device_transform = xr.get_device_transform();
+                for (transform, _) in &mut xr_heads {
+                    *transform = Transform::from_mat4(device_transform);
+                }
+
+                let view_count = self.get_view_count.call().unwrap().get_value_u32();
+
+                // This allocation should be removed in favor of something else.
+                let mut multiview_views = Vec::new();
+                
+            })
+            .run(&mut koi_state.world)
+            .unwrap();
+
+            // Issue a draw request from the XR device.
+            koi_state.draw();
         }
         _ => {}
     }
