@@ -12,8 +12,14 @@ pub struct RenderTarget {
     pixel_format: PixelFormat,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Framebuffer(Option<JSObjectDynamic>);
+
+impl Framebuffer {
+    pub unsafe fn from_js_object(js_object_dynamic: JSObjectDynamic) -> Self {
+        Self(Some(js_object_dynamic))
+    }
+}
 
 impl Default for Framebuffer {
     fn default() -> Self {

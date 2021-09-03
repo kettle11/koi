@@ -8,7 +8,9 @@ pub struct WebXR {
     get_device_transform: JSObjectDynamic,
     get_view_info: JSObjectDynamic,
     get_view_count: JSObjectDynamic,
+    get_xr_framebuffer: JSObjectDynamic,
     running: bool,
+    framebuffer: Option<Framebuffer>,
 }
 
 impl WebXR {
@@ -23,6 +25,7 @@ impl WebXR {
             let end_xr = js.get_property("end_xr");
             let get_device_transform = js.get_property("get_device_transform");
             let get_view_info = js.get_property("get_view_info");
+            let get_xr_framebuffer = js.get_property("get_xr_framebuffer");
 
             Ok(Self {
                 start_xr,
@@ -30,7 +33,9 @@ impl WebXR {
                 get_device_transform,
                 get_view_info,
                 get_view_count: js.get_property("get_view_count"),
+                get_xr_framebuffer,
                 running: false,
+                framebuffer: None,
             })
         }
     }
@@ -41,6 +46,10 @@ impl WebXR {
 
     pub fn stop(&mut self) {
         self.end_xr.call();
+    }
+
+    pub fn running(&self) -> bool {
+        self.running
     }
 
     fn get_device_transform(&mut self) -> Mat4 {
@@ -74,6 +83,17 @@ pub(super) fn xr_control_flow(koi_state: &mut KoiState, event: KappEvent) -> boo
         } => {
             // Update the current thing being rendered.
             (|xr: &mut XR, graphics: &mut Graphics| {
+                if xr.framebuffer.is_none() {
+                    xr.framebuffer = unsafe {
+                        Some(
+                            xr.get_xr_framebuffer
+                                .call()
+                                .map_or(Default::default(), |f| Framebuffer::from_js_object(f)),
+                        )
+                    };
+                }
+
+                graphics.current_target_framebuffer = xr.framebuffer.clone().unwrap();
                 graphics.current_camera_target = Some(CameraTarget::XRDevice(0));
                 graphics.primary_camera_target = CameraTarget::XRDevice(0);
 
@@ -89,8 +109,6 @@ pub(super) fn xr_control_flow(koi_state: &mut KoiState, event: KappEvent) -> boo
                         let projection_matrix = Mat4::try_from(&data[16..32]).unwrap();
                         let viewport = &data[32..36];
 
-                        log!("PROJECTION MATRIX: {:?}", projection_matrix);
-                        log!("VIEWPORT: {:?}", viewport);
                         let multiview_view = CameraView {
                             output_rectangle: BoundingBox::new_with_min_corner_and_size(
                                 Vec2::new(viewport[0], viewport[1]),

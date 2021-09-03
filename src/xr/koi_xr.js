@@ -161,7 +161,7 @@ let kxr = {
         pass_4x4_matrix_to_wasm(last_pose.transform.matrix)
     },
     get_xr_framebuffer() {
-        self.kwasm_new_js_object(xr_framebuffer)
+        return xr_framebuffer;
     },
 };
 kxr

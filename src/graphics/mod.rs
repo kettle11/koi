@@ -2,7 +2,9 @@ pub use crate::graphics::texture::Texture;
 use crate::*;
 use kgraphics::*;
 
-pub use kgraphics::{BlendFactor, FilterMode, Pipeline, TextureSettings, WrappingMode};
+pub use kgraphics::{
+    BlendFactor, FilterMode, Framebuffer, Pipeline, TextureSettings, WrappingMode,
+};
 
 mod camera;
 pub use camera::*;
@@ -64,6 +66,7 @@ pub struct GraphicsInner {
     /// Views the primary camera should use instead of its default view.
     /// This is used by XR devices.
     pub override_views: Vec<CameraView>,
+    pub current_target_framebuffer: Framebuffer,
 }
 
 #[derive(Clone, Debug)]
@@ -126,6 +129,7 @@ fn setup_graphics(world: &mut World) {
         current_camera_target: None,
         primary_camera_target: CameraTarget::Window(main_window.id),
         override_views: Vec::new(),
+        current_target_framebuffer: Framebuffer::default(),
     });
 
     let default_mesh = graphics.new_gpu_mesh(&MeshData::default()).unwrap();

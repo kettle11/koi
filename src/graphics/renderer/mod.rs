@@ -361,8 +361,6 @@ pub fn render_scene(
 
         // Check that this camera targets the target currently being rendered.
         if camera_should_render {
-            log!("RENDERING!");
-
             let clear_color = camera.clear_color.map(|c| {
                 // Presently the output needs to be in non-linear sRGB.
                 // However that means that blending with the clear-color will be incorrect.
@@ -371,8 +369,10 @@ pub fn render_scene(
                 (c.red, c.green, c.blue, c.alpha)
             });
 
-            let mut render_pass =
-                command_buffer.begin_render_pass_with_framebuffer(&Default::default(), clear_color);
+            let mut render_pass = command_buffer.begin_render_pass_with_framebuffer(
+                &graphics.current_target_framebuffer,
+                clear_color,
+            );
 
             let mut renderer = Renderer::new(
                 &mut render_pass,

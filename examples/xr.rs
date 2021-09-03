@@ -37,14 +37,18 @@ fn setup_and_run(world: &mut World) -> impl FnMut(Event, &mut koi::World) {
 
     |event: Event, world: &mut World| match event {
         Event::Draw => {
-            draw.run(world).unwrap();
+            (|input: &Input, xr: &mut XR, camera: &mut Camera| {
+                if input.pointer_just_pressed(PointerButton::Primary) {
+                    xr.start();
+                }
+
+                if xr.running() {
+                    camera.clear_color = Some(Color::RED);
+                }
+            })
+            .run(world)
+            .unwrap();
         }
         _ => {}
-    }
-}
-
-fn draw(input: &Input, xr: &mut XR) {
-    if input.key_just_pressed(Key::B) {
-        xr.start();
     }
 }
