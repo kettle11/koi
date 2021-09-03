@@ -41,11 +41,17 @@ impl WebXR {
     }
 
     pub fn start(&mut self) {
-        self.start_xr.call();
+        if !self.running {
+            self.running = true;
+            self.start_xr.call();
+        }
     }
 
     pub fn stop(&mut self) {
-        self.end_xr.call();
+        if self.running {
+            self.running = false;
+            self.end_xr.call();
+        }
     }
 
     pub fn running(&self) -> bool {
@@ -126,8 +132,6 @@ pub(super) fn xr_control_flow(koi_state: &mut KoiState, event: KappEvent) -> boo
 
             // Update any XR related components in the World
             (|xr: &mut XR, mut xr_heads: Query<(&mut Transform, &XRHead, Option<&mut Camera>)>| {
-                xr.running = true;
-
                 // Update the location of the head.
                 let device_transform = xr.get_device_transform();
                 for (transform, _, camera) in &mut xr_heads {

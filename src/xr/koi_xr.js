@@ -13,23 +13,31 @@ function on_session_started(session) {
 
     // Create a WebGL context to render with, initialized to be compatible
     // with the XRDisplay we're presenting to.
-    let canvas = document.createElement('canvas');
-    gl = canvas.getContext('webgl2', { xrCompatible: true });
-
-    // Use the new WebGL context to create a XRWebGLLayer and set it as the
-    // sessions baseLayer. This allows any content rendered to the layer to
-    // be displayed on the XRDevice.
-    session.updateRenderState({ baseLayer: new XRWebGLLayer(session, gl) });
-
-    // Get a reference space, which is required for querying poses. In this
-    // case an 'local' reference space means that all poses will be relative
-    // to the location where the XRDevice was first detected.
-    session.requestReferenceSpace('viewer').then((refSpace) => {
-        xr_reference_space = refSpace;
-
-        // Inform the session that we're ready to begin drawing.
-        session.requestAnimationFrame(on_xr_frame);
+    let canvas = document.getElementById('canvas');
+    gl = canvas.getContext('webgl2', {
+        alpha: false,
+        desynchronized: false,
+        antialias: true,
+        depth: true,
     });
+    gl.makeXRCompatible().then(() => {
+
+        // Use the new WebGL context to create a XRWebGLLayer and set it as the
+        // sessions baseLayer. This allows any content rendered to the layer to
+        // be displayed on the XRDevice.
+        session.updateRenderState({ baseLayer: new XRWebGLLayer(session, gl) });
+
+        // Get a reference space, which is required for querying poses. In this
+        // case an 'local' reference space means that all poses will be relative
+        // to the location where the XRDevice was first detected.
+        session.requestReferenceSpace('viewer').then((refSpace) => {
+            xr_reference_space = refSpace;
+
+            // Inform the session that we're ready to begin drawing.
+            session.requestAnimationFrame(on_xr_frame);
+        });
+    }
+    );
 }
 
 let last_frame = null;
@@ -120,9 +128,17 @@ let kxr = {
         }
     },
     start_xr() {
+        console.log("START XR CALLED!");
         if (navigator.xr) {
             if (!xr_session) {
-                navigator.xr.requestSession('inline').then(on_session_started);
+                navigator.xr.isSessionSupported('immersive-vr').then((supported) => {
+                    console.log("STARTING SESSION!");
+                    if (supported) {
+                        navigator.xr.requestSession('immersive-vr').then(on_session_started);
+                    } else {
+                        navigator.xr.requestSession('inline').then(on_session_started);
+                    }
+                })
             }
         }
     },

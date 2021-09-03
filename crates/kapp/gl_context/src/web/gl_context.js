@@ -22,7 +22,7 @@ function create_webgl2_context() {
         alpha: false,
         desynchronized: false,
         antialias: true,
-        depth: true
+        depth: true,
     });
 }
 
