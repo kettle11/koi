@@ -127,9 +127,7 @@ pub(super) fn xr_control_flow(koi_state: &mut KoiState, event: KappEvent) -> boo
                     });
                 }
             })
-            .run(&mut koi_state.world)
-            .unwrap();
-
+            .run(&mut koi_state.world);
             // Update any XR related components in the World
             (|xr: &mut XR, mut xr_heads: Query<(&mut Transform, &XRHead, Option<&mut Camera>)>| {
                 // Update the location of the head.
@@ -138,8 +136,7 @@ pub(super) fn xr_control_flow(koi_state: &mut KoiState, event: KappEvent) -> boo
                     *transform = Transform::from_mat4(device_transform);
                 }
             })
-            .run(&mut koi_state.world)
-            .unwrap();
+            .run(&mut koi_state.world);
 
             // Issue a draw request from the XR device.
             koi_state.draw();

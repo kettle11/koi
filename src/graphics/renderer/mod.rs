@@ -62,22 +62,24 @@ struct Renderer<'a, 'b: 'a, 'c: 'a> {
 impl<'a, 'b: 'a, 'c: 'a> Renderer<'a, 'b, 'c> {
     pub fn new(
         render_pass: &'a mut RenderPass<'b>,
-        camera_transform: &'a Transform,
-        camera: &Camera,
         shader_assets: &'a Assets<Shader>,
         material_assets: &'a Assets<Material>,
         mesh_assets: &'a Assets<Mesh>,
         texture_assets: &'a Assets<Texture>,
         lights: &'a Query<'c, (&'static Transform, &'static Light)>,
+        camera_info: CameraInfo,
+        viewport: BoundingBox<u32, 2>,
     ) -> Self {
-        let camera_info = Self::get_camera_info(camera_transform, camera);
+        // let camera_info = Self::get_camera_info(camera_transform, camera);
 
-        let (view_width, view_height) = camera.get_view_size();
-        render_pass.set_viewport(0, 0, view_width, view_height);
+        // let (view_width, view_height) = camera.get_view_size();
+        let min = viewport.min;
+        let size = viewport.size();
+        render_pass.set_viewport(min.x as u32, min.y as u32, size.x as u32, size.y as u32);
 
         Self {
             render_pass,
-            camera_info,
+            // camera_info,
             shader_assets,
             material_assets,
             texture_assets,
@@ -86,6 +88,7 @@ impl<'a, 'b: 'a, 'c: 'a> Renderer<'a, 'b, 'c> {
             bound_shader: None,
             material_info: None,
             lights,
+            camera_info,
         }
     }
 
@@ -374,15 +377,23 @@ pub fn render_scene(
                 clear_color,
             );
 
+            // Tomorrow: Try putting code here to separately render to each-viewport.
+
+            let camera_info = Renderer::get_camera_info(camera_transform, camera);
+            let (width, height) = camera.get_view_size();
+
             let mut renderer = Renderer::new(
                 &mut render_pass,
-                camera_transform,
-                camera,
                 shader_assets,
                 material_assets,
                 mesh_assets,
                 texture_assets,
                 &lights,
+                camera_info,
+                BoundingBox {
+                    min: Vector::ZERO,
+                    max: Vector::<u32, 2>::new(width, height),
+                },
             );
 
             for (transform, material_handle, mesh_handle, optional_sprite) in

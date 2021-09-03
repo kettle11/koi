@@ -74,8 +74,7 @@ fn delayed_spawn_system(world: &mut World) {
             }
         }
     })
-    .run(world)
-    .unwrap();
+    .run(world);
 
     for (parent_entity, mut new_world) in worlds_to_add {
         let top_level_nodes: Vec<Entity> = (|transform_nodes: Query<&HierarchyNode>| {
@@ -90,8 +89,7 @@ fn delayed_spawn_system(world: &mut World) {
                 })
                 .collect()
         })
-        .run(&mut new_world)
-        .unwrap();
+        .run(&mut new_world);
 
         let entity_migrator = world.add_world(&mut new_world);
         for top_level_entity in top_level_nodes {

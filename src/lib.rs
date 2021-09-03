@@ -201,7 +201,7 @@ impl App {
         let window_entity = world.spawn(NotSendSync::new(window));
 
         for setup_system in &mut self.systems.setup_systems {
-            setup_system.run(&mut world).unwrap()
+            setup_system.run(&mut world)
         }
 
         // Setup time tracking
@@ -270,7 +270,7 @@ impl KoiState {
             .push(event.clone());
 
         for system in &mut self.systems.on_kapp_events {
-            system.run(&mut self.world).unwrap()
+            system.run(&mut self.world)
         }
 
         // Run additional control flow.
@@ -296,7 +296,7 @@ impl KoiState {
 
     pub fn draw(&mut self) {
         for system in &mut self.systems.pre_fixed_update_systems {
-            system.run(&mut self.world).unwrap()
+            system.run(&mut self.world)
         }
 
         let elapsed = self.start.elapsed();
@@ -306,7 +306,7 @@ impl KoiState {
 
         while self.time_acumulator >= self.fixed_time_step {
             for system in &mut self.systems.fixed_update_systems {
-                system.run(&mut self.world).unwrap()
+                system.run(&mut self.world)
             }
             apply_commands(&mut self.world);
             (self.run_system)(crate::Event::FixedUpdate, &mut self.world);
@@ -317,13 +317,13 @@ impl KoiState {
         (self.run_system)(crate::Event::Draw, &mut self.world);
         apply_commands(&mut self.world);
         for system in &mut self.systems.draw_systems {
-            system.run(&mut self.world).unwrap()
+            system.run(&mut self.world)
         }
         apply_commands(&mut self.world);
 
         // Run systems after the last draw.
         for system in &mut self.systems.end_of_frame_systems {
-            system.run(&mut self.world).unwrap()
+            system.run(&mut self.world)
         }
         apply_commands(&mut self.world);
 

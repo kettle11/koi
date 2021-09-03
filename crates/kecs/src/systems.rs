@@ -39,7 +39,15 @@ pub trait IntoSystemTrait<PARAMETERS> {
 }
 
 pub trait RunSystemTrait<'return_lifetime, PARAMETERS, RETURN: 'return_lifetime> {
-    fn run(self, world: &'return_lifetime World) -> Result<RETURN, KecsError>;
+    fn try_run(self, world: &'return_lifetime World) -> Result<RETURN, KecsError>;
+    // fn run(self, world: &'return_lifetime World) -> RETURN;
+    fn run(self, world: &'return_lifetime World) -> RETURN
+    where
+        Self: Sized,
+    {
+        <Self as RunSystemTrait<'return_lifetime, PARAMETERS, RETURN>>::try_run(self, world)
+            .unwrap()
+    }
 }
 
 /// [AsSystemArg] introduces an extra layer of indirection that allows things like
@@ -61,7 +69,7 @@ macro_rules! system_tuple_impls {
             FnMut( $( <<$tuple as SystemParameterFetchTrait<'return_lifetime>>::FetchResult as AsSystemArg>::Arg ),*) -> RETURN,
         {
             #[allow(non_snake_case, unused_variables, clippy::too_many_arguments)]
-            fn run(mut self, world: &'return_lifetime World) -> Result<RETURN, KecsError> {
+            fn try_run(mut self, world: &'return_lifetime World) -> Result<RETURN, KecsError> {
                 #[allow(clippy::too_many_arguments)]
                 fn call_inner<$($tuple,)* RETURN>(
                     mut f: impl FnMut($($tuple,)*) -> RETURN,
@@ -76,6 +84,8 @@ macro_rules! system_tuple_impls {
                 let result = call_inner(&mut self, $( $tuple ),*);
                 Ok(result)
             }
+
+
         }
 
         impl<FUNCTION: 'static + Send + Sync, $( $tuple: SystemParameterTrait ),*> IntoSystemTrait<($($tuple,)*)> for FUNCTION
@@ -126,11 +136,15 @@ pub enum System {
 }
 
 impl System {
-    pub fn run(&mut self, world: &mut World) -> Result<(), KecsError> {
+    pub fn try_run(&mut self, world: &mut World) -> Result<(), KecsError> {
         match self {
             Self::Exclusive(system) => system(world),
             Self::NonExclusive { system, .. } => system(world),
         }
+    }
+
+    pub fn run(&mut self, world: &mut World) {
+        self.try_run(world).unwrap()
     }
 }
 

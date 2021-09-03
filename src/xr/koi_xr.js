@@ -4,12 +4,14 @@ let xr_reference_space = null;
 
 // Called when we've successfully acquired a XRSession. In response we
 // will set up the necessary session state and kick off the frame loop.
-function on_session_started(session) {
+async function on_session_started(session) {
+
     xr_session = session;
 
     // Listen for the sessions 'end' event so we can respond if the user
     // or UA ends the session for any reason.
     session.addEventListener('end', onSessionEnded);
+
 
     // Create a WebGL context to render with, initialized to be compatible
     // with the XRDisplay we're presenting to.
@@ -20,24 +22,31 @@ function on_session_started(session) {
         antialias: true,
         depth: true,
     });
-    gl.makeXRCompatible().then(() => {
 
-        // Use the new WebGL context to create a XRWebGLLayer and set it as the
-        // sessions baseLayer. This allows any content rendered to the layer to
-        // be displayed on the XRDevice.
-        session.updateRenderState({ baseLayer: new XRWebGLLayer(session, gl) });
 
-        // Get a reference space, which is required for querying poses. In this
-        // case an 'local' reference space means that all poses will be relative
-        // to the location where the XRDevice was first detected.
-        session.requestReferenceSpace('viewer').then((refSpace) => {
-            xr_reference_space = refSpace;
-
-            // Inform the session that we're ready to begin drawing.
-            session.requestAnimationFrame(on_xr_frame);
-        });
+    // Try catch this because it seems to fail in unsupported browsers without reason
+    try {
+        await gl.makeXRCompatible();
+    } catch (e) {
+        console.log("CAUGHT ERROR: " + e);
     }
-    );
+
+    // Use the new WebGL context to create a XRWebGLLayer and set it as the
+    // sessions baseLayer. This allows any content rendered to the layer to
+    // be displayed on the XRDevice.
+    xr_session.updateRenderState({ baseLayer: new XRWebGLLayer(xr_session, gl) });
+
+    // Get a reference space, which is required for querying poses. In this
+    // case an 'local' reference space means that all poses will be relative
+    // to the location where the XRDevice was first detected.
+    let refSpace = await xr_session.requestReferenceSpace('viewer');
+
+    xr_reference_space = refSpace;
+
+
+    // Inform the xr_session that we're ready to begin drawing.
+    xr_session.requestAnimationFrame(on_xr_frame);
+
 }
 
 let last_frame = null;

@@ -88,9 +88,7 @@ pub fn apply_commands(world: &mut World) {
             Command::SetParent { parent, child } => {
                 HierarchyNode::set_parent(world, parent, child).unwrap()
             }
-            Command::RunSystem(mut system) => {
-                system.run(world).unwrap();
-            }
+            Command::RunSystem(mut system) => system.run(world),
         }
     }
     std::mem::swap(

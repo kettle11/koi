@@ -11,6 +11,7 @@ use numeric_traits::*;
 pub use matrix::*;
 pub use quaternion::*;
 pub use vector::*;
+pub use vector::*;
 
 mod default_types {
     use super::{Matrix, Quaternion, Vector};
