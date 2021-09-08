@@ -1,24 +1,6 @@
 #VERTEX 
 
-in vec3 a_position;
-in vec2 a_texture_coordinate;
-in vec3 a_normal;
-
-uniform mat4 p_model;
-uniform mat4 p_view;
-uniform mat4 p_projection;
-
-out vec2 TexCoords;
-out vec3 WorldPosition;
-out vec3 Normal;
-
-void main()
-{
-    WorldPosition = vec3(p_model * vec4(a_position, 1.0));
-    Normal = mat3(p_model) * a_normal;
-    TexCoords = a_texture_coordinate;
-    gl_Position = p_projection * p_view * p_model * vec4(a_position, 1.0);
-}
+#INCLUDE standard_vertex
 
 #FRAGMENT
 
@@ -47,7 +29,7 @@ uniform sampler2D p_normal_texture;
 uniform sampler2D p_ambient_texture;
 uniform sampler2D p_emissive_texture;
 
-uniform vec3 p_camera_position;
+uniform vec3 p_camera_positions[1];
 
 uniform int p_light_count;
 
@@ -245,7 +227,7 @@ void main()
 
 
         vec3 N = getNormalFromMap();
-        vec3 V = normalize(p_camera_position - WorldPosition);
+        vec3 V = normalize(p_camera_positions[0] - WorldPosition);
 
         // calculate reflectance at normal incidence; if dia-electric (like plastic) use F0 
         // of 0.04 and if it's a metal, use the albedo color as F0 (metallic workflow)    

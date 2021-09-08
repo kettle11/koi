@@ -48,7 +48,7 @@ struct MaterialInfo<'a> {
 
 struct Renderer<'a, 'b: 'a, 'c: 'a> {
     render_pass: &'a mut RenderPass<'b>,
-    camera_info: CameraInfo,
+    camera_info: &'a [CameraInfo],
     shader_assets: &'a Assets<Shader>,
     material_assets: &'a Assets<Material>,
     mesh_assets: &'a Assets<Mesh>,
@@ -67,7 +67,7 @@ impl<'a, 'b: 'a, 'c: 'a> Renderer<'a, 'b, 'c> {
         mesh_assets: &'a Assets<Mesh>,
         texture_assets: &'a Assets<Texture>,
         lights: &'a Query<'c, (&'static Transform, &'static Light)>,
-        camera_info: CameraInfo,
+        camera_info: &'a [CameraInfo],
         viewport: BoundingBox<u32, 2>,
     ) -> Self {
         // let camera_info = Self::get_camera_info(camera_transform, camera);
@@ -92,11 +92,12 @@ impl<'a, 'b: 'a, 'c: 'a> Renderer<'a, 'b, 'c> {
         }
     }
 
-    fn get_camera_info(camera_transform: &Transform, camera: &Camera) -> CameraInfo {
+    fn get_camera_info(camera_transform: &Transform, camera: &Camera, offset: Mat4) -> CameraInfo {
         let camera_transform = camera_transform.global_transform;
-        let camera_position = camera_transform.position;
+        // Is this `offset *` correct?
+        let camera_position = offset.transform_point(camera_transform.position);
         let projection_matrix = camera.projection_matrix();
-        let view_matrix = camera_transform.model().inversed();
+        let view_matrix = (offset * camera_transform.model()).inversed();
 
         CameraInfo {
             projection_matrix,
@@ -201,21 +202,29 @@ impl<'a, 'b: 'a, 'c: 'a> Renderer<'a, 'b, 'c> {
             if self.bound_shader != Some(&material.shader) {
                 self.render_pass.set_pipeline(&shader.pipeline);
 
-                self.render_pass.set_mat4_property(
-                    &shader.pipeline.get_mat4_property("p_view").unwrap(),
-                    self.camera_info.view_matrix.as_array(),
-                );
-                self.render_pass.set_mat4_property(
-                    &shader.pipeline.get_mat4_property("p_projection").unwrap(),
-                    self.camera_info.projection_matrix.as_array(),
-                );
-                self.render_pass.set_vec3_property(
-                    &shader
-                        .pipeline
-                        .get_vec3_property("p_camera_position")
-                        .unwrap(),
-                    self.camera_info.camera_position.into(),
-                );
+                for (i, camera_info) in self.camera_info.iter().enumerate() {
+                    self.render_pass.set_mat4_property(
+                        &shader
+                            .pipeline
+                            .get_mat4_property(&format!("p_views[{:?}]", i))
+                            .unwrap(),
+                        camera_info.view_matrix.as_array(),
+                    );
+                    self.render_pass.set_mat4_property(
+                        &shader
+                            .pipeline
+                            .get_mat4_property(&format!("p_projections[{:?}]", i))
+                            .unwrap(),
+                        camera_info.projection_matrix.as_array(),
+                    );
+                    self.render_pass.set_vec3_property(
+                        &shader
+                            .pipeline
+                            .get_vec3_property(&format!("p_camera_positions[{:?}]", i))
+                            .unwrap(),
+                        camera_info.camera_position.into(),
+                    );
+                }
 
                 // When a material is changed we lookup if the shader has some standard properties.
                 let model_property = shader.pipeline.get_mat4_property("p_model").unwrap();
@@ -377,9 +386,23 @@ pub fn render_scene(
                 clear_color,
             );
 
-            // Tomorrow: Try putting code here to separately render to each-viewport.
+            let mut camera_info = Vec::new();
+            if graphics.override_views.is_empty() {
+                camera_info.push(Renderer::get_camera_info(
+                    camera_transform,
+                    camera,
+                    Mat4::IDENTITY,
+                ));
+            } else {
+                for view in &graphics.override_views {
+                    camera_info.push(Renderer::get_camera_info(
+                        camera_transform,
+                        camera,
+                        view.offset_transform,
+                    ))
+                }
+            }
 
-            let camera_info = Renderer::get_camera_info(camera_transform, camera);
             let (width, height) = camera.get_view_size();
 
             let mut renderer = Renderer::new(
@@ -389,7 +412,7 @@ pub fn render_scene(
                 mesh_assets,
                 texture_assets,
                 &lights,
-                camera_info,
+                &camera_info,
                 BoundingBox {
                     min: Vector::ZERO,
                     max: Vector::<u32, 2>::new(width, height),

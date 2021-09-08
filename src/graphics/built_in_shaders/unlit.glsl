@@ -1,24 +1,6 @@
 #VERTEX 
 
-in vec3 a_position;
-in vec2 a_texture_coordinate;
-
-uniform mat4 p_model;
-uniform mat4 p_view;
-uniform mat4 p_projection;
-
-out vec2 TexCoords;
-out vec3 WorldPosition;
-
-uniform vec2 p_texture_coordinate_offset;
-uniform vec2 p_texture_coordinate_scale;
-
-void main()
-{
-    WorldPosition = vec3(p_model * vec4(a_position, 1.0));
-    TexCoords = a_texture_coordinate * p_texture_coordinate_scale + p_texture_coordinate_offset;
-    gl_Position = p_projection * p_view * p_model * vec4(a_position, 1.0);
-}
+#INCLUDE standard_vertex
 
 #FRAGMENT
 

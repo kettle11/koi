@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 pub use crate::graphics::texture::Texture;
 use crate::*;
 use kgraphics::*;
@@ -29,6 +31,8 @@ pub use mesh_primitives::*;
 
 mod light;
 pub use light::*;
+
+mod shader_parser;
 
 #[cfg(feature = "renderer")]
 mod renderer;
@@ -67,6 +71,8 @@ pub struct GraphicsInner {
     /// This is used by XR devices.
     pub override_views: Vec<CameraView>,
     pub current_target_framebuffer: Framebuffer,
+    /// Shader snippets that can be pasted into shaders.
+    shader_snippets: HashMap<&'static str, &'static str>,
 }
 
 #[derive(Clone, Debug)]
@@ -77,6 +83,7 @@ pub struct CameraView {
     pub output_rectangle: BoundingBox<f32, 2>,
 }
 
+#[derive(Clone, Copy)]
 pub struct PipelineSettings {
     faces_to_render: FacesToRender,
     blending: Option<(BlendFactor, BlendFactor)>,
@@ -130,7 +137,13 @@ fn setup_graphics(world: &mut World) {
         primary_camera_target: CameraTarget::Window(main_window.id),
         override_views: Vec::new(),
         current_target_framebuffer: Framebuffer::default(),
+        shader_snippets: HashMap::new(),
     });
+
+    graphics.register_shader_snippet(
+        "standard_vertex",
+        include_str!("built_in_shaders/standard_vertex_snippet.glsl"),
+    );
 
     let default_mesh = graphics.new_gpu_mesh(&MeshData::default()).unwrap();
     let mut mesh_assets = Assets::<Mesh>::new(Mesh {
@@ -189,6 +202,37 @@ fn assign_current_camera_target(graphics: &mut Graphics, events: &KappEvents) {
 }
 
 impl GraphicsInner {
+    fn create_pipeline(
+        &mut self,
+        source: &str,
+        prepend: &str,
+        pipeline_settings: PipelineSettings,
+    ) -> Result<Pipeline, PipelineError> {
+        let (vertex_source, fragment_source) =
+            shader_parser::parse_shader(&self.shader_snippets, source, prepend);
+
+        let vertex_function = self
+            .context
+            .new_vertex_function(&vertex_source)
+            .map_err(PipelineError::VertexCompilationError)?;
+        let fragment_function = self
+            .context
+            .new_fragment_function(&fragment_source)
+            .map_err(PipelineError::FragmentCompilationError)?;
+
+        self.context
+            .new_pipeline(
+                vertex_function,
+                fragment_function,
+                /* Todo: This arbitrary pixel format is a problem */ PixelFormat::RG8Unorm,
+            )
+            // For now all pipelines just have alpha blending by default.
+            .blending(pipeline_settings.blending)
+            .faces_to_render(pipeline_settings.faces_to_render)
+            .build()
+            .map_err(PipelineError::PipelineCompilationError)
+    }
+
     /// koi shaders are both in the same file with #VERTEX and #FRAGMENT to annotate the vertex
     /// and fragment sections.
     pub fn new_shader(
@@ -196,32 +240,18 @@ impl GraphicsInner {
         source: &str,
         pipeline_settings: PipelineSettings,
     ) -> Result<Shader, PipelineError> {
-        let mut i = source.split("#VERTEX").last().unwrap().split("#FRAGMENT");
-        let vertex_source = i.next().ok_or(PipelineError::MissingVertexSection)?;
-        let fragment_source = i.next().ok_or(PipelineError::MissingFragmentSection)?;
+        let pipeline =
+            self.create_pipeline(source, &"#define NUM_VIEWS 1 \n", pipeline_settings)?;
 
-        let vertex_function = self
-            .context
-            .new_vertex_function(vertex_source)
-            .map_err(PipelineError::VertexCompilationError)?;
-        let fragment_function = self
-            .context
-            .new_fragment_function(fragment_source)
-            .map_err(PipelineError::FragmentCompilationError)?;
+        #[cfg(feature = "xr")]
+        let multiview_pipeline =
+            self.create_pipeline(source, &"#define NUM_VIEWS 2 \n #define MULTIVIEW \n", pipeline_settings)?;
 
-        let pipeline = self
-            .context
-            .new_pipeline(
-                vertex_function,
-                fragment_function,
-                /* This arbitrary pixel format is a problem */ PixelFormat::RG8Unorm,
-            )
-            // For now all pipelines just have alpha blending by default.
-            .blending(pipeline_settings.blending)
-            .faces_to_render(pipeline_settings.faces_to_render)
-            .build()
-            .map_err(PipelineError::PipelineCompilationError)?;
-        Ok(Shader { pipeline })
+        Ok(Shader {
+            pipeline,
+            #[cfg(feature = "xr")]
+            multiview_pipeline,
+        })
     }
 
     pub fn new_texture(
@@ -293,6 +323,10 @@ impl GraphicsInner {
             triangle_count,
             colors,
         })
+    }
+
+    pub fn register_shader_snippet(&mut self, name: &'static str, snippet: &'static str) {
+        self.shader_snippets.insert(name, snippet);
     }
 }
 

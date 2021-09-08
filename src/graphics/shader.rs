@@ -6,7 +6,8 @@ use std::sync::mpsc;
 #[derive(Clone)]
 pub struct Shader {
     pub pipeline: Pipeline,
-    // pub transparent: bool,
+    #[cfg(feature = "xr")]
+    pub multiview_pipeline: Pipeline, // pub transparent: bool,
 }
 
 /// A system that loads shaders onto the GPU
