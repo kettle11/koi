@@ -1,4 +1,4 @@
-#ifdef MULTVIEW
+#ifdef MULTIVIEW
 #extension GL_OVR_multiview2 : require
 layout (num_views = 2) in;
 #endif

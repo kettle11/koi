@@ -182,6 +182,26 @@ var gl_web_object = {
         let location = gl.getAttribLocation(program, name);
         return location;
     },
+    get_multiview_supported() {
+        // From here: https://developer.oculus.com/documentation/web/web-multiview/
+        let ext = gl.getExtension('OCULUS_multiview');
+        if (ext) {
+            console.log("OCULUS_multiview extension is supported");
+            return 2;
+        }
+        else {
+            console.log("OCULUS_multiview extension is NOT supported");
+            ext = gl.getExtension('OVR_multiview2');
+            if (ext) {
+                console.log("OVR_multiview2 extension is supported");
+                return 1;
+            }
+            else {
+                console.log("Neither OCULUS_multiview nor OVR_multiview2 extensions are supported");
+                return 0;
+            }
+        }
+    },
     run_command_buffer(commands_ptr, commands_length, f32_data_ptr, f32_data_length, u32_data_ptr, u32_data_length) {
         const commands = new Uint8Array(self.kwasm_memory.buffer, commands_ptr, commands_length);
         //: " + commands_length);

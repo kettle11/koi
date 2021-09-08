@@ -485,6 +485,7 @@ struct WebGLJS {
     get_attribute_name_and_type: JSObjectDynamic,
     run_command_buffer: JSObjectDynamic,
     get_attribute_location: JSObjectDynamic,
+    get_multiview_supported: JSObjectDynamic,
 }
 
 impl WebGLJS {
@@ -508,6 +509,30 @@ impl WebGLJS {
             get_attribute_name_and_type: o.get_property("get_attribute_name_and_type"),
             run_command_buffer: o.get_property("run_command_buffer"),
             get_attribute_location: o.get_property("get_attribute_location"),
+            get_multiview_supported: o.get_property("get_multiview_supported"),
+        }
+    }
+}
+
+pub enum MultiviewSupport {
+    None,
+    WithoutMsaa,
+    OculusWithMsaa,
+}
+
+impl GraphicsContext {
+    pub fn get_multiview_supported(&self) -> MultiviewSupport {
+        match self
+            .js
+            .get_multiview_supported
+            .call()
+            .unwrap()
+            .get_value_u32()
+        {
+            0 => MultiviewSupport::None,
+            1 => MultiviewSupport::WithoutMsaa,
+            2 => MultiviewSupport::OculusWithMsaa,
+            _ => unreachable!(),
         }
     }
 }

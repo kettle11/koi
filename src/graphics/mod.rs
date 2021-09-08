@@ -69,14 +69,16 @@ pub struct GraphicsInner {
     pub primary_camera_target: CameraTarget,
     /// Views the primary camera should use instead of its default view.
     /// This is used by XR devices.
-    pub override_views: Vec<CameraView>,
+    pub override_views: Vec<GraphicsViewInfo>,
     pub current_target_framebuffer: Framebuffer,
     /// Shader snippets that can be pasted into shaders.
     shader_snippets: HashMap<&'static str, &'static str>,
+    #[cfg(feature = "xr")]
+    multiview_support: MultiviewSupport,
 }
 
 #[derive(Clone, Debug)]
-pub struct CameraView {
+pub struct GraphicsViewInfo {
     pub projection_matrix: Mat4,
     /// How this view should be offset from the camera transform.
     pub offset_transform: Mat4,
@@ -130,6 +132,9 @@ fn setup_graphics(world: &mut World) {
             .unwrap()
     };
 
+    #[cfg(feature = "xr")]
+    let multiview_support = context.get_multiview_supported();
+
     let mut graphics = NotSendSync::new(GraphicsInner {
         context,
         render_target,
@@ -138,6 +143,8 @@ fn setup_graphics(world: &mut World) {
         override_views: Vec::new(),
         current_target_framebuffer: Framebuffer::default(),
         shader_snippets: HashMap::new(),
+        #[cfg(feature = "xr")]
+        multiview_support,
     });
 
     graphics.register_shader_snippet(
@@ -244,8 +251,16 @@ impl GraphicsInner {
             self.create_pipeline(source, &"#define NUM_VIEWS 1 \n", pipeline_settings)?;
 
         #[cfg(feature = "xr")]
-        let multiview_pipeline =
-            self.create_pipeline(source, &"#define NUM_VIEWS 2 \n #define MULTIVIEW \n", pipeline_settings)?;
+        let multiview_pipeline = match self.multiview_support {
+            MultiviewSupport::None => None,
+            MultiviewSupport::WithoutMsaa | MultiviewSupport::OculusWithMsaa => {
+                Some(self.create_pipeline(
+                    source,
+                    &"#define NUM_VIEWS 2 \n #define MULTIVIEW \n",
+                    pipeline_settings,
+                )?)
+            }
+        };
 
         Ok(Shader {
             pipeline,

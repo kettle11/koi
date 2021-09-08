@@ -92,6 +92,7 @@ impl<'a> ShaderParser<'a> {
                 Some("VERTEX") => {}
                 Some("FRAGMENT") => {
                     std::mem::swap(&mut current_string, &mut vertex);
+                    current_string += prepend;
                 }
                 Some("INSERT" | "INCLUDE") => {
                     let key = parser.read_word();

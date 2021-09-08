@@ -2,10 +2,10 @@ let xr_session = null;
 let gl = null;
 let xr_reference_space = null;
 
+
 // Called when we've successfully acquired a XRSession. In response we
 // will set up the necessary session state and kick off the frame loop.
 async function on_session_started(session) {
-
     xr_session = session;
 
     // Listen for the sessions 'end' event so we can respond if the user
@@ -31,6 +31,27 @@ async function on_session_started(session) {
         console.log("CAUGHT ERROR: " + e);
     }
 
+    // From here: https://developer.oculus.com/documentation/web/web-multiview/
+    var is_multiview, is_multisampled = false;
+    var ext = gl.getExtension('OCULUS_multiview');
+    if (ext) {
+        console.log("OCULUS_multiview extension is supported");
+        is_multiview = true;
+        is_multisampled = true;
+    }
+    else {
+        console.log("OCULUS_multiview extension is NOT supported");
+        ext = gl.getExtension('OVR_multiview2');
+        if (ext) {
+            console.log("OVR_multiview2 extension is supported");
+            is_multiview = true;
+        }
+        else {
+            console.log("Neither OCULUS_multiview nor OVR_multiview2 extensions are supported");
+            is_multiview = false;
+        }
+    }
+
     // Use the new WebGL context to create a XRWebGLLayer and set it as the
     // sessions baseLayer. This allows any content rendered to the layer to
     // be displayed on the XRDevice.
@@ -39,7 +60,7 @@ async function on_session_started(session) {
     // Get a reference space, which is required for querying poses. In this
     // case an 'local' reference space means that all poses will be relative
     // to the location where the XRDevice was first detected.
-    let refSpace = await xr_session.requestReferenceSpace('viewer');
+    let refSpace = await xr_session.requestReferenceSpace('local');
 
     xr_reference_space = refSpace;
 

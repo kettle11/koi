@@ -24,6 +24,7 @@ function create_webgl2_context() {
         antialias: true,
         depth: true,
     });
+    
 }
 
 function command(command, memory_buffer, data, data_length) {
