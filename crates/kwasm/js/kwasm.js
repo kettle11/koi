@@ -147,7 +147,7 @@ function kwasm_stuff() {
             response.arrayBuffer()
         ).then(bytes => {
             // 5 is arbitrary here
-            self.kwasm_memory = new WebAssembly.Memory({ initial: (bytes.byteLength / 64000) + 5, maximum: 16384, shared: true });
+            self.kwasm_memory = new WebAssembly.Memory({ initial: (bytes.byteLength / 65536) + 5, maximum: 16384, shared: true });
             imports.env.memory = self.kwasm_memory;
             return WebAssembly.instantiate(bytes, imports)
         }).then(results => {

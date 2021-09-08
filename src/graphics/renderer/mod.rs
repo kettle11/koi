@@ -27,10 +27,11 @@ pub fn setup_renderer(world: &mut World) {
     world.spawn(materials);
 }
 
-struct CameraInfo {
+struct ViewInfo {
     projection_matrix: Mat4,
     view_matrix: Mat4,
     camera_position: Vec3,
+    viewport: BoundingBox<f32, 2>,
 }
 
 struct MaterialInfo<'a> {
@@ -48,7 +49,7 @@ struct MaterialInfo<'a> {
 
 struct Renderer<'a, 'b: 'a, 'c: 'a> {
     render_pass: &'a mut RenderPass<'b>,
-    camera_info: &'a [CameraInfo],
+    camera_info: &'a [ViewInfo],
     shader_assets: &'a Assets<Shader>,
     material_assets: &'a Assets<Material>,
     mesh_assets: &'a Assets<Mesh>,
@@ -57,6 +58,9 @@ struct Renderer<'a, 'b: 'a, 'c: 'a> {
     bound_shader: Option<&'a Handle<Shader>>,
     material_info: Option<MaterialInfo<'a>>,
     lights: &'a Query<'c, (&'static Transform, &'static Light)>,
+    #[allow(unused)]
+    multiview_enabled: bool,
+    current_pipeline: Option<&'a Pipeline>,
 }
 
 impl<'a, 'b: 'a, 'c: 'a> Renderer<'a, 'b, 'c> {
@@ -67,8 +71,9 @@ impl<'a, 'b: 'a, 'c: 'a> Renderer<'a, 'b, 'c> {
         mesh_assets: &'a Assets<Mesh>,
         texture_assets: &'a Assets<Texture>,
         lights: &'a Query<'c, (&'static Transform, &'static Light)>,
-        camera_info: &'a [CameraInfo],
+        camera_info: &'a [ViewInfo],
         viewport: BoundingBox<u32, 2>,
+        multiview_enabled: bool,
     ) -> Self {
         // let camera_info = Self::get_camera_info(camera_transform, camera);
 
@@ -89,26 +94,34 @@ impl<'a, 'b: 'a, 'c: 'a> Renderer<'a, 'b, 'c> {
             material_info: None,
             lights,
             camera_info,
+            multiview_enabled,
+            current_pipeline: None,
         }
     }
 
-    fn get_camera_info(camera_transform: &Transform, camera: &Camera, offset: Mat4) -> CameraInfo {
+    fn get_view_info(
+        camera_transform: &Transform,
+        offset: Mat4,
+        projection_matrix: Mat4,
+        viewport: BoundingBox<f32, 2>,
+    ) -> ViewInfo {
         let camera_transform = camera_transform.global_transform;
         // Is this `offset *` correct?
         let camera_position = offset.transform_point(camera_transform.position);
-        let projection_matrix = camera.projection_matrix();
-        let view_matrix = (offset * camera_transform.model()).inversed();
+        // let projection_matrix = camera.projection_matrix();
+        let view_matrix = (camera_transform.model() * offset).inversed();
 
-        CameraInfo {
+        ViewInfo {
             projection_matrix,
             view_matrix,
             camera_position,
+            viewport,
         }
     }
 
-    fn bind_light_info(&mut self, shader: &Shader) {
+    fn bind_light_info(&mut self, pipeline: &Pipeline) {
         self.render_pass.set_int_property(
-            &shader.pipeline.get_int_property("p_light_count").unwrap(),
+            &pipeline.get_int_property("p_light_count").unwrap(),
             self.lights.iter().count() as i32,
         );
         for (i, (transform, light)) in self.lights.iter().enumerate() {
@@ -120,24 +133,21 @@ impl<'a, 'b: 'a, 'c: 'a> Renderer<'a, 'b, 'c> {
             }
 
             self.render_pass.set_vec3_property(
-                &shader
-                    .pipeline
+                &pipeline
                     .get_vec3_property(&format!("p_lights[{:?}].position", i))
                     .unwrap(),
                 (transform.position).into(),
             );
 
             self.render_pass.set_vec3_property(
-                &shader
-                    .pipeline
+                &pipeline
                     .get_vec3_property(&format!("p_lights[{:?}].direction", i))
                     .unwrap(),
                 (transform.forward()).into(),
             );
 
             self.render_pass.set_float_property(
-                &shader
-                    .pipeline
+                &pipeline
                     .get_float_property(&format!("p_lights[{:?}].ambient", i))
                     .unwrap(),
                 light.ambient_light_amount,
@@ -151,8 +161,7 @@ impl<'a, 'b: 'a, 'c: 'a> Renderer<'a, 'b, 'c> {
                 color.green * light.intensity,
             );
             self.render_pass.set_vec3_property(
-                &shader
-                    .pipeline
+                &pipeline
                     .get_vec3_property(&format!("p_lights[{:?}].color_and_intensity", i))
                     .unwrap(),
                 color_and_intensity,
@@ -161,16 +170,14 @@ impl<'a, 'b: 'a, 'c: 'a> Renderer<'a, 'b, 'c> {
             // Set if the light has shadows enabled.
             // Harcoded to false for now
             self.render_pass.set_int_property(
-                &shader
-                    .pipeline
+                &pipeline
                     .get_int_property(&format!("p_lights[{:?}].shadows_enabled", i))
                     .unwrap(),
                 0,
             );
 
             self.render_pass.set_int_property(
-                &shader
-                    .pipeline
+                &pipeline
                     .get_int_property(&format!("p_lights[{:?}].mode", i))
                     .unwrap(),
                 match light.light_mode {
@@ -181,14 +188,36 @@ impl<'a, 'b: 'a, 'c: 'a> Renderer<'a, 'b, 'c> {
 
             if let LightMode::Point { radius } = light.light_mode {
                 self.render_pass.set_float_property(
-                    &shader
-                        .pipeline
+                    &pipeline
                         .get_float_property(&format!("p_lights[{:?}].radius", i))
                         .unwrap(),
                     radius,
                 );
             }
         }
+    }
+
+    pub fn bind_view(&mut self, camera_info: &ViewInfo, i: usize) {
+        // It's not great that these properties need to be looked up each time.
+        let pipeline = self.current_pipeline.unwrap();
+        self.render_pass.set_mat4_property(
+            &pipeline
+                .get_mat4_property(&format!("p_views[{:?}]", i))
+                .unwrap(),
+            camera_info.view_matrix.as_array(),
+        );
+        self.render_pass.set_mat4_property(
+            &pipeline
+                .get_mat4_property(&format!("p_projections[{:?}]", i))
+                .unwrap(),
+            camera_info.projection_matrix.as_array(),
+        );
+        self.render_pass.set_vec3_property(
+            &pipeline
+                .get_vec3_property(&format!("p_camera_positions[{:?}]", i))
+                .unwrap(),
+            camera_info.camera_position.into(),
+        );
     }
 
     pub fn change_material(&mut self, material_handle: &'a Handle<Material>) {
@@ -198,64 +227,45 @@ impl<'a, 'b: 'a, 'c: 'a> Renderer<'a, 'b, 'c> {
             let material = self.material_assets.get(material_handle);
             let shader = self.shader_assets.get(&material.shader);
 
+            #[cfg(not(feature = "xr"))]
+            let pipeline = &shader.pipeline;
+            #[cfg(feature = "xr")]
+            let pipeline = if self.multiview_enabled {
+                shader.multiview_pipeline.as_ref().unwrap()
+            } else {
+                &shader.pipeline
+            };
+
             // Avoid unnecessary pipeline / shader changes.
             if self.bound_shader != Some(&material.shader) {
-                self.render_pass.set_pipeline(&shader.pipeline);
+                self.current_pipeline = Some(pipeline);
+                self.render_pass.set_pipeline(pipeline);
 
-                for (i, camera_info) in self.camera_info.iter().enumerate() {
-                    self.render_pass.set_mat4_property(
-                        &shader
-                            .pipeline
-                            .get_mat4_property(&format!("p_views[{:?}]", i))
-                            .unwrap(),
-                        camera_info.view_matrix.as_array(),
-                    );
-                    self.render_pass.set_mat4_property(
-                        &shader
-                            .pipeline
-                            .get_mat4_property(&format!("p_projections[{:?}]", i))
-                            .unwrap(),
-                        camera_info.projection_matrix.as_array(),
-                    );
-                    self.render_pass.set_vec3_property(
-                        &shader
-                            .pipeline
-                            .get_vec3_property(&format!("p_camera_positions[{:?}]", i))
-                            .unwrap(),
-                        camera_info.camera_position.into(),
-                    );
+                if self.multiview_enabled || self.camera_info.len() == 1 {
+                    for (i, camera_info) in self.camera_info.iter().enumerate() {
+                        self.bind_view(camera_info, i);
+                    }
                 }
 
                 // When a material is changed we lookup if the shader has some standard properties.
-                let model_property = shader.pipeline.get_mat4_property("p_model").unwrap();
-                let position_attribute = shader
-                    .pipeline
-                    .get_vertex_attribute::<Vec3>("a_position")
-                    .unwrap();
-                let normal_attribute = shader
-                    .pipeline
-                    .get_vertex_attribute::<Vec3>("a_normal")
-                    .unwrap();
-                let texture_coordinate_attribute = shader
-                    .pipeline
+                let model_property = pipeline.get_mat4_property("p_model").unwrap();
+                let position_attribute =
+                    pipeline.get_vertex_attribute::<Vec3>("a_position").unwrap();
+                let normal_attribute = pipeline.get_vertex_attribute::<Vec3>("a_normal").unwrap();
+                let texture_coordinate_attribute = pipeline
                     .get_vertex_attribute::<Vec2>("a_texture_coordinate")
                     .unwrap();
-                let vertex_color_attribute = shader
-                    .pipeline
-                    .get_vertex_attribute::<Vec4>("a_color")
-                    .unwrap();
+                let vertex_color_attribute =
+                    pipeline.get_vertex_attribute::<Vec4>("a_color").unwrap();
 
                 // Cache properties that may be changed per Sprite.
-                let base_color_texture_property = shader
-                    .pipeline
+                let base_color_texture_property = pipeline
                     .get_texture_property("p_base_color_texture")
                     .unwrap();
-                let texture_coordinate_offset_property = shader
-                    .pipeline
+                let texture_coordinate_offset_property = pipeline
                     .get_vec2_property("p_texture_coordinate_offset")
                     .unwrap();
-                let texture_coordinate_scale_property = shader
-                    .pipeline
+                let texture_coordinate_scale_property = pipeline
                     .get_vec2_property("p_texture_coordinate_scale")
                     .unwrap();
                 let sprite_texture_unit = material
@@ -264,7 +274,7 @@ impl<'a, 'b: 'a, 'c: 'a> Renderer<'a, 'b, 'c> {
                     .map(|p| p.1)
                     .unwrap_or(material.max_texture_unit);
 
-                self.bind_light_info(shader);
+                self.bind_light_info(pipeline);
                 self.bound_shader = Some(&material.shader);
                 self.material_info = Some(MaterialInfo {
                     material_handle,
@@ -281,7 +291,7 @@ impl<'a, 'b: 'a, 'c: 'a> Renderer<'a, 'b, 'c> {
             }
 
             // Rebind the material properties.
-            material.bind_material(self.render_pass, &shader.pipeline, self.texture_assets);
+            material.bind_material(self.render_pass, &pipeline, self.texture_assets);
         }
     }
 
@@ -337,9 +347,26 @@ impl<'a, 'b: 'a, 'c: 'a> Renderer<'a, 'b, 'c> {
                 self.render_pass
                     .set_mat4_property(&material_info.model_property, model_matrix.as_array());
 
-                // Render the mesh
-                self.render_pass
-                    .draw_triangles(gpu_mesh.triangle_count, &gpu_mesh.index_buffer);
+                if self.camera_info.len() == 1 {
+                    self.render_pass
+                        .draw_triangles(gpu_mesh.triangle_count, &gpu_mesh.index_buffer);
+                } else {
+                    // Render the thing for each view if we're rendering in XR
+                    for camera_info in self.camera_info.iter() {
+                        // This needs to be scaled by the pixels in the view.
+                        let size = camera_info.viewport.size();
+                        self.render_pass.set_viewport(
+                            camera_info.viewport.min.x as u32,
+                            camera_info.viewport.min.y as u32,
+                            size.x as u32,
+                            size.y as u32,
+                        );
+                        self.bind_view(camera_info, 0);
+                        // Render the mesh
+                        self.render_pass
+                            .draw_triangles(gpu_mesh.triangle_count, &gpu_mesh.index_buffer);
+                    }
+                }
             }
         }
     }
@@ -388,20 +415,30 @@ pub fn render_scene(
 
             let mut camera_info = Vec::new();
             if graphics.override_views.is_empty() {
-                camera_info.push(Renderer::get_camera_info(
+                camera_info.push(Renderer::get_view_info(
                     camera_transform,
-                    camera,
                     Mat4::IDENTITY,
+                    camera.projection_matrix(),
+                    BoundingBox {
+                        min: Vec2::ZERO,
+                        max: Vec2::ONE,
+                    },
                 ));
             } else {
                 for view in &graphics.override_views {
-                    camera_info.push(Renderer::get_camera_info(
+                    camera_info.push(Renderer::get_view_info(
                         camera_transform,
-                        camera,
                         view.offset_transform,
+                        view.projection_matrix,
+                        view.output_rectangle,
                     ))
                 }
             }
+
+            // #[cfg(not(feature = "xr"))]
+            let multiview_enabled = false;
+            // #[cfg(feature = "xr")]
+            // let multiview_enabled = camera_info.len() > 1;
 
             let (width, height) = camera.get_view_size();
 
@@ -417,6 +454,7 @@ pub fn render_scene(
                     min: Vector::ZERO,
                     max: Vector::<u32, 2>::new(width, height),
                 },
+                multiview_enabled,
             );
 
             for (transform, material_handle, mesh_handle, optional_sprite) in
