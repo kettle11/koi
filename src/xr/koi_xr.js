@@ -99,7 +99,6 @@ function on_xr_frame(time, frame) {
 
     self.kwasm_exports.koi_begin_xr_frame();
 
-
     if (pose) {
         // If we do have a valid pose, bind the WebGL layer's framebuffer,
         // which is where any content to be displayed on the XRDevice must be
@@ -137,8 +136,10 @@ function on_xr_frame(time, frame) {
 // At this point the session object is no longer usable and should be
 // discarded.
 function onSessionEnded(event) {
+    console.log("XR SESSSION ENDED!");
     xr_session = null;
     gl = null;
+    self.kwasm_exports.koi_end_xr();
 }
 
 function pass_4x4_matrix_to_wasm(matrix) {
@@ -160,6 +161,8 @@ let kxr = {
         console.log("START XR CALLED!");
         if (navigator.xr) {
             if (!xr_session) {
+                console.log("HERE0!");
+
                 navigator.xr.isSessionSupported('immersive-vr').then((supported) => {
                     console.log("STARTING SESSION!");
                     if (supported) {

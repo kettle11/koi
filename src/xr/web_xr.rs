@@ -46,6 +46,7 @@ impl WebXR {
 
     pub fn start(&mut self) {
         if !self.running {
+            log("STARTING XR!");
             self.running = true;
             self.start_xr.call();
         }
@@ -97,10 +98,26 @@ pub(crate) const XR_EVENT_ID: usize = 8434232;
 pub(super) fn xr_control_flow(koi_state: &mut KoiState, event: KappEvent) -> bool {
     match event {
         KappEvent::UserEvent {
-            id: XR_EVENT_ID, ..
+            id: XR_EVENT_ID,
+            data: 1,
+        } => {
+            // Disable XR and reset values.
+            (|xr: &mut XR, window: &mut NotSendSync<kapp::Window>, graphics: &mut Graphics| {
+                xr.running = false;
+                xr.framebuffer = None;
+                graphics.override_views.clear();
+                graphics.primary_camera_target = CameraTarget::Window(window.id);
+
+                // Begin the main render loop again.
+                window.request_redraw();
+            })
+            .run(&mut koi_state.world);
+        }
+        KappEvent::UserEvent {
+            id: XR_EVENT_ID,
+            data: 0,
         } => {
             let device_transform = (|xr: &XR| xr.get_device_transform()).run(&mut koi_state.world);
-
             let device_inverse = device_transform.inversed();
             // Update the current thing being rendered.
             (|xr: &mut XR, graphics: &mut Graphics| {
@@ -194,5 +211,13 @@ extern "C" fn koi_begin_xr_frame() {
     // log!("BEGIN XR FRAME!");
     super::USER_EVENT_SENDER.with(|s| {
         s.borrow().as_ref().unwrap().send(XR_EVENT_ID, 0);
+    })
+}
+
+#[no_mangle]
+extern "C" fn koi_end_xr() {
+    log!("ENDING XR!");
+    super::USER_EVENT_SENDER.with(|s| {
+        s.borrow().as_ref().unwrap().send(XR_EVENT_ID, 1);
     })
 }

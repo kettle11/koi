@@ -201,6 +201,7 @@ fn assign_current_camera_target(graphics: &mut Graphics, events: &KappEvents) {
     match events.last() {
         Some(KappEvent::Draw { window_id }) => {
             graphics.current_camera_target = Some(CameraTarget::Window(*window_id));
+            graphics.current_target_framebuffer = Framebuffer::default();
         }
         // Ignore user events because they're likely related to WebXR which may assign the CameraTarget.
         Some(KappEvent::UserEvent { .. }) => {}
