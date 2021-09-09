@@ -331,5 +331,11 @@ impl KoiState {
             .get_component_mut::<KappEvents>(self.kapp_events_entity)
             .unwrap()
             .clear();
+        let input = self
+            .world
+            .get_component_mut::<Input>(self.input_entity)
+            .unwrap()
+            .state
+            .clear();
     }
 }
