@@ -235,5 +235,18 @@ let kxr = {
     get_xr_framebuffer() {
         return xr_framebuffer;
     },
+    get_button_info(input_index, button_index) {
+        if (xr_session) {
+            let source = xr_session.inputSources[input_index];
+            if (source && source.gamepad) {
+                let floats_count = 3;
+                let pointer = self.kwasm_exports.kwasm_reserve_space(floats_count * 4);
+                const client_data = new Float32Array(self.kwasm_memory.buffer, pointer, floats_count);
+                let button = source.gamepad.buttons[button_index];
+                client_data.set([button.value, button.pressed ? 1.0 : 0.0, button.touched ? 1.0 : 0.0], 0);
+            }
+            return 1;
+        }
+    }
 };
 kxr

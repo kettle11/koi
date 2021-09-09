@@ -53,3 +53,10 @@ pub struct XRHead;
 pub struct XRController {
     pub id: usize,
 }
+
+#[derive(Debug, Copy, Clone)]
+pub struct ButtonState {
+    pub value: f32,
+    pub pressed: bool,
+    pub touched: bool,
+}

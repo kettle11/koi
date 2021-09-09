@@ -11,6 +11,7 @@ pub struct WebXR {
     get_xr_framebuffer: JSObjectDynamic,
     get_input_count: JSObjectDynamic,
     get_input_info: JSObjectDynamic,
+    get_button_info: JSObjectDynamic,
     running: bool,
     framebuffer: Option<Framebuffer>,
 }
@@ -23,21 +24,16 @@ impl WebXR {
         if xr_supported.call().unwrap().get_value_u32() == 0 {
             Err(())
         } else {
-            let start_xr = js.get_property("start_xr");
-            let end_xr = js.get_property("end_xr");
-            let get_device_transform = js.get_property("get_device_transform");
-            let get_view_info = js.get_property("get_view_info");
-            let get_xr_framebuffer = js.get_property("get_xr_framebuffer");
-
             Ok(Self {
-                start_xr,
-                end_xr,
-                get_device_transform,
-                get_view_info,
+                start_xr: js.get_property("start_xr"),
+                end_xr: js.get_property("end_xr"),
+                get_device_transform: js.get_property("get_device_transform"),
+                get_view_info: js.get_property("get_view_info"),
                 get_view_count: js.get_property("get_view_count"),
                 get_input_count: js.get_property("get_input_count"),
                 get_input_info: js.get_property("get_input_info"),
-                get_xr_framebuffer,
+                get_xr_framebuffer: js.get_property("get_xr_framebuffer"),
+                get_button_info: js.get_property("get_button_info"),
                 running: false,
                 framebuffer: None,
             })
@@ -78,6 +74,20 @@ impl WebXR {
             let d = d.borrow();
             let data: &[f32] = std::slice::from_raw_parts(d.as_ptr() as *const f32, 16);
             Mat4::try_from(data).unwrap()
+        })
+    }
+
+    pub fn get_button_state(&self, controller_index: usize, button_index: usize) -> ButtonState {
+        self.get_button_info
+            .call_raw(&[controller_index as u32, button_index as u32]);
+        kwasm::DATA_FROM_HOST.with(|d| unsafe {
+            let d = d.borrow();
+            let data: &[f32] = std::slice::from_raw_parts(d.as_ptr() as *const f32, 3);
+            ButtonState {
+                value: data[0],
+                pressed: data[1] == 1.0,
+                touched: data[2] == 1.0,
+            }
         })
     }
 
