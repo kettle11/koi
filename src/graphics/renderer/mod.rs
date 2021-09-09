@@ -109,7 +109,7 @@ impl<'a, 'b: 'a, 'c: 'a> Renderer<'a, 'b, 'c> {
         // Is this `offset *` correct?
         let camera_position = offset.transform_point(camera_transform.position);
         // let projection_matrix = camera.projection_matrix();
-        let view_matrix = (camera_transform.model() * offset).inversed();
+        let view_matrix = (offset * camera_transform.model()).inversed();
 
         ViewInfo {
             projection_matrix,

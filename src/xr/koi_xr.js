@@ -186,6 +186,7 @@ let kxr = {
     get_view_info(view_index) {
         // https://developer.mozilla.org/en-US/docs/Web/API/XRView
         let view = last_pose.views[view_index];
+        
         let projection_matrix = view.projectionMatrix;
         let transform_matrix = view.transform.matrix;
 
