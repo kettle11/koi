@@ -60,7 +60,7 @@ async function on_session_started(session) {
     // Get a reference space, which is required for querying poses. In this
     // case an 'local' reference space means that all poses will be relative
     // to the location where the XRDevice was first detected.
-    let refSpace = await xr_session.requestReferenceSpace('local');
+    let refSpace = await xr_session.requestReferenceSpace('local-floor');
 
     xr_reference_space = refSpace;
 
@@ -164,7 +164,9 @@ let kxr = {
                 navigator.xr.isSessionSupported('immersive-vr').then((supported) => {
                     console.log("STARTING SESSION!");
                     if (supported) {
-                        navigator.xr.requestSession('immersive-vr').then(on_session_started);
+                        navigator.xr.requestSession('immersive-vr', {
+                            requiredFeatures: ['local-floor'],
+                        }).then(on_session_started);
                     } else {
                         navigator.xr.requestSession('inline').then(on_session_started);
                     }
