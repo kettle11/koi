@@ -235,6 +235,15 @@ let kxr = {
     get_xr_framebuffer() {
         return xr_framebuffer;
     },
+    get_button_count(input_index) {
+        if (xr_session) {
+            let source = xr_session.inputSources[input_index];
+            if (source && source.gamepad) {
+                return source.gamepad.buttons.length;
+            }
+        }
+        return 0;
+    },
     get_button_info(input_index, button_index) {
         if (xr_session) {
             let source = xr_session.inputSources[input_index];

@@ -11,9 +11,27 @@ pub struct WebXR {
     get_xr_framebuffer: JSObjectDynamic,
     get_input_count: JSObjectDynamic,
     get_input_info: JSObjectDynamic,
+    get_button_count: JSObjectDynamic,
     get_button_info: JSObjectDynamic,
     running: bool,
     framebuffer: Option<Framebuffer>,
+    /// Only setup for two controllers at the moment.
+    controller_state: [ControllerState; 2],
+}
+
+#[derive(Debug)]
+pub struct ControllerState {
+    pub buttons: Vec<ButtonState>,
+    pub previous_buttons: Vec<ButtonState>,
+}
+
+impl ControllerState {
+    pub fn new() -> Self {
+        Self {
+            buttons: Vec::new(),
+            previous_buttons: Vec::new(),
+        }
+    }
 }
 
 impl WebXR {
@@ -33,9 +51,11 @@ impl WebXR {
                 get_input_count: js.get_property("get_input_count"),
                 get_input_info: js.get_property("get_input_info"),
                 get_xr_framebuffer: js.get_property("get_xr_framebuffer"),
+                get_button_count: js.get_property("get_button_count"),
                 get_button_info: js.get_property("get_button_info"),
                 running: false,
                 framebuffer: None,
+                controller_state: [ControllerState::new(), ControllerState::new()],
             })
         }
     }
@@ -77,6 +97,51 @@ impl WebXR {
         })
     }
 
+    pub fn update_controller_state(&mut self) {
+        fn update_controller_state(
+            get_button_count: &JSObject,
+            get_button_info: &JSObject,
+            controller_index: usize,
+            controller_state: &mut ControllerState,
+        ) {
+            std::mem::swap(
+                &mut controller_state.buttons,
+                &mut controller_state.previous_buttons,
+            );
+            controller_state.buttons.clear();
+            let button_count = get_button_count
+                .call_raw(&[controller_index as u32])
+                .unwrap()
+                .get_value_u32();
+            for button_index in 0..button_count {
+                get_button_info.call_raw(&[controller_index as u32, button_index as u32]);
+                let button_data = kwasm::DATA_FROM_HOST.with(|d| unsafe {
+                    let d = d.borrow();
+                    let data: &[f32] = std::slice::from_raw_parts(d.as_ptr() as *const f32, 3);
+                    ButtonState {
+                        value: data[0],
+                        pressed: data[1] == 1.0,
+                        touched: data[2] == 1.0,
+                    }
+                });
+                controller_state.buttons.push(button_data);
+            }
+        }
+        update_controller_state(
+            &self.get_button_count,
+            &self.get_button_info,
+            0,
+            &mut self.controller_state[0],
+        );
+        update_controller_state(
+            &self.get_button_count,
+            &self.get_button_info,
+            1,
+            &mut self.controller_state[1],
+        )
+    }
+
+    /*
     pub fn get_button_state(&self, controller_index: usize, button_index: usize) -> ButtonState {
         self.get_button_info
             .call_raw(&[controller_index as u32, button_index as u32]);
@@ -89,6 +154,22 @@ impl WebXR {
                 touched: data[2] == 1.0,
             }
         })
+    }
+    */
+
+    pub fn button_just_pressed(&self, controller_index: usize, button_index: usize) -> bool {
+        if let Some(last_state) = self.controller_state[controller_index]
+            .previous_buttons
+            .get(button_index)
+        {
+            if let Some(this_state) = self.controller_state[controller_index]
+                .buttons
+                .get(button_index)
+            {
+                return !last_state.pressed && this_state.pressed;
+            }
+        }
+        false
     }
 
     /*
@@ -131,6 +212,8 @@ pub(super) fn xr_control_flow(koi_state: &mut KoiState, event: KappEvent) -> boo
             let device_inverse = device_transform.inversed();
             // Update the current thing being rendered.
             (|xr: &mut XR, graphics: &mut Graphics| {
+                xr.update_controller_state();
+
                 if xr.framebuffer.is_none() {
                     xr.framebuffer = unsafe {
                         Some(
