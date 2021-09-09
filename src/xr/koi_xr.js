@@ -61,7 +61,6 @@ async function on_session_started(session) {
     // case an 'local' reference space means that all poses will be relative
     // to the location where the XRDevice was first detected.
     let refSpace = await xr_session.requestReferenceSpace('local-floor');
-
     xr_reference_space = refSpace;
 
 
@@ -186,7 +185,7 @@ let kxr = {
     get_view_info(view_index) {
         // https://developer.mozilla.org/en-US/docs/Web/API/XRView
         let view = last_pose.views[view_index];
-        
+
         let projection_matrix = view.projectionMatrix;
         let transform_matrix = view.transform.matrix;
 
@@ -205,6 +204,27 @@ let kxr = {
         offset += 16;
         client_data.set([viewport.x, viewport.y, viewport.width, viewport.height], offset);
         offset += 4;
+    },
+    get_input_count() {
+        return xr_session.inputSources.len();
+    },
+    get_input_info(input_index) {
+        let source = xr_session.inputSources[input_index];
+        if (source && source.gamepad) {
+            let pose = last_frame.getPose(source.gripSpace, xr_reference_space);
+            if (!pose) {
+                return 0;
+            }
+            let pose_matrix = pose.transform.matrix;
+
+            let floats_count = 16;
+            let pointer = self.kwasm_exports.kwasm_reserve_space(floats_count * 4);
+            const client_data = new Float32Array(self.kwasm_memory.buffer, pointer, floats_count);
+            let offset = 0;
+            client_data.set(pose_matrix, offset);
+        } else {
+            return 0;
+        }
     },
     get_device_transform() {
         pass_4x4_matrix_to_wasm(last_pose.transform.matrix)

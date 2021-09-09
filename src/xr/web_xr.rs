@@ -9,6 +9,8 @@ pub struct WebXR {
     get_view_info: JSObjectDynamic,
     get_view_count: JSObjectDynamic,
     get_xr_framebuffer: JSObjectDynamic,
+    get_input_count: JSObjectDynamic,
+    get_input_info: JSObjectDynamic,
     running: bool,
     framebuffer: Option<Framebuffer>,
 }
@@ -33,6 +35,8 @@ impl WebXR {
                 get_device_transform,
                 get_view_info,
                 get_view_count: js.get_property("get_view_count"),
+                get_input_count: js.get_property("get_input_count"),
+                get_input_info: js.get_property("get_input_info"),
                 get_xr_framebuffer,
                 running: false,
                 framebuffer: None,
@@ -67,6 +71,15 @@ impl WebXR {
         })
     }
 
+    fn get_controller_matrix(&self, index: usize) -> Mat4 {
+        self.get_input_info.call_raw(&[index as u32]);
+        kwasm::DATA_FROM_HOST.with(|d| unsafe {
+            let d = d.borrow();
+            let data: &[f32] = std::slice::from_raw_parts(d.as_ptr() as *const f32, 16);
+            Mat4::try_from(data).unwrap()
+        })
+    }
+
     /*
     fn draw(&mut self) {
         let view_count = self.get_view_count.call().unwrap().get_value_u32();
@@ -84,12 +97,9 @@ pub(crate) const XR_EVENT_ID: usize = 8434232;
 pub(super) fn xr_control_flow(koi_state: &mut KoiState, event: KappEvent) -> bool {
     match event {
         KappEvent::UserEvent {
-            id: XR_EVENT_ID,
-            ..
+            id: XR_EVENT_ID, ..
         } => {
-            let device_transform = (|xr: &XR| {
-                xr.get_device_transform()
-            }).run(&mut koi_state.world);
+            let device_transform = (|xr: &XR| xr.get_device_transform()).run(&mut koi_state.world);
 
             let device_inverse = device_transform.inversed();
             // Update the current thing being rendered.
@@ -144,6 +154,19 @@ pub(super) fn xr_control_flow(koi_state: &mut KoiState, event: KappEvent) -> boo
                 // Update the location of the head.
                 for (transform, _) in &mut xr_heads {
                     *transform = Transform::from_mat4(device_transform);
+                }
+            })
+            .run(&mut koi_state.world);
+
+            (|xr: &XR, mut xr_controllers: Query<(&mut Transform, &XRController)>| {
+                // Update the location of the head.
+                for (transform, controller) in &mut xr_controllers {
+                    let controller_matrix = xr.get_controller_matrix(controller.id);
+                    let scale = transform.scale;
+                    *transform = Transform::from_mat4(controller_matrix);
+
+                    // Only take rotation and position from the transform.
+                    transform.scale = scale;
                 }
             })
             .run(&mut koi_state.world);

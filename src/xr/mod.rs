@@ -50,4 +50,6 @@ pub struct XRHead;
 /// Attach this to a transform to have its local transform updated to match
 /// an XRController position.
 #[derive(Component, Clone)]
-pub struct XRController;
+pub struct XRController {
+    pub id: usize,
+}
