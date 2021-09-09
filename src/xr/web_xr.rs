@@ -58,7 +58,7 @@ impl WebXR {
         self.running
     }
 
-    fn get_device_transform(&mut self) -> Mat4 {
+    fn get_device_transform(&self) -> Mat4 {
         self.get_device_transform.call();
         kwasm::DATA_FROM_HOST.with(|d| unsafe {
             let d = d.borrow();
@@ -85,8 +85,13 @@ pub(super) fn xr_control_flow(koi_state: &mut KoiState, event: KappEvent) -> boo
     match event {
         KappEvent::UserEvent {
             id: XR_EVENT_ID,
-            data,
+            ..
         } => {
+            let device_transform = (|xr: &XR| {
+                xr.get_device_transform()
+            }).run(&mut koi_state.world);
+
+            let device_inverse = device_transform.inversed();
             // Update the current thing being rendered.
             (|xr: &mut XR, graphics: &mut Graphics| {
                 if xr.framebuffer.is_none() {
@@ -112,6 +117,10 @@ pub(super) fn xr_control_flow(koi_state: &mut KoiState, event: KappEvent) -> boo
                         let data: &[f32] =
                             std::slice::from_raw_parts(data.as_ptr() as *const f32, 16 * 2 + 4);
                         let offset_transform = Mat4::try_from(&data[0..16]).unwrap();
+
+                        // offset from head position
+                        let offset_transform = offset_transform * device_inverse;
+
                         let projection_matrix = Mat4::try_from(&data[16..32]).unwrap();
                         let viewport = &data[32..36];
 
@@ -128,11 +137,12 @@ pub(super) fn xr_control_flow(koi_state: &mut KoiState, event: KappEvent) -> boo
                 }
             })
             .run(&mut koi_state.world);
+
             // Update any XR related components in the World
-            (|xr: &mut XR, mut xr_heads: Query<(&mut Transform, &XRHead, Option<&mut Camera>)>| {
+            // For now just update all cameras to match the head position
+            (|mut xr_heads: Query<(&mut Transform, &mut Camera)>| {
                 // Update the location of the head.
-                let device_transform = xr.get_device_transform();
-                for (transform, _, camera) in &mut xr_heads {
+                for (transform, _) in &mut xr_heads {
                     *transform = Transform::from_mat4(device_transform);
                 }
             })

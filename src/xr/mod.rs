@@ -16,7 +16,6 @@ type InnerXR = open_xr::OpenXR;
 pub fn xr_plugin() -> Plugin {
     Plugin {
         setup_systems: vec![setup_xr.system()],
-        fixed_update_systems: vec![update_xr_transforms.system()],
         additional_control_flow: vec![Box::new(web_xr::xr_control_flow)],
         ..Default::default()
     }
@@ -52,23 +51,3 @@ pub struct XRHead;
 /// an XRController position.
 #[derive(Component, Clone)]
 pub struct XRController;
-
-pub fn update_xr_transforms(
-    xr: &mut XR,
-    mut heads: Query<(&XRHead, &mut Transform)>,
-    mut controllers: Query<(&XRController, &mut Transform)>,
-) {
-    // Query head transform from xr here
-
-    for (_, transform) in &mut heads {
-        // Todo
-        // Update each head to the XR transform
-    }
-
-    // Query controller transforms here.
-
-    for (_, transform) in &mut controllers {
-        // Todo
-        // Update each head to the XR transform
-    }
-}
