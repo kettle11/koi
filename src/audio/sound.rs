@@ -94,6 +94,7 @@ impl AssetLoader<Sound> for SoundAssetLoader {
             // Todo: This should produce a meaningful error instead of an unwrap
             let bytes = crate::fetch_bytes(&path).await.unwrap();
             let sound = Sound::load_immediate_bytes(&bytes, extension, 1.0).unwrap();
+
             sender.send(SoundLoadMessage { handle, sound }).unwrap();
         })
         .run();

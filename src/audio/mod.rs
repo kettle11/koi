@@ -14,7 +14,7 @@ pub(crate) const SAMPLE_RATE: u32 = 44100;
 pub fn audio_plugin() -> Plugin {
     Plugin {
         setup_systems: vec![setup_audio.system()],
-        end_of_frame_systems: vec![move_sources.system()],
+        end_of_frame_systems: vec![load_sounds.system(), move_sources.system()],
         ..Default::default()
     }
 }
