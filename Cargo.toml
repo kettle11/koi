@@ -2,6 +2,7 @@
 name = "koi"
 version = "0.1.0"
 edition = "2018"
+license = "Zlib OR Apache-2.0 OR MIT"
 
 [workspace]
 members = ["crates/*", "third_party/koi_kolor/build/kolor"]
