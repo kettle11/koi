@@ -172,6 +172,21 @@ impl WebXR {
         false
     }
 
+    pub fn button_just_released(&self, controller_index: usize, button_index: usize) -> bool {
+        if let Some(last_state) = self.controller_state[controller_index]
+            .previous_buttons
+            .get(button_index)
+        {
+            if let Some(this_state) = self.controller_state[controller_index]
+                .buttons
+                .get(button_index)
+            {
+                return last_state.pressed && !this_state.pressed;
+            }
+        }
+        false
+    }
+
     /*
     fn draw(&mut self) {
         let view_count = self.get_view_count.call().unwrap().get_value_u32();

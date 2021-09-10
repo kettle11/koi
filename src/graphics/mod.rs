@@ -42,7 +42,10 @@ pub use renderer::*;
 pub fn graphics_plugin() -> Plugin {
     Plugin {
         setup_systems: vec![setup_graphics.system()],
-        pre_fixed_update_systems: vec![assign_current_camera_target.system()],
+        pre_fixed_update_systems: vec![
+            assign_current_camera_target.system(),
+            check_for_dropped_graphics_assets.system(),
+        ],
         draw_systems: vec![load_shaders.system(), resize_window.system()],
         end_of_frame_systems: vec![load_textures.system(), request_window_redraw.system()],
         ..Default::default()
@@ -356,4 +359,33 @@ pub fn resize_window(graphics: &mut Graphics, window: &NotSendSync<kapp::Window>
     graphics
         .context
         .resize(main_window, window_width, window_height);
+}
+
+fn check_for_dropped_graphics_assets(
+    graphics: &mut Graphics,
+    meshes: &mut Assets<Mesh>,
+    textures: &mut Assets<Texture>,
+) {
+    meshes.drop_items(|mesh| {
+        if let Some(gpu_mesh) = mesh.gpu_mesh {
+            let GPUMesh {
+                positions,
+                normals,
+                index_buffer,
+                texture_coordinates,
+                ..
+            } = gpu_mesh;
+            graphics.context.delete_data_buffer(positions);
+            graphics.context.delete_index_buffer(index_buffer);
+
+            if let Some(d) = normals {
+                graphics.context.delete_data_buffer(d);
+            }
+            if let Some(d) = texture_coordinates {
+                graphics.context.delete_data_buffer(d);
+            }
+        }
+    });
+
+    textures.drop_items(move |texture| graphics.context.delete_texture(texture.0));
 }
