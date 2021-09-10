@@ -24,7 +24,7 @@ Everything is subject to change.
 
 `kserde`: Json serialization / deserialization. May support other formats in the future.
 
-`kaudio`: Audio backend for Mac, Windows, and Web. (Presently does nothing on windows)
+`kaudio`: Audio backend for Mac, Windows, and Web. (Presently does nothing on Windows)
 
 
 ## Tailored to `koi`
