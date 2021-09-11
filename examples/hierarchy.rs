@@ -43,7 +43,6 @@ fn main() {
                         }
                     })
                     .run(world)
-                    .unwrap();
                 }
                 _ => {}
             }
