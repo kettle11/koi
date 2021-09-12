@@ -149,6 +149,9 @@ impl Plane {
             normal,
         }
     }
+    pub fn distance_to_point(&self, point: Vec3) -> f32 {
+        self.normal.dot(point) - self.distance
+    }
 }
 
 // https://en.wikipedia.org/wiki/Line%E2%80%93plane_intersection
