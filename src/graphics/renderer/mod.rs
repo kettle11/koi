@@ -41,6 +41,7 @@ struct MaterialInfo<'a> {
     normal_attribute: VertexAttribute<Vec3>,
     vertex_color_attribute: VertexAttribute<Vec4>,
     texture_coordinate_attribute: VertexAttribute<Vec2>,
+    base_color_property: Vec4Property,
     base_color_texture_property: TextureProperty,
     texture_coordinate_offset_property: Vec2Property,
     texture_coordinate_scale_property: Vec2Property,
@@ -76,7 +77,6 @@ impl<'a, 'b: 'a, 'c: 'a> Renderer<'a, 'b, 'c> {
         multiview_enabled: bool,
     ) -> Self {
         // let camera_info = Self::get_camera_info(camera_transform, camera);
-
         // let (view_width, view_height) = camera.get_view_size();
         let min = viewport.min;
         let size = viewport.size();
@@ -273,6 +273,7 @@ impl<'a, 'b: 'a, 'c: 'a> Renderer<'a, 'b, 'c> {
                     .get("p_base_color_texture")
                     .map(|p| p.1)
                     .unwrap_or(material.max_texture_unit);
+                let base_color_property = pipeline.get_vec4_property("p_base_color").unwrap();
 
                 self.bind_light_info(pipeline);
                 self.bound_shader = Some(&material.shader);
@@ -283,6 +284,7 @@ impl<'a, 'b: 'a, 'c: 'a> Renderer<'a, 'b, 'c> {
                     normal_attribute,
                     texture_coordinate_attribute,
                     vertex_color_attribute,
+                    base_color_property,
                     base_color_texture_property,
                     texture_coordinate_offset_property,
                     texture_coordinate_scale_property,
@@ -292,6 +294,21 @@ impl<'a, 'b: 'a, 'c: 'a> Renderer<'a, 'b, 'c> {
 
             // Rebind the material properties.
             material.bind_material(self.render_pass, &pipeline, self.texture_assets);
+        }
+    }
+
+    pub fn set_color(&mut self, color: Color) {
+        if let Some(material_info) = &self.material_info {
+            let rgb_color = color.to_rgb_color(color_spaces::LINEAR_SRGB);
+            self.render_pass.set_vec4_property(
+                &material_info.base_color_property,
+                (
+                    rgb_color.red,
+                    rgb_color.green,
+                    rgb_color.blue,
+                    rgb_color.alpha,
+                ),
+            );
         }
     }
 
@@ -385,6 +402,7 @@ pub fn render_scene(
         &Handle<Mesh>,
         //Option<&Handle<Texture>>,
         Option<&Sprite>,
+        Option<&Color>,
     )>,
     lights: Query<(&'static Transform, &'static Light)>,
 ) {
@@ -457,12 +475,15 @@ pub fn render_scene(
                 multiview_enabled,
             );
 
-            for (transform, material_handle, mesh_handle, optional_sprite) in
+            for (transform, material_handle, mesh_handle, optional_sprite, color) in
                 renderables.iter().skip(0)
             {
                 renderer.change_material(material_handle);
                 if let Some(sprite) = optional_sprite {
                     renderer.prepare_sprite(sprite);
+                }
+                if let Some(color) = color {
+                    renderer.set_color(*color);
                 }
                 renderer.render_mesh(transform, mesh_handle);
             }
