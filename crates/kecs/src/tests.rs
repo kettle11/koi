@@ -6,6 +6,9 @@ struct A;
 #[derive(Clone, Component)]
 struct B;
 
+#[derive(Clone, Component)]
+struct C;
+
 #[test]
 fn spawn() {
     let mut world = World::new();
@@ -32,8 +35,7 @@ fn despawn() {
     (|query: Query<&A>| {
         assert_eq!(query.into_iter().count(), 2);
     })
-    .run(&world)
-    .unwrap();
+    .run(&world);
 }
 
 #[test]
@@ -41,8 +43,8 @@ fn single_query() {
     impl ComponentTrait for i32 {}
     let mut world = World::new();
     world.spawn((2,));
-    (|i: &i32| assert_eq!(*i, 2)).run(&world).unwrap();
-    (|i: &mut i32| assert_eq!(*i, 2)).run(&world).unwrap();
+    (|i: &i32| assert_eq!(*i, 2)).run(&world);
+    (|i: &mut i32| assert_eq!(*i, 2)).run(&world);
 }
 
 #[test]
@@ -50,7 +52,7 @@ fn multi_query() {
     let mut world = World::new();
     world.spawn(A);
     world.spawn((A, B));
-    (|_: Query<&A>| {}).run(&world).unwrap();
+    (|_: Query<&A>| {}).run(&world);
 }
 
 // This fails for now because queries with just Option filters aren't supported yet.
@@ -66,7 +68,7 @@ fn multi_option_query() {
         assert_eq!(a.into_iter().count(), 2);
     })
     .run(&world)
-    .unwrap();
+   ;
 }
 */
 
@@ -79,8 +81,7 @@ fn multi_option_query1() {
     (|a: Query<(Option<&A>, &B)>| {
         assert_eq!(a.into_iter().count(), 1);
     })
-    .run(&world)
-    .unwrap();
+    .run(&world);
 }
 
 #[test]
@@ -91,14 +92,12 @@ fn multi_query_iter() {
     (|q: Query<&A>| {
         for _ in &q {}
     })
-    .run(&world)
-    .unwrap();
+    .run(&world);
 
     (|mut q: Query<&mut A>| {
         for _ in &mut q {}
     })
-    .run(&world)
-    .unwrap();
+    .run(&world);
 }
 
 #[test]
@@ -106,15 +105,14 @@ fn system_add() {
     let mut world = World::new();
     world.spawn(A);
 
-    (|_: &A| {}).run(&world).unwrap();
+    (|_: &A| {}).run(&world);
 
     let mut x = 0;
     (move |_: &A| {
         x += 1;
         println!("X: {:?}", x);
     })
-    .run(&world)
-    .unwrap();
+    .run(&world);
 }
 
 #[test]
@@ -137,8 +135,7 @@ fn get_components() {
         query.get_entity_components(entity_a).unwrap();
         assert!(query.get_entity_components(entity_b).is_none());
     })
-    .run(&world)
-    .unwrap();
+    .run(&world);
 }
 
 #[test]
@@ -148,8 +145,7 @@ fn query_with_one_component() {
     (move |query: Query<&A>| {
         assert_eq!(query.into_iter().count(), 1);
     })
-    .run(&world)
-    .unwrap();
+    .run(&world);
 }
 
 #[test]
@@ -161,8 +157,7 @@ fn add_component0() {
     (move |query: Query<(&A, &B)>| {
         assert_eq!(query.into_iter().count(), 1);
     })
-    .run(&world)
-    .unwrap();
+    .run(&world);
 }
 
 #[test]
@@ -176,8 +171,7 @@ fn add_component1() {
     (move |query: Query<(&A, &B)>| {
         assert_eq!(query.into_iter().count(), 2);
     })
-    .run(&world)
-    .unwrap();
+    .run(&world);
 }
 
 #[test]
@@ -189,8 +183,7 @@ fn remove_component0() {
     (move |query: Query<&A>| {
         assert_eq!(query.into_iter().count(), 1);
     })
-    .run(&world)
-    .unwrap();
+    .run(&world);
 }
 
 #[test]
@@ -204,8 +197,7 @@ fn remove_component1() {
     (move |query: Query<&A>| {
         assert_eq!(query.into_iter().count(), 2);
     })
-    .run(&world)
-    .unwrap();
+    .run(&world);
 }
 
 #[test]
@@ -218,8 +210,7 @@ fn remove_component2() {
     (move |query: Query<&B>| {
         assert_eq!(query.into_iter().count(), 1);
     })
-    .run(&world)
-    .unwrap();
+    .run(&world);
 }
 
 #[test]
@@ -236,8 +227,7 @@ fn mutable_closure() {
                 i += 1;
             }
         })
-        .run(&world)
-        .unwrap();
+        .run(&world);
     }
     assert!(i == 2);
 }
@@ -246,7 +236,7 @@ fn mutable_closure() {
 fn system_with_return() {
     let mut world = World::new();
     let _ = world.spawn(A);
-    let _ = (|_: Query<&A>| 100).run(&world).unwrap();
+    let _ = (|_: Query<&A>| 100).run(&world);
 }
 
 #[test]
@@ -254,7 +244,7 @@ fn clone_world() {
     let mut world = World::new();
     let _ = world.spawn(A);
     let cloned_world = world.clone_world();
-    let _ = (|_: &A| {}).run(&cloned_world).unwrap();
+    let _ = (|_: &A| {}).run(&cloned_world);
 }
 
 #[test]
@@ -269,8 +259,7 @@ fn add_world_to_world0() {
     (|query: Query<&A>| {
         assert_eq!(query.into_iter().count(), 2);
     })
-    .run(&world)
-    .unwrap();
+    .run(&world);
 }
 
 #[test]
@@ -287,15 +276,14 @@ fn add_world_to_world1() {
     (|query: Query<&A>| {
         assert_eq!(query.into_iter().count(), 2);
     })
-    .run(&world)
-    .unwrap();
+    .run(&world);
 }
 
 #[test]
 fn no_matching_component() {
     let world = World::new();
     assert_eq!(
-        (|_: &A| {}).run(&world),
+        (|_: &A| {}).try_run(&world),
         Err(KecsError::no_matching_component::<A>())
     );
 }
@@ -304,7 +292,7 @@ fn no_matching_component() {
 fn get_component_mut() {
     let mut world = World::new();
     let a = world.spawn(A);
-    let _ = world.get_component_mut::<A>(a).unwrap();
+    let _ = world.get_component_mut::<A>(a);
 }
 
 #[test]
@@ -315,8 +303,20 @@ fn extra_filters() {
     (|query: Query<&A, Without<B>>| {
         assert_eq!(query.into_iter().count(), 1);
     })
-    .run(&world)
-    .unwrap();
+    .run(&world);
+}
+
+#[test]
+fn query0() {
+    let mut world = World::new();
+    // world.spawn(A);
+    world.spawn((A, C));
+    (|query: Query<(&A, Option<&B>, Option<&C>)>| {
+        let components = query.iter().next().unwrap();
+        assert!(components.2.is_some());
+        assert_eq!(query.into_iter().count(), 1);
+    })
+    .run(&world);
 }
 
 /*
