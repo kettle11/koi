@@ -178,6 +178,9 @@ impl App {
 
         let mut world = World::new();
         world.spawn(Commands::new());
+        // Setup input
+        let input_entity = world.spawn(Input::new());
+
         let kapp_events_entity = world.spawn(KappEvents(Vec::new()));
 
         // For now `kapp` is integrated directly into `koi`
@@ -216,9 +219,6 @@ impl App {
             delta_seconds_f64: fixed_time_step,
             fixed_time_step,
         });
-
-        // Setup input
-        let input_entity = world.spawn(Input::new());
 
         let run_system = Box::new(setup_and_run_function(&mut world));
 
