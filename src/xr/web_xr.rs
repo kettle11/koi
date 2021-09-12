@@ -157,6 +157,17 @@ impl WebXR {
     }
     */
 
+    pub fn button_state(&self, controller_index: usize, button_index: usize) -> bool {
+        if let Some(this_state) = self.controller_state[controller_index]
+            .buttons
+            .get(button_index)
+        {
+            this_state.pressed
+        } else {
+            false
+        }
+    }
+
     pub fn button_just_pressed(&self, controller_index: usize, button_index: usize) -> bool {
         if let Some(last_state) = self.controller_state[controller_index]
             .previous_buttons
