@@ -95,16 +95,23 @@ impl HierarchyNode {
             previous_last_child.next_sibling = Some(child);
         }
 
+        if let Ok(child_hierarchy) = world.get_component_mut::<HierarchyNode>(child) {
+            // Remove the entity from its old parent, if it has one.
+            if let Some(old_parent) = child_hierarchy.parent {
+                Self::remove_child(world, old_parent, child)?;
+            }
+        }
+
         let mut old_parent = None;
 
         // Connect the child with its new siblings
         // Create a HierarchyComponent if the child doesn't have one.
-        if let Ok(child) = world.get_component_mut::<HierarchyNode>(child) {
-            old_parent = child.parent;
+        if let Ok(child_hierarchy) = world.get_component_mut::<HierarchyNode>(child) {
+            old_parent = child_hierarchy.parent;
 
-            child.parent = parent;
-            child.previous_sibling = previous_last_child;
-            child.next_sibling = None;
+            child_hierarchy.parent = parent;
+            child_hierarchy.previous_sibling = previous_last_child;
+            child_hierarchy.next_sibling = None;
         } else {
             add_hierarchy_to_child = true;
         }
@@ -133,10 +140,6 @@ impl HierarchyNode {
             )?;
         }
 
-        // Remove the entity from its old parent, if it has one.
-        if let Some(old_parent) = old_parent {
-            Self::remove_child(world, old_parent, child)?;
-        }
         Ok(())
     }
 
