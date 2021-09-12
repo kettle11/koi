@@ -461,7 +461,7 @@ impl World {
         });
     }
 
-    /// This will return None if the `Entity` does not exist or the `Entity` does not have the component.
+    /// This will return an error if the `Entity` does not exist or the `Entity` does not have the component.
     pub fn get_component_mut<Component: ComponentTrait>(
         &mut self,
         entity: Entity,
