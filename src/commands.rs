@@ -1,4 +1,5 @@
-pub use kecs::*;
+use kecs::hierarchy::*;
+use kecs::*;
 
 enum Command {
     DespawnEntity(Entity),
@@ -46,6 +47,7 @@ impl Commands {
         ))
     }
 
+    /// Preserves the child global Transform if it a has a Transform component.
     pub fn set_parent(&mut self, parent: Option<Entity>, child: Entity) {
         self.0.push(Command::SetParent { parent, child });
     }
@@ -85,9 +87,7 @@ pub fn apply_commands(world: &mut World) {
             Command::DespawnEntity(entity) => {
                 HierarchyNode::despawn_hierarchy(world, entity).unwrap();
             }
-            Command::SetParent { parent, child } => {
-                HierarchyNode::set_parent(world, parent, child).unwrap()
-            }
+            Command::SetParent { parent, child } => crate::set_parent(world, parent, child),
             Command::RunSystem(mut system) => system.run(world),
         }
     }

@@ -25,7 +25,7 @@ fn main() {
                 Transform::new_with_position_scale(Vec3::Y * 6.0, Vec3::fill(1.0)),
             ));
 
-            HierarchyNode::set_parent(world, Some(parent_cube), child_cube).unwrap();
+            set_parent(world, Some(parent_cube), child_cube);
             parent_cube = child_cube;
         }
 

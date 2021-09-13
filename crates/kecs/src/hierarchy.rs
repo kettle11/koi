@@ -102,13 +102,9 @@ impl HierarchyNode {
             }
         }
 
-        let mut old_parent = None;
-
-        // Connect the child with its new siblings
+        // Connect the child with its new siblings and parent
         // Create a HierarchyComponent if the child doesn't have one.
         if let Ok(child_hierarchy) = world.get_component_mut::<HierarchyNode>(child) {
-            old_parent = child_hierarchy.parent;
-
             child_hierarchy.parent = parent;
             child_hierarchy.previous_sibling = previous_last_child;
             child_hierarchy.next_sibling = None;

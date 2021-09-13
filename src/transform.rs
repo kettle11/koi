@@ -1,8 +1,9 @@
 use std::ops::Mul;
 
-use kecs::{HierarchyNode, Query};
-
 use crate::*;
+use kecs::hierarchy::*;
+
+use kecs::Query;
 
 pub fn transform_plugin() -> Plugin {
     Plugin {
@@ -333,5 +334,25 @@ fn update_descendent_transforms(
         if let Some(previous_sibling) = previous_sibling {
             update_descendent_transforms(query, previous_sibling, parent_matrix);
         }
+    }
+}
+
+/// Parents to the parent and preserves the child's world-space transform.
+pub fn set_parent(world: &mut World, parent: Option<Entity>, child: Entity) {
+    HierarchyNode::set_parent(world, parent, child).unwrap();
+
+    let mut parent_mat = Mat4::IDENTITY;
+    if let Some(parent) = parent {
+        if let Ok(parent_transform) = world.get_component_mut::<Transform>(parent) {
+            parent_mat = parent_transform.global_transform.model();
+        }
+    }
+
+    if let Ok(child_transform) = world.get_component_mut::<Transform>(child) {
+        let child_model = child_transform.global_transform.model();
+        let child_relative = child_model.inversed() * parent_mat;
+
+        log!("RELATIVE TRANSFORM: {:?}", child_relative);
+        *child_transform = Transform::from_mat4(child_relative);
     }
 }

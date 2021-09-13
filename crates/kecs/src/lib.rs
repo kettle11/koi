@@ -39,8 +39,7 @@ pub use scheduler::*;
 mod entities;
 pub use entities::*;
 
-mod hierarchy;
-pub use hierarchy::*;
+pub mod hierarchy;
 
 #[cfg(test)]
 mod tests;
