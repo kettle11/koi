@@ -9,6 +9,7 @@ pub struct Sprite {
 }
 
 impl Sprite {
+    /// sprite_source_bounds is a rectangle specified in percentage of the texture, not pixels!
     pub fn new(texture_handle: Handle<Texture>, sprite_source_bounds: BoundingBox<f32, 2>) -> Self {
         Self {
             texture_handle,

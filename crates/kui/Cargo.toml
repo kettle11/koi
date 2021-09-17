@@ -1,0 +1,16 @@
+[package]
+name = "kui"
+version = "0.1.0"
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+fontdue = "0.5.2"
+rect_packer = "0.2.1"
+kmath = {path = "../kmath"}
+kapp_platform_common = {path = "../kapp/kapp_platform_common"}
+kcolor = {path = "../kcolor"}
+
+[profile.dev.package."*"]
+opt-level = 3

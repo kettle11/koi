@@ -36,6 +36,7 @@ pub enum CameraTarget {
 pub enum ProjectionMode {
     Perspective,
     Orthographic,
+    Custom(Mat4),
 }
 
 impl Camera {
@@ -68,7 +69,7 @@ impl Camera {
             clear_color: Some(Color::BLACK),
             z_near: 0.0,
             z_far: 500.0,
-            orthographic_height: 1.0,
+            orthographic_height: 2.0,
             vertical_field_of_view_radians: (60.0_f32).to_radians(),
             render_layers: RenderLayers::DEFAULT,
             camera_target: Some(CameraTarget::Primary),
@@ -77,9 +78,28 @@ impl Camera {
         camera
     }
 
+    pub fn new_custom_projection_matrix(projection_matrix: Mat4) -> Self {
+        Self {
+            projection_matrix,
+            projection_mode: ProjectionMode::Custom(projection_matrix),
+            view_width: 100,
+            view_height: 100,
+            enabled: true,
+            clear_color: Some(Color::BLACK),
+            z_near: 0.0,
+            z_far: 500.0,
+            orthographic_height: 2.0,
+            vertical_field_of_view_radians: (60.0_f32).to_radians(),
+            render_layers: RenderLayers::DEFAULT,
+            camera_target: Some(CameraTarget::Primary),
+        }
+    }
+
     /// Creates a new camera configured to render the user-interface.
     pub fn new_for_user_interface() -> Self {
-        let mut camera = Self::new_orthographic();
+        let projection_matrix =
+            kmath::projection_matrices::orthographic_gl(-1.0, 1.0, -1.0, 1.0, -4.0, 4.0);
+        let mut camera = Self::new_custom_projection_matrix(projection_matrix);
         camera.render_layers = RenderLayers::USER_INTERFACE;
         camera.z_near = 0.0;
         camera
@@ -99,6 +119,7 @@ impl Camera {
                 let width = aspect_ratio * self.orthographic_height;
                 let half_width = width / 2.;
                 let half_height = self.orthographic_height / 2.;
+
                 kmath::projection_matrices::orthographic_gl(
                     -half_width,
                     half_width,
@@ -108,6 +129,7 @@ impl Camera {
                     self.z_far,
                 )
             }
+            ProjectionMode::Custom(m) => m,
         };
     }
 

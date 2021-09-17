@@ -75,6 +75,7 @@ impl Shader {
     pub const PHYSICALLY_BASED_TRANSPARENT: Handle<Shader> =
         Handle::<Shader>::new_with_just_index(3);
     pub const DEPTH_ONLY: Handle<Shader> = Handle::<Shader>::new_with_just_index(4);
+    pub const UI: Handle<Shader> = Handle::<Shader>::new_with_just_index(5);
 }
 
 pub(crate) fn initialize_static_shaders(graphics: &mut Graphics, shaders: &mut Assets<Shader>) {
@@ -112,7 +113,7 @@ pub(crate) fn initialize_static_shaders(graphics: &mut Graphics, shaders: &mut A
             .new_shader(
                 include_str!("built_in_shaders/physically_based.glsl"),
                 PipelineSettings {
-                    faces_to_render: FacesToRender::FrontAndBack,
+                    faces_to_render: FacesToRender::Front,
                     blending: Some((BlendFactor::SourceAlpha, BlendFactor::OneMinusSourceAlpha)),
                 },
             )
@@ -131,5 +132,18 @@ pub(crate) fn initialize_static_shaders(graphics: &mut Graphics, shaders: &mut A
             )
             .unwrap(),
         &Shader::DEPTH_ONLY,
+    );
+    shaders.add_and_leak(
+        graphics
+            .new_shader(
+                include_str!("built_in_shaders/unlit_ui.glsl"),
+                PipelineSettings {
+                    faces_to_render: FacesToRender::FrontAndBack,
+                    blending: Some((BlendFactor::SourceAlpha, BlendFactor::OneMinusSourceAlpha)),
+                    ..Default::default()
+                },
+            )
+            .unwrap(),
+        &Shader::UI,
     );
 }

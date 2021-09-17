@@ -15,7 +15,6 @@ thread_local!(
 );
 
 pub fn set_callback(callback: Box<dyn FnMut(Event)>) {
-    println!("SETTING CALLBACK");
     PROGRAM_CALLBACK.with(|p| {
         let _ = p.replace(callback);
     });

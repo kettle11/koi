@@ -23,6 +23,7 @@ impl Material {
     pub const PHYSICALLY_BASED: Handle<Material> = Handle::new_with_just_index(2);
     /// A fully emissive material
     pub const EMISSIVE: Handle<Material> = Handle::new_with_just_index(3);
+    pub const UI: Handle<Material> = Handle::new_with_just_index(4);
 
     pub(crate) fn initialize_static_materials(materials: &mut Assets<Material>) {
         let mut unlit_material = Material::new(Shader::UNLIT);
@@ -42,6 +43,10 @@ impl Material {
         emissive_material.set_texture("p_base_color_texture", Texture::WHITE);
         emissive_material.set_vec3("p_emissive", Vec3::new(1.0, 1.0, 1.0));
         materials.add_and_leak(emissive_material, &Self::EMISSIVE);
+
+        let mut ui_material = Material::new(Shader::UI);
+        ui_material.set_texture("p_base_color_texture", Texture::WHITE);
+        materials.add_and_leak(ui_material, &Self::UI);
     }
 
     pub fn new(shader: Handle<Shader>) -> Self {
@@ -75,13 +80,7 @@ impl Material {
 
     pub fn set_color(&mut self, name: &str, value: Color) {
         // For now just assume the shader's [ColorSpace] is linear sRGB.
-        let RGBColor {
-            red,
-            green,
-            blue,
-            alpha,
-        } = value.to_rgb_color(crate::color_spaces::LINEAR_SRGB);
-        let value = Vec4::new(red, green, blue, alpha);
+        let value = value.to_rgb_color(crate::color_spaces::LINEAR_SRGB);
         self.vec4_properties.insert(name.to_string(), value);
     }
 

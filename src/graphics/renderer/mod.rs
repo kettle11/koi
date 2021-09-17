@@ -154,17 +154,17 @@ impl<'a, 'b: 'a, 'c: 'a> Renderer<'a, 'b, 'c> {
             );
 
             // TODO: Make a color property and convert it into the framebuffer's color space first.
-            let color = light.color.to_rgb_color(crate::color_spaces::LINEAR_SRGB);
-            let color_and_intensity = (
-                color.red * light.intensity,
-                color.green * light.intensity,
-                color.green * light.intensity,
-            );
+            let color_and_intensity = light
+                .color
+                .to_rgb_color(crate::color_spaces::LINEAR_SRGB)
+                .xyz()
+                * light.intensity;
+
             self.render_pass.set_vec3_property(
                 &pipeline
                     .get_vec3_property(&format!("p_lights[{:?}].color_and_intensity", i))
                     .unwrap(),
-                color_and_intensity,
+                color_and_intensity.into(),
             );
 
             // Set if the light has shadows enabled.
@@ -300,15 +300,8 @@ impl<'a, 'b: 'a, 'c: 'a> Renderer<'a, 'b, 'c> {
     pub fn set_color(&mut self, color: Color) {
         if let Some(material_info) = &self.material_info {
             let rgb_color = color.to_rgb_color(color_spaces::LINEAR_SRGB);
-            self.render_pass.set_vec4_property(
-                &material_info.base_color_property,
-                (
-                    rgb_color.red,
-                    rgb_color.green,
-                    rgb_color.blue,
-                    rgb_color.alpha,
-                ),
-            );
+            self.render_pass
+                .set_vec4_property(&material_info.base_color_property, rgb_color.into());
         }
     }
 
@@ -423,7 +416,7 @@ pub fn render_scene(
                 // However that means that blending with the clear-color will be incorrect.
                 // A post-processing pass is needed to convert into the appropriate output space.
                 let c = c.to_rgb_color(color_spaces::ENCODED_SRGB);
-                (c.red, c.green, c.blue, c.alpha)
+                c.into()
             });
 
             let mut render_pass = command_buffer.begin_render_pass_with_framebuffer(

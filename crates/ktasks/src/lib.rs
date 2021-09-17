@@ -63,20 +63,16 @@ pub fn create_workers(count: u32) {
             worker_waker.clone(),
         );
 
-        klog::log!("Here in ktasks");
-
         // Create workers for other threads.
         // Only create workers for non-WebAssembly platforms, or WebAssembly if atomics are enabled.
         #[cfg(any(not(target_arch = "wasm32"), target_feature = "atomics"))]
         for (i, task_queue) in queues.iter().cloned().enumerate().skip(1) {
-            klog::log!("Here in ktasks 1");
-
             let main_thread_local_task_queue = main_thread_local_task_queue.clone();
             let mut other_task_queues = queues.clone();
             other_task_queues.swap_remove(i);
             let worker_waker = worker_waker.clone();
             let closure = move || {
-                klog::log!("CREATED WORKER WITH ID: {:?}", i);
+                // klog::log!("CREATED WORKER WITH ID: {:?}", i);
                 create_worker(
                     i,
                     task_queue,
@@ -87,7 +83,7 @@ pub fn create_workers(count: u32) {
 
                 // Run forever waiting for work.
                 WORKER.with(|w| {
-                    klog::log!("RUNNING WORKER FOREVER: {:?}", i);
+                    // klog::log!("RUNNING WORKER FOREVER: {:?}", i);
                     w.borrow().run_forever();
                 });
             };
@@ -501,10 +497,10 @@ impl<'a> Worker<'a> {
 
             // If no tasks were available then go to sleep until tasks are available
             if !ran_a_task {
-                klog::log!("WORKER {:?}: Waiting for tasks to steal", self.id);
+                // klog::log!("WORKER {:?}: Waiting for tasks to steal", self.id);
                 // If I reach here then block until other tasks are enqueued.
                 self.new_task.wait();
-                klog::log!("WORKER {:?}: Woken up to steal a task", self.id);
+                //  klog::log!("WORKER {:?}: Woken up to steal a task", self.id);
             }
         }
     }

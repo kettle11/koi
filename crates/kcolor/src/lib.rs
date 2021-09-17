@@ -23,6 +23,7 @@ impl kecs::ComponentTrait for Color {
     }
 }
 
+/*
 /// A [Color] with `red`, `green`, and `blue`, components but without a specified `ColorSpace`.
 #[derive(Clone, Copy, Debug, PartialEq, PartialOrd)]
 pub struct RGBColor {
@@ -31,6 +32,7 @@ pub struct RGBColor {
     pub blue: FType,
     pub alpha: FType,
 }
+*/
 
 impl Color {
     /// Create a new [Color] from sRGB red, green, blue, and alpha (transparency) values.
@@ -77,17 +79,22 @@ impl Color {
         Self::new(red, green, blue, alpha)
     }
 
+    /// Outputs a [kmath::Vec4] with this [Color]'s values as *encoded* (non-linear) sRGB.
+    pub fn to_srgb(self) -> kmath::Vec4 {
+        self.to_rgb_color(color_spaces::ENCODED_SRGB)
+    }
+
+    /// Outputs a [kmath::Vec4] with this [Color]'s values as *non-encoded* (linear) sRGB.
+    pub fn to_linear_srgb(self) -> kmath::Vec4 {
+        self.to_rgb_color(color_spaces::LINEAR_SRGB)
+    }
+
     /// Convert this color to a [RGBColor] in a specified [ColorSpace]
     /// The red, green, and blue components may not actually correspond to red, green, and blue depending on the color space.
-    pub fn to_rgb_color(self, color_space: ColorSpace) -> RGBColor {
+    pub fn to_rgb_color(self, color_space: ColorSpace) -> kmath::Vec4 {
         let converter = kolor::ColorConversion::new(kolor::spaces::CIE_XYZ, color_space);
         let result = converter.convert(kolor::Vec3::new(self.x, self.y, self.z));
-        RGBColor {
-            red: result.x,
-            green: result.y,
-            blue: result.z,
-            alpha: self.alpha,
-        }
+        kmath::Vec4::new(result.x, result.y, result.z, self.alpha)
     }
 
     /// Interpolates (synonyms: blend, mix, lerp) between two [Color]s.

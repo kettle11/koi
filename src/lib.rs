@@ -1,5 +1,6 @@
 use std::ops::{Deref, DerefMut};
 
+pub use kcolor::*;
 pub use kecs::*;
 pub use klog::*;
 pub use kmath::*;
@@ -15,9 +16,6 @@ pub use assets::*;
 
 mod random;
 pub use random::*;
-
-mod color;
-pub use color::*;
 
 mod transform;
 pub use transform::*;
@@ -52,6 +50,11 @@ mod xr;
 #[cfg(feature = "xr")]
 pub use xr::*;
 
+#[cfg(feature = "ui")]
+mod ui;
+#[cfg(feature = "ui")]
+pub use ui::*;
+
 pub use kapp::{Event as KappEvent, Key, PointerButton};
 /*
 mod experimental;
@@ -76,6 +79,7 @@ pub struct Plugin {
     pub setup_systems: Vec<System>,
     pub pre_fixed_update_systems: Vec<System>,
     pub fixed_update_systems: Vec<System>,
+    pub pre_draw_systems: Vec<System>,
     pub draw_systems: Vec<System>,
     pub end_of_frame_systems: Vec<System>,
     pub on_kapp_events: Vec<System>,
@@ -83,18 +87,28 @@ pub struct Plugin {
 }
 
 impl Plugin {
-    fn append(&mut self, mut other: Self) {
-        self.setup_systems.append(&mut other.setup_systems);
+    fn append(&mut self, other: Self) {
+        let Self {
+            mut setup_systems,
+            mut pre_fixed_update_systems,
+            mut fixed_update_systems,
+            mut pre_draw_systems,
+            mut draw_systems,
+            mut end_of_frame_systems,
+            mut on_kapp_events,
+            mut additional_control_flow,
+        } = other;
+
+        self.setup_systems.append(&mut setup_systems);
         self.pre_fixed_update_systems
-            .append(&mut other.pre_fixed_update_systems);
-        self.fixed_update_systems
-            .append(&mut other.fixed_update_systems);
-        self.draw_systems.append(&mut other.draw_systems);
-        self.end_of_frame_systems
-            .append(&mut other.end_of_frame_systems);
-        self.on_kapp_events.append(&mut other.on_kapp_events);
+            .append(&mut pre_fixed_update_systems);
+        self.fixed_update_systems.append(&mut fixed_update_systems);
+        self.pre_draw_systems.append(&mut pre_draw_systems);
+        self.draw_systems.append(&mut draw_systems);
+        self.end_of_frame_systems.append(&mut end_of_frame_systems);
+        self.on_kapp_events.append(&mut on_kapp_events);
         self.additional_control_flow
-            .append(&mut other.additional_control_flow);
+            .append(&mut additional_control_flow);
     }
 }
 
@@ -104,6 +118,7 @@ impl Default for Plugin {
             setup_systems: Vec::new(),
             pre_fixed_update_systems: Vec::new(),
             fixed_update_systems: Vec::new(),
+            pre_draw_systems: Vec::new(),
             draw_systems: Vec::new(),
             end_of_frame_systems: Vec::new(),
             on_kapp_events: Vec::new(),
@@ -153,6 +168,8 @@ impl App {
         let app = self;
         let app = app.add_plugin(world_assets_plugin());
         let app = app.add_plugin(transform_plugin());
+
+        // Default plugins
         #[cfg(feature = "graphics")]
         let app = app.add_plugin(graphics_plugin());
         #[cfg(feature = "renderer")]
@@ -164,6 +181,10 @@ impl App {
         let app = app.add_plugin(camera_plugin());
         #[cfg(feature = "graphics")]
         let app = app.add_plugin(camera_controls_plugin());
+        #[cfg(feature = "ui")]
+        let app = app.add_plugin(ui_plugin());
+
+        // Non-default plugins
         #[cfg(feature = "xr")]
         let app = app.add_plugin(xr_plugin());
         app
@@ -312,6 +333,11 @@ impl KoiState {
             (self.run_system)(crate::Event::FixedUpdate, &mut self.world);
             apply_commands(&mut self.world);
             self.time_acumulator -= self.fixed_time_step;
+        }
+
+        apply_commands(&mut self.world);
+        for system in &mut self.systems.pre_draw_systems {
+            system.run(&mut self.world)
         }
 
         (self.run_system)(crate::Event::Draw, &mut self.world);

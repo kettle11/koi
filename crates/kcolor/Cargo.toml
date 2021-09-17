@@ -1,0 +1,13 @@
+[package]
+name = "kcolor"
+version = "0.1.0"
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+kecs = {path = "../kecs"}
+kmath = {path = "../kmath"}
+
+# This is copied / modified locally because it can't build presently with `glam` disabled.
+kolor = {path = "../../third_party/koi_kolor/build/kolor", default-features=false, features=["f32", "std"]}

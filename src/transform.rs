@@ -352,7 +352,6 @@ pub fn set_parent(world: &mut World, parent: Option<Entity>, child: Entity) {
         let child_model = child_transform.global_transform.model();
         let child_relative = child_model.inversed() * parent_mat;
 
-        log!("RELATIVE TRANSFORM: {:?}", child_relative);
         *child_transform = Transform::from_mat4(child_relative);
     }
 }
