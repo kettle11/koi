@@ -705,6 +705,17 @@ impl GraphicsContextTrait for GraphicsContext {
                             self.gl.enable_vertex_attrib_array(attribute.index);
                         }
                     }
+                    SetVertexAttributeToConstant {
+                        attribute,
+                        length,
+                        x,
+                        y,
+                        z,
+                        w,
+                    } => {
+                        let values = [x, y, z, w];
+                        self.gl.vertex_attrib(attribute.index, length, &values);
+                    }
                     SetIndexBuffer(buffer) => {
                         self.gl
                             .bind_buffer(GL_ELEMENT_ARRAY_BUFFER, Some(buffer.buffer));

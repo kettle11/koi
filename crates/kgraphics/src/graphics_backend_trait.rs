@@ -29,6 +29,11 @@ pub trait RenderPassTrait {
         vertex_attribute: &VertexAttribute<T>,
         buffer: Option<&DataBuffer<T>>,
     );
+    fn set_vertex_attribute_to_constant<T>(
+        &mut self,
+        vertex_attribute: &VertexAttribute<T>,
+        value: &[f32],
+    );
     fn set_float_property(&mut self, property: &FloatProperty, value: f32);
 
     fn set_int_property(&mut self, property: &IntProperty, value: i32);

@@ -342,14 +342,23 @@ impl<'a, 'b: 'a, 'c: 'a> Renderer<'a, 'b, 'c> {
                         &material_info.normal_attribute,
                         gpu_mesh.normals.as_ref(),
                     );
+                    
                     self.render_pass.set_vertex_attribute(
                         &material_info.texture_coordinate_attribute,
                         gpu_mesh.texture_coordinates.as_ref(),
                     );
-                    self.render_pass.set_vertex_attribute(
-                        &material_info.vertex_color_attribute,
-                        gpu_mesh.colors.as_ref(),
-                    );
+
+                    if let Some(colors) = gpu_mesh.colors.as_ref() {
+                        self.render_pass.set_vertex_attribute(
+                            &material_info.vertex_color_attribute,
+                            Some(colors),
+                        );
+                    } else {
+                        self.render_pass.set_vertex_attribute_to_constant(
+                            &material_info.vertex_color_attribute,
+                            &[1.0, 1.0, 1.0, 1.0],
+                        );
+                    }
 
                     self.bound_mesh = Some(mesh_handle);
                 }

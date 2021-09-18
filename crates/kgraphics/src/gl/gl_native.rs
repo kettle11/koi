@@ -334,6 +334,20 @@ impl GL {
         );
     }
 
+    pub unsafe fn vertex_attrib(&self, index: u32, length: u8, values: &[f32; 4]) {
+        match length {
+            1 => self.gl.VertexAttrib1f(index, values[0]),
+            2 => self.gl.VertexAttrib2f(index, values[0], values[1]),
+            3 => self
+                .gl
+                .VertexAttrib3f(index, values[0], values[1], values[2]),
+            4 => self
+                .gl
+                .VertexAttrib4f(index, values[0], values[1], values[2], values[3]),
+            _ => unreachable!(),
+        }
+    }
+
     pub unsafe fn disable_vertex_attrib_array(&self, index: u32) {
         self.gl.DisableVertexAttribArray(index);
     }

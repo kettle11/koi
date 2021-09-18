@@ -15,6 +15,14 @@ pub(super) enum CommandBufferAction {
     BindFramebuffer(Framebuffer),
     ChangePipeline(Pipeline),
     SetVertexAttribute((VertexAttributeInfo, Option<gl_native::Buffer>)),
+    SetVertexAttributeToConstant {
+        attribute: VertexAttributeInfo,
+        length: u8,
+        x: f32,
+        y: f32,
+        z: f32,
+        w: f32,
+    },
     SetIndexBuffer(IndexBuffer),
     SetFloatUniform((UniformLocation, BumpHandle)),
     SetIntUniform((UniformLocation, BumpHandle)),
@@ -153,6 +161,27 @@ impl<'a> RenderPassTrait for RenderPass<'a> {
                     info,
                     buffer.map(|b| b.buffer),
                 )))
+        }
+    }
+
+    /// Vertex attributes are arrays of data for each vertex.
+    fn set_vertex_attribute_to_constant<T>(
+        &mut self,
+        vertex_attribute: &VertexAttribute<T>,
+        value: &[f32],
+    ) {
+        if let Some(info) = vertex_attribute.info.clone() {
+            let length = value.len() as u8;
+            self.command_buffer
+                .actions
+                .push(CommandBufferAction::SetVertexAttributeToConstant {
+                    attribute: info,
+                    length,
+                    x: value.get(0).cloned().unwrap_or(0.0),
+                    y: value.get(0).cloned().unwrap_or(0.0),
+                    z: value.get(0).cloned().unwrap_or(0.0),
+                    w: value.get(0).cloned().unwrap_or(0.0),
+                })
         }
     }
 
