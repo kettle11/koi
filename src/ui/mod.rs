@@ -8,7 +8,7 @@ pub fn ui_plugin() -> Plugin {
 }
 
 pub struct UI<STYLE: GetStandardStyleTrait + 'static> {
-    ui_component: UIComponent<STYLE>,
+    phantom: std::marker::PhantomData<STYLE>,
 }
 
 impl<STYLE: GetStandardStyleTrait> UI<STYLE> {
@@ -16,8 +16,16 @@ impl<STYLE: GetStandardStyleTrait> UI<STYLE> {
         world: &mut World,
         root_widget: Box<dyn WidgetTrait<UIContext<STYLE, World>>>,
     ) -> Self {
+        world.spawn((
+            UIComponent::new(root_widget),
+            Handle::<Mesh>::default(),
+            Material::UI,
+            Transform::new(),
+            Sprite::new(Handle::default(), BoundingBox::ZERO),
+        ));
+
         Self {
-            ui_component: UIComponent::new(root_widget),
+            phantom: std::marker::PhantomData,
         }
     }
 
@@ -31,7 +39,7 @@ impl<STYLE: GetStandardStyleTrait> UI<STYLE> {
         let (window_width, window_height) = (window_width as f32, window_height as f32);
 
         let mut ui_entities = Vec::new();
-        (|mut query: Query<&mut UIComponent<STYLE>>| {
+        (|query: Query<&mut UIComponent<STYLE>>| {
             for (entity, _) in query.entities_and_components() {
                 ui_entities.push(*entity);
             }
@@ -80,9 +88,9 @@ impl<STYLE: GetStandardStyleTrait> UI<STYLE> {
                 sprite = Sprite::new(new_texture_handle, BoundingBox::new(Vec2::ZERO, Vec2::ONE));
             })
             .run(world);
-            world.add_component(entity, ui);
-            world.add_component(entity, mesh_handle);
-            world.add_component(entity, sprite);
+            world.add_component(entity, ui).unwrap();
+            world.add_component(entity, mesh_handle).unwrap();
+            world.add_component(entity, sprite).unwrap();
         }
 
         (|events_in: &mut KappEvents| std::mem::swap(&mut events, &mut events_in.0)).run(world);
@@ -98,7 +106,6 @@ impl<Style: GetStandardStyleTrait, Data> UIContextTrait for UIContext<Style, Dat
     type Data = Data;
 }
 
-// Todo: Make this Clone
 #[derive(NotCloneComponent)]
 pub struct UIComponent<STYLE: 'static> {
     root_widget: SyncGuard<Box<dyn WidgetTrait<UIContext<STYLE, World>>>>,
