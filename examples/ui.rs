@@ -15,9 +15,14 @@ fn main() {
             .new_font(include_bytes!("../Inter-Regular.otf"))
             .unwrap();
 
-        let root = button("Hello", |world| {
-            world.get_single_component_mut::<Counter>().unwrap().0 += 1;
-        });
+        let root = column(|world: &mut World, mut child_adder: ChildAdder<_>| {
+            let query = world.query::<(&Transform)>().unwrap().unwrap();
+            for t in &query {
+                child_adder.add_child(text(format!("{:?}", t)))
+            }
+        }); /*button("Hello", |world: &mut World| {
+                world.get_single_component_mut::<Counter>().unwrap().0 += 1;
+            });*/
         let mut ui = UI::new(world, root);
 
         move |event: Event, world: &mut World| match event {
