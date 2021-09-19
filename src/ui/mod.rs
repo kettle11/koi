@@ -7,48 +7,49 @@ pub fn ui_plugin() -> Plugin {
     }
 }
 
-pub struct UI<DATA: 'static, STYLE: GetStandardStyleTrait + 'static> {
-    ui_component: UIComponent<DATA, STYLE>,
+pub struct UI<STYLE: GetStandardStyleTrait + 'static> {
+    ui_component: UIComponent<STYLE>,
 }
 
-impl<DATA, STYLE: GetStandardStyleTrait> UI<DATA, STYLE> {
-    pub fn new(world: &mut World, root_widget: Box<dyn WidgetTrait<STYLE, DATA>>) -> Self {
+impl<STYLE: GetStandardStyleTrait> UI<STYLE> {
+    pub fn new(world: &mut World, root_widget: Box<dyn WidgetTrait<STYLE, World>>) -> Self {
         Self {
             ui_component: UIComponent::new(root_widget),
         }
     }
 
     // Call during the pre-draw step to update the UI.
-    pub fn draw(&mut self, world: &World, style: &mut STYLE, data: &mut DATA) {
+    pub fn draw(&mut self, world: &mut World, style: &mut STYLE) {
+        let mut events = Vec::new();
+        (|events_in: &mut KappEvents| std::mem::swap(&mut events, &mut events_in.0)).run(world);
+
         let (window_width, window_height) =
             (|window: &NotSendSync<kapp::Window>| window.size()).run(world);
         let (window_width, window_height) = (window_width as f32, window_height as f32);
 
-        (|mut query: Query<&mut UIComponent<DATA, STYLE>>, events: &KappEvents| {
-            for ui in &mut query {
-                for event in events.iter() {
-                    ui.handle_event(data, event)
-                }
+        let mut ui_entities = Vec::new();
+        (|mut query: Query<&mut UIComponent<STYLE>>| {
+            for (entity, _) in query.entities_and_components() {
+                ui_entities.push(*entity);
             }
         })
         .run(world);
 
-        (|mut query: Query<&mut UIComponent<DATA, STYLE>>| {
-            for ui in &mut query {
-                ui.draw(data, style, window_width, window_height);
-            }
-        })
-        .run(world);
+        for entity in ui_entities {
+            let mut ui = world
+                .remove_component::<UIComponent<STYLE>>(entity)
+                .unwrap();
+            let mut mesh_handle = world.remove_component::<Handle<Mesh>>(entity).unwrap();
+            let mut sprite = world.remove_component::<Sprite>(entity).unwrap();
 
-        (|mut query: Query<(
-            &mut UIComponent<DATA, STYLE>,
-            &mut Handle<Mesh>,
-            &mut Sprite,
-        )>,
-          graphics: &mut Graphics,
-          meshes: &mut Assets<Mesh>,
-          textures: &mut Assets<Texture>| {
-            for (ui, mesh_handle, sprite) in &mut query {
+            for event in &events {
+                ui.handle_event(world, event);
+            }
+            ui.draw(world, style, window_width, window_height);
+
+            (|graphics: &mut Graphics,
+              meshes: &mut Assets<Mesh>,
+              textures: &mut Assets<Texture>| {
                 let mesh_data = MeshData {
                     positions: ui.drawer.positions.clone(),
                     indices: ui.drawer.indices.clone(),
@@ -58,7 +59,7 @@ impl<DATA, STYLE: GetStandardStyleTrait> UI<DATA, STYLE> {
                 };
 
                 let new_mesh_handle = meshes.add(Mesh::new(graphics, mesh_data));
-                *mesh_handle = new_mesh_handle;
+                mesh_handle = new_mesh_handle;
 
                 let new_texture = graphics
                     .new_texture(
@@ -73,35 +74,40 @@ impl<DATA, STYLE: GetStandardStyleTrait> UI<DATA, STYLE> {
                     )
                     .unwrap();
                 let new_texture_handle = textures.add(new_texture);
-                *sprite = Sprite::new(new_texture_handle, BoundingBox::new(Vec2::ZERO, Vec2::ONE));
-            }
-        })
-        .run(world)
+                sprite = Sprite::new(new_texture_handle, BoundingBox::new(Vec2::ZERO, Vec2::ONE));
+            })
+            .run(world);
+            world.add_component(entity, ui);
+            world.add_component(entity, mesh_handle);
+            world.add_component(entity, sprite);
+        }
+
+        (|events_in: &mut KappEvents| std::mem::swap(&mut events, &mut events_in.0)).run(world);
     }
 }
 
 // Todo: Make this Clone
 #[derive(NotCloneComponent)]
-pub struct UIComponent<DATA: 'static, STYLE: 'static> {
-    root_widget: SyncGuard<Box<dyn WidgetTrait<STYLE, DATA>>>,
+pub struct UIComponent<STYLE: 'static> {
+    root_widget: SyncGuard<Box<dyn WidgetTrait<STYLE, World>>>,
     drawer: Drawer,
 }
 
-impl<DATA, STYLE: GetStandardStyleTrait> UIComponent<DATA, STYLE> {
-    pub fn new(root_widget: Box<dyn WidgetTrait<STYLE, DATA>>) -> Self {
+impl<STYLE: GetStandardStyleTrait> UIComponent<STYLE> {
+    pub fn new(root_widget: Box<dyn WidgetTrait<STYLE, World>>) -> Self {
         Self {
             root_widget: SyncGuard::new(root_widget),
             drawer: Drawer::new(),
         }
     }
 
-    pub fn handle_event(&mut self, data: &mut DATA, event: &KappEvent) {
+    pub fn handle_event(&mut self, data: &mut World, event: &KappEvent) {
         let Self { root_widget, .. } = self;
 
         root_widget.inner().event(data, event);
     }
 
-    pub fn draw(&mut self, data: &mut DATA, style: &mut STYLE, width: f32, height: f32) {
+    pub fn draw(&mut self, data: &mut World, style: &mut STYLE, width: f32, height: f32) {
         let Self {
             root_widget,
             drawer,
