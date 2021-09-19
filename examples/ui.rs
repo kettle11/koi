@@ -15,14 +15,16 @@ fn main() {
             .new_font(include_bytes!("../Inter-Regular.otf"))
             .unwrap();
 
-        let root = column(|world: &mut World, mut child_adder: ChildAdder<_>| {
-            let query = world.query::<(&Transform)>().unwrap().unwrap();
-            for t in &query {
-                child_adder.add_child(text(format!("{:?}", t)))
+        let root = /*column(|world: &mut World, mut child_adder: ChildAdder<_, _>| {
+            let query = world
+                .query::<(&Transform, Option<&HierarchyNode>)>()
+                .unwrap()
+                .unwrap();
+            for (e, _) in query.entities_and_components() {
+                child_adder.add_child(text(format!("{:?}", e)))
             }
-        }); /*button("Hello", |world: &mut World| {
-                world.get_single_component_mut::<Counter>().unwrap().0 += 1;
-            });*/
+        });*/
+        colored_rectangle(Vec2::fill(100.), Color::RED);
         let mut ui = UI::new(world, root);
 
         move |event: Event, world: &mut World| match event {
