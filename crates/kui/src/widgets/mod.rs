@@ -1,4 +1,3 @@
-/*
 mod button;
 pub use button::*;
 
@@ -7,43 +6,52 @@ pub use text::*;
 
 mod column_and_row;
 pub use column_and_row::*;
-*/
 
-use crate::*;
-pub trait WidgetTrait<Style, Data>: Send {
+pub trait WidgetTrait<CONTEXT: UIContextTrait>: Send {
     #[allow(unused)]
-    fn size(&mut self, style: &mut Style, data: &mut Data) -> Vec2 {
+    fn size(
+        &mut self,
+        context: &mut CONTEXT,
+        style: &mut CONTEXT::Style,
+        data: &mut CONTEXT::Data,
+    ) -> Vec2 {
         Vec2::ZERO
     }
     #[allow(unused)]
     fn draw(
         &mut self,
-        style: &mut Style,
-        data: &mut Data,
+        context: &mut CONTEXT,
+        style: &mut CONTEXT::Style,
+        data: &mut CONTEXT::Data,
         drawer: &mut Drawer,
         rectangle: Rectangle,
     ) {
     }
     #[allow(unused)]
-    fn event(&mut self, data: &mut Data, event: &Event) {}
+    fn event(&mut self, context: &mut CONTEXT, data: &mut CONTEXT::Data, event: &Event) {}
 }
 
-pub fn fill<Style, Data>(color: Color) -> Box<dyn WidgetTrait<Style, Data>> {
+pub fn fill<CONTEXT: UIContextTrait>(color: Color) -> Box<dyn WidgetTrait<CONTEXT>> {
     Box::new(Fill { color })
 }
 pub struct Fill {
     color: Color,
 }
 
-impl<Style, Data> WidgetTrait<Style, Data> for Fill {
-    fn size(&mut self, _style: &mut Style, _data: &mut Data) -> Vec2 {
+impl<CONTEXT: UIContextTrait> WidgetTrait<CONTEXT> for Fill {
+    fn size(
+        &mut self,
+        _context: &mut CONTEXT,
+        _style: &mut CONTEXT::Style,
+        _data: &mut CONTEXT::Data,
+    ) -> Vec2 {
         Vec2::MAX
     }
     fn draw(
         &mut self,
-
-        _style: &mut Style,
-        _data: &mut Data,
+        _context: &mut CONTEXT,
+        _style: &mut CONTEXT::Style,
+        _data: &mut CONTEXT::Data,
         drawer: &mut Drawer,
         rectangle: Rectangle,
     ) {
@@ -51,10 +59,10 @@ impl<Style, Data> WidgetTrait<Style, Data> for Fill {
     }
 }
 
-pub fn colored_rectangle<Style, Data>(
+pub fn colored_rectangle<CONTEXT: UIContextTrait>(
     size: Vec2,
     color: Color,
-) -> Box<dyn WidgetTrait<Style, Data>> {
+) -> Box<dyn WidgetTrait<CONTEXT>> {
     Box::new(ColoredRectangle { size, color })
 }
 pub struct ColoredRectangle {
@@ -62,15 +70,20 @@ pub struct ColoredRectangle {
     color: Color,
 }
 
-impl<Style, Data> WidgetTrait<Style, Data> for ColoredRectangle {
-    fn size(&mut self, _style: &mut Style, _data: &mut Data) -> Vec2 {
+impl<CONTEXT: UIContextTrait> WidgetTrait<CONTEXT> for ColoredRectangle {
+    fn size(
+        &mut self,
+        _context: &mut CONTEXT,
+        _style: &mut CONTEXT::Style,
+        _data: &mut CONTEXT::Data,
+    ) -> Vec2 {
         self.size
     }
     fn draw(
         &mut self,
-
-        _style: &mut Style,
-        _data: &mut Data,
+        _context: &mut CONTEXT,
+        _style: &mut CONTEXT::Style,
+        _data: &mut CONTEXT::Data,
         drawer: &mut Drawer,
         rectangle: Rectangle,
     ) {

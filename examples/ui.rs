@@ -1,7 +1,7 @@
 use koi::*;
 
 #[derive(Component, Clone)]
-struct Controlled;
+struct Counter(u32);
 
 fn main() {
     App::new().setup_and_run(|world: &mut World| {
@@ -11,18 +11,20 @@ fn main() {
         let mut style = StandardStyle::new();
 
         // Load a default font.
-        //  style
-        //      .new_font(include_bytes!("../Inter-Regular.otf"))
-        //      .unwrap();
+        style
+            .new_font(include_bytes!("../Inter-Regular.otf"))
+            .unwrap();
 
-        let root = colored_rectangle(Vec2::ONE, Color::RED);
+        let root = button("Hello", |world| {
+            world.get_single_component_mut::<Counter>().unwrap().0 += 1;
+        });
         let mut ui = UI::new(world, root);
 
         move |event: Event, world: &mut World| match event {
             Event::FixedUpdate => {}
             Event::Draw => {
                 // Update and draw the UI.
-                ui.draw(world, &mut style, &mut ());
+                ui.draw(world, &mut style);
             }
             _ => {}
         }

@@ -12,7 +12,10 @@ pub struct UI<STYLE: GetStandardStyleTrait + 'static> {
 }
 
 impl<STYLE: GetStandardStyleTrait> UI<STYLE> {
-    pub fn new(world: &mut World, root_widget: Box<dyn WidgetTrait<STYLE, World>>) -> Self {
+    pub fn new(
+        world: &mut World,
+        root_widget: Box<dyn WidgetTrait<UIContext<STYLE, World>>>,
+    ) -> Self {
         Self {
             ui_component: UIComponent::new(root_widget),
         }
@@ -86,15 +89,24 @@ impl<STYLE: GetStandardStyleTrait> UI<STYLE> {
     }
 }
 
+pub struct UIContext<Style: 'static, Data: 'static> {
+    phantom: std::marker::PhantomData<(Style, Data)>,
+}
+
+impl<Style: GetStandardStyleTrait, Data> UIContextTrait for UIContext<Style, Data> {
+    type Style = Style;
+    type Data = Data;
+}
+
 // Todo: Make this Clone
 #[derive(NotCloneComponent)]
 pub struct UIComponent<STYLE: 'static> {
-    root_widget: SyncGuard<Box<dyn WidgetTrait<STYLE, World>>>,
+    root_widget: SyncGuard<Box<dyn WidgetTrait<UIContext<STYLE, World>>>>,
     drawer: Drawer,
 }
 
 impl<STYLE: GetStandardStyleTrait> UIComponent<STYLE> {
-    pub fn new(root_widget: Box<dyn WidgetTrait<STYLE, World>>) -> Self {
+    pub fn new(root_widget: Box<dyn WidgetTrait<UIContext<STYLE, World>>>) -> Self {
         Self {
             root_widget: SyncGuard::new(root_widget),
             drawer: Drawer::new(),
@@ -104,7 +116,10 @@ impl<STYLE: GetStandardStyleTrait> UIComponent<STYLE> {
     pub fn handle_event(&mut self, data: &mut World, event: &KappEvent) {
         let Self { root_widget, .. } = self;
 
-        root_widget.inner().event(data, event);
+        let mut context = UIContext {
+            phantom: std::marker::PhantomData,
+        };
+        root_widget.inner().event(&mut context, data, event);
     }
 
     pub fn draw(&mut self, data: &mut World, style: &mut STYLE, width: f32, height: f32) {
@@ -118,8 +133,13 @@ impl<STYLE: GetStandardStyleTrait> UIComponent<STYLE> {
 
         let root_widget = root_widget.inner();
 
-        root_widget.size(style, data);
+        let mut context = UIContext {
+            phantom: std::marker::PhantomData,
+        };
+
+        root_widget.size(&mut context, style, data);
         root_widget.draw(
+            &mut context,
             style,
             data,
             drawer,
