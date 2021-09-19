@@ -1,6 +1,6 @@
 use crate::*;
-use std::{convert::TryInto, path::Path};
 use kecs::hierarchy::*;
+use std::{convert::TryInto, path::Path};
 
 pub(super) fn load_gltf_as_world(
     path: &str,

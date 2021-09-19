@@ -37,6 +37,9 @@ pub struct GlobalTransform {
 
 impl GlobalTransform {
     pub fn model(&self) -> Mat4 {
+        if self.scale[1] < 0.0 {
+            println!("SCALE: {:?}", self.scale);
+        }
         Mat4::from_translation_rotation_scale(self.position, self.rotation, self.scale)
     }
 
@@ -216,6 +219,9 @@ impl Transform {
     }
 
     pub fn model(&self) -> Mat4 {
+        if self.scale[1] < 0.0 {
+            println!("SCALE: {:?}", self.scale);
+        }
         Mat4::from_translation_rotation_scale(self.position, self.rotation, self.scale)
     }
 

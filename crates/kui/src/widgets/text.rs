@@ -4,7 +4,7 @@ pub fn text<CONTEXT: UIContextTrait>(
     text: impl Into<TextSource<CONTEXT::Data>>,
 ) -> Box<dyn WidgetTrait<CONTEXT>>
 where
-    CONTEXT::Style: GetStandardStyleTrait + 'static,
+    CONTEXT::Style: GetStandardStyleTrait,
 {
     Box::new(Text::new(
         text,
@@ -17,7 +17,7 @@ pub fn heading<CONTEXT: UIContextTrait>(
     text: impl Into<TextSource<CONTEXT::Data>>,
 ) -> Box<dyn WidgetTrait<CONTEXT>>
 where
-    CONTEXT::Style: GetStandardStyleTrait + 'static,
+    CONTEXT::Style: GetStandardStyleTrait,
 {
     Box::new(Text::new(
         text,

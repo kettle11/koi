@@ -11,21 +11,18 @@ fn main() {
         let mut style = StandardStyle::new();
 
         // Load a default font.
-        style
-            .new_font(include_bytes!("../Inter-Regular.otf"))
-            .unwrap();
+        //  style
+        //      .new_font(include_bytes!("../Inter-Regular.otf"))
+        //      .unwrap();
 
-        let root = button("Hello", |data| {
-            *data += 1;
-        });
+        let root = colored_rectangle(Vec2::ONE, Color::RED);
         let mut ui = UI::new(world, root);
 
-        let mut counter = 0;
         move |event: Event, world: &mut World| match event {
             Event::FixedUpdate => {}
             Event::Draw => {
                 // Update and draw the UI.
-                ui.draw(world, &mut style, &mut counter);
+                ui.draw(world, &mut style, &mut ());
             }
             _ => {}
         }

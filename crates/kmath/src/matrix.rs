@@ -743,6 +743,29 @@ impl<T: NumericFloat> From<Quaternion<T>> for Matrix<T, 4, 4> {
     }
 }
 
+impl<T: NumericFloat> From<Quaternion<T>> for Matrix<T, 3, 3> {
+    fn from(q: Quaternion<T>) -> Self {
+        let x2 = q[0] + q[0];
+        let y2 = q[1] + q[1];
+        let z2 = q[2] + q[2];
+        let xx = q[0] * x2;
+        let xy = q[0] * y2;
+        let xz = q[0] * z2;
+        let yy = q[1] * y2;
+        let yz = q[1] * z2;
+        let zz = q[2] * z2;
+        let wx = q[3] * x2;
+        let wy = q[3] * y2;
+        let wz = q[3] * z2;
+
+        Self([
+            [T::ONE - (yy + zz), xy + wz, xz - wy],
+            [xy - wz, T::ONE - (xx + zz), yz + wx],
+            [xz + wy, yz - wx, T::ONE - (xx + yy)],
+        ])
+    }
+}
+
 impl<T: Numeric, const R: usize, const C: usize, const V: usize> TryFrom<&[T; V]>
     for Matrix<T, R, C>
 {

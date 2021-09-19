@@ -62,6 +62,7 @@ struct Renderer<'a, 'b: 'a, 'c: 'a> {
     #[allow(unused)]
     multiview_enabled: bool,
     current_pipeline: Option<&'a Pipeline>,
+    dither_scale: f32,
 }
 
 impl<'a, 'b: 'a, 'c: 'a> Renderer<'a, 'b, 'c> {
@@ -96,6 +97,7 @@ impl<'a, 'b: 'a, 'c: 'a> Renderer<'a, 'b, 'c> {
             camera_info,
             multiview_enabled,
             current_pipeline: None,
+            dither_scale: 4.0,
         }
     }
 
@@ -247,6 +249,14 @@ impl<'a, 'b: 'a, 'c: 'a> Renderer<'a, 'b, 'c> {
                     }
                 }
 
+                self.render_pass.set_float_property(
+                    &shader
+                        .pipeline
+                        .get_float_property("p_dither_scale")
+                        .unwrap(),
+                    self.dither_scale,
+                );
+
                 // When a material is changed we lookup if the shader has some standard properties.
                 let model_property = pipeline.get_mat4_property("p_model").unwrap();
                 let position_attribute =
@@ -342,7 +352,7 @@ impl<'a, 'b: 'a, 'c: 'a> Renderer<'a, 'b, 'c> {
                         &material_info.normal_attribute,
                         gpu_mesh.normals.as_ref(),
                     );
-                    
+
                     self.render_pass.set_vertex_attribute(
                         &material_info.texture_coordinate_attribute,
                         gpu_mesh.texture_coordinates.as_ref(),

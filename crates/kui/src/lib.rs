@@ -16,10 +16,7 @@ pub type Rectangle = BoundingBox<f32, 2>;
 
 pub(crate) use kapp_platform_common::Event;
 
-pub trait UIContextTrait: 'static {
-    type Data: 'static;
-    type Style: GetStandardStyleTrait + 'static;
-}
+pub trait UIContextTrait: 'static {}
 
 #[derive(Copy, Clone, Debug)]
 pub struct Font(usize);

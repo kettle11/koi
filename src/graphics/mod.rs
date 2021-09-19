@@ -295,7 +295,7 @@ impl GraphicsInner {
         // If this causes performance issues this check could be disabled in the future.
         let len = mesh_data.positions.len();
         for i in mesh_data.indices.iter() {
-            if i[0] as usize > len || i[1] as usize > len || i[2] as usize > len {
+            if i[0] as usize >= len || i[1] as usize >= len || i[2] as usize >= len {
                 panic!(
                     "Mesh indices refer to out of bound vertices: {:?}. Vertex count: {:?}",
                     i,

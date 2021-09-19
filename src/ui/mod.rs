@@ -7,24 +7,14 @@ pub fn ui_plugin() -> Plugin {
     }
 }
 
-pub struct UI<DATA, STYLE: GetStandardStyleTrait> {
-    phantom: std::marker::PhantomData<fn() -> (DATA, STYLE)>,
+pub struct UI<DATA: 'static, STYLE: GetStandardStyleTrait + 'static> {
+    ui_component: UIComponent<DATA, STYLE>,
 }
 
-impl<DATA: 'static, STYLE: 'static + GetStandardStyleTrait> UI<DATA, STYLE> {
-    pub fn new(
-        world: &mut World,
-        root_widget: Box<dyn WidgetTrait<UIContext<DATA, STYLE>>>,
-    ) -> Self {
-        world.spawn((
-            UIComponent::new(root_widget),
-            Handle::<Mesh>::default(),
-            Material::UI,
-            Transform::new(),
-            Sprite::new(Handle::default(), BoundingBox::ZERO),
-        ));
+impl<DATA, STYLE: GetStandardStyleTrait> UI<DATA, STYLE> {
+    pub fn new(world: &mut World, root_widget: Box<dyn WidgetTrait<STYLE, DATA>>) -> Self {
         Self {
-            phantom: std::marker::PhantomData,
+            ui_component: UIComponent::new(root_widget),
         }
     }
 
@@ -90,51 +80,31 @@ impl<DATA: 'static, STYLE: 'static + GetStandardStyleTrait> UI<DATA, STYLE> {
     }
 }
 
-pub struct UIContext<DATA: 'static, STYLE: 'static> {
-    phantom: std::marker::PhantomData<fn() -> (DATA, STYLE)>,
-}
-
-impl<DATA: 'static, STYLE: GetStandardStyleTrait + 'static> UIContextTrait
-    for UIContext<DATA, STYLE>
-{
-    type Data = DATA;
-    type Style = STYLE;
-}
-
 // Todo: Make this Clone
 #[derive(NotCloneComponent)]
 pub struct UIComponent<DATA: 'static, STYLE: 'static> {
-    root_widget: SyncGuard<Box<dyn WidgetTrait<UIContext<DATA, STYLE>>>>,
+    root_widget: SyncGuard<Box<dyn WidgetTrait<STYLE, DATA>>>,
     drawer: Drawer,
-    context: UIContext<DATA, STYLE>,
 }
 
 impl<DATA, STYLE: GetStandardStyleTrait> UIComponent<DATA, STYLE> {
-    pub fn new(root_widget: Box<dyn WidgetTrait<UIContext<DATA, STYLE>>>) -> Self {
+    pub fn new(root_widget: Box<dyn WidgetTrait<STYLE, DATA>>) -> Self {
         Self {
             root_widget: SyncGuard::new(root_widget),
             drawer: Drawer::new(),
-            context: UIContext {
-                phantom: std::marker::PhantomData,
-            },
         }
     }
 
     pub fn handle_event(&mut self, data: &mut DATA, event: &KappEvent) {
-        let Self {
-            root_widget,
-            context,
-            ..
-        } = self;
+        let Self { root_widget, .. } = self;
 
-        root_widget.inner().event(context, data, event);
+        root_widget.inner().event(data, event);
     }
 
     pub fn draw(&mut self, data: &mut DATA, style: &mut STYLE, width: f32, height: f32) {
         let Self {
             root_widget,
             drawer,
-            context,
         } = self;
         drawer.reset();
 
@@ -142,9 +112,8 @@ impl<DATA, STYLE: GetStandardStyleTrait> UIComponent<DATA, STYLE> {
 
         let root_widget = root_widget.inner();
 
-        root_widget.size(context, style, data);
+        root_widget.size(style, data);
         root_widget.draw(
-            context,
             style,
             data,
             drawer,
