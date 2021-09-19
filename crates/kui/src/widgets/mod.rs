@@ -1,6 +1,5 @@
 use crate::*;
 
-/*
 mod button;
 pub use button::*;
 
@@ -9,7 +8,6 @@ pub use text::*;
 
 mod column_and_row;
 pub use column_and_row::*;
-*/
 
 pub trait WidgetTrait<Style, Data>: Send + 'static {
     #[allow(unused)]

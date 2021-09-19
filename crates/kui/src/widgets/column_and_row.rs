@@ -1,58 +1,45 @@
 use crate::*;
 
-pub trait ProduceChildrenTrait<CONTEXT: UIContextTrait>: Send + 'static {
-    fn add_children_initial(self, children: &mut Vec<(Vec2, Box<dyn WidgetTrait<CONTEXT>>)>);
-    fn add_dynamic_children(
-        &mut self,
-        data: &mut CONTEXT::Data,
-        children: &mut Vec<(Vec2, Box<dyn WidgetTrait<CONTEXT>>)>,
-    );
+pub trait ProduceChildrenTrait<Data, Child>: 'static + Send {
+    fn add_children_initial(self, children: &mut Vec<(Vec2, Child)>);
+    fn add_dynamic_children(&mut self, data: &mut Data, children: &mut Vec<(Vec2, Child)>);
     fn dynamic(&self) -> bool;
 }
 
-impl<CONTEXT: UIContextTrait, const SIZE: usize> ProduceChildrenTrait<CONTEXT>
-    for [Box<dyn WidgetTrait<CONTEXT>>; SIZE]
+impl<Data, Child: 'static + Send, const SIZE: usize> ProduceChildrenTrait<Data, Child>
+    for [Child; SIZE]
 {
-    fn add_children_initial(self, children: &mut Vec<(Vec2, Box<dyn WidgetTrait<CONTEXT>>)>) {
+    fn add_children_initial(self, children: &mut Vec<(Vec2, Child)>) {
         children.reserve(self.len());
         for child in self {
             children.push((Vec2::ZERO, child));
         }
     }
-    fn add_dynamic_children(
-        &mut self,
-        _data: &mut CONTEXT::Data,
-        _children: &mut Vec<(Vec2, Box<dyn WidgetTrait<CONTEXT>>)>,
-    ) {
-    }
+    fn add_dynamic_children(&mut self, _data: &mut Data, _children: &mut Vec<(Vec2, Child)>) {}
     fn dynamic(&self) -> bool {
         false
     }
 }
 
 /// Used to add children to a widget that has multiple children.
-pub struct ChildAdder<'a, CONTEXT> {
-    children: &'a mut Vec<(Vec2, Box<dyn WidgetTrait<CONTEXT>>)>,
+pub struct ChildAdder<'a, Child> {
+    children: &'a mut Vec<(Vec2, Child)>,
 }
 
-impl<CONTEXT> ChildAdder<'_, CONTEXT> {
-    pub fn add_child(&mut self, child: Box<dyn WidgetTrait<CONTEXT>>) {
+impl<Child> ChildAdder<'_, Child> {
+    pub fn add_child(&mut self, child: Child) {
         self.children.push((Vec2::ZERO, child))
     }
 }
 
-impl<CONTEXT: UIContextTrait, F: Fn(&mut CONTEXT::Data, ChildAdder<CONTEXT>) + Send + 'static>
-    ProduceChildrenTrait<CONTEXT> for F
+impl<Data, Child, F: Fn(&mut Data, ChildAdder<Child>) + Send + 'static>
+    ProduceChildrenTrait<Data, Child> for F
 {
-    fn add_children_initial(self, _children: &mut Vec<(Vec2, Box<dyn WidgetTrait<CONTEXT>>)>) {}
-    fn add_dynamic_children(
-        &mut self,
-        data: &mut CONTEXT::Data,
-        children: &mut Vec<(Vec2, Box<dyn WidgetTrait<CONTEXT>>)>,
-    ) {
+    fn add_children_initial(self, _children: &mut Vec<(Vec2, Child)>) {}
+    fn add_dynamic_children(&mut self, data: &mut Data, children: &mut Vec<(Vec2, Child)>) {
         children.clear();
         let child_adder = ChildAdder { children };
-        let i = (self)(data, child_adder);
+        (self)(data, child_adder);
     }
     fn dynamic(&self) -> bool {
         true
@@ -60,45 +47,57 @@ impl<CONTEXT: UIContextTrait, F: Fn(&mut CONTEXT::Data, ChildAdder<CONTEXT>) + S
 }
 
 // Column Widget
-pub struct Column<CONTEXT: UIContextTrait, ChildProducer: ProduceChildrenTrait<CONTEXT>> {
+pub struct Column<
+    Style,
+    Data,
+    Child: WidgetTrait<Style, Data>,
+    ChildProducer: ProduceChildrenTrait<Data, Child>,
+> {
     child_producer: Option<ChildProducer>,
-    children: Vec<(Vec2, Box<dyn WidgetTrait<CONTEXT>>)>,
+    children: Vec<(Vec2, Child)>,
+    phantom: std::marker::PhantomData<fn() -> (Style, Data)>,
 }
 
-pub fn column<CONTEXT: UIContextTrait + 'static, ChildProducer: ProduceChildrenTrait<CONTEXT>>(
+pub fn column<
+    Style,
+    Data,
+    Child: WidgetTrait<Style, Data> + 'static,
+    ChildProducer: ProduceChildrenTrait<Data, Child>,
+>(
     children: ChildProducer,
-) -> Box<dyn WidgetTrait<CONTEXT>> {
+) -> Column<Style, Data, Child, ChildProducer> {
     let mut size_and_child = Vec::new();
     if !children.dynamic() {
         children.add_children_initial(&mut size_and_child);
-        Box::new(Column::<CONTEXT, ChildProducer> {
+        Column {
             child_producer: None,
             children: size_and_child,
-        })
+            phantom: std::marker::PhantomData,
+        }
     } else {
-        Box::new(Column {
+        Column {
             child_producer: Some(children),
             children: size_and_child,
-        })
+            phantom: std::marker::PhantomData,
+        }
     }
 }
 
-impl<CONTEXT: UIContextTrait, ChildProducer: ProduceChildrenTrait<CONTEXT>> WidgetTrait<CONTEXT>
-    for Column<CONTEXT, ChildProducer>
+impl<
+        Style: 'static,
+        Data: 'static,
+        Child: WidgetTrait<Style, Data>,
+        ChildProducer: ProduceChildrenTrait<Data, Child>,
+    > WidgetTrait<Style, Data> for Column<Style, Data, Child, ChildProducer>
 {
-    fn size(
-        &mut self,
-        context: &mut CONTEXT,
-        style: &mut CONTEXT::Style,
-        data: &mut CONTEXT::Data,
-    ) -> Vec2 {
+    fn size(&mut self, style: &mut Style, data: &mut Data) -> Vec2 {
         if let Some(child_producer) = &mut self.child_producer {
             child_producer.add_dynamic_children(data, &mut self.children)
         }
 
         let mut total_size = Vec2::ZERO;
         for (size, child) in &mut self.children {
-            *size = child.size(context, style, data);
+            *size = child.size(style, data);
             total_size.x = total_size.x.max(size.x);
             total_size.y += size.y;
         }
@@ -107,33 +106,27 @@ impl<CONTEXT: UIContextTrait, ChildProducer: ProduceChildrenTrait<CONTEXT>> Widg
 
     fn draw(
         &mut self,
-        context: &mut CONTEXT,
-        style: &mut CONTEXT::Style,
-        data: &mut CONTEXT::Data,
+        style: &mut Style,
+        data: &mut Data,
         drawer: &mut Drawer,
         rectangle: Rectangle,
     ) {
         let mut y = rectangle.min.y;
         for (size, child) in &mut self.children {
             let min = Vec2::new(rectangle.min.x, y);
-            child.draw(
-                context,
-                style,
-                data,
-                drawer,
-                Rectangle::new(min, min + *size),
-            );
+            child.draw(style, data, drawer, Rectangle::new(min, min + *size));
             y += size.y;
         }
     }
 
-    fn event(&mut self, context: &mut CONTEXT, data: &mut CONTEXT::Data, event: &Event) {
+    fn event(&mut self, data: &mut Data, event: &Event) {
         for (_, child) in &mut self.children {
-            child.event(context, data, event)
+            child.event(data, event)
         }
     }
 }
 
+/*
 // Row widget
 pub struct Row<CONTEXT: UIContextTrait> {
     children: Vec<(Vec2, Box<dyn WidgetTrait<CONTEXT>>)>,
@@ -154,13 +147,12 @@ pub fn row<CONTEXT: UIContextTrait + 'static, const SIZE: usize>(
 impl<CONTEXT: UIContextTrait> WidgetTrait<CONTEXT> for Row<CONTEXT> {
     fn size(
         &mut self,
-        context: &mut CONTEXT,
-        style: &mut CONTEXT::Style,
-        data: &mut CONTEXT::Data,
+        style: &mut Style,
+        data: &mut Data,
     ) -> Vec2 {
         let mut total_size = Vec2::ZERO;
         for (size, child) in &mut self.children {
-            *size = child.size(context, style, data);
+            *size = child.size( style, data);
             total_size.y = total_size.y.max(size.y);
             total_size.x += size.x;
         }
@@ -169,9 +161,8 @@ impl<CONTEXT: UIContextTrait> WidgetTrait<CONTEXT> for Row<CONTEXT> {
 
     fn draw(
         &mut self,
-        context: &mut CONTEXT,
-        style: &mut CONTEXT::Style,
-        data: &mut CONTEXT::Data,
+        style: &mut Style,
+        data: &mut Data,
         drawer: &mut Drawer,
         rectangle: Rectangle,
     ) {
@@ -179,7 +170,7 @@ impl<CONTEXT: UIContextTrait> WidgetTrait<CONTEXT> for Row<CONTEXT> {
         for (size, child) in &mut self.children {
             let min = Vec2::new(x, rectangle.min.y);
             child.draw(
-                context,
+
                 style,
                 data,
                 drawer,
@@ -189,9 +180,10 @@ impl<CONTEXT: UIContextTrait> WidgetTrait<CONTEXT> for Row<CONTEXT> {
         }
     }
 
-    fn event(&mut self, context: &mut CONTEXT, data: &mut CONTEXT::Data, event: &Event) {
+    fn event(&mut self,  data: &mut Data, event: &Event) {
         for (_, child) in &mut self.children {
-            child.event(context, data, event)
+            child.event( data, event)
         }
     }
 }
+*/

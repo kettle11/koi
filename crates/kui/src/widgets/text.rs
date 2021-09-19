@@ -1,66 +1,60 @@
 use crate::*;
 
-pub fn text<CONTEXT: UIContextTrait>(
-    text: impl Into<TextSource<CONTEXT::Data>>,
-) -> Box<dyn WidgetTrait<CONTEXT>>
-where
-    CONTEXT::Style: GetStandardStyleTrait + 'static,
-{
-    Box::new(Text::new(
+pub fn text<Style: GetStandardStyleTrait + 'static, Data>(
+    text: impl Into<TextSource<Data>>,
+) -> Text<Style, Data> {
+    Text::new(
         text,
-        |style: &CONTEXT::Style| style.standard().primary_font,
-        |style: &CONTEXT::Style| style.standard().primary_text_color,
-    ))
+        |style: &Style| style.standard().primary_font,
+        |style: &Style| style.standard().primary_text_color,
+    )
 }
 
-pub fn heading<CONTEXT: UIContextTrait>(
-    text: impl Into<TextSource<CONTEXT::Data>>,
-) -> Box<dyn WidgetTrait<CONTEXT>>
-where
-    CONTEXT::Style: GetStandardStyleTrait + 'static,
-{
-    Box::new(Text::new(
+pub fn heading<Style: GetStandardStyleTrait + 'static, Data>(
+    text: impl Into<TextSource<Data>>,
+) -> Text<Style, Data> {
+    Text::new(
         text,
-        |style: &CONTEXT::Style| style.standard().heading_font,
-        |style: &CONTEXT::Style| style.standard().primary_text_color,
-    ))
+        |style: &Style| style.standard().heading_font,
+        |style: &Style| style.standard().primary_text_color,
+    )
 }
 
-pub enum TextSource<DATA> {
-    Data(Box<dyn Fn(&DATA) -> String + Send>),
+pub enum TextSource<Data> {
+    Data(Box<dyn Fn(&Data) -> String + Send>),
     String(String),
 }
 
-impl<DATA> From<String> for TextSource<DATA> {
+impl<Data> From<String> for TextSource<Data> {
     fn from(s: String) -> Self {
         Self::String(s)
     }
 }
 
-impl<DATA> From<&str> for TextSource<DATA> {
+impl<Data> From<&str> for TextSource<Data> {
     fn from(s: &str) -> Self {
         Self::String(s.into())
     }
 }
 
-impl<DATA, F: Fn(&DATA) -> String + 'static + Send> From<F> for TextSource<DATA> {
+impl<Data, F: Fn(&Data) -> String + 'static + Send> From<F> for TextSource<Data> {
     fn from(f: F) -> Self {
         Self::Data(Box::new(f))
     }
 }
 
-pub struct Text<DATA, STYLE> {
-    text_source: TextSource<DATA>,
-    get_font: fn(&STYLE) -> Font,
-    get_text_color: fn(&STYLE) -> Color,
+pub struct Text<Style, Data> {
+    text_source: TextSource<Data>,
+    get_font: fn(&Style) -> Font,
+    get_text_color: fn(&Style) -> Color,
     layout: fontdue::layout::Layout,
 }
 
-impl<DATA, STYLE> Text<DATA, STYLE> {
+impl<Style, Data> Text<Style, Data> {
     pub fn new(
-        text: impl Into<TextSource<DATA>>,
-        get_font: fn(&STYLE) -> Font,
-        get_text_color: fn(&STYLE) -> Color,
+        text: impl Into<TextSource<Data>>,
+        get_font: fn(&Style) -> Font,
+        get_text_color: fn(&Style) -> Color,
     ) -> Self {
         Self {
             text_source: text.into(),
@@ -71,16 +65,11 @@ impl<DATA, STYLE> Text<DATA, STYLE> {
     }
 }
 
-impl<CONTEXT: UIContextTrait> WidgetTrait<CONTEXT> for Text<CONTEXT::Data, CONTEXT::Style>
+impl<Style: 'static, Data: 'static> WidgetTrait<Style, Data> for Text<Style, Data>
 where
-    CONTEXT::Style: GetStandardStyleTrait,
+    Style: GetStandardStyleTrait,
 {
-    fn size(
-        &mut self,
-        _context: &mut CONTEXT,
-        style: &mut CONTEXT::Style,
-        data: &mut CONTEXT::Data,
-    ) -> Vec2 {
+    fn size(&mut self, style: &mut Style, data: &mut Data) -> Vec2 {
         let layout = &mut self.layout;
 
         // Various alignments could be introduced here.
@@ -112,9 +101,8 @@ where
 
     fn draw(
         &mut self,
-        _context: &mut CONTEXT,
-        style: &mut CONTEXT::Style,
-        _data: &mut CONTEXT::Data,
+        style: &mut Style,
+        _data: &mut Data,
         drawer: &mut Drawer,
         rectangle: Rectangle,
     ) {

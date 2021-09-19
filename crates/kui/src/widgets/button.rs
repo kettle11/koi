@@ -1,48 +1,44 @@
 use kapp_platform_common::PointerButton;
 
-pub use crate::*;
+use crate::*;
 
-pub struct Button<CONTEXT: UIContextTrait> {
-    on_press: fn(&mut CONTEXT::Data),
-    text: Text<CONTEXT::Data, CONTEXT::Style>,
+pub struct Button<Style, Data> {
+    on_press: fn(&mut Data),
+    text: Text<Style, Data>,
     text_size: Vec2,
     hit_rectangle: BoundingBox<f32, 2>,
     held_down: bool,
 }
 
-pub fn button<CONTEXT: UIContextTrait>(
-    text: impl Into<TextSource<CONTEXT::Data>>,
-    on_press: fn(&mut CONTEXT::Data),
-) -> Box<dyn WidgetTrait<CONTEXT>> {
-    Box::new(Button {
+pub fn button<Style: GetStandardStyleTrait, Data: 'static>(
+    text: impl Into<TextSource<Data>>,
+    on_press: fn(&mut Data),
+) -> Button<Style, Data> {
+    Button {
         on_press,
         text: Text::new(
             text,
-            |style: &CONTEXT::Style| style.standard().primary_font,
-            |style: &CONTEXT::Style| style.standard().primary_text_color,
+            |style: &Style| style.standard().primary_font,
+            |style: &Style| style.standard().primary_text_color,
         ),
         text_size: Vec2::ZERO,
         hit_rectangle: BoundingBox::ZERO,
         held_down: false,
-    })
+    }
 }
 
-impl<CONTEXT: UIContextTrait> WidgetTrait<CONTEXT> for Button<CONTEXT> {
-    fn size(
-        &mut self,
-        context: &mut CONTEXT,
-        style: &mut CONTEXT::Style,
-        data: &mut CONTEXT::Data,
-    ) -> Vec2 {
-        self.text_size = self.text.size(context, style, data);
+impl<Style: 'static + GetStandardStyleTrait, Data: 'static> WidgetTrait<Style, Data>
+    for Button<Style, Data>
+{
+    fn size(&mut self, style: &mut Style, data: &mut Data) -> Vec2 {
+        self.text_size = self.text.size(style, data);
         self.text_size + Vec2::fill(style.standard().padding) * 2.0
     }
 
     fn draw(
         &mut self,
-        context: &mut CONTEXT,
-        style: &mut CONTEXT::Style,
-        data: &mut CONTEXT::Data,
+        style: &mut Style,
+        data: &mut Data,
         drawer: &mut Drawer,
         rectangle: Rectangle,
     ) {
@@ -63,7 +59,6 @@ impl<CONTEXT: UIContextTrait> WidgetTrait<CONTEXT> for Button<CONTEXT> {
             color,
         );
         self.text.draw(
-            context,
             style,
             data,
             drawer,
@@ -74,7 +69,7 @@ impl<CONTEXT: UIContextTrait> WidgetTrait<CONTEXT> for Button<CONTEXT> {
         )
     }
 
-    fn event(&mut self, _context: &mut CONTEXT, data: &mut CONTEXT::Data, event: &Event) {
+    fn event(&mut self, data: &mut Data, event: &Event) {
         match event {
             Event::PointerDown {
                 button: PointerButton::Primary,
