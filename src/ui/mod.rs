@@ -52,8 +52,26 @@ impl<Style: GetStandardStyleTrait> UI<Style> {
             let mut mesh_handle = world.remove_component::<Handle<Mesh>>(entity).unwrap();
             let mut sprite = world.remove_component::<Sprite>(entity).unwrap();
 
+            // Only pass some events through and edit their coordinates to be scaled to match the UI.
             for event in &events {
-                ui.handle_event(world, event);
+                match event {
+                    KappEvent::PointerDown { .. }
+                    | KappEvent::PointerUp { .. }
+                    | KappEvent::PointerMoved { .. } => {
+                        let mut event = event.clone();
+                        match &mut event {
+                            KappEvent::PointerDown { x, y, .. }
+                            | KappEvent::PointerUp { x, y, .. }
+                            | KappEvent::PointerMoved { x, y, .. } => {
+                                *x /= ui_scale as f64;
+                                *y /= ui_scale as f64;
+                                ui.handle_event(world, &event);
+                            }
+                            _ => unreachable!(),
+                        }
+                    }
+                    _ => {}
+                }
             }
 
             ui.draw(

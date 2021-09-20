@@ -9,6 +9,12 @@ pub use text::*;
 mod column_and_row;
 pub use column_and_row::*;
 
+mod slider;
+pub use slider::*;
+
+mod split;
+pub use split::*;
+
 pub trait WidgetTrait<Style, Data>: Send + 'static {
     #[allow(unused)]
     fn size(&mut self, style: &mut Style, data: &mut Data) -> Vec2 {
@@ -17,7 +23,6 @@ pub trait WidgetTrait<Style, Data>: Send + 'static {
     #[allow(unused)]
     fn draw(
         &mut self,
-
         style: &mut Style,
         data: &mut Data,
         drawer: &mut Drawer,
@@ -78,3 +83,5 @@ impl<Style, Data> WidgetTrait<Style, Data> for ColoredRectangle {
         )
     }
 }
+
+impl<Style, Data> WidgetTrait<Style, Data> for () {}
