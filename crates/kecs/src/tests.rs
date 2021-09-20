@@ -319,6 +319,17 @@ fn query0() {
     .run(&world);
 }
 
+#[test]
+fn query1() {
+    let mut world = World::new();
+    // world.spawn(A);
+
+    world.spawn(A);
+    world.spawn(B);
+
+    (|query: Query<Option<&A>>| assert!(query.iter().next().is_some())).run(&world);
+}
+
 /*
 #[test]
 fn componentless_query() {

@@ -158,7 +158,7 @@ impl<'a, const CHANNEL_COUNT: usize> Iterator for MatchingArchetypeIterator<'a, 
                         channels[output_index] = Some(*channel);
                     }
 
-                    if match_tail_filters(tail_filter_info, *archetype_index, &mut channels) {
+                    if match_tail_filters(&self.filter_info, *archetype_index, &mut channels) {
                         return Some(ArchetypeMatch {
                             archetype_index: *archetype_index,
                             channels,
@@ -172,7 +172,7 @@ impl<'a, const CHANNEL_COUNT: usize> Iterator for MatchingArchetypeIterator<'a, 
                     self.offset += 1;
 
                     let mut channels = [None; CHANNEL_COUNT];
-                    if match_tail_filters(tail_filter_info, *archetype_index, &mut channels) {
+                    if match_tail_filters(&self.filter_info, *archetype_index, &mut channels) {
                         return Some(ArchetypeMatch {
                             archetype_index: *archetype_index,
                             channels,
