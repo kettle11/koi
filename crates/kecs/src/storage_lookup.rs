@@ -65,6 +65,7 @@ impl StorageLookup {
         MatchingArchetypeIterator {
             offset: 0,
             filter_info,
+            storage_info: self,
         }
     }
 }
@@ -87,6 +88,7 @@ pub(crate) struct ArchetypeMatch<const CHANNEL_COUNT: usize> {
 pub(crate) struct MatchingArchetypeIterator<'a, const CHANNEL_COUNT: usize> {
     offset: usize,
     filter_info: Vec<FilterInfo<'a>>,
+    storage_info: &'a StorageLookup,
 }
 
 impl<'a, const CHANNEL_COUNT: usize> Iterator for MatchingArchetypeIterator<'a, CHANNEL_COUNT> {
@@ -164,13 +166,19 @@ impl<'a, const CHANNEL_COUNT: usize> Iterator for MatchingArchetypeIterator<'a, 
                     }
                 }
             }
-            FilterType::Without => {
-                todo!()
-            }
-            FilterType::Optional => {
-                // This case will only be reached if all [Filter]s are `Optional`.
-                // In this case all [Archetype]s match and need to be iterated
-                todo!()
+            FilterType::Optional | FilterType::Without => {
+                // These cases need to check *all* Archetypes.
+                for archetype_index in &self.storage_info.all_archetypes[self.offset..] {
+                    self.offset += 1;
+
+                    let mut channels = [None; CHANNEL_COUNT];
+                    if match_tail_filters(tail_filter_info, *archetype_index, &mut channels) {
+                        return Some(ArchetypeMatch {
+                            archetype_index: *archetype_index,
+                            channels,
+                        });
+                    }
+                }
             }
         };
 
