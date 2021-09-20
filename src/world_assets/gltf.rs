@@ -1,5 +1,4 @@
 use crate::*;
-use kecs::hierarchy::*;
 use std::{convert::TryInto, path::Path};
 
 pub(super) fn load_gltf_as_world(

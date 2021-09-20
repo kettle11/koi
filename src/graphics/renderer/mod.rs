@@ -310,6 +310,7 @@ impl<'a, 'b: 'a, 'c: 'a> Renderer<'a, 'b, 'c> {
     pub fn set_color(&mut self, color: Color) {
         if let Some(material_info) = &self.material_info {
             let rgb_color = color.to_rgb_color(color_spaces::LINEAR_SRGB);
+
             self.render_pass
                 .set_vec4_property(&material_info.base_color_property, rgb_color.into());
         }
@@ -413,6 +414,7 @@ pub fn render_scene(
         &Handle<Material>,
         &Handle<Mesh>,
         //Option<&Handle<Texture>>,
+        Option<&RenderLayers>,
         Option<&Sprite>,
         Option<&Color>,
     )>,
@@ -422,82 +424,93 @@ pub fn render_scene(
 
     let is_primary_camera_target =
         graphics.current_camera_target == Some(graphics.primary_camera_target);
-    for (camera_transform, camera) in &cameras {
-        // Check that the camera is setup to render to the current CameraTarget.
-        let camera_should_render = (graphics.current_camera_target.is_some()
-            && graphics.current_camera_target == camera.camera_target)
-            || (is_primary_camera_target && camera.camera_target == Some(CameraTarget::Primary));
 
-        // Check that this camera targets the target currently being rendered.
-        if camera_should_render {
-            let clear_color = camera.clear_color.map(|c| {
-                // Presently the output needs to be in non-linear sRGB.
-                // However that means that blending with the clear-color will be incorrect.
-                // A post-processing pass is needed to convert into the appropriate output space.
-                let c = c.to_rgb_color(color_spaces::ENCODED_SRGB);
-                c.into()
-            });
+    if let Some((_, camera)) = cameras.iter().next() {
+        let clear_color = camera.clear_color.map(|c| {
+            // Presently the output needs to be in non-linear sRGB.
+            // However that means that blending with the clear-color will be incorrect.
+            // A post-processing pass is needed to convert into the appropriate output space.
+            let c = c.to_rgb_color(color_spaces::ENCODED_SRGB);
+            c.into()
+        });
 
-            let mut render_pass = command_buffer.begin_render_pass_with_framebuffer(
-                &graphics.current_target_framebuffer,
-                clear_color,
-            );
+        let mut render_pass = command_buffer
+            .begin_render_pass_with_framebuffer(&graphics.current_target_framebuffer, clear_color);
 
-            let mut camera_info = Vec::new();
-            if graphics.override_views.is_empty() {
-                camera_info.push(Renderer::get_view_info(
-                    camera_transform,
-                    Mat4::IDENTITY,
-                    camera.projection_matrix(),
-                    BoundingBox {
-                        min: Vec2::ZERO,
-                        max: Vec2::ONE,
-                    },
-                ));
-            } else {
-                for view in &graphics.override_views {
+        for (camera_transform, camera) in &cameras {
+            // Check that the camera is setup to render to the current CameraTarget.
+            let camera_should_render = (graphics.current_camera_target.is_some()
+                && graphics.current_camera_target == camera.camera_target)
+                || (is_primary_camera_target
+                    && camera.camera_target == Some(CameraTarget::Primary));
+
+            // Check that this camera targets the target currently being rendered.
+            if camera_should_render {
+                let mut camera_info = Vec::new();
+                if graphics.override_views.is_empty() {
                     camera_info.push(Renderer::get_view_info(
                         camera_transform,
-                        view.offset_transform,
-                        view.projection_matrix,
-                        view.output_rectangle,
-                    ))
+                        Mat4::IDENTITY,
+                        camera.projection_matrix(),
+                        BoundingBox {
+                            min: Vec2::ZERO,
+                            max: Vec2::ONE,
+                        },
+                    ));
+                } else {
+                    for view in &graphics.override_views {
+                        camera_info.push(Renderer::get_view_info(
+                            camera_transform,
+                            view.offset_transform,
+                            view.projection_matrix,
+                            view.output_rectangle,
+                        ))
+                    }
                 }
-            }
 
-            // #[cfg(not(feature = "xr"))]
-            let multiview_enabled = false;
-            // #[cfg(feature = "xr")]
-            // let multiview_enabled = camera_info.len() > 1;
+                // #[cfg(not(feature = "xr"))]
+                let multiview_enabled = false;
+                // #[cfg(feature = "xr")]
+                // let multiview_enabled = camera_info.len() > 1;
 
-            let (width, height) = camera.get_view_size();
+                let (width, height) = camera.get_view_size();
 
-            let mut renderer = Renderer::new(
-                &mut render_pass,
-                shader_assets,
-                material_assets,
-                mesh_assets,
-                texture_assets,
-                &lights,
-                &camera_info,
-                BoundingBox {
-                    min: Vector::ZERO,
-                    max: Vector::<u32, 2>::new(width, height),
-                },
-                multiview_enabled,
-            );
+                let mut renderer = Renderer::new(
+                    &mut render_pass,
+                    shader_assets,
+                    material_assets,
+                    mesh_assets,
+                    texture_assets,
+                    &lights,
+                    &camera_info,
+                    BoundingBox {
+                        min: Vector::ZERO,
+                        max: Vector::<u32, 2>::new(width, height),
+                    },
+                    multiview_enabled,
+                );
 
-            for (transform, material_handle, mesh_handle, optional_sprite, color) in
-                renderables.iter().skip(0)
-            {
-                renderer.change_material(material_handle);
-                if let Some(sprite) = optional_sprite {
-                    renderer.prepare_sprite(sprite);
+                for (
+                    transform,
+                    material_handle,
+                    mesh_handle,
+                    render_layer,
+                    optional_sprite,
+                    color,
+                ) in renderables.iter()
+                {
+                    let render_layer = render_layer.cloned().unwrap_or(RenderLayers::DEFAULT);
+                    if camera.render_layers.includes_layer(render_layer) {
+                        renderer.change_material(material_handle);
+                        if let Some(sprite) = optional_sprite {
+                            renderer.prepare_sprite(sprite);
+                        }
+                        if let Some(color) = color {
+                            renderer.set_color(*color);
+                        }
+                        renderer.render_mesh(transform, mesh_handle);
+                    }
                 }
-                if let Some(color) = color {
-                    renderer.set_color(*color);
-                }
-                renderer.render_mesh(transform, mesh_handle);
             }
         }
     }

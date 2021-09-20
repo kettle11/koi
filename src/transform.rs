@@ -1,7 +1,6 @@
 use std::ops::Mul;
 
 use crate::*;
-use kecs::hierarchy::*;
 
 use kecs::Query;
 

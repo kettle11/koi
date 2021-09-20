@@ -32,7 +32,7 @@ pub const fn fill(color: Color) -> Fill {
     Fill { color }
 }
 pub struct Fill {
-    color: Color,
+    pub color: Color,
 }
 
 impl<Style, Data> WidgetTrait<Style, Data> for Fill {
@@ -55,8 +55,8 @@ pub fn colored_rectangle(size: Vec2, color: Color) -> ColoredRectangle {
     ColoredRectangle { size, color }
 }
 pub struct ColoredRectangle {
-    size: Vec2,
-    color: Color,
+    pub size: Vec2,
+    pub color: Color,
 }
 
 impl<Style, Data> WidgetTrait<Style, Data> for ColoredRectangle {

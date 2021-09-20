@@ -45,6 +45,7 @@ impl Material {
         materials.add_and_leak(emissive_material, &Self::EMISSIVE);
 
         let mut ui_material = Material::new(Shader::UI);
+        ui_material.set_base_color(Color::WHITE);
         ui_material.set_texture("p_base_color_texture", Texture::WHITE);
         materials.add_and_leak(ui_material, &Self::UI);
     }

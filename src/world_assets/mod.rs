@@ -1,5 +1,4 @@
 use crate::*;
-use kecs::hierarchy::*;
 use std::sync::mpsc;
 
 #[cfg(feature = "gltf")]

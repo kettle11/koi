@@ -19,6 +19,7 @@ impl<Style: GetStandardStyleTrait> UI<Style> {
             Material::UI,
             Transform::new(),
             Sprite::new(Handle::default(), BoundingBox::ZERO),
+            RenderLayers::USER_INTERFACE,
         ));
 
         Self {
@@ -69,20 +70,24 @@ impl<Style: GetStandardStyleTrait> UI<Style> {
                 let new_mesh_handle = meshes.add(Mesh::new(graphics, mesh_data));
                 mesh_handle = new_mesh_handle;
 
-                let new_texture = graphics
-                    .new_texture(
-                        Some(&ui.drawer.texture_atlas.data),
-                        ui.drawer.texture_atlas.width as u32,
-                        ui.drawer.texture_atlas.height as u32,
-                        kgraphics::PixelFormat::R8Unorm,
-                        TextureSettings {
-                            srgb: false,
-                            ..Default::default()
-                        },
-                    )
-                    .unwrap();
-                let new_texture_handle = textures.add(new_texture);
-                sprite = Sprite::new(new_texture_handle, BoundingBox::new(Vec2::ZERO, Vec2::ONE));
+                if ui.drawer.texture_atlas.changed {
+                    ui.drawer.texture_atlas.changed = false;
+                    let new_texture = graphics
+                        .new_texture(
+                            Some(&ui.drawer.texture_atlas.data),
+                            ui.drawer.texture_atlas.width as u32,
+                            ui.drawer.texture_atlas.height as u32,
+                            kgraphics::PixelFormat::R8Unorm,
+                            TextureSettings {
+                                srgb: false,
+                                ..Default::default()
+                            },
+                        )
+                        .unwrap();
+                    let new_texture_handle = textures.add(new_texture);
+                    sprite =
+                        Sprite::new(new_texture_handle, BoundingBox::new(Vec2::ZERO, Vec2::ONE));
+                }
             })
             .run(world);
             world.add_component(entity, ui).unwrap();

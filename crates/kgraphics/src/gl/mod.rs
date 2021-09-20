@@ -714,6 +714,7 @@ impl GraphicsContextTrait for GraphicsContext {
                         w,
                     } => {
                         let values = [x, y, z, w];
+                        self.gl.disable_vertex_attrib_array(attribute.index);
                         self.gl.vertex_attrib(attribute.index, length, &values);
                     }
                     SetIndexBuffer(buffer) => {

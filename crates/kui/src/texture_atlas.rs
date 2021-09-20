@@ -10,6 +10,7 @@ pub struct TextureAtlas {
     last_frame_characters: HashSet<fontdue::layout::GlyphRasterConfig>,
     this_frame_characters: HashSet<fontdue::layout::GlyphRasterConfig>,
     already_repacked: bool,
+    pub changed: bool,
 }
 
 impl TextureAtlas {
@@ -32,6 +33,7 @@ impl TextureAtlas {
             last_frame_characters: HashSet::new(),
             this_frame_characters: HashSet::new(),
             already_repacked: false,
+            changed: false,
         }
     }
 
@@ -85,7 +87,7 @@ impl TextureAtlas {
                 // let mut o = std::fs::File::create(format!("atlas.pgm",)).unwrap();
                 // let _ = o.write(format!("P5\n{} {}\n255\n", self.width, self.height).as_bytes());
                 // let _ = o.write(&self.data);
-
+                self.changed = true;
                 Some(rectangle)
             } else {
                 None

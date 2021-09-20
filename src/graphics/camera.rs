@@ -101,6 +101,7 @@ impl Camera {
             kmath::projection_matrices::orthographic_gl(-1.0, 1.0, -1.0, 1.0, -4.0, 4.0);
         let mut camera = Self::new_custom_projection_matrix(projection_matrix);
         camera.render_layers = RenderLayers::USER_INTERFACE;
+        camera.clear_color = None;
         camera.z_near = 0.0;
         camera
     }
