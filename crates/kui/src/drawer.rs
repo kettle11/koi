@@ -44,9 +44,8 @@ impl Drawer {
         layout: &mut fontdue::layout::Layout,
         offset: Vec2,
         color: Color,
+        scale: f32,
     ) {
-        // Todo:
-        // Rasterize text here and update texture_atlas.
         for c in layout.glyphs() {
             let atlas_rectangle = self
                 .texture_atlas
@@ -64,11 +63,11 @@ impl Drawer {
                 ),
             );
 
-            let x = c.x + offset.x;
-            let y = c.y + offset.y;
+            let x = c.x / scale + offset.x;
+            let y = c.y / scale + offset.y;
 
-            let width = c.width as f32;
-            let height = c.height as f32;
+            let width = c.width as f32 / scale;
+            let height = c.height as f32 / scale;
 
             let offset = self.positions.len() as u32;
             self.positions.extend_from_slice(&[

@@ -20,6 +20,7 @@ pub fn button<Style: GetStandardStyleTrait, Data: 'static>(
             text,
             |style: &Style| style.standard().primary_font,
             |style: &Style| style.standard().primary_text_color,
+            |style: &Style| style.standard().primary_text_size,
         ),
         text_size: Vec2::ZERO,
         hit_rectangle: BoundingBox::ZERO,

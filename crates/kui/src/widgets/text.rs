@@ -7,6 +7,7 @@ pub fn text<Style: GetStandardStyleTrait + 'static, Data>(
         text,
         |style: &Style| style.standard().primary_font,
         |style: &Style| style.standard().primary_text_color,
+        |style: &Style| style.standard().primary_text_size,
     )
 }
 
@@ -17,6 +18,7 @@ pub fn heading<Style: GetStandardStyleTrait + 'static, Data>(
         text,
         |style: &Style| style.standard().heading_font,
         |style: &Style| style.standard().primary_text_color,
+        |style: &Style| style.standard().primary_text_size,
     )
 }
 
@@ -46,7 +48,8 @@ impl<Data, F: Fn(&Data) -> String + 'static + Send> From<F> for TextSource<Data>
 pub struct Text<Style, Data> {
     text_source: TextSource<Data>,
     get_font: fn(&Style) -> Font,
-    get_text_color: fn(&Style) -> Color,
+    get_color: fn(&Style) -> Color,
+    get_size: fn(&Style) -> f32,
     layout: fontdue::layout::Layout,
 }
 
@@ -54,12 +57,14 @@ impl<Style, Data> Text<Style, Data> {
     pub fn new(
         text: impl Into<TextSource<Data>>,
         get_font: fn(&Style) -> Font,
-        get_text_color: fn(&Style) -> Color,
+        get_color: fn(&Style) -> Color,
+        get_size: fn(&Style) -> f32,
     ) -> Self {
         Self {
             text_source: text.into(),
             get_font,
-            get_text_color,
+            get_color,
+            get_size,
             layout: fontdue::layout::Layout::new(fontdue::layout::CoordinateSystem::PositiveYDown),
         }
     }
@@ -77,13 +82,23 @@ where
 
         let font_index = (self.get_font)(style).0;
         let fonts = style.standard().fonts();
+
+        let ui_scale = style.standard().ui_scale;
+        let text_size = (self.get_size)(style) * ui_scale;
+
         match &self.text_source {
             TextSource::String(s) => {
-                layout.append(fonts, &fontdue::layout::TextStyle::new(s, 40., font_index));
+                layout.append(
+                    fonts,
+                    &fontdue::layout::TextStyle::new(s, text_size, font_index),
+                );
             }
             TextSource::Data(d) => {
                 let s = (d)(data);
-                layout.append(fonts, &fontdue::layout::TextStyle::new(&s, 40., font_index));
+                layout.append(
+                    fonts,
+                    &fontdue::layout::TextStyle::new(&s, text_size, font_index),
+                );
             }
         };
         let size = layout
@@ -91,8 +106,8 @@ where
             .iter()
             .fold(BoundingBox::ZERO, |total_bounds, glyph| {
                 total_bounds.join(BoundingBox::new_with_min_corner_and_size(
-                    Vec2::new(glyph.x, glyph.y),
-                    Vec2::new(glyph.width as f32, glyph.height as f32),
+                    Vec2::new(glyph.x, glyph.y) / ui_scale,
+                    Vec2::new(glyph.width as f32, glyph.height as f32) / ui_scale,
                 ))
             })
             .size();
@@ -110,6 +125,12 @@ where
 
         let font_index = (self.get_font)(style).0;
         let font = &style.standard().fonts()[font_index];
-        drawer.text(&font, layout, rectangle.min, (self.get_text_color)(style))
+        drawer.text(
+            &font,
+            layout,
+            rectangle.min,
+            (self.get_color)(style),
+            style.standard().ui_scale,
+        )
     }
 }

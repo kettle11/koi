@@ -32,9 +32,10 @@ impl<Style: GetStandardStyleTrait> UI<Style> {
         let mut events = Vec::new();
         (|events_in: &mut KappEvents| std::mem::swap(&mut events, &mut events_in.0)).run(world);
 
-        let (window_width, window_height) =
-            (|window: &NotSendSync<kapp::Window>| window.size()).run(world);
-        let (window_width, window_height) = (window_width as f32, window_height as f32);
+        let ((window_width, window_height), ui_scale) =
+            (|window: &NotSendSync<kapp::Window>| (window.size(), window.scale())).run(world);
+        let (window_width, window_height, ui_scale) =
+            (window_width as f32, window_height as f32, ui_scale as f32);
 
         let mut ui_entities = Vec::new();
         (|query: Query<&mut UIComponent<Style>>| {
@@ -54,7 +55,14 @@ impl<Style: GetStandardStyleTrait> UI<Style> {
             for event in &events {
                 ui.handle_event(world, event);
             }
-            ui.draw(world, style, window_width, window_height);
+
+            ui.draw(
+                world,
+                style,
+                window_width / ui_scale,
+                window_height / ui_scale,
+                ui_scale,
+            );
 
             (|graphics: &mut Graphics,
               meshes: &mut Assets<Mesh>,
@@ -128,7 +136,14 @@ impl<STYLE: GetStandardStyleTrait> UIComponent<STYLE> {
         root_widget.inner().event(data, event);
     }
 
-    pub fn draw(&mut self, data: &mut World, style: &mut STYLE, width: f32, height: f32) {
+    pub fn draw(
+        &mut self,
+        data: &mut World,
+        style: &mut STYLE,
+        width: f32,
+        height: f32,
+        scale: f32,
+    ) {
         let Self {
             root_widget,
             drawer,
@@ -136,6 +151,7 @@ impl<STYLE: GetStandardStyleTrait> UIComponent<STYLE> {
         drawer.reset();
 
         drawer.set_view_width_height(width, height);
+        style.standard_mut().ui_scale = scale;
 
         let root_widget = root_widget.inner();
 
