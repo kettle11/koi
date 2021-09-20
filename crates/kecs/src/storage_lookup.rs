@@ -158,7 +158,7 @@ impl<'a, const CHANNEL_COUNT: usize> Iterator for MatchingArchetypeIterator<'a, 
                         channels[output_index] = Some(*channel);
                     }
 
-                    if match_tail_filters(&self.filter_info, *archetype_index, &mut channels) {
+                    if match_tail_filters(tail_filter_info, *archetype_index, &mut channels) {
                         return Some(ArchetypeMatch {
                             archetype_index: *archetype_index,
                             channels,
