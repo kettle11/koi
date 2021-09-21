@@ -14,7 +14,7 @@ pub fn padding<Style, Data, W: WidgetTrait<Style, Data>>(
 }
 pub struct Padding<Style, Data, W: WidgetTrait<Style, Data>> {
     amount: f32,
-    child: W,
+    pub child: W,
     phantom: PhantomData<(Style, Data)>,
 }
 
@@ -43,7 +43,7 @@ impl<Style: Send + 'static, Data: Send + 'static, W: WidgetTrait<Style, Data>>
         )
     }
 
-    fn event(&mut self, data: &mut Data, event: &Event) {
+    fn event(&mut self, data: &mut Data, event: &Event) -> bool {
         self.child.event(data, event)
     }
 }

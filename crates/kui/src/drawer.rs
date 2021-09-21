@@ -96,31 +96,40 @@ impl Drawer {
         }
     }
 
-    pub fn rectangle(&mut self, rectangle: Rectangle, color: Color) {
-        let color = color.to_linear_srgb();
-        let (width, height) = rectangle.size().xy().into();
-        let (x, y) = rectangle.min.into();
+    fn clip_rectangle(&mut self, rectangle: Rectangle) -> Rectangle {
+        rectangle.intersection(self.clipping_mask)
+    }
 
-        let offset = self.positions.len() as u32;
-        self.positions.extend_from_slice(&[
-            self.position_to_gl(Vec3::new(x, y, 0.0)),
-            self.position_to_gl(Vec3::new(x + width, y, 0.0)),
-            self.position_to_gl(Vec3::new(x + width, y + height, 0.0)),
-            self.position_to_gl(Vec3::new(x, y + height, 0.0)),
-        ]);
-        self.texture_coordinates.extend_from_slice(&[
-            Vec2::ZERO,
-            Vec2::ZERO,
-            Vec2::ZERO,
-            Vec2::ZERO,
-        ]);
+    /// Returns the rectangle that will actually be displayed.
+    pub fn rectangle(&mut self, rectangle: Rectangle, color: Color) -> Rectangle {
+        let rectangle = self.clip_rectangle(rectangle);
+        if rectangle.area() != 0.0 {
+            let color = color.to_linear_srgb();
+            let (width, height) = rectangle.size().xy().into();
+            let (x, y) = rectangle.min.into();
 
-        //   let current_color = Vec4::new(1.0, 1.0, 1.0, 1.0);
-        self.colors.extend_from_slice(&[color, color, color, color]);
-        self.extend_indices(&[
-            [offset, offset + 1, offset + 2],
-            [offset, offset + 2, offset + 3],
-        ]);
+            let offset = self.positions.len() as u32;
+            self.positions.extend_from_slice(&[
+                self.position_to_gl(Vec3::new(x, y, 0.0)),
+                self.position_to_gl(Vec3::new(x + width, y, 0.0)),
+                self.position_to_gl(Vec3::new(x + width, y + height, 0.0)),
+                self.position_to_gl(Vec3::new(x, y + height, 0.0)),
+            ]);
+            self.texture_coordinates.extend_from_slice(&[
+                Vec2::ZERO,
+                Vec2::ZERO,
+                Vec2::ZERO,
+                Vec2::ZERO,
+            ]);
+
+            //   let current_color = Vec4::new(1.0, 1.0, 1.0, 1.0);
+            self.colors.extend_from_slice(&[color, color, color, color]);
+            self.extend_indices(&[
+                [offset, offset + 1, offset + 2],
+                [offset, offset + 2, offset + 3],
+            ]);
+        }
+        rectangle
     }
 
     // Flips indices for OpenGL backend
@@ -179,97 +188,107 @@ impl Drawer {
         }
     }
 
-    pub fn rounded_rectangle(&mut self, rectangle: Rectangle, corner_radius: Vec4, color: Color) {
-        if corner_radius == Vec4::fill(0.0) {
-            self.rectangle(rectangle, color);
-            return;
+    /// Returns the rectangle that will actually be displayed.
+    pub fn rounded_rectangle(
+        &mut self,
+        rectangle: Rectangle,
+        corner_radius: Vec4,
+        color: Color,
+    ) -> Rectangle {
+        let clipped_rectangle = self.clip_rectangle(rectangle);
+        if clipped_rectangle.area() != 0.0 {
+            if corner_radius == Vec4::fill(0.0) {
+                self.rectangle(rectangle, color);
+                return clipped_rectangle;
+            }
+
+            let color = color.to_linear_srgb();
+
+            let (width, height) = rectangle.size().into();
+            let min_radius = (width / 2.).min(height / 2.);
+            let radius = corner_radius.min(Vec4::fill(min_radius));
+
+            let center_index = self.positions.len() as u32;
+
+            let center = rectangle.center();
+            self.push_position(Vec3::new(center.x, center.y, 0.0));
+
+            self.colors.push(color);
+            self.texture_coordinates.push(Vec2::ZERO);
+
+            let corner_radius = radius[0];
+
+            self.corner(
+                corner_radius,
+                center_index,
+                Vec3::new(
+                    rectangle.min.x + corner_radius,
+                    rectangle.min.y + corner_radius,
+                    0.0,
+                ),
+                std::f32::consts::PI * 1.0,
+                color,
+            );
+
+            self.extend_indices(&[[
+                center_index,
+                self.positions.len() as u32 - 1,
+                self.positions.len() as u32,
+            ]]);
+
+            self.corner(
+                corner_radius,
+                center_index,
+                Vec3::new(
+                    rectangle.max.x - corner_radius,
+                    rectangle.min.y + corner_radius,
+                    0.0,
+                ),
+                std::f32::consts::PI * 1.5,
+                color,
+            );
+
+            self.extend_indices(&[[
+                center_index,
+                self.positions.len() as u32 - 1,
+                self.positions.len() as u32,
+            ]]);
+
+            self.corner(
+                corner_radius,
+                center_index,
+                Vec3::new(
+                    rectangle.max.x - corner_radius,
+                    rectangle.max.y - corner_radius,
+                    0.0,
+                ),
+                0.0,
+                color,
+            );
+            self.extend_indices(&[[
+                center_index,
+                self.positions.len() as u32 - 1,
+                self.positions.len() as u32,
+            ]]);
+
+            self.corner(
+                corner_radius,
+                center_index,
+                Vec3::new(
+                    rectangle.min.x + corner_radius,
+                    rectangle.max.y - corner_radius,
+                    0.0,
+                ),
+                std::f32::consts::PI * 0.5,
+                color,
+            );
+
+            self.extend_indices(&[[
+                center_index,
+                self.positions.len() as u32 - 1,
+                center_index + 1,
+            ]]);
         }
-
-        let color = color.to_linear_srgb();
-
-        let (width, height) = rectangle.size().into();
-        let min_radius = (width / 2.).min(height / 2.);
-        let radius = corner_radius.min(Vec4::fill(min_radius));
-
-        let center_index = self.positions.len() as u32;
-
-        let center = rectangle.center();
-        self.push_position(Vec3::new(center.x, center.y, 0.0));
-
-        self.colors.push(color);
-        self.texture_coordinates.push(Vec2::ZERO);
-
-        let corner_radius = radius[0];
-
-        self.corner(
-            corner_radius,
-            center_index,
-            Vec3::new(
-                rectangle.min.x + corner_radius,
-                rectangle.min.y + corner_radius,
-                0.0,
-            ),
-            std::f32::consts::PI * 1.0,
-            color,
-        );
-
-        self.extend_indices(&[[
-            center_index,
-            self.positions.len() as u32 - 1,
-            self.positions.len() as u32,
-        ]]);
-
-        self.corner(
-            corner_radius,
-            center_index,
-            Vec3::new(
-                rectangle.max.x - corner_radius,
-                rectangle.min.y + corner_radius,
-                0.0,
-            ),
-            std::f32::consts::PI * 1.5,
-            color,
-        );
-
-        self.extend_indices(&[[
-            center_index,
-            self.positions.len() as u32 - 1,
-            self.positions.len() as u32,
-        ]]);
-
-        self.corner(
-            corner_radius,
-            center_index,
-            Vec3::new(
-                rectangle.max.x - corner_radius,
-                rectangle.max.y - corner_radius,
-                0.0,
-            ),
-            0.0,
-            color,
-        );
-        self.extend_indices(&[[
-            center_index,
-            self.positions.len() as u32 - 1,
-            self.positions.len() as u32,
-        ]]);
-
-        self.corner(
-            corner_radius,
-            center_index,
-            Vec3::new(
-                rectangle.min.x + corner_radius,
-                rectangle.max.y - corner_radius,
-                0.0,
-            ),
-            std::f32::consts::PI * 0.5,
-            color,
-        );
-
-        self.extend_indices(&[[
-            center_index,
-            self.positions.len() as u32 - 1,
-            center_index + 1,
-        ]]);
+        clipped_rectangle
     }
 }

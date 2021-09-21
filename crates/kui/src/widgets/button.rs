@@ -43,7 +43,7 @@ impl<Style: 'static + GetStandardStyleTrait, Data: 'static> WidgetTrait<Style, D
         drawer: &mut Drawer,
         rectangle: Rectangle,
     ) {
-        self.hit_rectangle = Rectangle::new(
+        let draw_rectangle = Rectangle::new(
             rectangle.min,
             rectangle.min + self.text_size + Vec2::fill(style.standard().padding) * 2.0,
         );
@@ -54,11 +54,8 @@ impl<Style: 'static + GetStandardStyleTrait, Data: 'static> WidgetTrait<Style, D
             style.standard().primary_color
         };
 
-        drawer.rounded_rectangle(
-            self.hit_rectangle,
-            Vec4::fill(style.standard().rounding),
-            color,
-        );
+        self.hit_rectangle =
+            drawer.rounded_rectangle(draw_rectangle, Vec4::fill(style.standard().rounding), color);
         self.text.draw(
             style,
             data,
@@ -70,7 +67,7 @@ impl<Style: 'static + GetStandardStyleTrait, Data: 'static> WidgetTrait<Style, D
         )
     }
 
-    fn event(&mut self, data: &mut Data, event: &Event) {
+    fn event(&mut self, data: &mut Data, event: &Event) -> bool {
         match event {
             Event::PointerDown {
                 button: PointerButton::Primary,
@@ -83,7 +80,8 @@ impl<Style: 'static + GetStandardStyleTrait, Data: 'static> WidgetTrait<Style, D
                     .contains_point(Vec2::new(*x as f32, *y as f32))
                 {
                     self.held_down = true;
-                    (self.on_press)(data)
+                    (self.on_press)(data);
+                    return true;
                 }
             }
             Event::PointerUp {
@@ -94,5 +92,6 @@ impl<Style: 'static + GetStandardStyleTrait, Data: 'static> WidgetTrait<Style, D
             }
             _ => {}
         }
+        false
     }
 }

@@ -133,10 +133,13 @@ impl<
         }
     }
 
-    fn event(&mut self, data: &mut Data, event: &Event) {
+    fn event(&mut self, data: &mut Data, event: &Event) -> bool {
         for (_, child) in &mut self.children {
-            child.event(data, event)
+            if child.event(data, event) {
+                return true;
+            }
         }
+        false
     }
 }
 
@@ -210,10 +213,13 @@ impl<
         }
     }
 
-    fn event(&mut self, data: &mut Data, event: &Event) {
+    fn event(&mut self, data: &mut Data, event: &Event) -> bool {
         for (_, child) in &mut self.children {
-            child.event(data, event)
+            if child.event(data, event) {
+                return true;
+            }
         }
+        false
     }
 }
 

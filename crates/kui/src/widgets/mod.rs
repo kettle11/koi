@@ -35,8 +35,11 @@ pub trait WidgetTrait<Style, Data>: Send + 'static {
         rectangle: Rectangle,
     ) {
     }
+
     #[allow(unused)]
-    fn event(&mut self, data: &mut Data, event: &Event) {}
+    fn event(&mut self, data: &mut Data, event: &Event) -> bool {
+        false
+    }
 }
 
 pub const fn fill(color: Color) -> Fill {
@@ -59,7 +62,7 @@ impl<Style, Data> WidgetTrait<Style, Data> for Fill {
         drawer: &mut Drawer,
         rectangle: Rectangle,
     ) {
-        drawer.rectangle(rectangle, self.color)
+        drawer.rectangle(rectangle, self.color);
     }
 }
 
@@ -86,7 +89,7 @@ impl<Style, Data> WidgetTrait<Style, Data> for ColoredRectangle {
         drawer.rectangle(
             Rectangle::new(rectangle.min, rectangle.min + size),
             self.color,
-        )
+        );
     }
 }
 use std::ops::DerefMut;
@@ -105,7 +108,7 @@ impl<Style: 'static, Data: 'static> WidgetTrait<Style, Data> for Box<dyn WidgetT
         self.deref_mut().draw(style, data, drawer, rectangle)
     }
 
-    fn event(&mut self, data: &mut Data, event: &Event) {
+    fn event(&mut self, data: &mut Data, event: &Event) -> bool {
         self.deref_mut().event(data, event)
     }
 

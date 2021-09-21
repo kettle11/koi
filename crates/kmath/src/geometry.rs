@@ -101,17 +101,17 @@ impl<T: Numeric + PartialOrd + 'static, const DIMENSIONS: usize> BoundingBox<T, 
 
     /// Creates a new `BoundingBox` with only the part that is contained in both `BoundingBox`s
     /// Returns `None` otherwise.
-    pub fn intersection(self, other: Self) -> Option<Self> {
-        let new_bounds = Self {
+    pub fn intersection(self, other: Self) -> Self {
+        let mut new_bounds = Self {
             min: self.min.max(other.min),
             max: self.max.min(other.max),
         };
         for i in 0..DIMENSIONS {
             if new_bounds.min[i] > new_bounds.max[i] {
-                return None;
+                new_bounds.min[i] = new_bounds.max[i];
             }
         }
-        Some(new_bounds)
+        new_bounds
     }
 
     pub fn center(self) -> Vector<T, DIMENSIONS> {

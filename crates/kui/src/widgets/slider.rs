@@ -59,7 +59,7 @@ impl<Style: GetStandardStyleTrait + 'static, Data: 'static> WidgetTrait<Style, D
         self.hit_box = bar_rectangle;
     }
 
-    fn event(&mut self, data: &mut Data, event: &kapp_platform_common::Event) {
+    fn event(&mut self, data: &mut Data, event: &kapp_platform_common::Event) -> bool {
         match event {
             kapp_platform_common::Event::PointerDown {
                 button: kapp_platform_common::PointerButton::Primary,
@@ -76,6 +76,7 @@ impl<Style: GetStandardStyleTrait + 'static, Data: 'static> WidgetTrait<Style, D
                     *value = offset * (self.max - self.min);
                     self.sliding = true;
                 }
+                true
             }
             kapp_platform_common::Event::PointerMoved { x, .. } => {
                 if self.sliding {
@@ -85,11 +86,13 @@ impl<Style: GetStandardStyleTrait + 'static, Data: 'static> WidgetTrait<Style, D
                     let value = (self.value)(data);
                     *value = (offset * (self.max - self.min)).max(self.min).min(self.max);
                 }
+                false
             }
             kapp_platform_common::Event::PointerUp { .. } => {
                 self.sliding = false;
+                false
             }
-            _ => {}
+            _ => false,
         }
     }
 }

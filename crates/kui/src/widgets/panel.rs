@@ -119,8 +119,8 @@ impl<
         self.total_bounding_box = rectangle;
     }
 
-    fn event(&mut self, data: &mut Data, event: &Event) {
-        match event {
+    fn event(&mut self, data: &mut Data, event: &Event) -> bool {
+        let event_handled = match event {
             Event::PointerDown {
                 x,
                 y,
@@ -132,6 +132,9 @@ impl<
                     .contains_point(Vec2::new(*x as f32, *y as f32))
                 {
                     self.handle_sliding = true;
+                    true
+                } else {
+                    false
                 }
             }
             Event::PointerMoved { x, .. } => {
@@ -143,16 +146,23 @@ impl<
                         self.first_pixels = offset;
                     }
                 }
+                false
             }
             Event::PointerUp {
                 button: PointerButton::Primary,
                 ..
             } => {
                 self.handle_sliding = false;
+                false
             }
-            _ => {}
+            _ => false,
+        };
+        if !event_handled {
+            let handled_first = self.first_widget.event(data, event);
+            let handled_second = self.second_widget.event(data, event);
+            handled_first || handled_second
+        } else {
+            true
         }
-        self.first_widget.event(data, event);
-        self.second_widget.event(data, event);
     }
 }

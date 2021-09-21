@@ -46,13 +46,13 @@ impl<Style: Send + 'static, Data: Send + 'static, W: WidgetTrait<Style, Data>>
         self.child.draw(style, data, drawer, rectangle)
     }
 
-    fn event(&mut self, data: &mut Data, event: &Event) {
+    fn event(&mut self, data: &mut Data, event: &Event) -> bool {
         match event {
             Event::Scroll { delta_y, .. } => {
                 self.offset.y += *delta_y as f32;
             }
             _ => {}
         }
-        self.child.event(data, event);
+        self.child.event(data, event)
     }
 }
