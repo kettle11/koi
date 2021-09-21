@@ -98,7 +98,7 @@ impl Camera {
     /// Creates a new camera configured to render the user-interface.
     pub fn new_for_user_interface() -> Self {
         let projection_matrix =
-            kmath::projection_matrices::orthographic_gl(-1.0, 1.0, -1.0, 1.0, -4.0, 4.0);
+            kmath::projection_matrices::orthographic_gl(-1.0, 1.0, -1.0, 1.0, 0.0, 1.0);
         let mut camera = Self::new_custom_projection_matrix(projection_matrix);
         camera.render_layers = RenderLayers::USER_INTERFACE;
         camera.clear_color = None;

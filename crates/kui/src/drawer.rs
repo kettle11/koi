@@ -145,7 +145,7 @@ impl Drawer {
 
         let x = (position.x / self.view_width) * 2.0 - 1.0;
         let y = (position.y / self.view_height) * -2.0 + 1.0;
-        Vec3::new(x, y, position.z)
+        Vec3::new(x, y, 0.0)
     }
 
     fn push_position(&mut self, position: Vec3) {
