@@ -27,6 +27,20 @@ pub struct ChildAdder<'a, Child> {
 }
 
 impl<Child> ChildAdder<'_, Child> {
+    pub fn clear(&mut self) {
+        self.children.clear();
+    }
+
+    pub fn get_or_add_child(&mut self, index: usize, f: impl Fn() -> Child) -> &mut Child {
+        if self.children.get(index).is_some() {
+            &mut self.children[index].1
+        } else {
+            let child = f();
+            self.children.push((Vec2::ZERO, child));
+            &mut self.children[index].1
+        }
+    }
+
     pub fn add_child(&mut self, child: Child) {
         self.children.push((Vec2::ZERO, child))
     }
@@ -37,7 +51,7 @@ impl<Data, Child, F: Fn(&mut Data, ChildAdder<Child>) + Send + 'static>
 {
     fn add_children_initial(self, _children: &mut Vec<(Vec2, Child)>) {}
     fn add_dynamic_children(&mut self, data: &mut Data, children: &mut Vec<(Vec2, Child)>) {
-        children.clear();
+        // children.clear();
         let child_adder = ChildAdder { children };
         (self)(data, child_adder);
     }

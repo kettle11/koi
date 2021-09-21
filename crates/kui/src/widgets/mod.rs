@@ -90,7 +90,9 @@ impl<Style, Data> WidgetTrait<Style, Data> for ColoredRectangle {
     }
 }
 use std::ops::DerefMut;
-impl<Style, Data> WidgetTrait<Style, Data> for () {}
+
+pub struct Empty;
+impl<Style, Data> WidgetTrait<Style, Data> for Empty {}
 
 impl<Style: 'static, Data: 'static> WidgetTrait<Style, Data> for Box<dyn WidgetTrait<Style, Data>> {
     fn draw(

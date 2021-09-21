@@ -42,4 +42,8 @@ impl<Style: Send + 'static, Data: Send + 'static, W: WidgetTrait<Style, Data>>
             ),
         )
     }
+
+    fn event(&mut self, data: &mut Data, event: &Event) {
+        self.child.event(data, event)
+    }
 }
