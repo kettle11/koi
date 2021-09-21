@@ -12,8 +12,8 @@ pub use column_and_row::*;
 mod slider;
 pub use slider::*;
 
-mod split;
-pub use split::*;
+mod panel;
+pub use panel::*;
 
 pub trait WidgetTrait<Style, Data>: Send + 'static {
     #[allow(unused)]

@@ -2,22 +2,23 @@ use kapp_platform_common::PointerButton;
 
 use crate::*;
 
-pub struct Split<
+pub struct Panel<
     Style,
     Data,
     FirstWidget: WidgetTrait<Style, Data>,
     SecondWidget: WidgetTrait<Style, Data>,
 > {
-    first_percent: f32,
+    first_pixels: f32,
     handle_sliding: bool,
     first_widget: FirstWidget,
     second_widget: SecondWidget,
     handle_bounding_box: Rectangle,
     total_bounding_box: Rectangle,
+    reverse: bool,
     phantom: std::marker::PhantomData<fn() -> (Style, Data)>,
 }
 
-pub fn split_horizontal<
+pub fn panel_horizontal<
     Style: GetStandardStyleTrait,
     Data: 'static,
     FirstWidget: WidgetTrait<Style, Data>,
@@ -26,16 +27,32 @@ pub fn split_horizontal<
     first_widget: FirstWidget,
     second_widget: SecondWidget,
     initial: f32,
-) -> Split<Style, Data, FirstWidget, SecondWidget> {
-    Split {
-        first_percent: initial,
+) -> Panel<Style, Data, FirstWidget, SecondWidget> {
+    Panel {
+        first_pixels: initial,
         handle_sliding: false,
         first_widget,
         second_widget,
         handle_bounding_box: BoundingBox::ZERO,
         total_bounding_box: BoundingBox::ZERO,
+        reverse: false,
         phantom: std::marker::PhantomData,
     }
+}
+
+pub fn panel_horizontal_reversed<
+    Style: GetStandardStyleTrait,
+    Data: 'static,
+    FirstWidget: WidgetTrait<Style, Data>,
+    SecondWidget: WidgetTrait<Style, Data>,
+>(
+    first_widget: FirstWidget,
+    second_widget: SecondWidget,
+    initial: f32,
+) -> Panel<Style, Data, FirstWidget, SecondWidget> {
+    let mut panel = panel_horizontal(first_widget, second_widget, initial);
+    panel.reverse = true;
+    panel
 }
 
 impl<
@@ -43,7 +60,7 @@ impl<
         Data: 'static,
         FirstWidget: WidgetTrait<Style, Data>,
         SecondWidget: WidgetTrait<Style, Data>,
-    > WidgetTrait<Style, Data> for Split<Style, Data, FirstWidget, SecondWidget>
+    > WidgetTrait<Style, Data> for Panel<Style, Data, FirstWidget, SecondWidget>
 {
     fn size(&mut self, style: &mut Style, data: &mut Data) -> Vec2 {
         let _ = self.first_widget.size(style, data);
@@ -63,20 +80,24 @@ impl<
         let handle_size = 2.;
 
         let (width, height) = rectangle.size().into();
-        let first_width = width * self.first_percent - handle_size / 2.0;
-        let second_width = width * (1.0 - self.first_percent) - handle_size / 2.0;
+        let mut first_width = self.first_pixels - handle_size / 2.0;
+        let mut second_width = width - self.first_pixels - handle_size / 2.0;
+
+        if self.reverse {
+            std::mem::swap(&mut first_width, &mut second_width);
+        }
 
         let first_rectangle =
             Rectangle::new_with_min_corner_and_size(rectangle.min, Vec2::new(first_width, height));
 
-        let handle_rectangle = Rectangle::new_with_min_corner_and_size(
-            rectangle.min + Vec2::X * first_width,
-            Vec2::new(handle_size, height),
-        );
-
         let second_rectangle = Rectangle::new_with_min_corner_and_size(
             rectangle.min + Vec2::X * (first_width + handle_size / 2.0),
             Vec2::new(second_width, height),
+        );
+
+        let handle_rectangle = Rectangle::new_with_min_corner_and_size(
+            rectangle.min + Vec2::X * first_width,
+            Vec2::new(handle_size, height),
         );
 
         drawer.clipping_mask = first_rectangle;
@@ -116,8 +137,11 @@ impl<
             Event::PointerMoved { x, .. } => {
                 if self.handle_sliding {
                     let offset = *x as f32 - self.total_bounding_box.min.x;
-                    let percent = offset / self.total_bounding_box.size().x;
-                    self.first_percent = percent;
+                    if self.reverse {
+                        self.first_pixels = self.total_bounding_box.size().x - offset;
+                    } else {
+                        self.first_pixels = offset;
+                    }
                 }
             }
             Event::PointerUp {
