@@ -145,17 +145,17 @@ pub fn stack<
     ChildProducer: ProduceChildrenTrait<Data, Child>,
 >(
     children: ChildProducer,
-) -> Column<Style, Data, Child, ChildProducer> {
+) -> Stack<Style, Data, Child, ChildProducer> {
     let mut size_and_child = Vec::new();
     if !children.dynamic() {
         children.add_children_initial(&mut size_and_child);
-        Column {
+        Stack {
             child_producer: None,
             children: size_and_child,
             phantom: std::marker::PhantomData,
         }
     } else {
-        Column {
+        Stack {
             child_producer: Some(children),
             children: size_and_child,
             phantom: std::marker::PhantomData,
@@ -179,7 +179,7 @@ impl<
         for (size, child) in &mut self.children {
             *size = child.size(style, data);
             total_size.x = total_size.x.max(size.x);
-            total_size.y += total_size.y.max(size.y);
+            total_size.y = total_size.y.max(size.y);
         }
         total_size
     }
@@ -191,7 +191,7 @@ impl<
         drawer: &mut Drawer,
         rectangle: Rectangle,
     ) {
-        for (size, child) in &mut self.children {
+        for (_, child) in &mut self.children {
             child.draw(style, data, drawer, rectangle);
         }
     }
