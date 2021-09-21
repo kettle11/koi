@@ -70,7 +70,6 @@ impl<Style, Data> WidgetTrait<Style, Data> for ColoredRectangle {
     }
     fn draw(
         &mut self,
-
         _style: &mut Style,
         _data: &mut Data,
         drawer: &mut Drawer,
@@ -83,5 +82,35 @@ impl<Style, Data> WidgetTrait<Style, Data> for ColoredRectangle {
         )
     }
 }
-
+use std::ops::DerefMut;
 impl<Style, Data> WidgetTrait<Style, Data> for () {}
+
+impl<Style: 'static, Data: 'static> WidgetTrait<Style, Data> for Box<dyn WidgetTrait<Style, Data>> {
+    fn draw(
+        &mut self,
+        style: &mut Style,
+        data: &mut Data,
+        drawer: &mut Drawer,
+        rectangle: Rectangle,
+    ) {
+        self.deref_mut().draw(style, data, drawer, rectangle)
+    }
+
+    fn event(&mut self, data: &mut Data, event: &Event) {
+        self.deref_mut().event(data, event)
+    }
+
+    fn size(&mut self, style: &mut Style, data: &mut Data) -> Vec2 {
+        self.deref_mut().size(style, data)
+    }
+}
+
+pub trait ToDynWidget<Style, Data> {
+    fn to_dyn_widget(self) -> Box<dyn WidgetTrait<Style, Data>>;
+}
+
+impl<Style, Data, W: WidgetTrait<Style, Data>> ToDynWidget<Style, Data> for W {
+    fn to_dyn_widget(self) -> Box<dyn WidgetTrait<Style, Data>> {
+        Box::new(self)
+    }
+}

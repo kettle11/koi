@@ -126,6 +126,83 @@ impl<
     }
 }
 
+// Column Widget
+pub struct Stack<
+    Style,
+    Data,
+    Child: WidgetTrait<Style, Data>,
+    ChildProducer: ProduceChildrenTrait<Data, Child>,
+> {
+    child_producer: Option<ChildProducer>,
+    children: Vec<(Vec2, Child)>,
+    phantom: std::marker::PhantomData<fn() -> (Style, Data)>,
+}
+
+pub fn stack<
+    Style,
+    Data,
+    Child: WidgetTrait<Style, Data> + 'static,
+    ChildProducer: ProduceChildrenTrait<Data, Child>,
+>(
+    children: ChildProducer,
+) -> Column<Style, Data, Child, ChildProducer> {
+    let mut size_and_child = Vec::new();
+    if !children.dynamic() {
+        children.add_children_initial(&mut size_and_child);
+        Column {
+            child_producer: None,
+            children: size_and_child,
+            phantom: std::marker::PhantomData,
+        }
+    } else {
+        Column {
+            child_producer: Some(children),
+            children: size_and_child,
+            phantom: std::marker::PhantomData,
+        }
+    }
+}
+
+impl<
+        Style: 'static,
+        Data: 'static,
+        Child: WidgetTrait<Style, Data>,
+        ChildProducer: ProduceChildrenTrait<Data, Child>,
+    > WidgetTrait<Style, Data> for Stack<Style, Data, Child, ChildProducer>
+{
+    fn size(&mut self, style: &mut Style, data: &mut Data) -> Vec2 {
+        if let Some(child_producer) = &mut self.child_producer {
+            child_producer.add_dynamic_children(data, &mut self.children)
+        }
+
+        let mut total_size = Vec2::ZERO;
+        for (size, child) in &mut self.children {
+            *size = child.size(style, data);
+            total_size.x = total_size.x.max(size.x);
+            total_size.y += total_size.y.max(size.y);
+        }
+        total_size
+    }
+
+    fn draw(
+        &mut self,
+        style: &mut Style,
+        data: &mut Data,
+        drawer: &mut Drawer,
+        rectangle: Rectangle,
+    ) {
+        for (size, child) in &mut self.children {
+            child.draw(style, data, drawer, rectangle);
+        }
+    }
+
+    fn event(&mut self, data: &mut Data, event: &Event) {
+        for (_, child) in &mut self.children {
+            child.event(data, event)
+        }
+    }
+}
+
 /*
 // Row widget
 pub struct Row<CONTEXT: UIContextTrait> {
