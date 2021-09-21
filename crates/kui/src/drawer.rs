@@ -11,6 +11,7 @@ pub struct Drawer {
     pub(crate) view_width: f32,
     pub(crate) view_height: f32,
     pub texture_atlas: TextureAtlas,
+    pub clipping_mask: Rectangle,
 }
 
 impl Drawer {
@@ -23,6 +24,7 @@ impl Drawer {
             view_width: 100.,
             view_height: 100.,
             texture_atlas: TextureAtlas::new(1024),
+            clipping_mask: BoundingBox::new(-Vec2::MAX, Vec2::MAX),
         }
     }
 
@@ -36,6 +38,7 @@ impl Drawer {
         self.texture_coordinates.clear();
         self.colors.clear();
         self.indices.clear();
+        self.clipping_mask = BoundingBox::new(-Vec2::MAX, Vec2::MAX);
     }
 
     pub fn text(
@@ -126,7 +129,20 @@ impl Drawer {
             .extend(indices.iter().map(|v| [v[2], v[1], v[0]]))
     }
 
-    fn position_to_gl(&self, position: Vec3) -> Vec3 {
+    fn position_to_gl(&self, mut position: Vec3) -> Vec3 {
+        position.x = self
+            .clipping_mask
+            .min
+            .x
+            .max(position.x)
+            .min(self.clipping_mask.max.x);
+        position.y = self
+            .clipping_mask
+            .min
+            .y
+            .max(position.y)
+            .min(self.clipping_mask.max.y);
+
         let x = (position.x / self.view_width) * 2.0 - 1.0;
         let y = (position.y / self.view_height) * -2.0 + 1.0;
         Vec3::new(x, y, position.z)

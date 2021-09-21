@@ -58,6 +58,8 @@ impl<
         drawer: &mut Drawer,
         rectangle: Rectangle,
     ) {
+        let old_clipping_mask = drawer.clipping_mask;
+
         let handle_size = 2.;
 
         let (width, height) = rectangle.size().into();
@@ -77,10 +79,15 @@ impl<
             Vec2::new(second_width, height),
         );
 
+        drawer.clipping_mask = first_rectangle;
         self.first_widget.draw(style, data, drawer, first_rectangle);
+
+        drawer.clipping_mask = second_rectangle;
         self.second_widget
             .draw(style, data, drawer, second_rectangle);
-        drawer.rectangle(handle_rectangle, Color::from_srgb_hex(0x5B5B5B, 1.0));
+
+        drawer.clipping_mask = old_clipping_mask;
+        drawer.rectangle(handle_rectangle, Color::WHITE);
 
         let handle_padding = 10.0;
         let padded_handle = BoundingBox::new(
