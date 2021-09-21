@@ -15,6 +15,12 @@ pub use slider::*;
 mod panel;
 pub use panel::*;
 
+mod padding;
+pub use padding::*;
+
+mod scroll_view;
+pub use scroll_view::*;
+
 pub trait WidgetTrait<Style, Data>: Send + 'static {
     #[allow(unused)]
     fn size(&mut self, style: &mut Style, data: &mut Data) -> Vec2 {
@@ -42,7 +48,8 @@ pub struct Fill {
 
 impl<Style, Data> WidgetTrait<Style, Data> for Fill {
     fn size(&mut self, _style: &mut Style, _data: &mut Data) -> Vec2 {
-        Vec2::MAX
+        // Takes up no space but will render to all available space allocated.
+        Vec2::ZERO
     }
     fn draw(
         &mut self,

@@ -57,7 +57,8 @@ impl<Style: GetStandardStyleTrait> UI<Style> {
                 match event {
                     KappEvent::PointerDown { .. }
                     | KappEvent::PointerUp { .. }
-                    | KappEvent::PointerMoved { .. } => {
+                    | KappEvent::PointerMoved { .. }
+                    | KappEvent::Scroll { .. } => {
                         let mut event = event.clone();
                         match &mut event {
                             KappEvent::PointerDown { x, y, .. }
@@ -65,10 +66,16 @@ impl<Style: GetStandardStyleTrait> UI<Style> {
                             | KappEvent::PointerMoved { x, y, .. } => {
                                 *x /= ui_scale as f64;
                                 *y /= ui_scale as f64;
-                                ui.handle_event(world, &event);
+                            }
+                            KappEvent::Scroll {
+                                delta_x, delta_y, ..
+                            } => {
+                                *delta_x /= ui_scale as f64;
+                                *delta_y /= ui_scale as f64;
                             }
                             _ => unreachable!(),
                         }
+                        ui.handle_event(world, &event);
                     }
                     _ => {}
                 }
