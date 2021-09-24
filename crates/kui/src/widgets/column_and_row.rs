@@ -64,7 +64,7 @@ impl<
         } = self;
 
         let mut index = 0;
-        let mut y = 0.0;
+        let mut y = rectangle.min.y;
         let children_creator_draw = ChildrenCreator {
             index: 0,
             children,

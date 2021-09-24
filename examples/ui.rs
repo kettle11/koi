@@ -23,16 +23,19 @@ fn main() {
             .new_font(include_bytes!("../Inter-Regular.otf"))
             .unwrap();
 
-        let root = column(
-            |world: &mut World, mut child_creator: ChildrenCreator<_, _>| {
-                (|q: Query<(Option<&HierarchyNode>)>| {
-                    for (e, t) in q.entities_and_components() {
-                        child_creator.child(&mut (), || button("Press me", |data| {}));
+        let root = scroll_view(column(|world, mut child_creator| {
+            (|q: Query<Option<&Transform>>| {
+                for (e, transform) in q.entities_and_components() {
+                    if let Some(transform) = transform {
+                        let mut e = *e;
+                        child_creator.child(&mut e, || {
+                            button(|data: &mut _| format!("{:?}", data), |_| {})
+                        });
                     }
-                })
-                .run(world);
-            },
-        );
+                }
+            })
+            .run(world);
+        }));
 
         let mut ui = UI::new(world, root);
 
