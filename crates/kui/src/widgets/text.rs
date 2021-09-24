@@ -23,23 +23,17 @@ pub fn heading<Style: GetStandardStyleTrait + 'static, Data>(
 }
 
 pub enum TextSource<Data> {
-    Data(Box<dyn Fn(&Data) -> String + Send>),
-    String(String),
+    Data(Box<dyn Fn(&mut Data) -> String + Send>),
+    String(&'static str),
 }
 
-impl<Data> From<String> for TextSource<Data> {
-    fn from(s: String) -> Self {
+impl<Data> From<&'static str> for TextSource<Data> {
+    fn from(s: &'static str) -> Self {
         Self::String(s)
     }
 }
 
-impl<Data> From<&str> for TextSource<Data> {
-    fn from(s: &str) -> Self {
-        Self::String(s.into())
-    }
-}
-
-impl<Data, F: Fn(&Data) -> String + 'static + Send> From<F> for TextSource<Data> {
+impl<Data, F: Fn(&mut Data) -> String + 'static + Send> From<F> for TextSource<Data> {
     fn from(f: F) -> Self {
         Self::Data(Box::new(f))
     }
