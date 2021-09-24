@@ -49,7 +49,7 @@ pub(super) fn load_gltf_as_world(
                 pbr_properties.base_color_texture =
                     pbr_metallic_roughness.base_color_texture.as_ref().map(|t| {
                         get_texture(
-                            &gltf,
+                            gltf,
                             &data,
                             path,
                             textures,
@@ -65,7 +65,7 @@ pub(super) fn load_gltf_as_world(
                     .as_ref()
                     .map(|t| {
                         get_texture(
-                            &gltf,
+                            gltf,
                             &data,
                             path,
                             textures,
@@ -79,7 +79,7 @@ pub(super) fn load_gltf_as_world(
 
             pbr_properties.normal_texture = material.normal_texture.as_ref().map(|t| {
                 get_texture(
-                    &gltf,
+                    gltf,
                     &data,
                     path,
                     textures,
@@ -100,7 +100,7 @@ pub(super) fn load_gltf_as_world(
 
             pbr_properties.emissive_texture = material.emissive_texture.as_ref().map(|t| {
                 get_texture(
-                    &gltf,
+                    gltf,
                     &data,
                     path,
                     textures,
@@ -122,18 +122,18 @@ pub(super) fn load_gltf_as_world(
             };
 
             let shader = if unlit {
+                /*
                 if transparent {
                     // Todo: Should be UNLIT_TRANSPARENT
                     Shader::UNLIT
                 } else {
                     Shader::UNLIT
-                }
+                }*/
+                Shader::UNLIT
+            } else if transparent {
+                Shader::PHYSICALLY_BASED_TRANSPARENT
             } else {
-                if transparent {
-                    Shader::PHYSICALLY_BASED_TRANSPARENT
-                } else {
-                    Shader::PHYSICALLY_BASED
-                }
+                Shader::PHYSICALLY_BASED
             };
 
             let material = new_pbr_material(shader, pbr_properties);
@@ -213,15 +213,15 @@ pub(super) async fn load_mesh_primitive_data(
                 match attribute.as_str() {
                     "POSITION" => {
                         positions =
-                            Some(get_buffer::<Vec3>(&gltf, &data, &buffers, *accessor_index).await);
+                            Some(get_buffer::<Vec3>(gltf, &data, &buffers, *accessor_index).await);
                     }
                     "TEXCOORD_0" => {
                         texture_coordinates =
-                            Some(get_buffer::<Vec2>(&gltf, &data, &buffers, *accessor_index).await);
+                            Some(get_buffer::<Vec2>(gltf, &data, &buffers, *accessor_index).await);
                     }
                     "NORMAL" => {
                         normals =
-                            Some(get_buffer::<Vec3>(&gltf, &data, &buffers, *accessor_index).await);
+                            Some(get_buffer::<Vec3>(gltf, &data, &buffers, *accessor_index).await);
                     }
                     "COLOR_0" => {
                         // COLOR_0 can be different accessor types according to the spec.
@@ -229,7 +229,7 @@ pub(super) async fn load_mesh_primitive_data(
                         match accessor_type {
                             kgltf::AccessorType::Vec4 => {
                                 colors = Some(
-                                    get_buffer::<Vec4>(&gltf, &data, &buffers, *accessor_index)
+                                    get_buffer::<Vec4>(gltf, &data, &buffers, *accessor_index)
                                         .await,
                                 );
                             }
@@ -250,13 +250,13 @@ pub(super) async fn load_mesh_primitive_data(
                 }
             }
 
-            let indices = get_indices(&gltf, &data, &buffers, primitive.indices.unwrap()).await;
+            let indices = get_indices(gltf, &data, &buffers, primitive.indices.unwrap()).await;
 
             let mesh_data = MeshData {
                 positions: positions.unwrap(),
-                normals: normals.unwrap_or_else(|| Vec::new()),
+                normals: normals.unwrap_or_else(Vec::new),
                 texture_coordinates: texture_coordinates.unwrap_or_else(|| Vec::new()),
-                colors: colors.unwrap_or_else(|| Vec::new()),
+                colors: colors.unwrap_or_else(Vec::new),
                 indices,
             };
 
@@ -291,10 +291,8 @@ fn get_texture(
         if let Some(handle) = texture_load_states[texture_index].srgb.clone() {
             return handle;
         }
-    } else {
-        if let Some(handle) = texture_load_states[texture_index].linear.clone() {
-            return handle;
-        }
+    } else if let Some(handle) = texture_load_states[texture_index].linear.clone() {
+        return handle;
     }
 
     let image = &gltf.images[image_index];
@@ -344,19 +342,18 @@ fn get_texture(
     new_handle
 }
 
-fn initialize_nodes<'a>(
+fn initialize_nodes(
     gltf_world: &mut World,
     materials: &Assets<Material>,
-    gltf_materials: &Vec<Handle<Material>>,
-    mesh_primitives: &Vec<Vec<(Handle<Mesh>, Option<usize>)>>,
+    gltf_materials: &[Handle<Material>],
+    mesh_primitives: &[Vec<(Handle<Mesh>, Option<usize>)>],
     nodes: &[kgltf::Node],
     node: usize,
     parent: Option<Entity>,
 ) {
     let node = &nodes[node];
     let transform: Transform = if let Some(matrix) = &node.matrix {
-        let transform = Transform::from_mat4(matrix.try_into().unwrap());
-        transform
+        Transform::from_mat4(matrix.try_into().unwrap())
     } else {
         Transform::new_with_position_rotation_scale(
             node.translation.map_or(Vec3::ZERO, |t| t.into()),
@@ -370,7 +367,7 @@ fn initialize_nodes<'a>(
         if mesh_primitives.len() == 1 {
             let (mesh, material_index) = &mesh_primitives[0];
             let material_handle =
-                material_index.map_or_else(|| Handle::default(), |i| gltf_materials[i].clone());
+                material_index.map_or_else(Handle::default, |i| gltf_materials[i].clone());
             gltf_world.spawn((
                 mesh.clone(),
                 material_handle,
@@ -381,7 +378,7 @@ fn initialize_nodes<'a>(
             let entity_root = gltf_world.spawn((transform,));
             for (mesh, material_index) in mesh_primitives {
                 let material_handle =
-                    material_index.map_or_else(|| Handle::default(), |i| gltf_materials[i].clone());
+                    material_index.map_or_else(Handle::default, |i| gltf_materials[i].clone());
                 let primitive_entity = gltf_world.spawn((
                     mesh.clone(),
                     material_handle,
@@ -404,7 +401,7 @@ fn initialize_nodes<'a>(
             gltf_world,
             materials,
             gltf_materials,
-            &mesh_primitives,
+            mesh_primitives,
             nodes,
             *child,
             Some(entity),

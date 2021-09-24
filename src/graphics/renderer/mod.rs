@@ -402,22 +402,27 @@ impl<'a, 'b: 'a, 'c: 'a> Renderer<'a, 'b, 'c> {
     }
 }
 
-pub fn render_scene(
+type Renderables<'a> = Query<
+    'a,
+    (
+        &'static Transform,
+        &'static Handle<Material>,
+        &'static Handle<Mesh>,
+        //Option<&Handle<Texture>>,
+        Option<&'static RenderLayers>,
+        Option<&'static Sprite>,
+        Option<&'static Color>,
+    ),
+>;
+
+pub fn render_scene<'a>(
     graphics: &mut Graphics,
     shader_assets: &Assets<Shader>,
     material_assets: &Assets<Material>,
     mesh_assets: &Assets<Mesh>,
     texture_assets: &Assets<Texture>,
     cameras: Query<(&Transform, &Camera)>,
-    renderables: Query<(
-        &Transform,
-        &Handle<Material>,
-        &Handle<Mesh>,
-        //Option<&Handle<Texture>>,
-        Option<&RenderLayers>,
-        Option<&Sprite>,
-        Option<&Color>,
-    )>,
+    renderables: Renderables<'a>,
     lights: Query<(&'static Transform, &'static Light)>,
 ) {
     let mut command_buffer = graphics.context.new_command_buffer();

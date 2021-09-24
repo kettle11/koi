@@ -251,8 +251,7 @@ impl GraphicsInner {
         source: &str,
         pipeline_settings: PipelineSettings,
     ) -> Result<Shader, PipelineError> {
-        let pipeline =
-            self.create_pipeline(source, &"#define NUM_VIEWS 1 \n", pipeline_settings)?;
+        let pipeline = self.create_pipeline(source, "#define NUM_VIEWS 1 \n", pipeline_settings)?;
 
         #[cfg(feature = "xr")]
         let multiview_pipeline = match self.multiview_support {

@@ -100,9 +100,7 @@ unsafe fn flip_image_inner<COMPONENT: Copy, const CHANNELS: usize>(
             let y2 = height - y - 1;
             let index0 = y * width + x;
             let index1 = y2 * width + x;
-            let swap = data[index0];
-            data[index0] = data[index1];
-            data[index1] = swap;
+            data.swap(index0, index1);
         }
     }
 }

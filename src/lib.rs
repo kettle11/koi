@@ -302,17 +302,15 @@ impl KoiState {
         let mut swap = Vec::new();
         std::mem::swap(&mut self.systems.additional_control_flow, &mut swap);
         for additional_control_flow in &mut swap {
-            consumed_event = (additional_control_flow)(self, event.clone()) | consumed_event;
+            consumed_event |= (additional_control_flow)(self, event.clone());
         }
         std::mem::swap(&mut self.systems.additional_control_flow, &mut swap);
 
         if !consumed_event {
             (self.run_system)(crate::Event::KappEvent(event.clone()), &mut self.world);
-            match event {
-                KappEvent::Draw { .. } => {
-                    self.draw();
-                }
-                _ => {}
+
+            if let KappEvent::Draw { .. } = event {
+                self.draw()
             }
         }
     }
