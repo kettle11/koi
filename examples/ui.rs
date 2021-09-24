@@ -17,20 +17,22 @@ fn main() {
         ));
 
         let mut style = StandardStyle::new();
-        style.primary_text_color = Color::RED;
+
         // Load a default font.
         style
             .new_font(include_bytes!("../Inter-Regular.otf"))
             .unwrap();
 
-        let root = column(|world: &mut World, mut child_adder: ChildAdder<_>| {
-            (|q: Query<(Option<&HierarchyNode>)>| {
-                for (e, t) in q.entities_and_components() {
-                    child_adder.add_child(text(format!("{:?}", (e, t))));
-                }
-            })
-            .run(world);
-        });
+        let root = column(
+            |world: &mut World, mut child_creator: ChildrenCreator<_, _>| {
+                (|q: Query<(Option<&HierarchyNode>)>| {
+                    for (e, t) in q.entities_and_components() {
+                        child_creator.child(&mut (), || button("Press me", |data| {}));
+                    }
+                })
+                .run(world);
+            },
+        );
 
         let mut ui = UI::new(world, root);
 
