@@ -74,6 +74,22 @@ impl Commands {
             .system(),
         ))
     }
+
+    pub fn apply(&mut self, world: &mut World) {
+        for command in &mut self.0 {
+            match command {
+                Command::DespawnEntity(entity) => {
+                    HierarchyNode::despawn_hierarchy(world, *entity).unwrap();
+                }
+                Command::SetParent { parent, child } => crate::set_parent(world, *parent, *child),
+                Command::RunSystem(system) => system.run(world),
+            }
+        }
+    }
+
+    pub fn clear(&mut self) {
+        self.0.clear();
+    }
 }
 
 pub fn apply_commands(world: &mut World) {
@@ -82,15 +98,9 @@ pub fn apply_commands(world: &mut World) {
         &mut commands,
         world.get_single_component_mut::<Commands>().unwrap(),
     );
-    for command in commands.0.drain(..) {
-        match command {
-            Command::DespawnEntity(entity) => {
-                HierarchyNode::despawn_hierarchy(world, entity).unwrap();
-            }
-            Command::SetParent { parent, child } => crate::set_parent(world, parent, child),
-            Command::RunSystem(mut system) => system.run(world),
-        }
-    }
+    commands.apply(world);
+    commands.clear();
+
     std::mem::swap(
         &mut commands,
         &mut world.get_single_component_mut::<Commands>().unwrap(),

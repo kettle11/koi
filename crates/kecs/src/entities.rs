@@ -161,9 +161,6 @@ impl EntityMigrator {
             }
         };
 
-        if new_entity.index == 12 {
-            dbg!()
-        }
         new_entity
     }
 }

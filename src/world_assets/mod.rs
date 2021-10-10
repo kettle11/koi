@@ -53,10 +53,10 @@ fn load_prefabs_system(
                 mesh_primitive_data,
             ),
         };
-        log!("REPLACING WORLD PREFAB");
+        // log!("REPLACING WORLD PREFAB");
 
         worlds.replace_placeholder(&handle, world.unwrap());
-        log!("REPLACED PREFAB!");
+        //log!("REPLACED PREFAB!");
     }
 }
 
@@ -155,7 +155,7 @@ impl AssetLoader<World> for WorldLoader {
             "glb" | "gltf" => {
                 log!("ABOUT TO SPAWN GLTF TASKS");
                 ktasks::spawn(async move {
-                    log!("IN KTASK GLTF TASK");
+                    //  log!("IN KTASK GLTF TASK");
 
                     let world_load_message_data = load_world(&path).await.unwrap();
                     sender.send(PrefabLoadMessage {
@@ -177,10 +177,10 @@ async fn load_world(path: &str) -> Option<PrefabLoadMessageData> {
         .extension()
         .and_then(std::ffi::OsStr::to_str)?;
 
-    klog::log!("FETCHING GLTF BYTES");
+    //    klog::log!("FETCHING GLTF BYTES");
 
     let bytes = crate::fetch_bytes(path).await.ok()?;
-    klog::log!("FETCHED GLTF BYTES");
+    //   klog::log!("FETCHED GLTF BYTES");
 
     Some(match extension {
         #[cfg(feature = "gltf")]
@@ -200,17 +200,17 @@ async fn load_world(path: &str) -> Option<PrefabLoadMessageData> {
         }
         #[cfg(feature = "gltf")]
         "gltf" => {
-            klog::log!("ABOUT TO DECODE GLTF");
+            //  klog::log!("ABOUT TO DECODE GLTF");
             use kgltf::FromJson;
             let s = std::str::from_utf8(&bytes).ok()?;
-            klog::log!("ABOUT TO DECODE GLTF0: {}", s);
+            //   klog::log!("ABOUT TO DECODE GLTF0: {}", s);
 
             let gltf = kgltf::GlTf::from_json(&s).unwrap();
-            klog::log!("ABOUT TO DECODE GLTF1");
+            //  klog::log!("ABOUT TO DECODE GLTF1");
 
             let mesh_primitive_data = load_mesh_primitive_data(path, &gltf, None).await;
 
-            klog::log!("DECODED GLTF, SENDING RETURN MESSAGE");
+            //   klog::log!("DECODED GLTF, SENDING RETURN MESSAGE");
             PrefabLoadMessageData::GlTf {
                 path: path.to_string(),
                 gltf,

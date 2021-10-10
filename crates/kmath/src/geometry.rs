@@ -37,7 +37,7 @@ pub fn closest_point_on_line_segment<T: NumericFloat, const DIMENSIONS: usize>(
 }
 
 /// A rectangle in 2D, a rectangular prism in 3D.
-#[derive(Clone, Debug, Copy)]
+#[derive(Clone, Debug, Copy, PartialEq)]
 pub struct BoundingBox<T, const DIMENSIONS: usize> {
     pub min: Vector<T, DIMENSIONS>,
     pub max: Vector<T, DIMENSIONS>,
@@ -51,6 +51,27 @@ impl<T: Numeric + PartialOrd + 'static, const DIMENSIONS: usize> BoundingBox<T, 
 
     pub fn new(min: Vector<T, DIMENSIONS>, max: Vector<T, DIMENSIONS>) -> Self {
         Self { min, max }
+    }
+
+    pub fn new_with_min_corner_and_size(
+        min_corner: Vector<T, DIMENSIONS>,
+        size: Vector<T, DIMENSIONS>,
+    ) -> Self {
+        Self {
+            min: min_corner,
+            max: min_corner + size,
+        }
+    }
+
+    pub fn new_with_center_and_size(
+        center: Vector<T, DIMENSIONS>,
+        size: Vector<T, DIMENSIONS>,
+    ) -> Self {
+        let half_size = size / T::TWO;
+        Self {
+            min: center - half_size,
+            max: center + half_size,
+        }
     }
 
     pub fn size(self) -> Vector<T, DIMENSIONS> {
@@ -70,14 +91,9 @@ impl<T: Numeric + PartialOrd + 'static, const DIMENSIONS: usize> BoundingBox<T, 
             && point.less_than_per_component(self.max).all()
     }
 
-    pub fn new_with_min_corner_and_size(
-        min_corner: Vector<T, DIMENSIONS>,
-        size: Vector<T, DIMENSIONS>,
-    ) -> Self {
-        Self {
-            min: min_corner,
-            max: min_corner + size,
-        }
+    pub fn contains_bounding_box(&self, bounding_box: Self) -> bool {
+        let joined = self.join(bounding_box);
+        joined == *self
     }
 
     /// Returns the area of a 2D `BoundingBox`, or the volume of a 3D `BoundingBox`

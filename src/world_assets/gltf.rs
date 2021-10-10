@@ -182,7 +182,7 @@ pub(super) async fn load_mesh_primitive_data(
     for buffer in &gltf.buffers {
         buffers.push(if let Some(uri) = &buffer.uri {
             let path = Path::new(path).parent().unwrap().join(uri);
-            klog::log!("FETCHING BUFFER!: {:?}", path);
+            // klog::log!("FETCHING BUFFER!: {:?}", path);
             Some(crate::fetch_bytes(path.to_str().unwrap()).await.unwrap())
         } else {
             None
