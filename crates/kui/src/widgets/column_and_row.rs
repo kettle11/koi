@@ -38,7 +38,7 @@ pub struct Column<Style, Data, ChildData, Child> {
 }
 
 impl<
-        Style: Send + 'static,
+        Style: Send + 'static + GetStandardStyleTrait,
         Data: Send + 'static,
         ChildData: 'static,
         Child: WidgetTrait<Style, ChildData>,
@@ -53,6 +53,8 @@ impl<
         } = self;
 
         let mut total_size = Vec2::ZERO;
+        let spacing = style.standard().column_spacing;
+
         sizes.clear();
         let children_creator_size = ChildrenCreator {
             index: 0,
@@ -62,9 +64,11 @@ impl<
                 sizes.push(size);
                 total_size.x = total_size.x.max(size.x);
                 total_size.y += size.y;
+                total_size.y += spacing;
             },
         };
         (create_children)(data, children_creator_size);
+        total_size.y -= spacing;
         total_size
     }
 
@@ -84,6 +88,8 @@ impl<
 
         let mut index = 0;
         let mut y = rectangle.min.y;
+        let spacing = style.standard().row_spacing;
+
         let children_creator_draw = ChildrenCreator {
             index: 0,
             children,
@@ -93,7 +99,7 @@ impl<
                     Vec2::new(rectangle.min.x, y),
                     Vec2::new(rectangle.max.x, y + size.y),
                 );
-                y += size.y;
+                y += size.y + spacing;
                 child.draw(style, child_data, drawer, rectangle);
                 index += 1;
             },
@@ -143,7 +149,7 @@ pub struct Row<Style, Data, ChildData, Child> {
 }
 
 impl<
-        Style: Send + 'static,
+        Style: Send + 'static + GetStandardStyleTrait,
         Data: Send + 'static,
         ChildData: 'static,
         Child: WidgetTrait<Style, ChildData>,
@@ -159,6 +165,8 @@ impl<
 
         let mut total_size = Vec2::ZERO;
         sizes.clear();
+        let spacing = style.standard().row_spacing;
+
         let children_creator_size = ChildrenCreator {
             index: 0,
             children,
@@ -167,9 +175,11 @@ impl<
                 sizes.push(size);
                 total_size.x += size.x;
                 total_size.y = total_size.y.max(size.y);
+                total_size.x += spacing;
             },
         };
         (create_children)(data, children_creator_size);
+        total_size.x -= spacing;
         total_size
     }
 
@@ -189,6 +199,8 @@ impl<
 
         let mut index = 0;
         let mut x = rectangle.min.x;
+        let spacing = style.standard().row_spacing;
+
         let children_creator_draw = ChildrenCreator {
             index: 0,
             children,
@@ -198,7 +210,7 @@ impl<
                     Vec2::new(x, rectangle.min.y),
                     Vec2::new(x + size.x, rectangle.max.y),
                 );
-                x += size.x;
+                x += size.x + spacing;
                 child.draw(style, child_data, drawer, rectangle);
                 index += 1;
             },
