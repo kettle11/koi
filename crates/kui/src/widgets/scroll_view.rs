@@ -35,19 +35,29 @@ impl<Style: Send + 'static, Data: Send + 'static, W: WidgetTrait<Style, Data>>
         mut rectangle: Rectangle,
     ) {
         // This behavior ensures that as the window size changes the offset value updates as appropriate.
-        let mut size_diff = rectangle.size().y - self.child_size.y;
-        if size_diff > 0.0 {
-            self.offset.y += size_diff;
-            size_diff = 0.0;
+        let mut size_diff = rectangle.size() - self.child_size;
+        if size_diff.x > 0.0 {
+            self.offset.x += size_diff.x;
+            size_diff.x = 0.0;
         }
-        self.offset.y = self.offset.y.clamp(size_diff, 0.0);
+        self.offset.x = self.offset.x.clamp(size_diff.x, 0.0);
 
-        rectangle.min.y += self.offset.y;
+        if size_diff.y > 0.0 {
+            self.offset.y += size_diff.y;
+            size_diff.y = 0.0;
+        }
+        self.offset.y = self.offset.y.clamp(size_diff.y, 0.0);
+
+        rectangle.min += self.offset;
         self.child.draw(style, data, drawer, rectangle)
     }
 
     fn event(&mut self, data: &mut Data, event: &Event) -> bool {
-        if let Event::Scroll { delta_y, .. } = event {
+        if let Event::Scroll {
+            delta_y, delta_x, ..
+        } = event
+        {
+            self.offset.x += *delta_x as f32;
             self.offset.y += *delta_y as f32;
         }
 
