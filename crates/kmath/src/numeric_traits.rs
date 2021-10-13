@@ -23,7 +23,9 @@ pub trait Numeric:
     fn numeric_max(self, other: Self) -> Self;
 }
 
-pub trait NumericFloat: Numeric + NumericSqrt + NumericAbs + Neg<Output = Self> {
+pub trait NumericFloat:
+    Numeric + NumericSqrt + NumericAbs + Neg<Output = Self> + std::cmp::PartialOrd
+{
     const HALF: Self;
 
     fn sin_cos_numeric(self) -> (Self, Self);

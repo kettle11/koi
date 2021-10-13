@@ -218,10 +218,12 @@ impl Transform {
         Mat4::from_translation_rotation_scale(self.position, self.rotation, self.scale)
     }
 
+    /// This doesn't correctly respect global vs local transforms.
     pub fn look_at(&mut self, target: Vec3, up: Vec3) {
-        self.rotation = Mat4::look_at(self.position, target, up)
+        let rotation = Mat4::look_at(self.position, target, up)
             .inversed()
-            .extract_rotation()
+            .extract_rotation();
+        self.rotation = rotation
     }
 
     #[inline]
@@ -337,7 +339,13 @@ fn update_descendent_transforms(
 }
 
 /// Parents to the parent and preserves the child's world-space transform.
+/// NOTE: This will ignore the child location transform unless it's become part of the global transform.
+/// Probably that should be changed in the future.
 pub fn set_parent(world: &mut World, parent: Option<Entity>, child: Entity) {
+    // This is very inefficient to do here, it updates *ALL* transforms again.
+    // It should be removed in favor of only updating the transform for the thing being reparanted.
+    update_global_transforms.run(world);
+
     HierarchyNode::set_parent(world, parent, child).unwrap();
 
     let mut parent_mat = Mat4::IDENTITY;

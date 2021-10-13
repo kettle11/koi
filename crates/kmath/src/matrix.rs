@@ -531,6 +531,9 @@ impl<T: NumericFloat> Matrix<T, 4, 4> {
         T: NumericSqrt + Neg<Output = T>,
     {
         let f = (target - from).normalized();
+        debug_assert!(up != f);
+        debug_assert!(-up != f);
+
         let r = f.cross(up).normalized();
         let u = r.cross(f);
         Self([

@@ -14,6 +14,7 @@ pub struct StandardStyle {
     pub padding: f32,
     /// Used for things like buttons
     pub primary_color: Color,
+    pub disabled_color: Color,
     /// Used for things like pressed buttons
     pub primary_variant_color: Color,
     /// How rounded things like buttons are
@@ -50,6 +51,7 @@ impl StandardStyle {
             ui_scale: 1.0,
             column_spacing: 30.,
             row_spacing: 30.,
+            disabled_color: Color::from_srgb_hex(0x9B9B9B, 1.0),
         }
     }
 

@@ -75,6 +75,7 @@ pub use klog;
 
 pub struct App {
     systems: Plugin,
+    title: String,
 }
 
 pub struct Plugin {
@@ -156,8 +157,14 @@ impl App {
     pub fn new() -> Self {
         let s = Self {
             systems: Plugin::default(),
+            title: "Koi".to_string(),
         };
         s.add_default_plugins()
+    }
+
+    pub fn title(mut self, title: &str) -> Self {
+        self.title = title.to_string();
+        self
     }
 
     pub fn add_plugin(mut self, plugin: Plugin) -> Self {
@@ -217,7 +224,7 @@ impl App {
         // For now only a single window is suppported.
         let window = kapp_app
             .new_window()
-            .title("Koi")
+            .title(&self.title)
             .size(window_width, window_height)
             .build()
             .unwrap();
