@@ -139,7 +139,7 @@ impl Archetype {
             .as_any()
             .downcast_ref::<RwLock<Vec<T>>>()
             .unwrap()
-            .read()
+            .try_read()
             .map_err(|_| KecsError::ChannelExclusivelyLocked)
     }
 
@@ -152,7 +152,7 @@ impl Archetype {
             .as_any()
             .downcast_ref::<RwLock<Vec<T>>>()
             .unwrap()
-            .write()
+            .try_write()
             .map_err(|_| KecsError::ChannelExclusivelyLocked)
     }
 }
