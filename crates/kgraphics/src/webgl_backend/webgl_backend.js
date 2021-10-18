@@ -338,7 +338,29 @@ var gl_web_object = {
                     break;
                 }
                 case 4: {
-                    // UNUSED
+                    // SetVertexAttribute
+                    let attribute_index = u32_data[u32_offset++];
+                    let number_of_components = u32_data[u32_offset++];
+
+                    gl.disableVertexAttribArray(attribute_index);
+
+                    let values = f32_data.subarray(f32_offset, f32_offset + number_of_components);
+                    f32_offset += number_of_components;
+                    switch (number_of_components) {
+                        case 1:
+                            self.gl.vertexAttrib1fv(attribute_index, values);
+                            break;
+                        case 2:
+                            self.gl.vertexAttrib2fv(attribute_index, values);
+                            break;
+                        case 3:
+                            self.gl.vertexAttrib3fv(attribute_index, values);
+                            break;
+                        case 4:
+                            self.gl.vertexAttrib4fv(attribute_index, values);
+                            break;
+                    }
+
                     break;
                 }
                 case 5: {

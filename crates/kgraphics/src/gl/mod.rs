@@ -37,7 +37,7 @@ pub struct Pipeline {
     depth_test: DepthTest,
     faces_to_render: FacesToRender,
     blending: Option<(BlendFactor, BlendFactor)>,
-    depth_clear_value: f32,
+    //depth_clear_value: f32,
 }
 
 /// OpenGL doesn't handle multiple render targets correctly.
@@ -83,7 +83,7 @@ pub struct Texture {
 struct Uniform {
     uniform_type: u32,
     // Is this actually the size in bytes?
-    size_bytes: i32,
+    // size_bytes: i32,
     location: gl_native::UniformLocation,
 }
 
@@ -292,7 +292,7 @@ impl<'a> PipelineBuilderTrait for PipelineBuilder<'a> {
                     uniform.name,
                     Uniform {
                         uniform_type: uniform.uniform_type.0,
-                        size_bytes: uniform.size_members,
+                        // size_bytes: uniform.size_members,
                         location: uniform_location.unwrap(),
                     },
                 );
@@ -331,7 +331,7 @@ impl<'a> PipelineBuilderTrait for PipelineBuilder<'a> {
             depth_test: self.depth_test,
             faces_to_render: self.faces_to_render,
             blending: self.blending,
-            depth_clear_value: self.depth_clear_value,
+            // depth_clear_value: self.depth_clear_value,
         })
     }
 }

@@ -37,12 +37,6 @@ pub(super) enum CommandBufferAction {
     Present,
 }
 
-#[derive(Clone)]
-pub(super) struct FrameBufferBinding {
-    pub(super) color: Option<gl_native::TextureNative>,
-    pub(super) depth: Option<gl_native::TextureNative>,
-    pub(super) stencil: Option<gl_native::TextureNative>,
-}
 impl CommandBuffer {
     pub(crate) fn new() -> Self {
         Self {

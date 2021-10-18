@@ -78,6 +78,7 @@ enum Command {
     BindFramebuffer = 1,
     ChangePipeline = 2,
     SetVertexAttribute = 3,
+    SetVertexAttributeToConstant = 4,
     // UNUSED
     SetFloatUniform = 5,
     SetIntUniform = 6,
@@ -273,6 +274,22 @@ impl RenderPassTrait for RenderPass<'_> {
                 info.byte_size / 4, // Number of components
                 buffer.map_or(0, |b| b.js_object.index()),
             ]);
+        }
+    }
+
+    fn set_vertex_attribute_to_constant<T>(
+        &mut self,
+        vertex_attribute: &VertexAttribute<T>,
+        value: &[f32],
+    ) {
+        if let Some(info) = vertex_attribute.info.clone() {
+            self.command_buffer
+                .commands
+                .push(Command::SetVertexAttributeToConstant);
+            self.command_buffer
+                .u32_data
+                .extend_from_slice(&[info.index, value.len() as u32]);
+            self.command_buffer.f32_data.extend_from_slice(&value);
         }
     }
 
