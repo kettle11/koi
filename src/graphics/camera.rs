@@ -192,23 +192,25 @@ impl Camera {
         self.update_projection_matrix();
     }
     /// Pass in view coordinates with 0,0 in the upper left and view_width, view_height in the bottom right.
-    /// Does not yet work for an orthographic camera.
-    /// The ray is in world space.
+    /// Creates a ray with its origin on the near clipping plane.
     pub fn view_to_ray(&self, transform: &crate::transform::Transform, x: f32, y: f32) -> Ray {
         let normalized = Vec2::new(x / self.view_width as f32, y / self.view_height as f32);
         // Convert to OpenGL coordinate space which is -1,-1 is bottom left, 1,1 is upper right
         let gl_space =
             (normalized * 2.0 + Vec2::new(-1.0, -1.0)).mul_by_component(Vec2::new(1.0, -1.0));
-        let gl_space = gl_space.extend(-1.0);
+            
+        let transform_matrix = transform.model() * self.projection_matrix.inversed();
 
-        let camera_space = self.projection_matrix.inversed().transform_vector(gl_space);
-        let camera_space = Vec3::new(camera_space[0], camera_space[1], -1.0);
+        let gl_space_near = gl_space.extend(-1.0).extend(1.0);
+        let gl_space_far = gl_space.extend(2.0).extend(1.0);
 
-        // Transform into world space.
-        let camera_space = transform.rotation.rotate_vector3(camera_space);
-        let direction = camera_space.normalized();
+        let mut world_space_near = transform_matrix * gl_space_near;
+        let mut world_space_far = transform_matrix * gl_space_far; 
 
-        Ray::new(transform.position, direction)
+        let world_space_near = world_space_near.xyz() / world_space_near.w;
+        let world_space_far = world_space_far.xyz() / world_space_far.w;
+
+        Ray::new(world_space_near, (world_space_far - world_space_near).normalized())
     }
 }
 pub fn resize_camera(mut cameras: Query<(&mut Camera,)>, window: &NotSendSync<kapp::Window>) {
