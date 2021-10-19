@@ -26,7 +26,7 @@ fn main() {
         let root = scroll_view(column(|world, mut child_creator| {
             (|q: Query<Option<&Transform>>| {
                 for (e, transform) in q.entities_and_components() {
-                    if let Some(transform) = transform {
+                    if let Some(_transform) = transform {
                         let mut e = *e;
                         child_creator.child(&mut e, || {
                             button(|data: &mut _| format!("{:?}", data), |_| {})

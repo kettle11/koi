@@ -204,8 +204,8 @@ impl Camera {
         let gl_space_near = gl_space.extend(-1.0).extend(1.0);
         let gl_space_far = gl_space.extend(2.0).extend(1.0);
 
-        let mut world_space_near = transform_matrix * gl_space_near;
-        let mut world_space_far = transform_matrix * gl_space_far; 
+        let world_space_near = transform_matrix * gl_space_near;
+        let world_space_far = transform_matrix * gl_space_far; 
 
         let world_space_near = world_space_near.xyz() / world_space_near.w;
         let world_space_far = world_space_far.xyz() / world_space_far.w;
