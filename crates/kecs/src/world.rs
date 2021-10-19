@@ -11,6 +11,7 @@ pub(crate) trait ComponentChannelVecTrait: Send + Sync {
     fn new_same_type(&self) -> Box<dyn ComponentChannelVecTrait>;
     fn migrate_component(&mut self, index: usize, other: &mut dyn ComponentChannelVecTrait);
     fn swap_remove(&mut self, index: usize);
+    fn assign(&mut self, index: usize, component: &mut dyn AnyComponentTrait);
     fn push(&mut self, component: &mut dyn AnyComponentTrait);
     fn append_channel(&mut self, other: &mut dyn ComponentChannelVecTrait);
     fn clone_channel(
@@ -43,6 +44,16 @@ impl<T: ComponentTrait> ComponentChannelVecTrait for RwLock<Vec<T>> {
     fn swap_remove(&mut self, index: usize) {
         self.get_mut().unwrap().swap_remove(index);
     }
+
+    fn assign(&mut self, index: usize, component: &mut dyn AnyComponentTrait) {
+        self.get_mut().unwrap()[index] = component
+            .as_any_mut()
+            .downcast_mut::<Option<T>>()
+            .unwrap()
+            .take()
+            .unwrap();
+    }
+
     fn push(&mut self, component: &mut dyn AnyComponentTrait) {
         self.get_mut().unwrap().push(
             component

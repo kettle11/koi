@@ -330,6 +330,16 @@ fn query1() {
     (|query: Query<Option<&A>>| assert!(query.iter().next().is_some())).run(&world);
 }
 
+#[test]
+fn add_duplicate_component() {
+    let mut world = World::new();
+    // world.spawn(A);
+
+    let entity = world.spawn(A);
+    world.add_component(entity, B).unwrap();
+    world.add_component(entity, B).unwrap();
+}
+
 /*
 #[test]
 fn componentless_query() {

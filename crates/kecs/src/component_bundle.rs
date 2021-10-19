@@ -87,14 +87,14 @@ pub(crate) fn add_components_to_entity_inner(
             })
     };
 
-    let (old_archetype, new_archetype) = index_mut_twice(
-        archetypes,
-        entity_location.archetype_index,
-        *new_archetype_index,
-    );
-
-    // All existing channels are migrated to the new archetype.
     if *new_archetype_index != entity_location.archetype_index {
+        let (old_archetype, new_archetype) = index_mut_twice(
+            archetypes,
+            entity_location.archetype_index,
+            *new_archetype_index,
+        );
+
+        // All existing channels are migrated to the new archetype.
         // Migrate data
         World::migrate_entity(
             old_archetype,
@@ -103,17 +103,34 @@ pub(crate) fn add_components_to_entity_inner(
             entity,
             entity_location.index_within_archetype,
         );
-    }
 
-    // Add new components to [Archetype]
-    let mut component_index = 0;
-    for channel in new_archetype.channels.iter_mut() {
-        let component_and_component_id = &mut components_and_component_ids[component_index];
-        if channel.component_id == component_and_component_id.1 {
-            channel.data.push(&mut *component_and_component_id.0);
-            component_index += 1;
-            if component_index >= components_and_component_ids.len() {
-                break;
+        // Add new components to [Archetype]
+        let mut component_index = 0;
+        for channel in new_archetype.channels.iter_mut() {
+            let component_and_component_id = &mut components_and_component_ids[component_index];
+            if channel.component_id == component_and_component_id.1 {
+                channel.data.push(&mut *component_and_component_id.0);
+                component_index += 1;
+                if component_index >= components_and_component_ids.len() {
+                    break;
+                }
+            }
+        }
+    } else {
+        // Reassign components being added.
+        let mut component_index = 0;
+        let archetype = &mut world.archetypes[entity_location.archetype_index];
+        for channel in archetype.channels.iter_mut() {
+            let component_and_component_id = &mut components_and_component_ids[component_index];
+            if channel.component_id == component_and_component_id.1 {
+                channel.data.assign(
+                    entity_location.index_within_archetype,
+                    &mut *component_and_component_id.0,
+                );
+                component_index += 1;
+                if component_index >= components_and_component_ids.len() {
+                    break;
+                }
             }
         }
     }
@@ -147,7 +164,13 @@ pub(crate) fn merge_sorted_iter<T: Ord>(
     loop {
         output.push(match (item0.is_some(), item1.is_some()) {
             (true, true) => match item0.cmp(&item1) {
-                Ordering::Less | Ordering::Equal => {
+                Ordering::Equal => {
+                    let item = item0.take().unwrap();
+                    item0 = iter0.next();
+                    item1 = iter1.next();
+                    item
+                }
+                Ordering::Less => {
                     let item = item0.take().unwrap();
                     item0 = iter0.next();
                     item
@@ -186,6 +209,5 @@ fn merge_sorted() {
         nums.iter(),
         other_nums.iter(),
     );
-    println!("RESULT: {:?}", result);
-    // assert_eq!(&result, &[0, 1, 2, 3, 4, 5, 8]);
+    // assert_eq!(result, vec![0, 1, 2, 3, 4, 5, 8]);
 }
