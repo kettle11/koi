@@ -198,19 +198,22 @@ impl Camera {
         // Convert to OpenGL coordinate space which is -1,-1 is bottom left, 1,1 is upper right
         let gl_space =
             (normalized * 2.0 + Vec2::new(-1.0, -1.0)).mul_by_component(Vec2::new(1.0, -1.0));
-            
+
         let transform_matrix = transform.model() * self.projection_matrix.inversed();
 
         let gl_space_near = gl_space.extend(-1.0).extend(1.0);
         let gl_space_far = gl_space.extend(2.0).extend(1.0);
 
         let world_space_near = transform_matrix * gl_space_near;
-        let world_space_far = transform_matrix * gl_space_far; 
+        let world_space_far = transform_matrix * gl_space_far;
 
         let world_space_near = world_space_near.xyz() / world_space_near.w;
         let world_space_far = world_space_far.xyz() / world_space_far.w;
 
-        Ray::new(world_space_near, (world_space_far - world_space_near).normalized())
+        Ray::new(
+            world_space_near,
+            (world_space_far - world_space_near).normalized(),
+        )
     }
 }
 pub fn resize_camera(mut cameras: Query<(&mut Camera,)>, window: &NotSendSync<kapp::Window>) {

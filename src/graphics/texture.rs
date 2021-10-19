@@ -210,7 +210,7 @@ impl AssetLoader<Texture> for TextureAssetLoader {
                 .extension()
                 .and_then(std::ffi::OsStr::to_str);
 
-           // println!("LOADING PATH: {:?}", path);
+            // println!("LOADING PATH: {:?}", path);
             let result = match extension {
                 #[cfg(feature = "png")]
                 Some("png") => {
