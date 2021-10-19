@@ -17,6 +17,8 @@ pub struct StateTracker {
     pointer_buttons_pressed: HashMap<PointerButton, Duration>,
     pointer_position: (f64, f64),
     mouse_motion: (f64, f64),
+    /// How much pinching (the gesture used to zoom on touch devices) occured in the last frame
+    pinch: f64,
 }
 
 impl StateTracker {
@@ -30,6 +32,7 @@ impl StateTracker {
             pointer_buttons_pressed: HashMap::with_capacity(16),
             pointer_position: (0., 0.),
             mouse_motion: (0., 0.),
+            pinch: 0.0,
         }
     }
 
@@ -60,6 +63,7 @@ impl StateTracker {
             Event::MouseMotion {
                 delta_x, delta_y, ..
             } => self.mouse_motion = (self.mouse_motion.0 + delta_x, self.mouse_motion.1 + delta_y),
+            Event::PinchGesture { delta, .. } => self.pinch += *delta,
             _ => {}
         };
         self.all_events_since_last_frame.push(event.clone());
@@ -72,6 +76,7 @@ impl StateTracker {
         self.pointer_buttons_released_since_last_frame.clear();
         self.keys_down_since_last_frame.clear();
         self.mouse_motion = (0., 0.);
+        self.pinch = 0.0;
     }
 
     /// Returns true if the key has been pressed since the last call to clear.
@@ -118,6 +123,10 @@ impl StateTracker {
 
     pub fn mouse_motion(&self) -> (f64, f64) {
         self.mouse_motion
+    }
+
+    pub fn pinch(&self) -> f64 {
+        self.pinch
     }
 
     pub fn all_events_since_last_frame(&self) -> &[Event] {

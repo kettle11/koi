@@ -47,7 +47,7 @@ pub struct Text<Style, Data> {
     layout: fontdue::layout::Layout,
 }
 
-impl<Style, Data> Text<Style, Data> {
+impl<Style: GetStandardStyleTrait, Data> Text<Style, Data> {
     pub fn new(
         text: impl Into<TextSource<Data>>,
         get_font: fn(&Style) -> Font,
@@ -61,6 +61,26 @@ impl<Style, Data> Text<Style, Data> {
             get_size,
             layout: fontdue::layout::Layout::new(fontdue::layout::CoordinateSystem::PositiveYDown),
         }
+    }
+
+    pub fn draw_with_color(
+        &mut self,
+        style: &mut Style,
+        drawer: &mut Drawer,
+        rectangle: Rectangle,
+        color: Color,
+    ) {
+        let layout = &mut self.layout;
+
+        let font_index = (self.get_font)(style).0;
+        let font = &style.standard().fonts()[font_index];
+        drawer.text(
+            &font,
+            layout,
+            rectangle.min,
+            color,
+            style.standard().ui_scale,
+        )
     }
 }
 
@@ -115,16 +135,7 @@ where
         drawer: &mut Drawer,
         rectangle: Rectangle,
     ) {
-        let layout = &mut self.layout;
-
-        let font_index = (self.get_font)(style).0;
-        let font = &style.standard().fonts()[font_index];
-        drawer.text(
-            &font,
-            layout,
-            rectangle.min,
-            (self.get_color)(style),
-            style.standard().ui_scale,
-        )
+        let color = (self.get_color)(style);
+        self.draw_with_color(style, drawer, rectangle, color)
     }
 }

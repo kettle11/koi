@@ -199,7 +199,7 @@ impl App {
         app
     }
 
-    pub fn setup_and_run<S: FnMut(Event, &mut World) + 'static>(
+    pub fn setup_and_run<S: FnMut(Event, &mut World) -> bool + 'static>(
         mut self,
         setup_and_run_function: impl Fn(&mut World) -> S,
     ) {
@@ -280,7 +280,7 @@ pub struct KoiState {
     pub start: Instant,
     pub time_acumulator: f64,
     pub fixed_time_step: f64,
-    pub run_system: Box<dyn FnMut(Event, &mut World)>,
+    pub run_system: Box<dyn FnMut(Event, &mut World) -> bool>,
     pub input_entity: Entity,
     pub window_entity: Entity,
     pub kapp_events_entity: Entity,
@@ -288,6 +288,11 @@ pub struct KoiState {
 
 impl KoiState {
     fn handle_event(&mut self, event: KappEvent) {
+        // Run user callback and give it a chance to consume the event.
+        if (self.run_system)(crate::Event::KappEvent(event.clone()), &mut self.world) {
+            return;
+        }
+
         let input = self
             .world
             .get_component_mut::<Input>(self.input_entity)
@@ -309,13 +314,14 @@ impl KoiState {
         let mut swap = Vec::new();
         std::mem::swap(&mut self.systems.additional_control_flow, &mut swap);
         for additional_control_flow in &mut swap {
-            consumed_event |= (additional_control_flow)(self, event.clone());
+            if (additional_control_flow)(self, event.clone()) {
+                consumed_event = true;
+                break;
+            }
         }
         std::mem::swap(&mut self.systems.additional_control_flow, &mut swap);
 
         if !consumed_event {
-            (self.run_system)(crate::Event::KappEvent(event.clone()), &mut self.world);
-
             if let KappEvent::Draw { .. } = event {
                 self.draw()
             }

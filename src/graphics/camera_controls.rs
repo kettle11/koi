@@ -80,6 +80,7 @@ pub fn update_camera_controls(
         };
 
         let mut direction = Vec3::ZERO;
+
         if input.key(Key::W) {
             direction += transform.forward();
         }
@@ -136,6 +137,14 @@ pub fn update_camera_controls(
             }
         }
 
+        let pointer_position = input.pointer_position();
+        let zoom_direction = camera.view_to_ray(
+            transform,
+            pointer_position.0 as f32,
+            pointer_position.1 as f32,
+        );
+        transform.position += -zoom_direction.direction * input.pinch() as f32 * 5.;
+
         match &mut controls.mode {
             CameraControlsMode::Fly => {
                 let rotation_pitch = Quat::from_yaw_pitch_roll(0., pitch, 0.);
@@ -162,7 +171,7 @@ pub fn update_camera_controls(
                 let new_diff = new_direction * diff_length;
 
                 transform.position = *target + new_diff;
-                transform.look_at(*target, Vec3::Y);
+                *transform = transform.look_at(*target, Vec3::Y);
             }
         }
         controls.last_mouse_position = Some(position);

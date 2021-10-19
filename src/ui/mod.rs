@@ -27,11 +27,8 @@ impl<Style: GetStandardStyleTrait> UI<Style> {
         }
     }
 
-    // Call during the pre-draw step to update the UI.
-    pub fn draw(&mut self, world: &mut World, style: &mut Style) {
-        let mut events = Vec::new();
-        (|events_in: &mut KappEvents| std::mem::swap(&mut events, &mut events_in.0)).run(world);
-
+    /// Returns `true` if the event was consumed by the UI.
+    pub fn handle_event(&mut self, world: &mut World, event: KappEvent) -> bool {
         let ((window_width, window_height), ui_scale) =
             (|window: &NotSendSync<kapp::Window>| (window.size(), window.scale())).run(world);
         let (window_width, window_height, ui_scale) =
@@ -53,33 +50,65 @@ impl<Style: GetStandardStyleTrait> UI<Style> {
             let mut sprite = world.remove_component::<Sprite>(entity).unwrap();
 
             // Only pass some events through and edit their coordinates to be scaled to match the UI.
-            for event in &events {
-                match event {
-                    KappEvent::PointerDown { .. }
-                    | KappEvent::PointerUp { .. }
-                    | KappEvent::PointerMoved { .. }
-                    | KappEvent::Scroll { .. } => {
-                        let mut event = event.clone();
-                        match &mut event {
-                            KappEvent::PointerDown { x, y, .. }
-                            | KappEvent::PointerUp { x, y, .. }
-                            | KappEvent::PointerMoved { x, y, .. } => {
-                                *x /= ui_scale as f64;
-                                *y /= ui_scale as f64;
-                            }
-                            KappEvent::Scroll {
-                                delta_x, delta_y, ..
-                            } => {
-                                *delta_x /= ui_scale as f64;
-                                *delta_y /= ui_scale as f64;
-                            }
-                            _ => unreachable!(),
+            let handled_event = match event {
+                KappEvent::PointerDown { .. }
+                | KappEvent::PointerUp { .. }
+                | KappEvent::PointerMoved { .. }
+                | KappEvent::Scroll { .. } => {
+                    let mut event = event.clone();
+                    match &mut event {
+                        KappEvent::PointerDown { x, y, .. }
+                        | KappEvent::PointerUp { x, y, .. }
+                        | KappEvent::PointerMoved { x, y, .. } => {
+                            *x /= ui_scale as f64;
+                            *y /= ui_scale as f64;
                         }
-                        ui.handle_event(world, &event);
+                        KappEvent::Scroll {
+                            delta_x, delta_y, ..
+                        } => {
+                            *delta_x /= ui_scale as f64;
+                            *delta_y /= ui_scale as f64;
+                        }
+                        _ => unreachable!(),
                     }
-                    _ => {}
+                    ui.handle_event(world, &event)
                 }
+                _ => false,
+            };
+            world.add_component(entity, ui).unwrap();
+            world.add_component(entity, mesh_handle).unwrap();
+            world.add_component(entity, sprite).unwrap();
+
+            if handled_event {
+                return true;
             }
+        }
+        false
+    }
+
+    // Call during the pre-draw step to update the UI.
+    pub fn draw(&mut self, world: &mut World, style: &mut Style) {
+        //(|events_in: &mut KappEvents| std::mem::swap(&mut events, &mut events_in.0)).run(world);
+
+        let ((window_width, window_height), ui_scale) =
+            (|window: &NotSendSync<kapp::Window>| (window.size(), window.scale())).run(world);
+        let (window_width, window_height, ui_scale) =
+            (window_width as f32, window_height as f32, ui_scale as f32);
+
+        let mut ui_entities = Vec::new();
+        (|query: Query<&mut UIComponent<Style>>| {
+            for (entity, _) in query.entities_and_components() {
+                ui_entities.push(*entity);
+            }
+        })
+        .run(world);
+
+        for entity in ui_entities {
+            let mut ui = world
+                .remove_component::<UIComponent<Style>>(entity)
+                .unwrap();
+            let mut mesh_handle = world.remove_component::<Handle<Mesh>>(entity).unwrap();
+            let mut sprite = world.remove_component::<Sprite>(entity).unwrap();
 
             ui.draw(
                 world,
@@ -128,7 +157,7 @@ impl<Style: GetStandardStyleTrait> UI<Style> {
             world.add_component(entity, sprite).unwrap();
         }
 
-        (|events_in: &mut KappEvents| std::mem::swap(&mut events, &mut events_in.0)).run(world);
+        //(|events_in: &mut KappEvents| std::mem::swap(&mut events, &mut events_in.0)).run(world);
     }
 }
 
@@ -155,10 +184,9 @@ impl<STYLE: GetStandardStyleTrait> UIComponent<STYLE> {
         }
     }
 
-    pub fn handle_event(&mut self, data: &mut World, event: &KappEvent) {
+    pub fn handle_event(&mut self, data: &mut World, event: &KappEvent) -> bool {
         let Self { root_widget, .. } = self;
-
-        root_widget.inner().event(data, event);
+        root_widget.inner().event(data, event)
     }
 
     pub fn draw(

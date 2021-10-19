@@ -1,9 +1,17 @@
+use core::ops::Deref;
 use kapp::*;
 use kecs::*;
 
 #[derive(NotCloneComponent)]
 pub struct Input {
     pub(crate) state: kapp::StateTracker,
+}
+
+impl Deref for Input {
+    type Target = kapp::StateTracker;
+    fn deref(&self) -> &Self::Target {
+        &self.state
+    }
 }
 
 impl Input {
@@ -13,6 +21,7 @@ impl Input {
         }
     }
 
+    /*
     /// Returns true if the key is held down.
     pub fn key(&self, key: Key) -> bool {
         self.state.key(key)
@@ -53,4 +62,5 @@ impl Input {
     pub fn all_events_since_last_frame(&self) -> &[kapp::Event] {
         self.state.all_events_since_last_frame()
     }
+    */
 }

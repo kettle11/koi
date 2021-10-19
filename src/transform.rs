@@ -41,69 +41,28 @@ impl Transform {
         }
     }
 
-    pub fn new_with_position(position: Vec3) -> Self {
-        Self {
-            position,
-            rotation: Quat::IDENTITY,
-            scale: Vec3::ONE,
-        }
+    pub fn with_scale(mut self, scale: Vec3) -> Self {
+        self.scale = scale;
+        self
     }
 
-    pub fn new_with_rotation(rotation: Quat) -> Self {
-        Self {
-            position: Vec3::ZERO,
-            rotation,
-            scale: Vec3::ONE,
-        }
+    pub fn with_position(mut self, position: Vec3) -> Self {
+        self.position = position;
+        self
     }
 
-    pub fn new_with_scale(scale: Vec3) -> Self {
-        Self {
-            position: Vec3::ZERO,
-            rotation: Quat::IDENTITY,
-            scale,
-        }
-    }
-    pub fn new_with_scale_rotation(scale: Vec3, rotation: Quat) -> Self {
-        Self {
-            position: Vec3::ZERO,
-            rotation,
-            scale,
-        }
+    pub fn with_rotation(mut self, rotation: Quat) -> Self {
+        self.rotation = rotation;
+        self
     }
 
     pub fn new_looking_at(origin: Vec3, target: Vec3, up: Vec3) -> Self {
-        let mut transform = Self {
+        let transform = Self {
             position: origin,
             rotation: Quat::IDENTITY,
             scale: Vec3::ONE,
         };
-        transform.look_at(target, up);
-        transform
-    }
-
-    pub fn new_with_position_rotation(position: Vec3, rotation: Quat) -> Self {
-        Self {
-            position,
-            rotation,
-            scale: Vec3::ONE,
-        }
-    }
-
-    pub fn new_with_position_scale(position: Vec3, scale: Vec3) -> Self {
-        Self {
-            position,
-            rotation: Quat::IDENTITY,
-            scale,
-        }
-    }
-
-    pub fn new_with_position_rotation_scale(position: Vec3, rotation: Quat, scale: Vec3) -> Self {
-        Self {
-            position,
-            rotation,
-            scale,
-        }
+        transform.look_at(target, up)
     }
 
     pub fn from_mat4(mat4: Mat4) -> Self {
@@ -120,11 +79,13 @@ impl Transform {
     }
 
     /// This doesn't correctly respect global vs local transforms.
-    pub fn look_at(&mut self, target: Vec3, up: Vec3) {
+    #[must_use]
+    pub fn look_at(mut self, target: Vec3, up: Vec3) -> Self {
         let rotation = Mat4::look_at(self.position, target, up)
             .inversed()
             .extract_rotation();
-        self.rotation = rotation
+        self.rotation = rotation;
+        self
     }
 
     #[inline]

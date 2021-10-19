@@ -355,11 +355,11 @@ fn initialize_nodes(
     let transform: Transform = if let Some(matrix) = &node.matrix {
         Transform::from_mat4(matrix.try_into().unwrap())
     } else {
-        Transform::new_with_position_rotation_scale(
-            node.translation.map_or(Vec3::ZERO, |t| t.into()),
-            node.rotation.map_or(Quat::IDENTITY, |q| q.into()),
-            node.scale.map_or(Vec3::ONE, |s| s.into()),
-        )
+        Transform {
+            position: node.translation.map_or(Vec3::ZERO, |t| t.into()),
+            rotation: node.rotation.map_or(Quat::IDENTITY, |q| q.into()),
+            scale: node.scale.map_or(Vec3::ONE, |s| s.into()),
+        }
     };
 
     let entity = if let Some(mesh) = node.mesh {
