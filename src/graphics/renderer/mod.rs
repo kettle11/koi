@@ -58,7 +58,7 @@ struct Renderer<'a, 'b: 'a, 'c: 'a> {
     bound_mesh: Option<&'a Handle<Mesh>>,
     bound_shader: Option<&'a Handle<Shader>>,
     material_info: Option<MaterialInfo<'a>>,
-    lights: &'a Query<'c, (&'static Transform, &'static Light)>,
+    lights: &'a Query<'c, (&'static GlobalTransform, &'static Light)>,
     #[allow(unused)]
     multiview_enabled: bool,
     current_pipeline: Option<&'a Pipeline>,
@@ -72,7 +72,7 @@ impl<'a, 'b: 'a, 'c: 'a> Renderer<'a, 'b, 'c> {
         material_assets: &'a Assets<Material>,
         mesh_assets: &'a Assets<Mesh>,
         texture_assets: &'a Assets<Texture>,
-        lights: &'a Query<'c, (&'static Transform, &'static Light)>,
+        lights: &'a Query<'c, (&'static GlobalTransform, &'static Light)>,
         camera_info: &'a [ViewInfo],
         viewport: BoundingBox<u32, 2>,
         multiview_enabled: bool,
@@ -102,16 +102,15 @@ impl<'a, 'b: 'a, 'c: 'a> Renderer<'a, 'b, 'c> {
     }
 
     fn get_view_info(
-        camera_transform: &Transform,
+        camera_global_transform: &GlobalTransform,
         offset: Mat4,
         projection_matrix: Mat4,
         viewport: BoundingBox<f32, 2>,
     ) -> ViewInfo {
-        let camera_transform = camera_transform.global_transform;
         // Is this `offset *` correct?
-        let camera_position = offset.transform_point(camera_transform.position);
+        let camera_position = offset.transform_point(camera_global_transform.position);
         // let projection_matrix = camera.projection_matrix();
-        let view_matrix = (offset * camera_transform.model()).inversed();
+        let view_matrix = (offset * camera_global_transform.model()).inversed();
 
         ViewInfo {
             projection_matrix,
@@ -127,8 +126,6 @@ impl<'a, 'b: 'a, 'c: 'a> Renderer<'a, 'b, 'c> {
             self.lights.iter().count() as i32,
         );
         for (i, (transform, light)) in self.lights.iter().enumerate() {
-            let transform = transform.global_transform;
-
             if transform.position.is_nan() {
                 dbg!("Light position is NaN");
                 continue;
@@ -373,7 +370,7 @@ impl<'a, 'b: 'a, 'c: 'a> Renderer<'a, 'b, 'c> {
 
                     self.bound_mesh = Some(mesh_handle);
                 }
-                let model_matrix = transform.global_transform.model();
+                let model_matrix = transform.model();
                 self.render_pass
                     .set_mat4_property(&material_info.model_property, model_matrix.as_array());
 
@@ -405,7 +402,7 @@ impl<'a, 'b: 'a, 'c: 'a> Renderer<'a, 'b, 'c> {
 type Renderables<'a> = Query<
     'a,
     (
-        &'static Transform,
+        &'static GlobalTransform,
         &'static Handle<Material>,
         &'static Handle<Mesh>,
         //Option<&Handle<Texture>>,
@@ -421,9 +418,9 @@ pub fn render_scene<'a>(
     material_assets: &Assets<Material>,
     mesh_assets: &Assets<Mesh>,
     texture_assets: &Assets<Texture>,
-    cameras: Query<(&Transform, &Camera)>,
+    cameras: Query<(&GlobalTransform, &Camera)>,
     renderables: Renderables<'a>,
-    lights: Query<(&'static Transform, &'static Light)>,
+    lights: Query<(&'static GlobalTransform, &'static Light)>,
 ) {
     let mut command_buffer = graphics.context.new_command_buffer();
 
@@ -442,7 +439,7 @@ pub fn render_scene<'a>(
         let mut render_pass = command_buffer
             .begin_render_pass_with_framebuffer(&graphics.current_target_framebuffer, clear_color);
 
-        for (camera_transform, camera) in &cameras {
+        for (camera_global_transform, camera) in &cameras {
             // Check that the camera is setup to render to the current CameraTarget.
             let camera_should_render = (graphics.current_camera_target.is_some()
                 && graphics.current_camera_target == camera.camera_target)
@@ -454,7 +451,7 @@ pub fn render_scene<'a>(
                 let mut camera_info = Vec::new();
                 if graphics.override_views.is_empty() {
                     camera_info.push(Renderer::get_view_info(
-                        camera_transform,
+                        camera_global_transform,
                         Mat4::IDENTITY,
                         camera.projection_matrix(),
                         BoundingBox {
@@ -465,7 +462,7 @@ pub fn render_scene<'a>(
                 } else {
                     for view in &graphics.override_views {
                         camera_info.push(Renderer::get_view_info(
-                            camera_transform,
+                            camera_global_transform,
                             view.offset_transform,
                             view.projection_matrix,
                             view.output_rectangle,
