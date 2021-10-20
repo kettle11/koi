@@ -137,16 +137,16 @@ pub fn update_camera_controls(
             }
         }
 
-        let pointer_position = input.pointer_position();
-        let zoom_direction = camera.view_to_ray(
-            transform,
-            pointer_position.0 as f32,
-            pointer_position.1 as f32,
-        );
-        transform.position += -zoom_direction.direction * input.pinch() as f32 * 5.;
-
         match &mut controls.mode {
             CameraControlsMode::Fly => {
+                let pointer_position = input.pointer_position();
+                let zoom_direction = camera.view_to_ray(
+                    transform,
+                    pointer_position.0 as f32,
+                    pointer_position.1 as f32,
+                );
+                transform.position += -zoom_direction.direction * input.pinch() as f32 * 5.;
+
                 let rotation_pitch = Quat::from_yaw_pitch_roll(0., pitch, 0.);
                 let rotation_yaw = Quat::from_yaw_pitch_roll(yaw, 0., 0.);
 
@@ -154,6 +154,8 @@ pub fn update_camera_controls(
                 transform.position += controls.velocity * time.delta_seconds_f64 as f32;
             }
             CameraControlsMode::Orbit { target } => {
+                transform.position += transform.forward() * input.pinch() as f32 * 5.;
+
                 let scale = 6.0;
                 let rotation_pitch = Quat::from_yaw_pitch_roll(0., -pitch * scale, 0.);
                 let rotation_yaw = Quat::from_yaw_pitch_roll(yaw * scale, 0., 0.);
@@ -162,13 +164,14 @@ pub fn update_camera_controls(
                 let diff_length = diff.length();
                 let diff_normalized = diff / diff.length();
 
-                *target += controls.velocity * time.delta_seconds_f64 as f32;
 
                 let rotation = Quat::from_forward_up(diff_normalized, Vec3::Y);
                 let rotation = rotation_yaw * rotation * rotation_pitch;
 
                 let new_direction = rotation * -Vec3::Z;
                 let new_diff = new_direction * diff_length;
+
+                *target += controls.velocity * time.delta_seconds_f64 as f32;
 
                 transform.position = *target + new_diff;
                 *transform = transform.look_at(*target, Vec3::Y);
