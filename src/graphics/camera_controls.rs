@@ -161,23 +161,22 @@ pub fn update_camera_controls(
                 transform.position += transform.forward() * input.pinch() as f32 * 5.;
 
                 let scale = 0.005;
-                let rotation_pitch = Quat::from_yaw_pitch_roll(0., -pitch * scale, 0.);
+                let rotation_pitch = Quat::from_yaw_pitch_roll(0., pitch * scale, 0.);
                 let rotation_yaw = Quat::from_yaw_pitch_roll(yaw * scale, 0., 0.);
 
                 let diff = transform.position - *target;
                 let diff_length = diff.length();
-                let diff_normalized = diff / diff.length();
 
-                let rotation = Quat::from_forward_up(diff_normalized, Vec3::Y);
-                let rotation = rotation_yaw * rotation * rotation_pitch;
+                let rotation = rotation_yaw * transform.rotation * rotation_pitch;
 
                 let new_direction = rotation * -Vec3::Z;
-                let new_diff = new_direction * diff_length;
+                let new_up = rotation * Vec3::Y;
 
                 *target += controls.velocity * time.delta_seconds_f64 as f32;
 
-                transform.position = *target + new_diff;
-                *transform = transform.look_at(*target, Vec3::Y);
+                transform.position = *target - new_direction * diff_length;
+                transform.rotation = Quat::from_forward_up(new_direction, new_up);
+
             }
         }
         controls.last_mouse_position = Some(position);
