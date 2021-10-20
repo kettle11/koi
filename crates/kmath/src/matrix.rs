@@ -526,13 +526,19 @@ impl<T: NumericFloat> Matrix<T, 4, 4> {
         )
     }
 
-    pub fn look_at(from: Vector<T, 3>, target: Vector<T, 3>, up: Vector<T, 3>) -> Self
+    pub fn look_at(from: Vector<T, 3>, target: Vector<T, 3>, mut up: Vector<T, 3>) -> Self
     where
         T: NumericSqrt + Neg<Output = T>,
     {
         let f = (target - from).normalized();
-        debug_assert!(up != f);
-        debug_assert!(-up != f);
+
+        if up == f || -up == f {
+            up = if up != Vector::<T, 3>::Y {
+                Vector::<T, 3>::Y
+            } else {
+                Vector::<T, 3>::X
+            };
+        }
 
         let r = f.cross(up).normalized();
         let u = r.cross(f);

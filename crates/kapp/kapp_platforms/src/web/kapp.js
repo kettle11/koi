@@ -114,7 +114,7 @@ function receive_message(command, data) {
             }
 
             canvas.onwheel = function (event) {
-                if (event.ctrl_key) {
+                if (event.ctrlKey) {
                     // This is a bit weird, but if a pinch gesture is performed
                     // the ctrl modifier is set.
                     // This is the simplest way to disambiguate it.

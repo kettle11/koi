@@ -95,47 +95,50 @@ pub extern "C" fn kapp_on_pointer_up(
 
 #[no_mangle]
 pub extern "C" fn kapp_on_key_down(time_stamp: f64) {
-    kwasm::DATA_FROM_HOST.with(|d| {
+    let key = kwasm::DATA_FROM_HOST.with(|d| {
         let d = d.borrow();
         let key = std::str::from_utf8(&d).unwrap();
-        send_event(Event::KeyDown {
-            key: keys_web::virtual_keycode_to_key(key),
-            timestamp: Duration::from_secs_f64(time_stamp * 1000.0),
-        })
+        keys_web::virtual_keycode_to_key(key)
+    });
+    send_event(Event::KeyDown {
+        key,
+        timestamp: Duration::from_secs_f64(time_stamp * 1000.0),
     })
 }
 
 #[no_mangle]
 pub extern "C" fn kapp_on_key_up(time_stamp: f64) {
-    kwasm::DATA_FROM_HOST.with(|d| {
+    let key = kwasm::DATA_FROM_HOST.with(|d| {
         let d = d.borrow();
         let key = std::str::from_utf8(&d).unwrap();
-        send_event(Event::KeyUp {
-            key: keys_web::virtual_keycode_to_key(key),
-            timestamp: Duration::from_secs_f64(time_stamp * 1000.0),
-        })
+        keys_web::virtual_keycode_to_key(key)
     });
+    send_event(Event::KeyUp {
+        key,
+        timestamp: Duration::from_secs_f64(time_stamp * 1000.0),
+    })
 }
 #[no_mangle]
 pub extern "C" fn kapp_on_key_repeat(time_stamp: f64) {
-    kwasm::DATA_FROM_HOST.with(|d| {
+    let key = kwasm::DATA_FROM_HOST.with(|d| {
         let d = d.borrow();
         let key = std::str::from_utf8(&d).unwrap();
-        send_event(Event::KeyRepeat {
-            key: keys_web::virtual_keycode_to_key(key),
-            timestamp: Duration::from_secs_f64(time_stamp * 1000.0),
-        });
+        keys_web::virtual_keycode_to_key(key)
+    });
+    send_event(Event::KeyRepeat {
+        key,
+        timestamp: Duration::from_secs_f64(time_stamp * 1000.0),
     });
 }
 
 #[no_mangle]
 pub extern "C" fn kapp_character_received(_time_stamp: f64) {
-    kwasm::DATA_FROM_HOST.with(|d| {
+    let character = kwasm::DATA_FROM_HOST.with(|d| {
         let d = d.borrow();
         let data = std::str::from_utf8(&d).unwrap();
-        let character = data.chars().next().unwrap();
-        send_event(Event::CharacterReceived { character })
+        data.chars().next().unwrap()
     });
+    send_event(Event::CharacterReceived { character })
 }
 
 #[no_mangle]

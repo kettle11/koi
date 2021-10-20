@@ -70,6 +70,7 @@ pub fn update_camera_controls(
             Vec2::ZERO
         };
 
+        /*
         // Handle rotation with the mouse
         let (pitch, yaw) = if input.pointer_button(controls.rotate_button) {
             let rotation_pitch_and_yaw = (-difference[1], -difference[0]);
@@ -78,6 +79,9 @@ pub fn update_camera_controls(
             controls.last_mouse_position = None;
             (0.0, 0.0)
         };
+        */
+        let pitch = -input.scroll().1 as f32;
+        let yaw = -input.scroll().0 as f32;
 
         let mut direction = Vec3::ZERO;
 
@@ -156,14 +160,13 @@ pub fn update_camera_controls(
             CameraControlsMode::Orbit { target } => {
                 transform.position += transform.forward() * input.pinch() as f32 * 5.;
 
-                let scale = 6.0;
+                let scale = 0.005;
                 let rotation_pitch = Quat::from_yaw_pitch_roll(0., -pitch * scale, 0.);
                 let rotation_yaw = Quat::from_yaw_pitch_roll(yaw * scale, 0., 0.);
 
                 let diff = transform.position - *target;
                 let diff_length = diff.length();
                 let diff_normalized = diff / diff.length();
-
 
                 let rotation = Quat::from_forward_up(diff_normalized, Vec3::Y);
                 let rotation = rotation_yaw * rotation * rotation_pitch;

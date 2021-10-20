@@ -1,5 +1,4 @@
 use core::ops::Deref;
-use kapp::*;
 use kecs::*;
 
 #[derive(NotCloneComponent)]

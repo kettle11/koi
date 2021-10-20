@@ -29,11 +29,7 @@ impl<Style: GetStandardStyleTrait> UI<Style> {
 
     /// Returns `true` if the event was consumed by the UI.
     pub fn handle_event(&mut self, world: &mut World, event: KappEvent) -> bool {
-        let ((window_width, window_height), ui_scale) =
-            (|window: &NotSendSync<kapp::Window>| (window.size(), window.scale())).run(world);
-        let (window_width, window_height, ui_scale) =
-            (window_width as f32, window_height as f32, ui_scale as f32);
-
+        let ui_scale = (|window: &NotSendSync<kapp::Window>| window.scale()).run(world);
         let mut ui_entities = Vec::new();
         (|query: Query<&mut UIComponent<Style>>| {
             for (entity, _) in query.entities_and_components() {
@@ -46,8 +42,6 @@ impl<Style: GetStandardStyleTrait> UI<Style> {
             let mut ui = world
                 .remove_component::<UIComponent<Style>>(entity)
                 .unwrap();
-            let mut mesh_handle = world.remove_component::<Handle<Mesh>>(entity).unwrap();
-            let mut sprite = world.remove_component::<Sprite>(entity).unwrap();
 
             // Only pass some events through and edit their coordinates to be scaled to match the UI.
             let handled_event = match event {
@@ -76,8 +70,6 @@ impl<Style: GetStandardStyleTrait> UI<Style> {
                 _ => false,
             };
             world.add_component(entity, ui).unwrap();
-            world.add_component(entity, mesh_handle).unwrap();
-            world.add_component(entity, sprite).unwrap();
 
             if handled_event {
                 return true;
