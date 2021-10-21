@@ -70,18 +70,15 @@ pub fn update_camera_controls(
             Vec2::ZERO
         };
 
-        /*
         // Handle rotation with the mouse
-        let (pitch, yaw) = if input.pointer_button(controls.rotate_button) {
-            let rotation_pitch_and_yaw = (-difference[1], -difference[0]);
+        let (mut pitch, mut yaw) = if input.pointer_button(controls.rotate_button) {
+            let scale = 2.0;
+            let rotation_pitch_and_yaw = (-difference[1] * scale, -difference[0] * scale);
             rotation_pitch_and_yaw
         } else {
             controls.last_mouse_position = None;
             (0.0, 0.0)
         };
-        */
-        let pitch = -input.scroll().1 as f32;
-        let yaw = -input.scroll().0 as f32;
 
         let mut direction = Vec3::ZERO;
 
@@ -121,25 +118,38 @@ pub fn update_camera_controls(
             controls.velocity = controls.velocity.normalized() * controls.max_speed;
         }
 
+        let mut pan = Vec2::ZERO;
+
+        if input.key(Key::LeftShift) || input.key(Key::RightShift) || input.key(Key::Shift) {
+            let scale = 0.005;
+            pitch = -input.scroll().1 as f32 * scale;
+            yaw = -input.scroll().0 as f32 * scale;
+        } else {
+            let scale = 0.01;
+            pan.x -= -input.scroll().0 as f32 * scale;
+            pan.y -= -input.scroll().1 as f32 * scale;
+        };
+
         if let Some(panning_mouse_button) = controls.panning_mouse_button {
             if input.pointer_button(panning_mouse_button) {
-                let left = transform.left();
-                let up = transform.up();
-
                 let scale = controls.panning_scale * 3.0;
-                match &mut controls.mode {
-                    CameraControlsMode::Orbit { target } => {
-                        let offset = left * difference.x * scale + up * difference.y * scale;
-                        *target += offset;
-                        transform.position += offset;
-                    }
-                    _ => {
-                        let offset = left * difference.x * scale + up * difference.y * scale;
-                        transform.position += offset;
-                    }
-                };
+                pan += difference * scale;
             }
         }
+
+        let left = transform.left();
+        let up = transform.up();
+        let offset = left * pan.x + up * pan.y;
+
+        match &mut controls.mode {
+            CameraControlsMode::Orbit { target } => {
+                *target += offset;
+                transform.position += offset;
+            }
+            _ => {
+                transform.position += offset;
+            }
+        };
 
         match &mut controls.mode {
             CameraControlsMode::Fly => {
@@ -160,9 +170,8 @@ pub fn update_camera_controls(
             CameraControlsMode::Orbit { target } => {
                 transform.position += transform.forward() * input.pinch() as f32 * 5.;
 
-                let scale = 0.005;
-                let rotation_pitch = Quat::from_yaw_pitch_roll(0., pitch * scale, 0.);
-                let rotation_yaw = Quat::from_yaw_pitch_roll(yaw * scale, 0., 0.);
+                let rotation_pitch = Quat::from_yaw_pitch_roll(0., pitch, 0.);
+                let rotation_yaw = Quat::from_yaw_pitch_roll(yaw, 0., 0.);
 
                 let diff = transform.position - *target;
                 let diff_length = diff.length();
@@ -176,7 +185,6 @@ pub fn update_camera_controls(
 
                 transform.position = *target - new_direction * diff_length;
                 transform.rotation = Quat::from_forward_up(new_direction, new_up);
-
             }
         }
         controls.last_mouse_position = Some(position);
