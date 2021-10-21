@@ -70,16 +70,6 @@ pub fn update_camera_controls(
             Vec2::ZERO
         };
 
-        // Handle rotation with the mouse
-        let (mut pitch, mut yaw) = if input.pointer_button(controls.rotate_button) {
-            let scale = 2.0;
-            let rotation_pitch_and_yaw = (-difference[1] * scale, -difference[0] * scale);
-            rotation_pitch_and_yaw
-        } else {
-            controls.last_mouse_position = None;
-            (0.0, 0.0)
-        };
-
         let mut direction = Vec3::ZERO;
 
         if input.key(Key::W) {
@@ -118,14 +108,25 @@ pub fn update_camera_controls(
             controls.velocity = controls.velocity.normalized() * controls.max_speed;
         }
 
+        // Rotation
+        let (mut pitch, mut yaw) = if input.pointer_button(controls.rotate_button) {
+            let scale = 4.0;
+            let rotation_pitch_and_yaw = (-difference[1] * scale, -difference[0] * scale);
+            rotation_pitch_and_yaw
+        } else {
+            controls.last_mouse_position = None;
+            (0.0, 0.0)
+        };
+
         let mut pan = Vec2::ZERO;
 
+        // Panning
         if input.key(Key::LeftShift) || input.key(Key::RightShift) || input.key(Key::Shift) {
             let scale = 0.005;
             pitch = -input.scroll().1 as f32 * scale;
             yaw = -input.scroll().0 as f32 * scale;
         } else {
-            let scale = 0.01;
+            let scale = 0.0125;
             pan.x -= -input.scroll().0 as f32 * scale;
             pan.y -= -input.scroll().1 as f32 * scale;
         };
