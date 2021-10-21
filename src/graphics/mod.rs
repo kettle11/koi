@@ -5,7 +5,7 @@ use crate::*;
 use kgraphics::*;
 
 pub use kgraphics::{
-    BlendFactor, FilterMode, Framebuffer, Pipeline, TextureSettings, WrappingMode,
+    BlendFactor, FacesToRender, FilterMode, Framebuffer, Pipeline, TextureSettings, WrappingMode,
 };
 
 mod camera;
@@ -90,8 +90,8 @@ pub struct GraphicsViewInfo {
 
 #[derive(Clone, Copy)]
 pub struct PipelineSettings {
-    faces_to_render: FacesToRender,
-    blending: Option<(BlendFactor, BlendFactor)>,
+    pub faces_to_render: FacesToRender,
+    pub blending: Option<(BlendFactor, BlendFactor)>,
 }
 
 impl Default for PipelineSettings {
