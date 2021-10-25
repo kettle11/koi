@@ -56,7 +56,7 @@ function kwasm_stuff() {
         kwasm_call_js_with_args_raw: function (function_object, arg_data_ptr, args_length) {
             const args = new Uint32Array(self.kwasm_memory.buffer, arg_data_ptr, args_length);
             let f = kwasm_js_objects[function_object];
-            let result = f.call(null, ...args);
+            let result = f.call(...args);
             if (result == undefined) {
                 return 0;
             } else {
@@ -71,7 +71,7 @@ function kwasm_stuff() {
             // expects a typed array as the return value.
             let args0 = Array.from(args);
             let args1 = args0.map(a => kwasm_js_objects[a]);
-            let result = f.call(null, ...args1);
+            let result = f.call(...args1);
             if (result == undefined) {
                 return 0;
             } else {
@@ -146,8 +146,14 @@ function kwasm_stuff() {
         fetch(wasm_library_path).then(response =>
             response.arrayBuffer()
         ).then(bytes => {
+            let shared_memory_supported = typeof SharedArrayBuffer !== 'undefined';
+
             // 5 is arbitrary here
-            self.kwasm_memory = new WebAssembly.Memory({ initial: (bytes.byteLength / 65536) + 5, maximum: 16384, shared: true });
+            if (shared_memory_supported) {
+                self.kwasm_memory = new WebAssembly.Memory({ initial: (bytes.byteLength / 65536) + 5, maximum: 16384, shared: true });
+            } else {
+                self.kwasm_memory = new WebAssembly.Memory({ initial: (bytes.byteLength / 65536) + 5, maximum: 16384 });
+            }
             imports.env.memory = self.kwasm_memory;
             return WebAssembly.instantiate(bytes, imports)
         }).then(results => {

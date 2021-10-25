@@ -343,7 +343,7 @@ pub fn cone(radius: f32, height: f32, resolution: usize) -> MeshData {
     normals.push(Vec3::Y);
     for _ in 0..resolution {
         let (sin, cos) = angle.sin_cos();
-        let direction = Vec3::X * cos + Vec3::Z * sin * radius;
+        let direction = Vec3::X * cos * radius + Vec3::Z * sin * radius;
         let position = direction * radius;
         positions.push(position);
         normals.push(direction.normalized());
@@ -495,6 +495,7 @@ impl Mesh {
     pub const SPHERE: Handle<Mesh> = Handle::<Mesh>::new_with_just_index(4);
     pub const RING: Handle<Mesh> = Handle::<Mesh>::new_with_just_index(5);
     pub const TRIANGLE: Handle<Mesh> = Handle::<Mesh>::new_with_just_index(6);
+    pub const CONE: Handle<Mesh> = Handle::<Mesh>::new_with_just_index(7);
 }
 
 pub(crate) fn initialize_static_primitives(
@@ -514,4 +515,6 @@ pub(crate) fn initialize_static_primitives(
     meshes.add_and_leak(Mesh::new(graphics, mesh_data), &Mesh::RING);
     let mesh_data = triangle();
     meshes.add_and_leak(Mesh::new(graphics, mesh_data), &Mesh::TRIANGLE);
+    let mesh_data = cone(0.5, 1.0, 20);
+    meshes.add_and_leak(Mesh::new(graphics, mesh_data), &Mesh::CONE);
 }

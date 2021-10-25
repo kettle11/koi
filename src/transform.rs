@@ -208,7 +208,7 @@ fn update_descendent_transforms(
 pub fn set_parent(world: &mut World, parent: Option<Entity>, child: Entity) {
     // This is very inefficient to do here, it updates *ALL* transforms again.
     // It should be removed in favor of only updating the transform for the thing being reparanted.
-    update_global_transforms.run(world);
+    // update_global_transforms.run(world);
 
     HierarchyNode::set_parent(world, parent, child).unwrap();
 
