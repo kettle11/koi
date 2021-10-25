@@ -143,11 +143,6 @@ pub fn cube() -> MeshData {
         [1.0, 0.0].into(),
         [1.0, 1.0].into(),
         [0.0, 1.0].into(),
-        // 6
-        [0.0, 0.0].into(),
-        [1.0, 0.0].into(),
-        [1.0, 1.0].into(),
-        [0.0, 1.0].into(),
     ];
 
     let normals = vec![
@@ -341,6 +336,8 @@ pub fn cone(radius: f32, height: f32, resolution: usize) -> MeshData {
     // The top point of the cone
     positions.push(Vec3::Y * height);
     normals.push(Vec3::Y);
+    uvs.push(Vec2::new(0.5, 0.5));
+
     for _ in 0..resolution {
         let (sin, cos) = angle.sin_cos();
         let direction = Vec3::X * cos * radius + Vec3::Z * sin * radius;

@@ -12,6 +12,10 @@ var gl_web_object = {
                 depth: true
             });
 
+        if (gl === null) {
+            console.log("Could not initialize WebGL2 canvas!");
+        }
+
         // Setup some stuff that won't change
         gl.enable(gl.DEPTH_TEST);
 
