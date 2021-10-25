@@ -11,8 +11,11 @@ fn main() {
         world.spawn((Transform::new(), Mesh::TRIANGLE, Material::UNLIT));
 
         // Run the World with this mutable closure.
-        |event: Event, _: &mut World| match event {
-            _ => {}
+        |event: Event, _: &mut World| {
+            match event {
+                _ => {}
+            }
+            false
         }
     });
 }

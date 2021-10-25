@@ -6,11 +6,11 @@ struct Counter(u32);
 fn main() {
     App::new().setup_and_run(|world: &mut World| {
         // A camera is needed to display the UI
-        world.spawn((Transform::new(), Camera::new_for_user_interface()));
         world.spawn((Transform::new(), Camera::new(), CameraControls::new()));
+        world.spawn((Transform::new(), Camera::new_for_user_interface()));
 
         world.spawn((
-            Transform::new_with_position(Vec3::Z * -2.0),
+            Transform::new().with_position(Vec3::Z * -2.0),
             Mesh::CUBE,
             Material::UNLIT,
             Color::WHITE,
@@ -39,13 +39,21 @@ fn main() {
 
         let mut ui = UI::new(world, root);
 
-        move |event: Event, world: &mut World| match event {
-            Event::FixedUpdate => {}
-            Event::Draw => {
-                // Update and draw the UI.
-                ui.draw(world, &mut style);
+        move |event: Event, world: &mut World| {
+            match event {
+                Event::FixedUpdate => {}
+                Event::KappEvent(event) => {
+                    if ui.handle_event(world, event) {
+                        return true;
+                    }
+                }
+                Event::Draw => {
+                    // Update and draw the UI.
+                    ui.draw(world, &mut style);
+                }
+                _ => {}
             }
-            _ => {}
+            false
         }
     });
 }

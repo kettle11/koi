@@ -13,7 +13,7 @@ fn main() {
 
         // Setup things here.
         world.spawn((
-            Transform::new_with_position(Vec3::Z * 3.),
+            Transform::new().with_position(Vec3::Z * 3.),
             Camera::new(),
             CameraControls::new(),
             Listener::new(),
@@ -30,8 +30,11 @@ fn main() {
         ));
 
         // Run the World with this mutable closure.
-        |event: Event, _: &mut World| match event {
-            _ => {}
+        |event: Event, _: &mut World| {
+            match event {
+                _ => {}
+            }
+            false
         }
     });
 }

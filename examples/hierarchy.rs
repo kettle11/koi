@@ -7,12 +7,12 @@ fn main() {
     App::new().setup_and_run(|world: &mut World| {
         world.spawn((
             Camera::new(),
-            Transform::new_with_position(Vec3::new(0.0, 0.0, 10.0)),
+            Transform::new().with_position(Vec3::new(0.0, 0.0, 10.0)),
             CameraControls::new(),
         ));
 
         world.spawn((
-            Transform::new_with_position(Vec3::new(0., 10.0, 8.0)),
+            Transform::new().with_position(Vec3::new(0., 10.0, 8.0)),
             Light::new(LightMode::Directional, Color::WHITE, 300.),
         ));
         let mut parent_cube =
@@ -22,7 +22,7 @@ fn main() {
             let child_cube = world.spawn((
                 Mesh::CUBE,
                 Material::DEFAULT,
-                Transform::new_with_position_scale(Vec3::Y * 6.0, Vec3::fill(1.0)),
+                Transform::new().with_position(Vec3::Y * 6.0),
             ));
 
             set_parent(world, Some(parent_cube), child_cube);
@@ -46,6 +46,7 @@ fn main() {
                 }
                 _ => {}
             }
+            false
         }
     });
 }

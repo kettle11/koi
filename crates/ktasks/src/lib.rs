@@ -34,6 +34,7 @@ thread_local! {
 /// Create workers for this thread and other threads.
 /// Count must be 1 or greater.
 /// This should only be called once.
+/// Only creates workers for targets that support threads.
 pub fn create_workers(count: u32) {
     use std::sync::Once;
     static SETUP: Once = Once::new();
