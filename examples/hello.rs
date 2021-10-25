@@ -6,8 +6,8 @@ struct Controlled;
 fn main() {
     App::new().setup_and_run(|world: &mut World| {
         // Setup things here.
-        // Spawn a camera and make it look towards the origin.
 
+        // Spawn a camera and make it look towards the origin.
         world.spawn((
             Transform::new()
                 .with_position(Vec3::new(0.0, 4.0, 3.0))
@@ -48,6 +48,8 @@ fn main() {
                 }
                 _ => {}
             }
+
+            // Do not consume the even and allow other systems to respond to it.
             false
         }
     });
