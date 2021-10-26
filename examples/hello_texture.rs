@@ -18,7 +18,7 @@ fn main() {
             },
         );
         // A [SpriteMap] is a helper to make getting sprites from a texture easier.
-        let sprite_map = SpriteMap::new(texture.clone(), 18, 2, 398, 178);
+        let sprite_map = SpriteMap::new(texture, 18, 2, 398, 178);
 
         // Enter the tile of the sprite.
         let snow_man_sprite = sprite_map.get_sprite(5, 7);

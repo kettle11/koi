@@ -39,6 +39,12 @@ pub enum ProjectionMode {
     Custom(Mat4),
 }
 
+impl Default for Camera {
+    fn default() -> Self {
+        Camera::new()
+    }
+}
+
 impl Camera {
     pub fn new() -> Self {
         let mut camera = Self {

@@ -236,7 +236,7 @@ pub(super) async fn load_mesh_primitive_data(
                             }
                             kgltf::AccessorType::Vec3 => {
                                 let colors_vec3 =
-                                    get_buffer::<Vec3>(&gltf, &data, &buffers, *accessor_index)
+                                    get_buffer::<Vec3>(gltf, &data, &buffers, *accessor_index)
                                         .await;
                                 colors = Some(colors_vec3.iter().map(|v| v.extend(1.0)).collect());
                             }
@@ -256,7 +256,7 @@ pub(super) async fn load_mesh_primitive_data(
             let mesh_data = MeshData {
                 positions: positions.unwrap(),
                 normals: normals.unwrap_or_else(Vec::new),
-                texture_coordinates: texture_coordinates.unwrap_or_else(|| Vec::new()),
+                texture_coordinates: texture_coordinates.unwrap_or_else(Vec::new),
                 colors: colors.unwrap_or_else(Vec::new),
                 indices,
             };
@@ -507,6 +507,6 @@ async fn get_buffer<T: Clone>(
 
 unsafe fn bytes_to_buffer<T: Clone>(bytes: &[u8]) -> Vec<T> {
     let (_prefix, shorts, _suffix) = bytes.align_to::<T>();
-    let result = shorts.into();
-    result
+    
+    shorts.into()
 }

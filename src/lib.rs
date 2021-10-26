@@ -78,6 +78,7 @@ pub struct App {
     title: String,
 }
 
+#[derive(Default)]
 pub struct Plugin {
     pub setup_systems: Vec<System>,
     pub pre_fixed_update_systems: Vec<System>,
@@ -115,21 +116,6 @@ impl Plugin {
     }
 }
 
-impl Default for Plugin {
-    fn default() -> Self {
-        Self {
-            setup_systems: Vec::new(),
-            pre_fixed_update_systems: Vec::new(),
-            fixed_update_systems: Vec::new(),
-            pre_draw_systems: Vec::new(),
-            draw_systems: Vec::new(),
-            end_of_frame_systems: Vec::new(),
-            on_kapp_events: Vec::new(),
-            additional_control_flow: Vec::new(),
-        }
-    }
-}
-
 pub enum Event {
     FixedUpdate,
     Draw,
@@ -150,6 +136,12 @@ impl Deref for KappEvents {
 impl DerefMut for KappEvents {
     fn deref_mut(&mut self) -> &mut Vec<kapp::Event> {
         &mut self.0
+    }
+}
+
+impl Default for App {
+    fn default() -> Self {
+        Self::new()
     }
 }
 

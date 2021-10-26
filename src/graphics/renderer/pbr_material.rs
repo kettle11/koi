@@ -68,7 +68,7 @@ pub fn new_pbr_material(shader: Handle<Shader>, pbr_properties: PBRProperties) -
         let rgb_color = pbr_properties
             .emissive
             .to_rgb_color(color_spaces::LINEAR_SRGB);
-        rgb_color.xyz().into()
+        rgb_color.xyz()
     });
     let p_emissive_texture = pbr_properties.emissive_texture.unwrap_or(Texture::WHITE);
     material.set_texture("p_emissive_texture", p_emissive_texture);

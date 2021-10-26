@@ -13,3 +13,9 @@ impl Listener {
         }
     }
 }
+
+impl Default for Listener {
+    fn default() -> Self {
+        Listener::new()
+    }
+}

@@ -294,13 +294,9 @@ impl GraphicsInner {
         // If this causes performance issues this check could be disabled in the future.
         let len = mesh_data.positions.len();
         for i in mesh_data.indices.iter() {
-            if i[0] as usize >= len || i[1] as usize >= len || i[2] as usize >= len {
-                panic!(
-                    "Mesh indices refer to out of bound vertices: {:?}. Vertex count: {:?}",
+            assert!(!(i[0] as usize >= len || i[1] as usize >= len || i[2] as usize >= len), "Mesh indices refer to out of bound vertices: {:?}. Vertex count: {:?}",
                     i,
-                    mesh_data.positions.len()
-                );
-            }
+                    mesh_data.positions.len());
         }
 
         let triangle_count = mesh_data.indices.len() as u32;
@@ -353,7 +349,7 @@ impl GraphicsInner {
 
 pub fn resize_window(graphics: &mut Graphics, window: &NotSendSync<kapp::Window>) {
     // There are bad assumptions here about only a single window existing.
-    let main_window: &NotSendSync<kapp::Window> = &window;
+    let main_window: &NotSendSync<kapp::Window> = window;
     let main_window: &kapp::Window = main_window;
 
     let (window_width, window_height) = main_window.size();

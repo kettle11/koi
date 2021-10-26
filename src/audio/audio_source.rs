@@ -24,6 +24,12 @@ impl Clone for AudioSource {
     }
 }
 
+impl Default for AudioSource {
+    fn default() -> Self {
+        AudioSource::new()
+    }
+}
+
 impl AudioSource {
     pub fn new() -> Self {
         Self {

@@ -12,9 +12,7 @@ fn main() {
 
         // Run the World with this mutable closure.
         |event: Event, _: &mut World| {
-            match event {
-                _ => {}
-            }
+            {}
             false
         }
     });

@@ -13,7 +13,7 @@ fn main() {
         // Spawn a light
         world.spawn((
             Light::new(LightMode::Directional, Color::WHITE, 1.0),
-            Transform::new_with_position([0., 8.0, 8.0].into()),
+            Transform::new().with_position([0., 8.0, 8.0].into()),
             Mesh::SPHERE,
             Material::UNLIT,
         ));
@@ -23,7 +23,8 @@ fn main() {
             for j in 0..size {
                 for k in 0..size {
                     world.spawn((
-                        Transform::new_with_position(Vec3::new(i as f32, j as f32, k as f32) * 3.0),
+                        Transform::new()
+                            .with_position(Vec3::new(i as f32, j as f32, k as f32) * 3.0),
                         Mesh::CUBE,
                         Material::PHYSICALLY_BASED,
                     ));
@@ -32,16 +33,6 @@ fn main() {
         }
 
         // Run the World with this mutable closure.
-        move |event: Event, _: &mut World| {
-            match event {
-                Event::FixedUpdate => {
-                    //println!("Hello!: {:?}", thingy)
-                }
-                Event::Draw => {
-                    // Things that occur before rendering can go here.
-                }
-                _ => {}
-            }
-        }
+        |event: Event, _: &mut World| false
     });
 }

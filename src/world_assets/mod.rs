@@ -185,7 +185,7 @@ async fn load_world(path: &str) -> Option<PrefabLoadMessageData> {
             let glb = kgltf::GLB::from_bytes(&bytes).unwrap();
             let data = glb.binary_data.map(|d| d.into_owned());
             let mesh_primitive_data =
-                load_mesh_primitive_data(path, &glb.gltf, data.as_ref().map(|d| d.as_slice()))
+                load_mesh_primitive_data(path, &glb.gltf, data.as_deref())
                     .await;
 
             PrefabLoadMessageData::GlTf {
@@ -202,7 +202,7 @@ async fn load_world(path: &str) -> Option<PrefabLoadMessageData> {
             let s = std::str::from_utf8(&bytes).ok()?;
             //   klog::log!("ABOUT TO DECODE GLTF0: {}", s);
 
-            let gltf = kgltf::GlTf::from_json(&s).unwrap();
+            let gltf = kgltf::GlTf::from_json(s).unwrap();
             //  klog::log!("ABOUT TO DECODE GLTF1");
 
             let mesh_primitive_data = load_mesh_primitive_data(path, &gltf, None).await;

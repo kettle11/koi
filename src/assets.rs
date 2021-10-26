@@ -171,7 +171,7 @@ impl<T> Handle<T> {
     fn clone_weak(&self) -> WeakHandle<T> {
         WeakHandle {
             indirection_index: self.indirection_index,
-            drop_handle: self.drop_handle.as_ref().map(|a| Arc::downgrade(a)),
+            drop_handle: self.drop_handle.as_ref().map(Arc::downgrade),
             phantom: std::marker::PhantomData,
         }
     }

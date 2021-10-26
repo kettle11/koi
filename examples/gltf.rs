@@ -25,7 +25,7 @@ fn main() {
 
         // Begin loading a GlTf
         let worlds = world.get_single_component_mut::<Assets<World>>().unwrap();
-        let gltf_world = worlds.load(&path);
+        let gltf_world = worlds.load(path);
 
         // Spawn a Handle<World> that will be replaced with the GlTf when it's loaded.
         world.spawn(gltf_world);

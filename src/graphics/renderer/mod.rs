@@ -300,7 +300,7 @@ impl<'a, 'b: 'a, 'c: 'a> Renderer<'a, 'b, 'c> {
             }
 
             // Rebind the material properties.
-            material.bind_material(self.render_pass, &pipeline, self.texture_assets);
+            material.bind_material(self.render_pass, pipeline, self.texture_assets);
         }
     }
 

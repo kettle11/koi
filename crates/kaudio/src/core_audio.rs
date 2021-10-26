@@ -169,9 +169,7 @@ pub fn begin_audio_thread(
         let result =
             AudioComponentInstanceNew(component, &mut audio_unit as *mut AudioComponentInstance);
 
-        if result != 0 {
-            panic!("ERROR CREATING AUDIO COMPONENT");
-        }
+        assert!(!(result != 0), "ERROR CREATING AUDIO COMPONENT");
 
         let mut stream_description = AudioStreamBasicDescription {
             ..Default::default()
@@ -186,9 +184,7 @@ pub fn begin_audio_thread(
             &mut size,
         );
 
-        if result != 0 {
-            panic!("ERROR CREATING AUDIO COMPONENT");
-        }
+        assert!(!(result != 0), "ERROR CREATING AUDIO COMPONENT");
 
         //println!("Stream Description: {:?}", stream_description);
 
@@ -218,9 +214,7 @@ pub fn begin_audio_thread(
             size,
         );
 
-        if result != 0 {
-            panic!("ERROR CREATING AUDIO COMPONENT");
-        }
+        assert!(!(result != 0), "ERROR CREATING AUDIO COMPONENT");
 
         /*
         let frame_size = 512; // This should be adjustable
@@ -233,9 +227,8 @@ pub fn begin_audio_thread(
             std::mem::size_of::<u32>() as u32,
         );
 
-        if result != 0 {
-            panic!("ERROR CREATING AUDIO COMPONENT");
-        }
+              assert!(!(result != 0), "ERROR CREATING AUDIO COMPONENT");
+
         */
 
         // audio_source.initialize(frame_size as usize);
@@ -256,21 +249,15 @@ pub fn begin_audio_thread(
             std::mem::size_of::<AURenderCallbackStruct>() as u32,
         );
 
-        if result != 0 {
-            panic!("ERROR CREATING AUDIO COMPONENT");
-        }
+        assert!(!(result != 0), "ERROR CREATING AUDIO COMPONENT");
 
         let result = AudioUnitInitialize(audio_unit);
 
-        if result != 0 {
-            panic!("ERROR CREATING AUDIO COMPONENT");
-        }
+        assert!(!(result != 0), "ERROR CREATING AUDIO COMPONENT");
 
         let result = AudioOutputUnitStart(audio_unit);
 
-        if result != 0 {
-            panic!("ERROR CREATING AUDIO COMPONENT");
-        }
+        assert!(!(result != 0), "ERROR CREATING AUDIO COMPONENT");
     }
 }
 

@@ -111,8 +111,8 @@ pub fn update_camera_controls(
         // Rotation
         let (mut pitch, mut yaw) = if input.pointer_button(controls.rotate_button) {
             let scale = 4.0;
-            let rotation_pitch_and_yaw = (-difference[1] * scale, -difference[0] * scale);
-            rotation_pitch_and_yaw
+            
+            (-difference[1] * scale, -difference[0] * scale)
         } else {
             controls.last_mouse_position = None;
             (0.0, 0.0)

@@ -103,6 +103,6 @@ pub fn apply_commands(world: &mut World) {
 
     std::mem::swap(
         &mut commands,
-        &mut world.get_single_component_mut::<Commands>().unwrap(),
+        world.get_single_component_mut::<Commands>().unwrap(),
     );
 }
