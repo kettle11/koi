@@ -25,13 +25,13 @@ fn main() {
 
         for i in 0..5 {
             world.spawn((
-                Transform::new_with_position(Vec3::X * i as f32),
+                Transform::new().with_position(Vec3::X * i as f32),
                 Mesh::VERTICAL_QUAD,
                 Material::UNLIT,
                 snow_man_sprite.clone(),
             ));
         }
 
-        |_, _| {}
+        |_, _| false
     });
 }

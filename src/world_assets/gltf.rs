@@ -207,7 +207,10 @@ pub(super) async fn load_mesh_primitive_data(
 
                 match accessor_component_type {
                     kgltf::AccessorComponentType::Float => {}
-                    _ => unimplemented!("GLTF loading does not yet handle other accessor types"),
+                    _ => unimplemented!(
+                        "GLTF loading does not yet handle the non-Float accessor type: {:?}",
+                        accessor_component_type
+                    ),
                 };
 
                 match attribute.as_str() {

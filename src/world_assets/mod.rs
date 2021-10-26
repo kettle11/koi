@@ -153,10 +153,7 @@ impl AssetLoader<World> for WorldLoader {
         match extension {
             #[cfg(feature = "gltf")]
             "glb" | "gltf" => {
-                log!("ABOUT TO SPAWN GLTF TASKS");
                 ktasks::spawn(async move {
-                    //  log!("IN KTASK GLTF TASK");
-
                     let world_load_message_data = load_world(&path).await.unwrap();
                     sender.send(PrefabLoadMessage {
                         handle,

@@ -512,6 +512,6 @@ pub(crate) fn initialize_static_primitives(
     meshes.add_and_leak(Mesh::new(graphics, mesh_data), &Mesh::RING);
     let mesh_data = triangle();
     meshes.add_and_leak(Mesh::new(graphics, mesh_data), &Mesh::TRIANGLE);
-    let mesh_data = cone(0.5, 1.0, 20);
+    let mesh_data = cone(0.7, 1.0, 20);
     meshes.add_and_leak(Mesh::new(graphics, mesh_data), &Mesh::CONE);
 }

@@ -145,18 +145,21 @@ impl Mul<Transform> for Transform {
 
 pub fn update_global_transforms(
     commands: &mut Commands,
-    mut query: Query<(Option<&HierarchyNode>, &Transform)>,
+    mut query: Query<(Option<&HierarchyNode>, &Transform, Option<&GlobalTransform>)>,
 ) {
     // It'd be nice to find a way to avoid this allocation
     let mut parents = Vec::new();
 
     // This is a bit inefficient in that all hierarchies are updated, regardless of if they changed.
-    for (entity, (node, local_transform)) in query.entities_and_components() {
+    for (entity, (node, local_transform, global_transform)) in query.entities_and_components() {
+        if global_transform.is_none() {
+            let global_transform = GlobalTransform(*local_transform);
+            commands.add_component(*entity, global_transform);
+        }
         if let Some(node) = node {
             if let Some(last_child) = node.last_child() {
                 if node.parent().is_none() {
                     let global_transform = GlobalTransform(*local_transform);
-                    commands.add_component(*entity, global_transform);
                     parents.push((global_transform, *last_child));
                     continue;
                 }
@@ -174,11 +177,11 @@ pub fn update_global_transforms(
 
 fn update_descendent_transforms(
     commands: &mut Commands,
-    query: &mut Query<(Option<&HierarchyNode>, &Transform)>,
+    query: &mut Query<(Option<&HierarchyNode>, &Transform, Option<&GlobalTransform>)>,
     child_entity: Entity,
     parent_matrix: &Mat4,
 ) {
-    if let Some((Some(hierarchy_node), local_transform)) =
+    if let Some((Some(hierarchy_node), local_transform, _global_transform)) =
         query.get_entity_components_mut(child_entity)
     {
         let last_child = *hierarchy_node.last_child();

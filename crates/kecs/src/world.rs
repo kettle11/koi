@@ -206,6 +206,11 @@ impl World {
         world
     }
 
+    /// Returns number of [Entity]s in the [World].
+    pub fn len(&self) -> usize {
+        self.entities.len()
+    }
+
     pub(crate) fn spawn_reserved_entities(&mut self) {
         let empty_archetype = &mut self.archetypes[0];
         while let Some(entity) = self
