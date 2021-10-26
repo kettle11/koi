@@ -1,9 +1,3 @@
-#[cfg(feature = "metal")]
-#[allow(non_upper_case_globals)]
-mod metal;
-#[cfg(feature = "metal")]
-pub use metal::*;
-
 #[cfg(all(not(target_arch = "wasm32"), feature = "gl"))]
 mod gl;
 #[cfg(all(not(target_arch = "wasm32"), feature = "gl"))]
