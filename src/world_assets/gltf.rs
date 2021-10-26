@@ -121,22 +121,20 @@ pub(super) fn load_gltf_as_world(
                 }
             };
 
-            let shader = if unlit {
-                /*
-                if transparent {
-                    // Todo: Should be UNLIT_TRANSPARENT
-                    Shader::UNLIT
-                } else {
-                    Shader::UNLIT
-                }*/
-                Shader::UNLIT
-            } else if transparent {
-                Shader::PHYSICALLY_BASED_TRANSPARENT
+            let material = if unlit {
+                let mut material = new_pbr_material(Shader::UNLIT, pbr_properties);
+                material.set_vec2("p_texture_coordinate_offset", Vec2::ZERO);
+                material.set_vec2("p_texture_coordinate_scale", Vec2::ONE);
+                material
             } else {
-                Shader::PHYSICALLY_BASED
+                let shader = if transparent {
+                    Shader::PHYSICALLY_BASED_TRANSPARENT
+                } else {
+                    Shader::PHYSICALLY_BASED
+                };
+                new_pbr_material(shader, pbr_properties)
             };
 
-            let material = new_pbr_material(shader, pbr_properties);
             materials.add(material)
         })
         .collect();
