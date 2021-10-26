@@ -6,8 +6,18 @@ use kecs::Query;
 
 pub fn transform_plugin() -> Plugin {
     Plugin {
-        pre_fixed_update_systems: vec![update_global_transforms.system(), apply_commands.system()],
-        draw_systems: vec![update_global_transforms.system()],
+        pre_fixed_update_systems: vec![
+            update_root_global_transforms.system(),
+            apply_commands.system(),
+            update_global_transforms.system(),
+            apply_commands.system(),
+        ],
+        draw_systems: vec![
+            update_root_global_transforms.system(),
+            apply_commands.system(),
+            update_global_transforms.system(),
+            apply_commands.system(),
+        ],
         ..Default::default()
     }
 }
@@ -143,29 +153,47 @@ impl Mul<Transform> for Transform {
     }
 }
 
+/// Add [GlobalTransform]s to all root nodes without them.
+fn update_root_global_transforms(
+    commands: &mut Commands,
+    mut query: Query<(
+        &Transform,
+        Option<&mut GlobalTransform>,
+        Option<&mut HierarchyNode>,
+    )>,
+) {
+    for (entity, (local_transform, global_transform, hierarchy_node)) in
+        query.entities_and_components_mut()
+    {
+        if hierarchy_node.map_or(true, |h| h.parent().is_none()) {
+            let new_global_transform = GlobalTransform(*local_transform);
+            if let Some(global_transform) = global_transform {
+                *global_transform = new_global_transform;
+            } else {
+                commands.add_component(*entity, new_global_transform)
+            }
+        }
+    }
+}
+
 pub fn update_global_transforms(
     commands: &mut Commands,
-    mut query: Query<(Option<&HierarchyNode>, &Transform, Option<&GlobalTransform>)>,
+    mut query: Query<(&HierarchyNode, Option<&Transform>)>,
 ) {
     // It'd be nice to find a way to avoid this allocation
     let mut parents = Vec::new();
 
     // This is a bit inefficient in that all hierarchies are updated, regardless of if they changed.
-    for (entity, (node, local_transform, global_transform)) in query.entities_and_components() {
-        if global_transform.is_none() {
-            let global_transform = GlobalTransform(*local_transform);
-            commands.add_component(*entity, global_transform);
-        }
-        if let Some(node) = node {
-            if let Some(last_child) = node.last_child() {
-                if node.parent().is_none() {
+    for (node, local_transform) in &query {
+        if let Some(last_child) = node.last_child() {
+            if node.parent().is_none() {
+                if let Some(local_transform) = local_transform {
                     let global_transform = GlobalTransform(*local_transform);
                     parents.push((global_transform, *last_child));
-                    continue;
+                } else {
+                    parents.push((GlobalTransform(Transform::new()), *last_child));
                 }
             }
-        } else {
-            commands.add_component(*entity, GlobalTransform(*local_transform));
         }
     }
 
@@ -177,18 +205,21 @@ pub fn update_global_transforms(
 
 fn update_descendent_transforms(
     commands: &mut Commands,
-    query: &mut Query<(Option<&HierarchyNode>, &Transform, Option<&GlobalTransform>)>,
+    query: &mut Query<(&HierarchyNode, Option<&Transform>)>,
     child_entity: Entity,
     parent_matrix: &Mat4,
 ) {
-    if let Some((Some(hierarchy_node), local_transform, _global_transform)) =
-        query.get_entity_components_mut(child_entity)
-    {
+    if let Some((hierarchy_node, local_transform)) = query.get_entity_components_mut(child_entity) {
         let last_child = *hierarchy_node.last_child();
         let previous_sibling = *hierarchy_node.previous_sibling();
 
-        let my_model_matrix = local_transform.model();
+        let my_model_matrix = if let Some(local_transform) = local_transform {
+            local_transform.model()
+        } else {
+            *parent_matrix
+        };
         let my_global_matrix = *parent_matrix * my_model_matrix;
+
         commands.add_component(
             child_entity,
             GlobalTransform(Transform::from_mat4(my_global_matrix)),
