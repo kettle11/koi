@@ -21,34 +21,15 @@ fn main() {
             Light::new(LightMode::Directional, Color::WHITE, 5.0),
         ));
 
-        // Spawn a cube that we can control
-        // world.spawn((Transform::new(), Mesh::CUBE, Material::DEFAULT, Controlled));
-
-        let path = "assets/cat_statue/scene.gltf";
+        let path = "assets/shiba/scene.gltf";
 
         // Begin loading a GlTf
         let worlds = world.get_single_component_mut::<Assets<World>>().unwrap();
         let gltf_world = worlds.load(&path);
 
+        // Spawn a Handle<World> that will be replaced with the GlTf when it's loaded.
         world.spawn(gltf_world);
 
-        move |event: Event, world: &mut World| {
-            match event {
-                Event::FixedUpdate => {
-                    // Perform physics and game related updates here.
-                }
-                Event::Draw => {
-                    (|renderables: Query<(&Handle<Mesh>, &Transform)>| {
-                        // println!("RENDERABLES: {:?}", renderables.iter().count())
-                    })
-                    .run(world);
-                    // Things that occur before rendering can go here.
-                }
-                _ => {}
-            }
-
-            // Do not consume the even and allow other systems to respond to it.
-            false
-        }
+        |_, _| false
     });
 }
