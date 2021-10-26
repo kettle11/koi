@@ -223,7 +223,7 @@ macro_rules! query_impls {
 
         #[allow( unused)]
         impl<'a, FILTERS: FilterTrait, $( $tuple: QueryParameterTrait,)*> SystemParameterFetchTrait<'a> for Query<'_, ($( $tuple,)*), FILTERS> {
-            type FetchResult = Option<Query<'a, ($( $tuple,)*)>>;
+            type FetchResult = Option<Query<'a, ($( $tuple,)*), FILTERS>,>;
 
             fn fetch(world: &'a World, meta_data: &SystemParameterMetaData) -> Result<Self::FetchResult, KecsError> {
                 let mut fetch = Vec::new();

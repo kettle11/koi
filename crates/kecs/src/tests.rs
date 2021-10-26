@@ -307,6 +307,20 @@ fn extra_filters() {
 }
 
 #[test]
+fn extra_filters1() {
+    // type Q = Query<'static, (&'static A, &'static B), Without<C>>;
+    let mut world = World::new();
+    world.spawn(A);
+    world.spawn((A, B));
+    world.spawn((A, B, C));
+
+    (|query: Query<(&A, &B), Without<C>>| {
+        assert_eq!(query.into_iter().count(), 1);
+    })
+    .run(&world);
+}
+
+#[test]
 fn query0() {
     let mut world = World::new();
     // world.spawn(A);
