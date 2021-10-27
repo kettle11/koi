@@ -58,10 +58,6 @@ mod ui;
 pub use ui::*;
 
 pub use kapp::{Event as KappEvent, Key, PointerButton};
-/*
-mod experimental;
-pub use experimental::*;
-*/
 
 #[cfg(target_arch = "wasm32")]
 use kwasm::libraries::Instant;

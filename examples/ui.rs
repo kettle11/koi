@@ -51,7 +51,6 @@ fn main() {
                     // Update and draw the UI.
                     ui.draw(world, &mut style);
                 }
-                _ => {}
             }
             false
         }

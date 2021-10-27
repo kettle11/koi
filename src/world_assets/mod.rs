@@ -174,10 +174,7 @@ async fn load_world(path: &str) -> Option<PrefabLoadMessageData> {
         .extension()
         .and_then(std::ffi::OsStr::to_str)?;
 
-    //    klog::log!("FETCHING GLTF BYTES");
-
     let bytes = crate::fetch_bytes(path).await.ok()?;
-    //   klog::log!("FETCHED GLTF BYTES");
 
     Some(match extension {
         #[cfg(feature = "gltf")]
