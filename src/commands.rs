@@ -13,6 +13,12 @@ enum Command {
 #[derive(NotCloneComponent)]
 pub struct Commands(Vec<Command>);
 
+impl Default for Commands {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl Commands {
     pub fn new() -> Self {
         Self(Vec::new())

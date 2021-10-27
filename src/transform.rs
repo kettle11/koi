@@ -42,6 +42,12 @@ pub struct Transform {
     pub scale: Vec3,
 }
 
+impl Default for Transform {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl Transform {
     pub fn new() -> Self {
         Self {

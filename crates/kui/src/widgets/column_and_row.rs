@@ -34,6 +34,7 @@ pub struct Column<Style, Data, ChildData, Child> {
     create_children: fn(&mut Data, ChildrenCreator<ChildData, Child>),
     children: Vec<Child>,
     sizes: Vec<Vec2>,
+    #[allow(clippy::type_complexity)]
     phantom: std::marker::PhantomData<fn() -> (Style, Data, ChildData)>,
 }
 
@@ -145,6 +146,7 @@ pub struct Row<Style, Data, ChildData, Child> {
     create_children: fn(&mut Data, ChildrenCreator<ChildData, Child>),
     children: Vec<Child>,
     sizes: Vec<Vec2>,
+    #[allow(clippy::type_complexity)]
     phantom: std::marker::PhantomData<fn() -> (Style, Data, ChildData)>,
 }
 

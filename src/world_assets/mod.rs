@@ -89,7 +89,7 @@ fn delayed_spawn_system(world: &mut World) {
                 })
                 .collect()
         })
-        .run(&mut new_world);
+        .run(&new_world);
 
         let entity_migrator = world.add_world(&mut new_world);
         for top_level_entity in top_level_nodes {
@@ -185,8 +185,7 @@ async fn load_world(path: &str) -> Option<PrefabLoadMessageData> {
             let glb = kgltf::GLB::from_bytes(&bytes).unwrap();
             let data = glb.binary_data.map(|d| d.into_owned());
             let mesh_primitive_data =
-                load_mesh_primitive_data(path, &glb.gltf, data.as_deref())
-                    .await;
+                load_mesh_primitive_data(path, &glb.gltf, data.as_deref()).await;
 
             PrefabLoadMessageData::GlTf {
                 path: path.to_string(),

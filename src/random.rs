@@ -9,6 +9,12 @@ pub struct Random {
     random_number_generator: oorandom::Rand32,
 }
 
+impl Default for Random {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl Random {
     /// Create a new `Random` with a seed based on the current system time.
     pub fn new() -> Self {

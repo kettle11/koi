@@ -65,7 +65,7 @@ impl CommandBufferTrait for CommandBuffer {
         clear_color: Option<(f32, f32, f32, f32)>,
     ) -> RenderPass<'a> {
         self.actions
-            .push(CommandBufferAction::BindFramebuffer(framebuffer.clone()));
+            .push(CommandBufferAction::BindFramebuffer(*framebuffer));
         if let Some((r, g, b, a)) = clear_color {
             self.actions.push(CommandBufferAction::Clear((
                 r as f32, g as f32, b as f32, a as f32,

@@ -25,14 +25,8 @@ pub struct UniformLocation(GLInt);
 
 pub struct VertexArray(GLInt);
 
-#[derive(Clone, PartialEq, Debug, Copy)]
+#[derive(Clone, PartialEq, Debug, Copy, Default)]
 pub struct Framebuffer(GLInt);
-
-impl Default for Framebuffer {
-    fn default() -> Self {
-        Self(0)
-    }
-}
 
 pub struct GL {
     pub(crate) gl: gl33::GlFns,

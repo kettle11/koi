@@ -19,25 +19,13 @@ impl Mesh {
     }
 }
 
-#[derive(Clone, Debug, Component)]
+#[derive(Clone, Debug, Component, Default)]
 pub struct MeshData {
     pub positions: Vec<Vec3>,
     pub indices: Vec<[u32; 3]>,
     pub normals: Vec<Vec3>,
     pub texture_coordinates: Vec<Vec2>,
     pub colors: Vec<Vec4>,
-}
-
-impl Default for MeshData {
-    fn default() -> Self {
-        Self {
-            positions: Vec::new(),
-            indices: Vec::new(),
-            normals: Vec::new(),
-            texture_coordinates: Vec::new(),
-            colors: Vec::new(),
-        }
-    }
 }
 
 #[derive(Clone)]

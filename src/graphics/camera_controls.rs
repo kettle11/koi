@@ -1,4 +1,6 @@
 //! Camera controls to be used by the editor or to quickly get a 3D camera up and running.
+use std::default;
+
 use crate::*;
 use kapp::*;
 
@@ -27,6 +29,12 @@ pub struct CameraControls {
     pub rotate_button: PointerButton,
     pub panning_mouse_button: Option<PointerButton>,
     pub panning_scale: f32,
+}
+
+impl Default for CameraControls {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl CameraControls {
@@ -111,7 +119,7 @@ pub fn update_camera_controls(
         // Rotation
         let (mut pitch, mut yaw) = if input.pointer_button(controls.rotate_button) {
             let scale = 4.0;
-            
+
             (-difference[1] * scale, -difference[0] * scale)
         } else {
             controls.last_mouse_position = None;

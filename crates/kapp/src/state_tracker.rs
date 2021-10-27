@@ -22,6 +22,12 @@ pub struct StateTracker {
     scroll: (f64, f64),
 }
 
+impl Default for StateTracker {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl StateTracker {
     pub fn new() -> Self {
         Self {

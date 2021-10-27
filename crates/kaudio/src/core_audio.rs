@@ -161,9 +161,7 @@ pub fn begin_audio_thread(
     unsafe {
         // Can this be used to enumerate available audio devices? Or is that a separate thing?
         let component = AudioComponentFindNext(std::ptr::null_mut(), &audio_component_description);
-        if component.is_null() {
-            panic!("Could not find audio device");
-        }
+        assert!(!component.is_null(), "Could not find audio device");
 
         let mut audio_unit: AudioComponentInstance = std::ptr::null_mut();
         let result =

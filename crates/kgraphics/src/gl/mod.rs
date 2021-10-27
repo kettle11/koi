@@ -490,7 +490,7 @@ impl GraphicsContextTrait for GraphicsContext {
                 0,                    /* border: must be 0 */
                 GLenum(pixel_format), // This doesn't necessarily need to match the internal_format
                 GLenum(type_),
-                data.as_deref(),
+                data,
             );
 
             let minification_filter = minification_filter_to_gl_enum(
@@ -563,7 +563,7 @@ impl GraphicsContextTrait for GraphicsContext {
     fn new_command_buffer(&mut self) -> CommandBuffer {
         self.old_command_buffers
             .pop()
-            .unwrap_or_else(|| CommandBuffer::new())
+            .unwrap_or_else(CommandBuffer::new)
     }
 
     fn commit_command_buffer(&mut self, mut command_buffer: CommandBuffer) {

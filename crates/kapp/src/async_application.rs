@@ -129,15 +129,19 @@ pub struct Events {
     queue: Rc<RefCell<Vec<crate::Event>>>,
 }
 
+impl Default for Events {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl Events {
     pub fn new() -> Self {
         Events {
             queue: Rc::new(RefCell::new(Vec::new())),
         }
     }
-}
 
-impl Events {
     pub fn next(&self) -> self::EventFuture {
         self::EventFuture { events: self }
     }

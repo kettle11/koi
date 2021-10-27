@@ -275,6 +275,7 @@ struct LocalTaskQueue<'a>(Arc<Mutex<VecDeque<Arc<LocalTask<'a>>>>>);
 unsafe impl<'a> Send for LocalTaskQueue<'a> {}
 
 struct LocalTask<'a> {
+    #[allow(clippy::type_complexity)]
     inner_task: RefCell<Option<Box<dyn FnMut(Waker) -> bool + 'a>>>,
 }
 

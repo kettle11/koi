@@ -507,6 +507,6 @@ async fn get_buffer<T: Clone>(
 
 unsafe fn bytes_to_buffer<T: Clone>(bytes: &[u8]) -> Vec<T> {
     let (_prefix, shorts, _suffix) = bytes.align_to::<T>();
-    
+
     shorts.into()
 }
