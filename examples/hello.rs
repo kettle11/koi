@@ -49,7 +49,7 @@ fn main() {
                 _ => {}
             }
 
-            // Do not consume the even and allow other systems to respond to it.
+            // Do not consume the event and allow other systems to respond to it.
             false
         }
     });

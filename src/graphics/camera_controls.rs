@@ -1,5 +1,4 @@
 //! Camera controls to be used by the editor or to quickly get a 3D camera up and running.
-use std::default;
 
 use crate::*;
 use kapp::*;
