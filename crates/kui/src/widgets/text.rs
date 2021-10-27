@@ -75,7 +75,7 @@ impl<Style: GetStandardStyleTrait, Data> Text<Style, Data> {
         let font_index = (self.get_font)(style).0;
         let font = &style.standard().fonts()[font_index];
         drawer.text(
-            &font,
+            font,
             layout,
             rectangle.min,
             color,

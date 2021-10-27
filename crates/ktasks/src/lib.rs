@@ -529,7 +529,7 @@ impl<'a> Worker<'a> {
             }
 
             // Run tasks enque
-            if self.other_task_queues.len() == 0 {
+            if self.other_task_queues.is_empty() {
                 let task = self.task_queue.lock().unwrap().pop_front();
                 if let Some(task) = task {
                     task.run(self);

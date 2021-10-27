@@ -164,7 +164,7 @@ impl TextureAtlas {
 
                 println!("SAVING");
                 use std::io::Write;
-                let mut o = std::fs::File::create(format!("atlas.pgm",)).unwrap();
+                let mut o = std::fs::File::create("atlas.pgm".to_string()).unwrap();
                 let _ = o.write(format!("P5\n{} {}\n255\n", self.width, self.height).as_bytes());
                 let _ = o.write(&self.data);
 
@@ -179,7 +179,7 @@ impl TextureAtlas {
     fn copy_characters(
         packer: &mut rect_packer::Packer,
         texture_width: u32,
-        old_data: &Vec<u8>,
+        old_data: &[u8],
         new_data: &mut Vec<u8>,
         copying_characters: &HashSet<fontdue::layout::GlyphRasterConfig>,
         characters: &HashMap<fontdue::layout::GlyphRasterConfig, RectangleU32>,

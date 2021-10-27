@@ -206,6 +206,10 @@ impl World {
         world
     }
 
+    pub fn is_empty(&self) -> bool {
+        self.entities.len() != 0
+    }
+
     /// Returns number of [Entity]s in the [World].
     pub fn len(&self) -> usize {
         self.entities.len()
@@ -525,7 +529,7 @@ impl World {
     }
 
     /// Clones the components and [Entity]s of the other [World] and adds them to this [World].
-    pub fn add_world<'a>(&'a mut self, other: &mut World) -> EntityMigrator {
+    pub fn add_world(&mut self, other: &mut World) -> EntityMigrator {
         self.spawn_reserved_entities();
         World::clone_world_into_world(other, self)
     }
@@ -541,10 +545,7 @@ impl World {
     }
 
     /// An internal helper used by [clone_world] and [add_world]
-    fn clone_world_into_world<'a>(
-        source: &mut World,
-        destination: &'a mut World,
-    ) -> EntityMigrator {
+    fn clone_world_into_world(source: &mut World, destination: &mut World) -> EntityMigrator {
         destination.spawn_reserved_entities();
 
         let World {
@@ -568,7 +569,7 @@ impl World {
             } = destination;
 
             let mut entity_migrator =
-                EntityMigrator::new(&&mut old_entities.free_entities, migrator_offset);
+                EntityMigrator::new(&old_entities.free_entities, migrator_offset);
 
             for old_archetype in old_archetypes {
                 let mut new_channels = Vec::new();

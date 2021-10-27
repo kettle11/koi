@@ -4,7 +4,7 @@ use proc_macro::TokenStream;
 #[proc_macro_derive(Reflect)]
 pub fn derive_reflect(item: TokenStream) -> TokenStream {
     let mut rust_tokens = Vec::new();
-    token_stream_to_rust_tokens(item.clone(), &mut rust_tokens);
+    token_stream_to_rust_tokens(item, &mut rust_tokens);
 
     let mut parser = Parser::new(&rust_tokens);
     let _parse_result = parser.parse().expect("Could not parse");

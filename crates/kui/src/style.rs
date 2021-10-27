@@ -36,6 +36,12 @@ impl GetStandardStyleTrait for StandardStyle {
     }
 }
 
+impl Default for StandardStyle {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl StandardStyle {
     pub fn new() -> Self {
         Self {

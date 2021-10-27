@@ -21,10 +21,5 @@ pub trait UIContextTrait: 'static {
     type Style: GetStandardStyleTrait + 'static;
 }
 
-#[derive(Copy, Clone, Debug)]
+#[derive(Copy, Clone, Debug, Default)]
 pub struct Font(usize);
-impl Default for Font {
-    fn default() -> Self {
-        Self(0)
-    }
-}

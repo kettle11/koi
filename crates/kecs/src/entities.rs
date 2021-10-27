@@ -55,7 +55,7 @@ impl Entities {
 
     /// Creates a new [Entity] and sets its [EntityLocation]
     pub fn new_entity(&mut self, entity_location: Option<EntityLocation>) -> Entity {
-        let entity = if let Some(free_entity) = self.free_entities.pop() {
+        if let Some(free_entity) = self.free_entities.pop() {
             // Generation does not need to be incremented because it's incremented during `free`.
             self.generation_and_entity_location[free_entity.index as usize] =
                 (free_entity.generation, entity_location);
@@ -67,9 +67,7 @@ impl Entities {
                 index: self.generation_and_entity_location.len() as u32 - 1,
                 generation: 0,
             }
-        };
-
-        entity
+        }
     }
 
     pub fn get_entity_location(&self, entity: Entity) -> Option<EntityLocation> {
@@ -152,15 +150,13 @@ impl EntityMigrator {
     }
 
     pub fn migrate(&self, old_entity: Entity) -> Entity {
-        let new_entity = if old_entity.index < self.free_entities.len() as u32 {
+        if old_entity.index < self.free_entities.len() as u32 {
             self.free_entities[self.free_entities.len() - old_entity.index as usize]
         } else {
             Entity {
                 generation: 0,
                 index: self.offset + (old_entity.index - self.free_entities.len() as u32),
             }
-        };
-
-        new_entity
+        }
     }
 }

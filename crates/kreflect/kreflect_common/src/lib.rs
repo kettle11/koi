@@ -915,7 +915,7 @@ pub enum Literal<'a> {
 impl<'a> Literal<'a> {
     pub fn as_string(&self) -> String {
         match self {
-            Literal::String(s) => format!("\"{}\"", s.to_string()),
+            Literal::String(s) => format!("\"{}\"", s),
             Literal::Integer(i) => i.to_string(),
             Literal::Bool(b) => b.to_string(),
             Literal::Char(c) => c.to_string(),
@@ -1044,7 +1044,7 @@ impl<'a> GenericArgument<'a> {
     pub fn as_string(&self) -> String {
         match self {
             GenericArgument::Type(t) => t.as_string(),
-            GenericArgument::Lifetime(l) => format!("'{}", l.to_string()),
+            GenericArgument::Lifetime(l) => format!("'{}", l),
             GenericArgument::Expression(e) => e.as_string(),
         }
     }

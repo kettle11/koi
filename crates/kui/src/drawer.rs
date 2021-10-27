@@ -14,6 +14,12 @@ pub struct Drawer {
     pub clipping_mask: Rectangle,
 }
 
+impl Default for Drawer {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl Drawer {
     pub fn new() -> Self {
         Self {

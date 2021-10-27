@@ -129,10 +129,8 @@ impl<'a, const CHANNEL_COUNT: usize> Iterator for MatchingArchetypeIterator<'a, 
                             if let Some(output_index) = filter_info.output_index {
                                 channels[output_index] = Some(*channel);
                             }
-                        } else {
-                            if let Some(output_index) = filter_info.output_index {
-                                channels[output_index] = None;
-                            }
+                        } else if let Some(output_index) = filter_info.output_index {
+                            channels[output_index] = None;
                         }
                     }
                 };
