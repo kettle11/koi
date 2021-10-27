@@ -476,6 +476,21 @@ enum RustType {
 }
 
 impl RustType {
+    fn is_copy(&self) -> bool {
+        match self {
+            RustType::String
+            | RustType::HashMap(..)
+            | RustType::Vec(..)
+            | RustType::KSerdeOwnedThing
+            | RustType::Unimplemented
+            | RustType::Struct(..)
+            | RustType::Enum(..) => false,
+            RustType::Option(p) => p.is_copy(),
+            RustType::Array(_, p) => p.is_copy(),
+            RustType::USIZE | RustType::Boolean | RustType::F32 => true,
+        }
+    }
+
     fn type_name(&self) -> String {
         match self {
             RustType::String => "String".to_string(),
@@ -904,7 +919,7 @@ impl<'a> RustGenerator {
                                     RustType::Vec(..) => {
                                         write!(
                                             output,
-                                            "            {}: {}.unwrap_or_else(|| Vec::new()),\n",
+                                            "            {}: {}.unwrap_or_else(Vec::new),\n",
                                             property.name, property.name
                                         )
                                         .unwrap();
@@ -913,7 +928,7 @@ impl<'a> RustGenerator {
                                     RustType::HashMap(..) => {
                                         write!(
                                             output,
-                                            "            {}: {}.unwrap_or_else(|| HashMap::new()),\n",
+                                            "            {}: {}.unwrap_or_else(HashMap::new),\n",
                                             property.name, property.name,
                                         )
                                         .unwrap();
@@ -932,7 +947,11 @@ impl<'a> RustGenerator {
                                 value,
                                 if property.incompatible_with.len() > 0 {
                                     cloned = true;
-                                    ".clone()"
+                                    if property.property_type.is_copy() {
+                                        ""
+                                    } else {
+                                        ".clone()"
+                                    }
                                 } else {
                                     ""
                                 },
@@ -1036,7 +1055,15 @@ impl<'a> RustGenerator {
                                 property.name,
                                 condition,
                                 value,
-                                if cloned { "" } else { ".clone()" }
+                                if cloned {
+                                    ""
+                                } else {
+                                    if property.property_type.is_copy() {
+                                        ""
+                                    } else {
+                                        ".clone()"
+                                    }
+                                }
                             )
                             .unwrap();
                         } else {

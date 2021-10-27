@@ -4,6 +4,7 @@
 //! so some comments may not exactly match the Rust names.
 
 mod glb;
+#[allow(clippy::redundant_field_names, clippy::redundant_clone)]
 mod gltf_json;
 
 pub use glb::*;

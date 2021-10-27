@@ -9,3 +9,5 @@ edition = "2018"
 [dependencies]
 kserde = {path = "../../kserde"}
 heck = "0.3.2"
+
+[workspace]

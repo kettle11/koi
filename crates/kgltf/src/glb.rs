@@ -37,7 +37,7 @@ impl<'a> GLB<'a> {
         // Header
         let magic = reader.get_u32()?;
         if magic != 0x46546C67 {
-            Err(GLBError::IncorrectMagicNumber)?
+            return Err(GLBError::IncorrectMagicNumber);
         }
 
         let glb_version = reader.get_u32()?;
@@ -48,7 +48,7 @@ impl<'a> GLB<'a> {
         let json_chunk_type = reader.get_u32()?;
         if json_chunk_type != 0x4E4F534A {
             // The chunk type does not match the expected chunk type
-            Err(GLBError::IncorrectFormatting)?
+            return Err(GLBError::IncorrectFormatting);
         }
 
         let mut json_string_bytes = vec![0; json_chunk_length as usize];

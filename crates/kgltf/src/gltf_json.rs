@@ -125,24 +125,24 @@ impl<'a, D: Deserializer<'a>> Deserialize<'a, D> for GlTf {
         }
 
         Some(Self {
-            extensions_used: extensions_used.unwrap_or_else(|| Vec::new()),
-            extensions_required: extensions_required.unwrap_or_else(|| Vec::new()),
-            accessors: accessors.unwrap_or_else(|| Vec::new()),
-            animations: animations.unwrap_or_else(|| Vec::new()),
+            extensions_used: extensions_used.unwrap_or_else(Vec::new),
+            extensions_required: extensions_required.unwrap_or_else(Vec::new),
+            accessors: accessors.unwrap_or_else(Vec::new),
+            animations: animations.unwrap_or_else(Vec::new),
             asset: asset?,
-            buffers: buffers.unwrap_or_else(|| Vec::new()),
-            buffer_views: buffer_views.unwrap_or_else(|| Vec::new()),
-            cameras: cameras.unwrap_or_else(|| Vec::new()),
-            images: images.unwrap_or_else(|| Vec::new()),
-            materials: materials.unwrap_or_else(|| Vec::new()),
-            meshes: meshes.unwrap_or_else(|| Vec::new()),
-            nodes: nodes.unwrap_or_else(|| Vec::new()),
-            samplers: samplers.unwrap_or_else(|| Vec::new()),
+            buffers: buffers.unwrap_or_else(Vec::new),
+            buffer_views: buffer_views.unwrap_or_else(Vec::new),
+            cameras: cameras.unwrap_or_else(Vec::new),
+            images: images.unwrap_or_else(Vec::new),
+            materials: materials.unwrap_or_else(Vec::new),
+            meshes: meshes.unwrap_or_else(Vec::new),
+            nodes: nodes.unwrap_or_else(Vec::new),
+            samplers: samplers.unwrap_or_else(Vec::new),
             scene: scene,
-            scenes: scenes.unwrap_or_else(|| Vec::new()),
-            skins: skins.unwrap_or_else(|| Vec::new()),
-            textures: textures.unwrap_or_else(|| Vec::new()),
-            extensions: extensions.unwrap_or_else(|| HashMap::new()),
+            scenes: scenes.unwrap_or_else(Vec::new),
+            skins: skins.unwrap_or_else(Vec::new),
+            textures: textures.unwrap_or_else(Vec::new),
+            extensions: extensions.unwrap_or_else(HashMap::new),
             extras: extras,
         })
     }
@@ -200,7 +200,7 @@ impl<'a, D: Deserializer<'a>> Deserialize<'a, D> for Texture {
             sampler: sampler,
             source: source,
             name: name,
-            extensions: extensions.unwrap_or_else(|| HashMap::new()),
+            extensions: extensions.unwrap_or_else(HashMap::new),
             extras: extras,
         })
     }
@@ -266,7 +266,7 @@ impl<'a, D: Deserializer<'a>> Deserialize<'a, D> for Skin {
             skeleton: skeleton,
             joints: joints?,
             name: name,
-            extensions: extensions.unwrap_or_else(|| HashMap::new()),
+            extensions: extensions.unwrap_or_else(HashMap::new),
             extras: extras,
         })
     }
@@ -316,9 +316,9 @@ impl<'a, D: Deserializer<'a>> Deserialize<'a, D> for Scene {
         }
 
         Some(Self {
-            nodes: nodes.unwrap_or_else(|| Vec::new()),
+            nodes: nodes.unwrap_or_else(Vec::new),
             name: name,
-            extensions: extensions.unwrap_or_else(|| HashMap::new()),
+            extensions: extensions.unwrap_or_else(HashMap::new),
             extras: extras,
         })
     }
@@ -388,7 +388,7 @@ impl<'a, D: Deserializer<'a>> Deserialize<'a, D> for Sampler {
             wrap_s: wrap_s.map_or_else(|| SamplerWrapS::Repeat, |m| m),
             wrap_t: wrap_t.map_or_else(|| SamplerWrapT::Repeat, |m| m),
             name: name,
-            extensions: extensions.unwrap_or_else(|| HashMap::new()),
+            extensions: extensions.unwrap_or_else(HashMap::new),
             extras: extras,
         })
     }
@@ -601,10 +601,10 @@ impl<'a, D: Deserializer<'a>> Deserialize<'a, D> for Node {
 
         Some(Self {
             camera: camera,
-            children: children.unwrap_or_else(|| Vec::new()),
+            children: children.unwrap_or_else(Vec::new),
             skin: skin,
             matrix: if translation.is_none() && rotation.is_none() && scale.is_none() {
-                Some(matrix.clone().map_or_else(
+                Some(matrix.map_or_else(
                     || {
                         [
                             1f32, 0f32, 0f32, 0f32, 0f32, 1f32, 0f32, 0f32, 0f32, 0f32, 1f32, 0f32,
@@ -618,31 +618,23 @@ impl<'a, D: Deserializer<'a>> Deserialize<'a, D> for Node {
             },
             mesh: mesh,
             rotation: if matrix.is_none() {
-                Some(
-                    rotation
-                        .clone()
-                        .map_or_else(|| [0f32, 0f32, 0f32, 1f32], |m| m),
-                )
+                Some(rotation.map_or_else(|| [0f32, 0f32, 0f32, 1f32], |m| m))
             } else {
                 None
             },
             scale: if matrix.is_none() {
-                Some(scale.clone().map_or_else(|| [1f32, 1f32, 1f32], |m| m))
+                Some(scale.map_or_else(|| [1f32, 1f32, 1f32], |m| m))
             } else {
                 None
             },
             translation: if matrix.is_none() {
-                Some(
-                    translation
-                        .clone()
-                        .map_or_else(|| [0f32, 0f32, 0f32], |m| m),
-                )
+                Some(translation.map_or_else(|| [0f32, 0f32, 0f32], |m| m))
             } else {
                 None
             },
-            weights: weights.unwrap_or_else(|| Vec::new()),
+            weights: weights.unwrap_or_else(Vec::new),
             name: name,
-            extensions: extensions.unwrap_or_else(|| HashMap::new()),
+            extensions: extensions.unwrap_or_else(HashMap::new),
             extras: extras,
         })
     }
@@ -698,9 +690,9 @@ impl<'a, D: Deserializer<'a>> Deserialize<'a, D> for Mesh {
 
         Some(Self {
             primitives: primitives?,
-            weights: weights.unwrap_or_else(|| Vec::new()),
+            weights: weights.unwrap_or_else(Vec::new),
             name: name,
-            extensions: extensions.unwrap_or_else(|| HashMap::new()),
+            extensions: extensions.unwrap_or_else(HashMap::new),
             extras: extras,
         })
     }
@@ -773,8 +765,8 @@ impl<'a, D: Deserializer<'a>> Deserialize<'a, D> for MeshPrimitive {
             indices: indices,
             material: material,
             mode: mode.map_or_else(|| MeshPrimitiveMode::Triangles, |m| m),
-            targets: targets.unwrap_or_else(|| Vec::new()),
-            extensions: extensions.unwrap_or_else(|| HashMap::new()),
+            targets: targets.unwrap_or_else(Vec::new),
+            extensions: extensions.unwrap_or_else(HashMap::new),
             extras: extras,
         })
     }
@@ -911,7 +903,7 @@ impl<'a, D: Deserializer<'a>> Deserialize<'a, D> for Material {
 
         Some(Self {
             name: name,
-            extensions: extensions.unwrap_or_else(|| HashMap::new()),
+            extensions: extensions.unwrap_or_else(HashMap::new),
             extras: extras,
             pbr_metallic_roughness: pbr_metallic_roughness,
             normal_texture: normal_texture,
@@ -1009,7 +1001,7 @@ impl<'a, D: Deserializer<'a>> Deserialize<'a, D> for MaterialOcclusionTextureInf
             index: index?,
             tex_coord: tex_coord.map_or_else(|| 0usize, |m| m),
             strength: strength.map_or_else(|| 1f32, |m| m),
-            extensions: extensions.unwrap_or_else(|| HashMap::new()),
+            extensions: extensions.unwrap_or_else(HashMap::new),
             extras: extras,
         })
     }
@@ -1067,7 +1059,7 @@ impl<'a, D: Deserializer<'a>> Deserialize<'a, D> for MaterialNormalTextureInfo {
             index: index?,
             tex_coord: tex_coord.map_or_else(|| 0usize, |m| m),
             scale: scale.map_or_else(|| 1f32, |m| m),
-            extensions: extensions.unwrap_or_else(|| HashMap::new()),
+            extensions: extensions.unwrap_or_else(HashMap::new),
             extras: extras,
         })
     }
@@ -1143,7 +1135,7 @@ impl<'a, D: Deserializer<'a>> Deserialize<'a, D> for MaterialPbrMetallicRoughnes
             metallic_factor: metallic_factor.map_or_else(|| 1f32, |m| m),
             roughness_factor: roughness_factor.map_or_else(|| 1f32, |m| m),
             metallic_roughness_texture: metallic_roughness_texture,
-            extensions: extensions.unwrap_or_else(|| HashMap::new()),
+            extensions: extensions.unwrap_or_else(HashMap::new),
             extras: extras,
         })
     }
@@ -1195,7 +1187,7 @@ impl<'a, D: Deserializer<'a>> Deserialize<'a, D> for TextureInfo {
         Some(Self {
             index: index?,
             tex_coord: tex_coord.map_or_else(|| 0usize, |m| m),
-            extensions: extensions.unwrap_or_else(|| HashMap::new()),
+            extensions: extensions.unwrap_or_else(HashMap::new),
             extras: extras,
         })
     }
@@ -1259,7 +1251,7 @@ impl<'a, D: Deserializer<'a>> Deserialize<'a, D> for Image {
             mime_type: mime_type,
             buffer_view: buffer_view,
             name: name,
-            extensions: extensions.unwrap_or_else(|| HashMap::new()),
+            extensions: extensions.unwrap_or_else(HashMap::new),
             extras: extras,
         })
     }
@@ -1365,7 +1357,7 @@ impl<'a, D: Deserializer<'a>> Deserialize<'a, D> for Camera {
             },
             type_: type_?,
             name: name,
-            extensions: extensions.unwrap_or_else(|| HashMap::new()),
+            extensions: extensions.unwrap_or_else(HashMap::new),
             extras: extras,
         })
     }
@@ -1455,7 +1447,7 @@ impl<'a, D: Deserializer<'a>> Deserialize<'a, D> for CameraPerspective {
             yfov: yfov?,
             zfar: zfar,
             znear: znear?,
-            extensions: extensions.unwrap_or_else(|| HashMap::new()),
+            extensions: extensions.unwrap_or_else(HashMap::new),
             extras: extras,
         })
     }
@@ -1519,7 +1511,7 @@ impl<'a, D: Deserializer<'a>> Deserialize<'a, D> for CameraOrthographic {
             ymag: ymag?,
             zfar: zfar?,
             znear: znear?,
-            extensions: extensions.unwrap_or_else(|| HashMap::new()),
+            extensions: extensions.unwrap_or_else(HashMap::new),
             extras: extras,
         })
     }
@@ -1595,7 +1587,7 @@ impl<'a, D: Deserializer<'a>> Deserialize<'a, D> for BufferView {
             byte_stride: byte_stride,
             target: target,
             name: name,
-            extensions: extensions.unwrap_or_else(|| HashMap::new()),
+            extensions: extensions.unwrap_or_else(HashMap::new),
             extras: extras,
         })
     }
@@ -1679,7 +1671,7 @@ impl<'a, D: Deserializer<'a>> Deserialize<'a, D> for Buffer {
             uri: uri,
             byte_length: byte_length?,
             name: name,
-            extensions: extensions.unwrap_or_else(|| HashMap::new()),
+            extensions: extensions.unwrap_or_else(HashMap::new),
             extras: extras,
         })
     }
@@ -1743,7 +1735,7 @@ impl<'a, D: Deserializer<'a>> Deserialize<'a, D> for Asset {
             generator: generator,
             version: version?,
             min_version: min_version,
-            extensions: extensions.unwrap_or_else(|| HashMap::new()),
+            extensions: extensions.unwrap_or_else(HashMap::new),
             extras: extras,
         })
     }
@@ -1801,7 +1793,7 @@ impl<'a, D: Deserializer<'a>> Deserialize<'a, D> for Animation {
             channels: channels?,
             samplers: samplers?,
             name: name,
-            extensions: extensions.unwrap_or_else(|| HashMap::new()),
+            extensions: extensions.unwrap_or_else(HashMap::new),
             extras: extras,
         })
     }
@@ -1863,7 +1855,7 @@ impl<'a, D: Deserializer<'a>> Deserialize<'a, D> for AnimationSampler {
             interpolation: interpolation
                 .map_or_else(|| AnimationSamplerInterpolation::Linear, |m| m),
             output: output?,
-            extensions: extensions.unwrap_or_else(|| HashMap::new()),
+            extensions: extensions.unwrap_or_else(HashMap::new),
             extras: extras,
         })
     }
@@ -1947,7 +1939,7 @@ impl<'a, D: Deserializer<'a>> Deserialize<'a, D> for AnimationChannel {
         Some(Self {
             sampler: sampler?,
             target: target?,
-            extensions: extensions.unwrap_or_else(|| HashMap::new()),
+            extensions: extensions.unwrap_or_else(HashMap::new),
             extras: extras,
         })
     }
@@ -1999,7 +1991,7 @@ impl<'a, D: Deserializer<'a>> Deserialize<'a, D> for AnimationChannelTarget {
         Some(Self {
             node: node,
             path: path?,
-            extensions: extensions.unwrap_or_else(|| HashMap::new()),
+            extensions: extensions.unwrap_or_else(HashMap::new),
             extras: extras,
         })
     }
@@ -2129,11 +2121,11 @@ impl<'a, D: Deserializer<'a>> Deserialize<'a, D> for Accessor {
             normalized: normalized.map_or_else(|| false, |m| m),
             count: count?,
             type_: type_?,
-            max: max.unwrap_or_else(|| Vec::new()),
-            min: min.unwrap_or_else(|| Vec::new()),
+            max: max.unwrap_or_else(Vec::new),
+            min: min.unwrap_or_else(Vec::new),
             sparse: sparse,
             name: name,
-            extensions: extensions.unwrap_or_else(|| HashMap::new()),
+            extensions: extensions.unwrap_or_else(HashMap::new),
             extras: extras,
         })
     }
@@ -2191,7 +2183,7 @@ impl<'a, D: Deserializer<'a>> Deserialize<'a, D> for AccessorSparse {
             count: count?,
             indices: indices?,
             values: values?,
-            extensions: extensions.unwrap_or_else(|| HashMap::new()),
+            extensions: extensions.unwrap_or_else(HashMap::new),
             extras: extras,
         })
     }
@@ -2243,7 +2235,7 @@ impl<'a, D: Deserializer<'a>> Deserialize<'a, D> for AccessorSparseValues {
         Some(Self {
             buffer_view: buffer_view?,
             byte_offset: byte_offset.map_or_else(|| 0usize, |m| m),
-            extensions: extensions.unwrap_or_else(|| HashMap::new()),
+            extensions: extensions.unwrap_or_else(HashMap::new),
             extras: extras,
         })
     }
@@ -2305,7 +2297,7 @@ impl<'a, D: Deserializer<'a>> Deserialize<'a, D> for AccessorSparseIndices {
             buffer_view: buffer_view?,
             byte_offset: byte_offset.map_or_else(|| 0usize, |m| m),
             component_type: component_type?,
-            extensions: extensions.unwrap_or_else(|| HashMap::new()),
+            extensions: extensions.unwrap_or_else(HashMap::new),
             extras: extras,
         })
     }

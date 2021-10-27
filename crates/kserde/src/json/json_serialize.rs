@@ -14,6 +14,12 @@ impl JSONSerializer<()> {
     }
 }
 
+impl Default for JSONSerializer<()> {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl<CONTEXT> JSONSerializer<CONTEXT> {
     fn new_with_context(context: CONTEXT) -> Self {
         JSONSerializer {
