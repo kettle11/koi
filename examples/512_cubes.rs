@@ -5,7 +5,7 @@ fn main() {
         // Setup things here.
         let mut camera = Camera::new();
         camera.clear_color = Some(Color::RED);
-        let mut transform = Transform::new_with_position(Vec3::new(-3.0, 0.0, 0.0));
+        let mut transform = Transform::new().with_position(Vec3::new(-3.0, 0.0, 0.0));
         transform.look_at(Vec3::ZERO, Vec3::Y);
         world.spawn((transform, camera, CameraControls::new()));
         world.spawn((Transform::new(), Mesh::CUBE, Material::PHYSICALLY_BASED));
