@@ -61,9 +61,9 @@ impl<T: NumericFloat> Quaternion<T> {
     /// Forward must be normalized
     pub fn from_forward_up(forward: Vector<T, 3>, up: Vector<T, 3>) -> Self {
         // This could be made more efficient.
-        let look_at_matrix =
-            <Matrix<T, 4, 4>>::look_at(<Vector<T, 3>>::ZERO, forward, up).inversed();
-        look_at_matrix.extract_rotation()
+        let looking_at_matrix =
+            <Matrix<T, 4, 4>>::looking_at(<Vector<T, 3>>::ZERO, forward, up).inversed();
+        looking_at_matrix.extract_rotation()
     }
 }
 

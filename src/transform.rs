@@ -78,7 +78,7 @@ impl Transform {
             rotation: Quat::IDENTITY,
             scale: Vec3::ONE,
         };
-        transform.look_at(target, up)
+        transform.looking_at(target, up)
     }
 
     pub fn from_mat4(mat4: Mat4) -> Self {
@@ -96,8 +96,8 @@ impl Transform {
 
     /// This doesn't correctly respect global vs local transforms.
     #[must_use]
-    pub fn look_at(mut self, target: Vec3, up: Vec3) -> Self {
-        let rotation = Mat4::look_at(self.position, target, up)
+    pub fn looking_at(mut self, target: Vec3, up: Vec3) -> Self {
+        let rotation = Mat4::looking_at(self.position, target, up)
             .inversed()
             .extract_rotation();
         self.rotation = rotation;

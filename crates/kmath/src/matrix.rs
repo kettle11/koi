@@ -526,7 +526,7 @@ impl<T: NumericFloat> Matrix<T, 4, 4> {
         )
     }
 
-    pub fn look_at(from: Vector<T, 3>, target: Vector<T, 3>, mut up: Vector<T, 3>) -> Self
+    pub fn looking_at(from: Vector<T, 3>, target: Vector<T, 3>, mut up: Vector<T, 3>) -> Self
     where
         T: NumericSqrt + Neg<Output = T>,
     {

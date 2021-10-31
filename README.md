@@ -60,7 +60,7 @@ fn main() {
         world.spawn((
             Transform::new()
                 .with_position(Vec3::new(0.0, 4.0, 3.0))
-                .look_at(Vec3::ZERO, Vec3::Y),
+                .looking_at(Vec3::ZERO, Vec3::Y),
             Camera::new(),
             CameraControls::new(),
         ));
