@@ -16,6 +16,9 @@ var gl_web_object = {
             console.log("Could not initialize WebGL2 canvas!");
         }
 
+        // Get an extension to allow linearly filtering float textures.
+        gl.getExtension('OES_texture_float_linear');
+
         // Setup some stuff that won't change
         gl.enable(gl.DEPTH_TEST);
 

@@ -206,18 +206,17 @@ pub fn minification_filter_to_gl_enum(
             (FilterMode::Linear, FilterMode::Linear) => LINEAR_MIPMAP_LINEAR,
         }
     } else {
-        NEAREST
-    }
-}
-
-pub fn magnification_filter_to_gl_enum(filter_mode: FilterMode, has_mipmaps: bool) -> c_uint {
-    if !has_mipmaps {
-        NEAREST
-    } else {
-        match filter_mode {
+        match minification_filter_mode {
             FilterMode::Nearest => NEAREST,
             FilterMode::Linear => LINEAR,
         }
+    }
+}
+
+pub fn magnification_filter_to_gl_enum(filter_mode: FilterMode) -> c_uint {
+    match filter_mode {
+        FilterMode::Nearest => NEAREST,
+        FilterMode::Linear => LINEAR,
     }
 }
 
