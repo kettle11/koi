@@ -4,33 +4,21 @@ fn main() {
     App::new().setup_and_run(|world: &mut World| {
         // Spawn a camera
         let mut camera = Camera::new_orthographic();
-        camera.set_orthographic_height(10.0);
+        camera.set_orthographic_height(1.0);
         world.spawn((Transform::new(), camera));
 
         let textures = world.get_single_component_mut::<Assets<Texture>>().unwrap();
-        let texture = textures.load_with_options(
-            "examples/assets/tiles.png",
-            // Load the texture with filtering more appropriate for pixel art
-            TextureSettings {
-                minification_filter: FilterMode::Nearest,
-                magnification_filter: FilterMode::Nearest,
-                ..Default::default()
-            },
-        );
-        // A [SpriteMap] is a helper to make getting sprites from a texture easier.
-        let sprite_map = SpriteMap::new(texture, 18, 2, 398, 178);
+        let texture =
+            textures.load_with_options("assets/royal_esplanade_1k.hdr", TextureSettings::default());
 
-        // Enter the tile of the sprite.
-        let snow_man_sprite = sprite_map.get_sprite(5, 7);
+        let sprite = Sprite::new(texture, BoundingBox::new(Vec2::ZERO, Vec2::ONE));
 
-        for i in 0..5 {
-            world.spawn((
-                Transform::new().with_position(Vec3::X * i as f32),
-                Mesh::VERTICAL_QUAD,
-                Material::UNLIT,
-                snow_man_sprite.clone(),
-            ));
-        }
+        world.spawn((
+            Transform::new(),
+            Mesh::VERTICAL_QUAD,
+            Material::UNLIT,
+            sprite,
+        ));
 
         |_, _| false
     });

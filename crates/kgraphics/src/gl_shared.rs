@@ -59,6 +59,8 @@ pub const RGBA8: c_uint = 0x8058;
 pub const SRGB8: c_uint = 0x8C41;
 pub const SRGB8_ALPHA8: c_uint = 0x8C43;
 
+pub const RGB32F: c_uint = 0x8815;
+
 pub const TEXTURE0: c_uint = 0x84C0;
 
 #[inline]
@@ -114,6 +116,7 @@ pub unsafe fn flip_image(pixel_format: PixelFormat, width: usize, height: usize,
         PixelFormat::Depth16 | PixelFormat::Depth24 | PixelFormat::Depth32F => {
             flip_image_inner::<f32, 1>(data, width, height)
         }
+        PixelFormat::RGB32Float => flip_image_inner::<f32, 3>(data, width, height),
     }
 }
 
@@ -166,6 +169,7 @@ pub fn pixel_format_to_gl_format_and_inner_format_and_type(
         PixelFormat::RGB8Unorm => RGB,
         PixelFormat::RGBA8Unorm => RGBA,
         PixelFormat::Depth16 | PixelFormat::Depth24 | PixelFormat::Depth32F => DEPTH_COMPONENT,
+        PixelFormat::RGB32Float => RGB,
     };
 
     let mut inner_format = match pixel_format {
@@ -176,12 +180,13 @@ pub fn pixel_format_to_gl_format_and_inner_format_and_type(
         PixelFormat::RG8Unorm => RG8,
         PixelFormat::RGB8Unorm => RGB8,
         PixelFormat::RGBA8Unorm => RGBA8,
+        PixelFormat::RGB32Float => RGB32F,
     };
 
     let type_ = match pixel_format {
         PixelFormat::Depth16 => UNSIGNED_SHORT,
         PixelFormat::Depth24 => UNSIGNED_INT,
-        PixelFormat::Depth32F => FLOAT,
+        PixelFormat::Depth32F | PixelFormat::RGB32Float => FLOAT,
         _ => UNSIGNED_BYTE,
     };
 
@@ -201,17 +206,18 @@ pub fn minification_filter_to_gl_enum(
             (FilterMode::Linear, FilterMode::Linear) => LINEAR_MIPMAP_LINEAR,
         }
     } else {
-        match (minification_filter_mode) {
-            FilterMode::Nearest => NEAREST,
-            FilterMode::Linear => LINEAR,
-        }
+        NEAREST
     }
 }
 
-pub fn magnification_filter_to_gl_enum(filter_mode: FilterMode) -> c_uint {
-    match filter_mode {
-        FilterMode::Nearest => NEAREST,
-        FilterMode::Linear => LINEAR,
+pub fn magnification_filter_to_gl_enum(filter_mode: FilterMode, has_mipmaps: bool) -> c_uint {
+    if !has_mipmaps {
+        NEAREST
+    } else {
+        match filter_mode {
+            FilterMode::Nearest => NEAREST,
+            FilterMode::Linear => LINEAR,
+        }
     }
 }
 

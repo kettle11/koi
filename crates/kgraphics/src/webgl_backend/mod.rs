@@ -684,8 +684,10 @@ impl GraphicsContextTrait for GraphicsContext {
             texture_settings.mipmap_filter,
             texture_settings.generate_mipmaps,
         );
-        let magnification_filter =
-            magnification_filter_to_gl_enum(texture_settings.magnification_filter);
+        let magnification_filter = magnification_filter_to_gl_enum(
+            texture_settings.magnification_filter,
+            texture_settings.generate_mipmaps,
+        );
 
         let mipmaps = if texture_settings.generate_mipmaps {
             1

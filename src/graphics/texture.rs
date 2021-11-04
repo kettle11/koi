@@ -187,6 +187,23 @@ pub fn jpeg_data_from_bytes(bytes: &[u8], srgb: bool) -> TextureLoadData {
     }
 }
 
+#[cfg(feature = "hdri")]
+pub fn hdri_data_from_bytes(bytes: &[u8], _srgb: bool) -> TextureLoadData {
+    // This data is always assumed to be linear sRGB
+
+    let image = hdrldr::load(bytes).expect("Failed to decode HDRI image data");
+    unsafe {
+        TextureLoadData {
+            // This isn't a great conversion. It allocates again which may be avoidable.
+            data: std::slice::from_raw_parts(image.data.as_ptr() as *const u8, image.data.len() * 3 * 4)
+                .into(),
+            width: image.width as u32,
+            height: image.height as u32,
+            pixel_format: PixelFormat::RGB32Float,
+        }
+    }
+}
+
 impl AssetLoader<Texture> for TextureAssetLoader {
     fn new() -> Self {
         let (sender, receiver) = mpsc::channel();
@@ -200,7 +217,7 @@ impl AssetLoader<Texture> for TextureAssetLoader {
         &mut self,
         path: &str,
         handle: Handle<Texture>,
-        options: <Texture as LoadableAssetTrait>::Options,
+        mut options: <Texture as LoadableAssetTrait>::Options,
     ) {
         let path = path.to_owned();
         let sender = self.sender.inner().clone();
@@ -231,6 +248,20 @@ impl AssetLoader<Texture> for TextureAssetLoader {
                         .await
                         .unwrap_or_else(|_| panic!("Failed to open file: {}", path));
                     let texture_load_data = jpeg_data_from_bytes(&bytes, options.srgb);
+                    TextureLoadMessage {
+                        texture_load_data,
+                        handle,
+                        texture_settings: options,
+                    }
+                }
+                #[cfg(feature = "hdri")]
+                Some("hdr") => {
+                    let bytes = crate::fetch_bytes(&path)
+                        .await
+                        .unwrap_or_else(|_| panic!("Failed to open file: {}", path));
+                    let texture_load_data = hdri_data_from_bytes(&bytes, options.srgb);
+                    options.srgb = false;
+                    options.generate_mipmaps = false;
                     TextureLoadMessage {
                         texture_load_data,
                         handle,

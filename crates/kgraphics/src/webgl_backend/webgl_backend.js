@@ -93,7 +93,12 @@ var gl_web_object = {
          */
         let data = null;
         if (data_ptr !== 0) {
-            data = new Uint8Array(self.kwasm_memory.buffer, data_ptr, data_length);
+            if (type_ == 5126) {
+                // If it's a floating point array
+                data = new Float32Array(self.kwasm_memory.buffer, data_ptr, data_length / 4);
+            } else {
+                data = new Uint8Array(self.kwasm_memory.buffer, data_ptr, data_length);
+            }
         }
 
 
