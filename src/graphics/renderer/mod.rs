@@ -48,7 +48,15 @@ struct MaterialInfo<'a> {
     sprite_texture_unit: u8,
 }
 
-struct Renderer<'a, 'b: 'a, 'c: 'a> {
+pub type RendererQuery<'a> = (
+    &'a mut Graphics,
+    &'a Assets<Shader>,
+    &'a Assets<Material>,
+    &'a Assets<Mesh>,
+    &'a Assets<Texture>,
+);
+
+struct Renderer<'a, 'b: 'a> {
     render_pass: &'a mut RenderPass<'b>,
     camera_info: &'a [ViewInfo],
     shader_assets: &'a Assets<Shader>,
@@ -58,21 +66,19 @@ struct Renderer<'a, 'b: 'a, 'c: 'a> {
     bound_mesh: Option<&'a Handle<Mesh>>,
     bound_shader: Option<&'a Handle<Shader>>,
     material_info: Option<MaterialInfo<'a>>,
-    lights: &'a Query<'c, (&'static GlobalTransform, &'static Light)>,
     #[allow(unused)]
     multiview_enabled: bool,
     current_pipeline: Option<&'a Pipeline>,
     dither_scale: f32,
 }
 
-impl<'a, 'b: 'a, 'c: 'a> Renderer<'a, 'b, 'c> {
+impl<'a, 'b: 'a> Renderer<'a, 'b> {
     pub fn new(
         render_pass: &'a mut RenderPass<'b>,
         shader_assets: &'a Assets<Shader>,
         material_assets: &'a Assets<Material>,
         mesh_assets: &'a Assets<Mesh>,
         texture_assets: &'a Assets<Texture>,
-        lights: &'a Query<'c, (&'static GlobalTransform, &'static Light)>,
         camera_info: &'a [ViewInfo],
         viewport: BoundingBox<u32, 2>,
         multiview_enabled: bool,
@@ -93,7 +99,6 @@ impl<'a, 'b: 'a, 'c: 'a> Renderer<'a, 'b, 'c> {
             bound_mesh: None,
             bound_shader: None,
             material_info: None,
-            lights,
             camera_info,
             multiview_enabled,
             current_pipeline: None,
@@ -120,12 +125,16 @@ impl<'a, 'b: 'a, 'c: 'a> Renderer<'a, 'b, 'c> {
         }
     }
 
-    fn bind_light_info(&mut self, pipeline: &Pipeline) {
+    fn bind_light_info(
+        &mut self,
+        pipeline: &Pipeline,
+        lights: &Query<'_, (&'static GlobalTransform, &'static Light)>,
+    ) {
         self.render_pass.set_int_property(
             &pipeline.get_int_property("p_light_count").unwrap(),
-            self.lights.iter().count() as i32,
+            lights.iter().count() as i32,
         );
-        for (i, (transform, light)) in self.lights.iter().enumerate() {
+        for (i, (transform, light)) in lights.iter().enumerate() {
             if transform.position.is_nan() {
                 dbg!("Light position is NaN");
                 continue;
@@ -219,7 +228,11 @@ impl<'a, 'b: 'a, 'c: 'a> Renderer<'a, 'b, 'c> {
         );
     }
 
-    pub fn change_material(&mut self, material_handle: &'a Handle<Material>) {
+    pub fn change_material(
+        &mut self,
+        material_handle: &'a Handle<Material>,
+        lights: &Query<'_, (&'static GlobalTransform, &'static Light)>,
+    ) {
         // Avoid unnecessary [Material] rebinds.
         if Some(material_handle) != self.material_info.as_ref().map(|m| m.material_handle) {
             // When a pipeline change occurs a bunch of uniforms need to be rebound.
@@ -282,7 +295,7 @@ impl<'a, 'b: 'a, 'c: 'a> Renderer<'a, 'b, 'c> {
                     .unwrap_or(material.max_texture_unit);
                 let base_color_property = pipeline.get_vec4_property("p_base_color").unwrap();
 
-                self.bind_light_info(pipeline);
+                self.bind_light_info(pipeline, lights);
                 self.bound_shader = Some(&material.shader);
                 self.material_info = Some(MaterialInfo {
                     material_handle,
@@ -397,6 +410,29 @@ impl<'a, 'b: 'a, 'c: 'a> Renderer<'a, 'b, 'c> {
             }
         }
     }
+
+    pub fn render_scene(
+        &mut self,
+        camera: &Camera,
+        renderables: &'a Renderables,
+        lights: &Query<'_, (&'static GlobalTransform, &'static Light)>,
+    ) {
+        for (transform, material_handle, mesh_handle, render_layer, optional_sprite, color) in
+            renderables.iter()
+        {
+            let render_layer = render_layer.cloned().unwrap_or(RenderLayers::DEFAULT);
+            if camera.render_layers.includes_layer(render_layer) {
+                self.change_material(material_handle, lights);
+                if let Some(sprite) = optional_sprite {
+                    self.prepare_sprite(sprite);
+                }
+                if let Some(color) = color {
+                    self.set_color(*color);
+                }
+                self.render_mesh(transform, mesh_handle);
+            }
+        }
+    }
 }
 
 type Renderables<'a> = Query<
@@ -483,7 +519,7 @@ pub fn render_scene<'a>(
                     material_assets,
                     mesh_assets,
                     texture_assets,
-                    &lights,
+                    // &lights,
                     &camera_info,
                     BoundingBox {
                         min: Vector::ZERO,
@@ -492,27 +528,7 @@ pub fn render_scene<'a>(
                     multiview_enabled,
                 );
 
-                for (
-                    transform,
-                    material_handle,
-                    mesh_handle,
-                    render_layer,
-                    optional_sprite,
-                    color,
-                ) in renderables.iter()
-                {
-                    let render_layer = render_layer.cloned().unwrap_or(RenderLayers::DEFAULT);
-                    if camera.render_layers.includes_layer(render_layer) {
-                        renderer.change_material(material_handle);
-                        if let Some(sprite) = optional_sprite {
-                            renderer.prepare_sprite(sprite);
-                        }
-                        if let Some(color) = color {
-                            renderer.set_color(*color);
-                        }
-                        renderer.render_mesh(transform, mesh_handle);
-                    }
-                }
+                renderer.render_scene(camera, &renderables, &lights);
             }
         }
     }

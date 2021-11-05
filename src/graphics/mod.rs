@@ -34,6 +34,8 @@ pub use light::*;
 
 mod shader_parser;
 
+mod cubemap;
+
 #[cfg(feature = "renderer")]
 mod renderer;
 #[cfg(feature = "renderer")]

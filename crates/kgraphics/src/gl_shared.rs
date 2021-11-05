@@ -5,6 +5,7 @@ pub const ACTIVE_UNIFORMS: c_uint = 0x8B86;
 pub const ACTIVE_ATTRIBUTES: c_uint = 0x8B89;
 
 pub const INT: c_uint = 0x1404;
+pub const HALF_FLOAT: c_uint = 0x140B;
 pub const FLOAT: c_uint = 0x1406;
 pub const UNSIGNED_SHORT: c_uint = 0x1403;
 pub const UNSIGNED_INT: c_uint = 0x1405;
@@ -116,7 +117,8 @@ pub unsafe fn flip_image(pixel_format: PixelFormat, width: usize, height: usize,
         PixelFormat::Depth16 | PixelFormat::Depth24 | PixelFormat::Depth32F => {
             flip_image_inner::<f32, 1>(data, width, height)
         }
-        PixelFormat::RGB32Float => flip_image_inner::<f32, 3>(data, width, height),
+        PixelFormat::RGB16F => flip_image_inner::<[u8; 2], 3>(data, width, height),
+        PixelFormat::RGB32F => flip_image_inner::<f32, 3>(data, width, height),
     }
 }
 
@@ -166,10 +168,9 @@ pub fn pixel_format_to_gl_format_and_inner_format_and_type(
     let format = match pixel_format {
         PixelFormat::R8Unorm => RED,
         PixelFormat::RG8Unorm => RG,
-        PixelFormat::RGB8Unorm => RGB,
+        PixelFormat::RGB8Unorm | PixelFormat::RGB32F | PixelFormat::RGB16F => RGB,
         PixelFormat::RGBA8Unorm => RGBA,
         PixelFormat::Depth16 | PixelFormat::Depth24 | PixelFormat::Depth32F => DEPTH_COMPONENT,
-        PixelFormat::RGB32Float => RGB,
     };
 
     let mut inner_format = match pixel_format {
@@ -180,13 +181,15 @@ pub fn pixel_format_to_gl_format_and_inner_format_and_type(
         PixelFormat::RG8Unorm => RG8,
         PixelFormat::RGB8Unorm => RGB8,
         PixelFormat::RGBA8Unorm => RGBA8,
-        PixelFormat::RGB32Float => RGB32F,
+        PixelFormat::RGB16F => RGB32F,
+        PixelFormat::RGB32F => RGB32F,
     };
 
     let type_ = match pixel_format {
         PixelFormat::Depth16 => UNSIGNED_SHORT,
         PixelFormat::Depth24 => UNSIGNED_INT,
-        PixelFormat::Depth32F | PixelFormat::RGB32Float => FLOAT,
+        PixelFormat::RGB16F => HALF_FLOAT,
+        PixelFormat::Depth32F | PixelFormat::RGB32F => FLOAT,
         _ => UNSIGNED_BYTE,
     };
 
