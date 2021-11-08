@@ -268,82 +268,64 @@ impl<T: Numeric + NumericSqrt, const N: usize> Vector<T, N> {
     }
 }
 
-impl<T: Numeric> Vector<T, 1> {
+impl<T: Numeric, const N: usize> Vector<T, N> {
     pub const X: Self = {
         let mut v = Self::ZERO;
-        v.0[0][0] = T::ONE;
-        v
-    };
-}
-
-impl<T: Numeric> Vector<T, 2> {
-    pub const X: Self = {
-        let mut v = Self::ZERO;
-        v.0[0][0] = T::ONE;
+        if N >= 1 {
+            v.0[0][0] = T::ONE;
+        }
         v
     };
     pub const Y: Self = {
         let mut v = Self::ZERO;
-        v.0[0][1] = T::ONE;
-        v
-    };
-}
-
-impl<T: Numeric> Vector<T, 3> {
-    pub const X: Self = {
-        let mut v = Self::ZERO;
-        v.0[0][0] = T::ONE;
-        v
-    };
-    pub const Y: Self = {
-        let mut v = Self::ZERO;
-        v.0[0][1] = T::ONE;
+        if N >= 2 {
+            v.0[0][1] = T::ONE;
+        }
         v
     };
     pub const Z: Self = {
         let mut v = Self::ZERO;
-        v.0[0][2] = T::ONE;
-        v
-    };
-    pub const XY: Self = {
-        let mut v = Self::ZERO;
-        v.0[0][0] = T::ONE;
-        v.0[0][1] = T::ONE;
-        v
-    };
-    pub const XZ: Self = {
-        let mut v = Self::ZERO;
-        v.0[0][0] = T::ONE;
-        v.0[0][2] = T::ONE;
-        v
-    };
-    pub const YZ: Self = {
-        let mut v = Self::ZERO;
-        v.0[0][1] = T::ONE;
-        v.0[0][2] = T::ONE;
-        v
-    };
-}
-
-impl<T: Numeric> Vector<T, 4> {
-    pub const X: Self = {
-        let mut v = Self::ZERO;
-        v.0[0][0] = T::ONE;
-        v
-    };
-    pub const Y: Self = {
-        let mut v = Self::ZERO;
-        v.0[0][1] = T::ONE;
-        v
-    };
-    pub const Z: Self = {
-        let mut v = Self::ZERO;
-        v.0[0][2] = T::ONE;
+        if N >= 3 {
+            v.0[0][2] = T::ONE;
+        }
         v
     };
     pub const W: Self = {
         let mut v = Self::ZERO;
-        v.0[0][3] = T::ONE;
+        if N >= 4 {
+            v.0[0][3] = T::ONE;
+        }
+        v
+    };
+
+    pub const XY: Self = {
+        let mut v = Self::ZERO;
+        if N >= 1 {
+            v.0[0][0] = T::ONE;
+        }
+        if N >= 2 {
+            v.0[0][1] = T::ONE;
+        }
+        v
+    };
+    pub const XZ: Self = {
+        let mut v = Self::ZERO;
+        if N >= 1 {
+            v.0[0][0] = T::ONE;
+        }
+        if N >= 3 {
+            v.0[0][2] = T::ONE;
+        }
+        v
+    };
+    pub const YZ: Self = {
+        let mut v = Self::ZERO;
+        if N >= 2 {
+            v.0[0][1] = T::ONE;
+        }
+        if N >= 3 {
+            v.0[0][2] = T::ONE;
+        }
         v
     };
 }
