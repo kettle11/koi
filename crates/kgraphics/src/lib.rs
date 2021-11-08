@@ -35,7 +35,8 @@ pub enum PixelFormat {
     Depth16,
     Depth24,
     Depth32F,
-    RGB32Float,
+    RGB16F,
+    RGB32F,
 }
 
 #[derive(Clone, Copy, Debug)]

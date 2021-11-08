@@ -79,6 +79,12 @@ pub struct Texture {
     texture_type: TextureType,
 }
 
+// Presently this isn't dropped appropriately.
+#[derive(Debug)]
+pub struct CubeMap {
+    texture: gl_native::TextureNative,
+}
+
 #[derive(Clone)]
 struct Uniform {
     uniform_type: u32,
@@ -451,6 +457,31 @@ impl GraphicsContextTrait for GraphicsContext {
         unsafe { self.gl.delete_buffer(index_buffer.buffer) }
     }
 
+    fn new_texture(
+        &self,
+        width: u32,
+        height: u32,
+        data: Option<&[u8]>,
+        pixel_format: PixelFormat,
+        texture_settings: TextureSettings,
+    ) -> Result<Texture, ()> {
+        unsafe {
+            let texture = self.gl.create_texture().unwrap();
+            let texture = Texture {
+                texture_type: TextureType::Texture(texture),
+            };
+            self.update_texture(
+                &texture,
+                width,
+                height,
+                data,
+                pixel_format,
+                texture_settings,
+            );
+            Ok(texture)
+        }
+    }
+
     fn update_texture(
         &self,
         texture: &Texture,
@@ -527,37 +558,105 @@ impl GraphicsContextTrait for GraphicsContext {
         }
     }
 
-    fn new_texture(
-        &self,
-        width: u32,
-        height: u32,
-        data: Option<&[u8]>,
-        pixel_format: PixelFormat,
-        texture_settings: TextureSettings,
-    ) -> Result<Texture, ()> {
-        unsafe {
-            let texture = self.gl.create_texture().unwrap();
-            let texture = Texture {
-                texture_type: TextureType::Texture(texture),
-            };
-            self.update_texture(
-                &texture,
-                width,
-                height,
-                data,
-                pixel_format,
-                texture_settings,
-            );
-            Ok(texture)
-        }
-    }
-
     fn delete_texture(&self, texture: Texture) {
         let texture = match texture.texture_type {
             TextureType::Texture(t) => t,
             TextureType::DefaultFramebuffer => panic!("Cannot delete default framebuffer"),
         };
         unsafe { self.gl.delete_texture(texture) }
+    }
+
+    fn new_cube_map(
+        &self,
+        width: u32,
+        height: u32,
+        data: Option<[&[u8]; 6]>,
+        pixel_format: PixelFormat,
+        texture_settings: TextureSettings,
+    ) -> Result<CubeMap, ()> {
+        unsafe {
+            let texture = self.gl.create_texture().unwrap();
+            let cube_map = CubeMap { texture };
+            self.update_cube_map(
+                &cube_map,
+                width,
+                height,
+                data,
+                pixel_format,
+                texture_settings,
+            );
+            Ok(cube_map)
+        }
+    }
+
+    fn update_cube_map(
+        &self,
+        cube_map: &CubeMap,
+        width: u32,
+        height: u32,
+        data: Option<[&[u8]; 6]>,
+        pixel_format: PixelFormat,
+        texture_settings: TextureSettings,
+    ) {
+        let (pixel_format, inner_pixel_format, type_) =
+            crate::gl_shared::pixel_format_to_gl_format_and_inner_format_and_type(
+                pixel_format,
+                texture_settings.srgb,
+            );
+        unsafe {
+            self.gl
+                .bind_texture(GL_TEXTURE_CUBE_MAP, Some(cube_map.texture));
+            for i in 0..6 {
+                self.gl.tex_image_2d(
+                    GL_TEXTURE_2D,
+                    0,                         /* mip level */
+                    inner_pixel_format as i32, // Internal format, how the GPU stores these pixels.
+                    width as i32,
+                    height as i32,
+                    0,                    /* border: must be 0 */
+                    GLenum(pixel_format), // This doesn't necessarily need to match the internal_format
+                    GLenum(type_),
+                    data.map(|d| d[i]),
+                );
+            }
+
+            let minification_filter = minification_filter_to_gl_enum(
+                texture_settings.minification_filter,
+                texture_settings.mipmap_filter,
+                texture_settings.generate_mipmaps,
+            );
+            let magnification_filter =
+                magnification_filter_to_gl_enum(texture_settings.magnification_filter);
+
+            self.gl.tex_parameter_i32(
+                GL_TEXTURE_2D,
+                GL_TEXTURE_MIN_FILTER,
+                minification_filter as i32,
+            );
+
+            self.gl.tex_parameter_i32(
+                GL_TEXTURE_2D,
+                GL_TEXTURE_MAG_FILTER,
+                magnification_filter as i32,
+            );
+
+            let wrapping_horizontal = wrapping_to_gl_enum(texture_settings.wrapping_horizontal);
+            let wrapping_vertical = wrapping_to_gl_enum(texture_settings.wrapping_vertical);
+
+            self.gl
+                .tex_parameter_i32(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, wrapping_horizontal as i32);
+            self.gl
+                .tex_parameter_i32(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, wrapping_vertical as i32);
+
+            if texture_settings.generate_mipmaps {
+                self.gl.generate_mipmap(GL_TEXTURE_2D);
+            }
+        }
+        todo!()
+    }
+
+    fn delete_cube_map(&self, cube_map: CubeMap) {
+        unsafe { self.gl.delete_texture(cube_map.texture) }
     }
 
     fn new_command_buffer(&mut self) -> CommandBuffer {

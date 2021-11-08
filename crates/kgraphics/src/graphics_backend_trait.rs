@@ -124,6 +124,27 @@ pub trait GraphicsContextTrait: Sized {
 
     fn delete_texture(&self, texture: Texture);
 
+    fn new_cube_map(
+        &self,
+        width: u32,
+        height: u32,
+        data: Option<[&[u8]; 6]>,
+        pixel_format: PixelFormat,
+        texture_settings: TextureSettings,
+    ) -> Result<CubeMap, ()>;
+
+    fn update_cube_map(
+        &self,
+        cube_map: &CubeMap,
+        width: u32,
+        height: u32,
+        data: Option<[&[u8]; 6]>,
+        pixel_format_in: PixelFormat,
+        texture_settings: TextureSettings,
+    );
+
+    fn delete_cube_map(&self, cube_map: CubeMap);
+
     fn new_pipeline(
         &mut self,
         vertex_function: VertexFunction,

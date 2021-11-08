@@ -195,11 +195,14 @@ pub fn hdri_data_from_bytes(bytes: &[u8], _srgb: bool) -> TextureLoadData {
     unsafe {
         TextureLoadData {
             // This isn't a great conversion. It allocates again which may be avoidable.
-            data: std::slice::from_raw_parts(image.data.as_ptr() as *const u8, image.data.len() * 3 * 4)
-                .into(),
+            data: std::slice::from_raw_parts(
+                image.data.as_ptr() as *const u8,
+                image.data.len() * 3 * 4,
+            )
+            .into(),
             width: image.width as u32,
             height: image.height as u32,
-            pixel_format: PixelFormat::RGB32Float,
+            pixel_format: PixelFormat::RGB32F,
         }
     }
 }
