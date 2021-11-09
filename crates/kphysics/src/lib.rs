@@ -2,6 +2,7 @@ use kmath::numeric_traits::NumericFloat;
 use kmath::*;
 
 // A helper data structure that makes the GJK algorithm a bit cleaner.
+#[derive(Debug)]
 struct StackVec<T: Copy + Default, const SIZE: usize> {
     items: [T; SIZE],
     count: usize,
@@ -38,13 +39,26 @@ impl<T: Copy + Default, const SIZE: usize> std::ops::Deref for StackVec<T, SIZE>
 // Later this should take in other types of colliders instead of just sets of points.
 // This GJK implementation is modeled after the approach described here:
 // https://blog.hamaluik.ca/posts/building-a-collision-engine-part-3-3d-gjk-collision-detection/
-pub fn gjk<F: NumericFloat>(shape_a: &[Vector<F, 3>], shape_b: &[Vector<F, 3>]) -> bool {
+pub fn gjk<F: NumericFloat + core::fmt::Debug>(
+    shape_a: &[Vector<F, 3>],
+    shape_b: &[Vector<F, 3>],
+) -> bool {
     let mut simplex = StackVec::<Vector<F, 3>, 4>::new();
-    let mut direction = shape_b[0] - shape_a[0];
+    let mut direction = (shape_b[0] - shape_a[0]).normalized();
 
+    let mut iterations = 0;
     // Evolve a simplex in Minkowski Difference space to attempt to enclose the origin.
     // At each iteration choose an evolution that gets closer to containing the origin.
     loop {
+        iterations += 1;
+        /*
+        if iterations >= 30 {
+            println!("SHAPE A: {:#?}", shape_a);
+            println!("SHAPE B: {:#?}", shape_b);
+            println!("SIMPLEX: {:#?}", simplex);
+        }*/
+        assert!(iterations < 30);
+
         match simplex.count {
             0 => {}
             1 => direction *= -F::ONE,
@@ -63,7 +77,8 @@ pub fn gjk<F: NumericFloat>(shape_a: &[Vector<F, 3>], shape_b: &[Vector<F, 3>]) 
 
                 // Ensure the direction faces the origin.
                 // Why can't we just use the triple-product approach here?
-                if direction.dot(-simplex[0]) < F::ZERO {
+                let d = direction.dot(-simplex[2]);
+                if d < F::ZERO {
                     direction = -direction;
                 }
             }
@@ -78,6 +93,10 @@ pub fn gjk<F: NumericFloat>(shape_a: &[Vector<F, 3>], shape_b: &[Vector<F, 3>]) 
                 let abd_normal = da.cross(db);
                 let bcd_normal = db.cross(dc);
                 let cad_normal = dc.cross(da);
+
+                // In the case of 2D-intersecting polygons the tetahedron will be completely flat
+                // and all the normals will point the same direction. How / should that be handled?
+                // Maybe all colliders need a bit of depth?
 
                 // Check if the origin is within the planes of the polyhedron and refine the simplex if not.
                 if abd_normal.dot(d_origin) > F::ZERO {
@@ -102,10 +121,12 @@ pub fn gjk<F: NumericFloat>(shape_a: &[Vector<F, 3>], shape_b: &[Vector<F, 3>]) 
         let support_b = find_support(shape_b, -direction);
         let support = support_a - support_b;
 
+        let d = support.dot(direction);
         // If the new point is not beyond the origin then there can be no intersection.
-        if support.dot(direction) < F::ZERO {
+        if d < F::ZERO {
             return false;
         }
+        println!("direction: {:?}", direction);
         simplex.push(support);
     }
 }
@@ -217,4 +238,37 @@ fn cube_vs_cube_with_point() {
     shape_b.push(Vec3::fill(0.5));
     let result = gjk(&shape_a, &shape_b);
     assert!(result);
+}
+
+#[test]
+fn cube_vs_cube2() {
+    let shape_a = [
+        Vec3::ZERO,
+        Vec3::X,
+        Vec3::X + Vec3::Z,
+        Vec3::Z,
+        Vec3::ZERO + Vec3::Y,
+        Vec3::X + Vec3::Y,
+        Vec3::X + Vec3::Z + Vec3::Y,
+        Vec3::Z + Vec3::Y,
+    ];
+
+    let shape_b: Vec<_> = shape_a
+        .iter()
+        .map(|a| *a + Vec3::new(-0.5, 0.0, 1.2))
+        .collect();
+    let result = gjk(&shape_a, &shape_b);
+    assert!(!result);
+}
+
+#[test]
+fn plane_vs_plane() {
+    let shape_a = [Vec3::ZERO, Vec3::X, Vec3::X + Vec3::Z, Vec3::Z];
+
+    let shape_b: Vec<_> = shape_a
+        .iter()
+        .map(|a| *a + Vec3::new(-0.5, 0.0, 1.2))
+        .collect();
+    let result = gjk(&shape_a, &shape_b);
+    assert!(!result);
 }

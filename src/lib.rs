@@ -37,6 +37,8 @@ pub use input::*;
 mod world_assets;
 pub use world_assets::*;
 
+pub use kphysics;
+
 #[cfg(feature = "graphics")]
 mod graphics;
 #[cfg(feature = "graphics")]

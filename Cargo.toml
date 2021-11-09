@@ -8,7 +8,7 @@ license = "Zlib OR Apache-2.0 OR MIT"
 members = ["crates/*", "third_party/koi_kolor/build/kolor"]
 
 [features]
-default = ["audio", "graphics", "renderer", "drawer2d", "png", "jpeg", "gltf", "ui", "hdri"]
+default = ["audio", "graphics", "renderer", "drawer2d", "png", "jpeg", "gltf", "ui", "hdri", "physics"]
 graphics = ["kgraphics"]
 audio = ["oddio", "kaudio"]
 renderer = []
@@ -18,6 +18,7 @@ jpeg = ["jpeg-decoder"]
 gltf = ["kgltf"]
 ui = ["kui"]
 hdri = ["hdrldr"]
+physics = ["kphysics"]
 
 [dependencies]
 kapp = {path = "crates/kapp",  default-features=false}
@@ -27,6 +28,7 @@ kmath = {path = "crates/kmath"}
 klog = {path = "crates/klog"}
 kcolor = {path = "crates/kcolor"}
 
+kphysics = {path = "crates/kphysics",  optional = true}
 kgraphics = {path = "crates/kgraphics",  optional = true}
 kaudio = {path = "crates/kaudio",  optional = true}
 kgltf = {path = "crates/kgltf", optional = true}
