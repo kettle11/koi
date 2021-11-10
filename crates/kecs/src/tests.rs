@@ -354,6 +354,29 @@ fn add_duplicate_component() {
     world.add_component(entity, B).unwrap();
 }
 
+#[test]
+fn disoint_queries() {
+    let mut world = World::new();
+    // world.spawn(A);
+
+    let entity = world.spawn((A, B));
+    world.spawn(A);
+
+    world.add_component(entity, B).unwrap();
+    world.add_component(entity, B).unwrap();
+
+    (|query0: Query<&mut A, With<B>>, _: Query<&mut A, Without<B>>| {
+        assert!(query0.iter().count() == 1);
+    })
+    .run(&world);
+
+    assert!(!(|query0: Query<&mut A, With<B>>, _: Query<&A>| {
+        assert!(query0.iter().count() == 1);
+    })
+    .try_run(&world)
+    .is_ok());
+}
+
 /*
 #[test]
 fn componentless_query() {
