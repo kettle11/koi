@@ -18,7 +18,7 @@ fn main() {
 
         // Spawn a cube that we can control
         let object_a = world.spawn((Transform::new(), Mesh::CUBE, Material::UNLIT, Controlled, Color::WHITE));
-        let object_b = world.spawn((Transform::new(), Mesh::CUBE, Material::UNLIT, Color::WHITE));
+        let object_b = world.spawn((Transform::new().with_rotation(Random::new().quaternion()), Mesh::CUBE, Material::UNLIT, Color::WHITE));
 
         move |event: Event, world: &mut World| {
             match event {
@@ -80,6 +80,7 @@ fn check_intersection(
     points_a: &[Vec3],
     points_b: &[Vec3],
 ) -> bool {
+    /*
     let inverse_a = transform_a.model() * transform_b.model().inversed();
 
     // Transform b into the space of a.
@@ -89,4 +90,6 @@ fn check_intersection(
         .collect();
 
     kphysics::gjk(&points_a, &points_b)
+    */
+    kphysics::gjk(transform_a.model(), transform_b.model(), points_a, points_b)
 }

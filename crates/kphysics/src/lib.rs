@@ -42,113 +42,6 @@ impl<T: Copy + Default, const SIZE: usize> std::ops::DerefMut for StackVec<T, SI
     }
 }
 
-// Later this should take in other types of colliders instead of just sets of points.
-// This GJK implementation is modeled after the approach described here:
-// https://blog.hamaluik.ca/posts/building-a-collision-engine-part-3-3d-gjk-collision-detection/
-pub fn gjk<F: NumericFloat + core::fmt::Debug>(
-    shape_a: &[Vector<F, 3>],
-    shape_b: &[Vector<F, 3>],
-) -> bool {
-    let mut simplex = StackVec::<Vector<F, 3>, 4>::new();
-    let mut direction = (shape_b[0] - shape_a[0]).normalized();
-
-    let mut iterations = 0;
-
-    // Evolve a simplex in Minkowski Difference space to attempt to enclose the origin.
-    // At each iteration choose a new search direction that is towards the origin.
-    loop {
-        iterations += 1;
-
-        // This case shouldn't be needed, and returning false here is likely a bad idea as a default.
-        if iterations >= 30 {
-            //  println!("SHAPE A: {:#?}", shape_a);
-            // println!("SHAPE B: {:#?}", shape_b);
-            //println!("SIMPLEX: {:#?}", simplex);
-            //   return false;
-        }
-        assert!(iterations < 30);
-
-        match simplex.count {
-            0 => {}
-            1 => direction *= -F::ONE,
-            2 => {
-                let ab = simplex[1] - simplex[0];
-                let ao = -simplex[0];
-
-                // Calculate a new direction perpendicular to ab
-                // in the direction of the origin.
-                direction = ab.cross(ao).cross(ab);
-            }
-            3 => {
-                let ac = simplex[2] - simplex[0];
-                let ab = simplex[1] - simplex[0];
-                direction = ac.cross(ab);
-
-                // Ensure the direction faces the origin.
-                // Why can't we just use the triple-product approach here?
-                let d = direction.dot(-simplex[2]);
-                if d < F::ZERO {
-                    direction = -direction;
-                }
-            }
-            4 => {
-                // Check if the origin is within the simplex tetrahedron.
-                let da = simplex[3] - simplex[0];
-                let db = simplex[3] - simplex[1];
-                let dc = simplex[3] - simplex[2];
-
-                // Why is `d_origin` different from earlier `ao`?
-                let d_origin = -simplex[3];
-                let abd_normal = da.cross(db);
-                let bcd_normal = db.cross(dc);
-                let cad_normal = dc.cross(da);
-
-                // In the case of 2D-intersecting polygons the tetahedron will be completely flat
-                // and all the normals will point the same direction. How / should that be handled?
-                // Maybe all colliders need a bit of depth?
-
-                // Check if the origin is within the planes of the polyhedron and refine the simplex if not.
-                if abd_normal.dot(d_origin) > F::ZERO {
-                    // Remove C
-                    simplex.remove(2);
-                    direction = abd_normal;
-                } else if bcd_normal.dot(d_origin) > F::ZERO {
-                    // Remove A
-                    simplex.remove(0);
-                    direction = bcd_normal;
-                } else if cad_normal.dot(d_origin) > F::ZERO {
-                    // Remove B
-                    simplex.remove(1);
-                    direction = cad_normal;
-                } else {
-                    // The origin is inside, we've found an intersection!
-                    return true;
-                }
-            }
-            _ => unreachable!(),
-        }
-
-        println!("direction: {:?}", direction);
-
-        // Add a point here.
-        let support_a = find_support(shape_a, direction);
-        let support_b = find_support(shape_b, -direction);
-        let support = support_a - support_b;
-
-        let d = support.dot(direction);
-        // If the new point is not beyond the origin then there can be no intersection.
-        // It is possible to choose a series of directions which obviously will overlap.
-        // In essence this exit condition relies on stumbling upon a direction for which two
-        // shapes don't overlap.
-        // That seems insufficient. Is there a way to make it more likely?
-        if d < F::ZERO {
-            return false;
-        }
-
-        simplex.push(support);
-    }
-}
-
 fn find_support<F: NumericFloat>(points: &[Vector<F, 3>], direction: Vector<F, 3>) -> Vector<F, 3> {
     let mut max_distance = F::MIN;
     let mut max_point = Vector::<F, 3>::ZERO;
@@ -162,180 +55,6 @@ fn find_support<F: NumericFloat>(points: &[Vector<F, 3>], direction: Vector<F, 3
     max_point
 }
 
-#[test]
-fn cube_vs_cube0() {
-    let shape_a = [
-        Vec3::ZERO,
-        Vec3::X,
-        Vec3::X + Vec3::Z,
-        Vec3::Z,
-        Vec3::ZERO + Vec3::Y,
-        Vec3::X + Vec3::Y,
-        Vec3::X + Vec3::Z + Vec3::Y,
-        Vec3::Z + Vec3::Y,
-    ];
-
-    let shape_b: Vec<_> = shape_a.iter().map(|a| *a + Vec3::fill(0.5)).collect();
-    let result = gjk(&shape_a, &shape_b);
-    assert!(result);
-
-    let shape_b: Vec<_> = shape_a.iter().map(|a| *a + Vec3::fill(-0.5)).collect();
-    let result = gjk(&shape_a, &shape_b);
-    assert!(result);
-
-    let shape_b: Vec<_> = shape_a.iter().map(|a| *a + Vec3::Y * 0.5).collect();
-    let result = gjk(&shape_a, &shape_b);
-    assert!(result);
-
-    let shape_b: Vec<_> = shape_a.iter().map(|a| *a + Vec3::Y * -0.5).collect();
-    let result = gjk(&shape_a, &shape_b);
-    assert!(result);
-}
-
-#[test]
-fn cube_vs_cube1() {
-    let shape_a = [
-        Vec3::ZERO,
-        Vec3::X,
-        Vec3::X + Vec3::Z,
-        Vec3::Z,
-        Vec3::ZERO + Vec3::Y,
-        Vec3::X + Vec3::Y,
-        Vec3::X + Vec3::Z + Vec3::Y,
-        Vec3::Z + Vec3::Y,
-    ];
-
-    let shape_b: Vec<_> = shape_a.iter().map(|a| *a + Vec3::fill(2.0)).collect();
-    let result = gjk(&shape_a, &shape_b);
-    assert!(!result);
-
-    let result = gjk(&shape_b, &shape_a);
-    assert!(!result);
-}
-
-#[test]
-fn cube_vs_cube_on_edge() {
-    let shape_a = [
-        Vec3::ZERO,
-        Vec3::X,
-        Vec3::X + Vec3::Z,
-        Vec3::Z,
-        Vec3::ZERO + Vec3::Y,
-        Vec3::X + Vec3::Y,
-        Vec3::X + Vec3::Z + Vec3::Y,
-        Vec3::Z + Vec3::Y,
-    ];
-
-    let shape_b: Vec<_> = shape_a.iter().map(|a| *a + Vec3::X).collect();
-    let result = gjk(&shape_a, &shape_b);
-    assert!(result);
-
-    let result = gjk(&shape_b, &shape_a);
-    assert!(result);
-
-    let shape_b: Vec<_> = shape_a.iter().map(|a| *a + -Vec3::X).collect();
-    let result = gjk(&shape_a, &shape_b);
-    assert!(result);
-}
-
-#[test]
-fn cube_vs_cube_with_point() {
-    let shape_a = [
-        Vec3::ZERO,
-        Vec3::X,
-        Vec3::X + Vec3::Z,
-        Vec3::Z,
-        Vec3::ZERO + Vec3::Y,
-        Vec3::X + Vec3::Y,
-        Vec3::X + Vec3::Z + Vec3::Y,
-        Vec3::Z + Vec3::Y,
-    ];
-
-    // This shape is entirely below the original cube other than one point that's in the center.
-    let mut shape_b: Vec<_> = shape_a.iter().map(|a| *a - Vec3::Y * 1.2).collect();
-    shape_b.push(Vec3::fill(0.5));
-    let result = gjk(&shape_a, &shape_b);
-    assert!(result);
-}
-
-#[test]
-fn cube_vs_cube2() {
-    let shape_a = [
-        Vec3::ZERO,
-        Vec3::X,
-        Vec3::X + Vec3::Z,
-        Vec3::Z,
-        Vec3::ZERO + Vec3::Y,
-        Vec3::X + Vec3::Y,
-        Vec3::X + Vec3::Z + Vec3::Y,
-        Vec3::Z + Vec3::Y,
-    ];
-
-    let shape_b: Vec<_> = shape_a
-        .iter()
-        .map(|a| *a + Vec3::new(-0.5, 0.0, 1.2))
-        .collect();
-    let result = gjk(&shape_a, &shape_b);
-    assert!(!result);
-}
-
-#[test]
-fn cube_vs_cube2f64() {
-    type Vec3 = Vector<f64, 3>;
-    let shape_a = [
-        Vec3::ZERO,
-        Vec3::X,
-        Vec3::X + Vec3::Z,
-        Vec3::Z,
-        Vec3::ZERO + Vec3::Y,
-        Vec3::X + Vec3::Y,
-        Vec3::X + Vec3::Z + Vec3::Y,
-        Vec3::Z + Vec3::Y,
-    ];
-
-    let shape_b: Vec<_> = shape_a
-        .iter()
-        .map(|a| *a + Vec3::new(-0.5, 0.0, 1.2))
-        .collect();
-    let result = gjk(&shape_a, &shape_b);
-    assert!(!result);
-}
-
-#[test]
-fn plane_vs_plane() {
-    let shape_a = [Vec3::ZERO, Vec3::X, Vec3::X + Vec3::Z, Vec3::Z];
-
-    let shape_b: Vec<_> = shape_a
-        .iter()
-        .map(|a| *a + Vec3::new(-0.5, 0.0, 1.2))
-        .collect();
-    let result = gjk(&shape_a, &shape_b);
-    assert!(!result);
-}
-
-#[test]
-fn cube_vs_cube_gjk2() {
-    let shape_a = [
-        Vec3::ZERO,
-        Vec3::X,
-        Vec3::X + Vec3::Z,
-        Vec3::Z,
-        Vec3::ZERO + Vec3::Y,
-        Vec3::X + Vec3::Y,
-        Vec3::X + Vec3::Z + Vec3::Y,
-        Vec3::Z + Vec3::Y,
-    ];
-
-    let world_to_a = Mat4::IDENTITY;
-    let world_to_b = Mat4::from_translation(Vec3::fill(0.5));
-    let result = gjk2(world_to_a, world_to_b, &shape_a, &shape_a);
-    assert!(result);
-
-    let world_to_b = Mat4::from_translation(Vec3::fill(2.5));
-    let result = gjk2(world_to_a, world_to_b, &shape_a, &shape_a);
-    assert!(!result);
-}
-
 #[derive(Copy, Clone, Default)]
 struct SimplexVertex<F: NumericFloat> {
     point_a: Vector<F, 3>, // Support point in polygon a
@@ -344,22 +63,29 @@ struct SimplexVertex<F: NumericFloat> {
     u: F,                  // unnormalized barycentric coordinate for closest point,
 }
 
-fn gjk2<F: NumericFloat>(
-    world_to_a: Matrix<F, 4, 4>,
-    world_to_b: Matrix<F, 4, 4>,
+pub fn gjk<F: NumericFloat>(
+    a_to_world: Matrix<F, 4, 4>,
+    b_to_world: Matrix<F, 4, 4>,
     shape_a: &[Vector<F, 3>],
     shape_b: &[Vector<F, 3>],
 ) -> bool {
-    let a_to_world = world_to_a.inversed();
-    let b_to_world = world_to_b.inversed();
+    let world_to_a = a_to_world.inversed();
+    let world_to_b = b_to_world.inversed();
 
     let mut simplex = Simplex::<F>::new();
+    let mut iterations = 0;
+
     loop {
+        if iterations > 1000 {
+            panic!()
+        }
+        iterations += 1;
         simplex.evolve();
         let search_direction = match simplex.points.count {
             0 => Vector::<F, 3>::X, // Completely arbitrary search direction for now
             1 => -simplex.points[0].point,
             2 => {
+                // The origin could be on this plane, in which case there is an intersection.
                 let ab = simplex.points[1].point - simplex.points[0].point;
                 let ao = -simplex.points[0].point;
                 // Calculate a new direction perpendicular to ab
@@ -385,6 +111,11 @@ fn gjk2<F: NumericFloat>(
             }
             _ => unreachable!(),
         };
+
+        // This is probably wrong.
+        if search_direction == Vector::<F, 3>::ZERO {
+            return true;
+        }
 
         // Transform the direction into the space of each polyhedron
         // and then find the supports.
@@ -780,4 +511,46 @@ impl<F: NumericFloat> Simplex<F> {
         self.points[2].u = w_abcd;
         self.points[3].u = x_abcd;
     }
+}
+
+#[test]
+fn cube_vs_cube0() {
+    let shape_a = [
+        Vec3::ZERO,
+        Vec3::X,
+        Vec3::X + Vec3::Z,
+        Vec3::Z,
+        Vec3::ZERO + Vec3::Y,
+        Vec3::X + Vec3::Y,
+        Vec3::X + Vec3::Z + Vec3::Y,
+        Vec3::Z + Vec3::Y,
+    ];
+
+    let world_to_a = Mat4::IDENTITY;
+    let world_to_b = Mat4::from_translation(Vec3::fill(0.5));
+    let result = gjk(world_to_a, world_to_b, &shape_a, &shape_a);
+    assert!(result);
+
+    let world_to_b = Mat4::from_translation(Vec3::fill(2.5));
+    let result = gjk(world_to_a, world_to_b, &shape_a, &shape_a);
+    assert!(!result);
+}
+
+#[test]
+fn cube_vs_cube1() {
+    let shape_a = [
+        Vec3::ZERO,
+        Vec3::X,
+        Vec3::X + Vec3::Z,
+        Vec3::Z,
+        Vec3::ZERO + Vec3::Y,
+        Vec3::X + Vec3::Y,
+        Vec3::X + Vec3::Z + Vec3::Y,
+        Vec3::Z + Vec3::Y,
+    ];
+
+    let a_to_world = Mat4::IDENTITY;
+    let b_to_world = Mat4::from_translation(Vec3::X * 0.5);
+    let result = gjk(a_to_world, b_to_world, &shape_a, &shape_a);
+    assert!(result);
 }
