@@ -63,17 +63,26 @@ struct SimplexVertex<F: NumericFloat> {
     u: F,                  // unnormalized barycentric coordinate for closest point,
 }
 
+#[derive(Debug, Clone)]
+pub struct CollisionInfo<F: NumericFloat> {
+    pub collided: bool,
+    pub closest_point_a: Vector<F, 3>,
+    pub closest_point_b: Vector<F, 3>,
+}
+
 pub fn gjk<F: NumericFloat>(
     a_to_world: Matrix<F, 4, 4>,
     b_to_world: Matrix<F, 4, 4>,
     shape_a: &[Vector<F, 3>],
     shape_b: &[Vector<F, 3>],
-) -> bool {
+) -> CollisionInfo<F> {
     let world_to_a = a_to_world.inversed();
     let world_to_b = b_to_world.inversed();
 
     let mut simplex = Simplex::<F>::new();
     let mut iterations = 0;
+
+    let mut last_simplex_distance = F::MAX;
 
     loop {
         if iterations > 1000 {
@@ -85,7 +94,6 @@ pub fn gjk<F: NumericFloat>(
             0 => Vector::<F, 3>::X, // Completely arbitrary search direction for now
             1 => -simplex.points[0].point,
             2 => {
-                // The origin could be on this plane, in which case there is an intersection.
                 let ab = simplex.points[1].point - simplex.points[0].point;
                 let ao = -simplex.points[0].point;
                 // Calculate a new direction perpendicular to ab
@@ -107,14 +115,43 @@ pub fn gjk<F: NumericFloat>(
             4 => {
                 // The simplex is still a tetehedron which means the
                 // origin was contained within it which indicates an overlap
-                return true;
+                let (closest_point_a, closest_point_b) = simplex.closest_points();
+                return CollisionInfo {
+                    collided: true,
+                    closest_point_a,
+                    closest_point_b,
+                };
             }
             _ => unreachable!(),
         };
 
+        if simplex.points.count != 0 {
+            let closest_point_on_simplex_to_origin = simplex.closest_simplex_point();
+            let distance_squared = closest_point_on_simplex_to_origin.length_squared();
+            if distance_squared >= last_simplex_distance {
+                // Not getting closer to origin
+                println!("NOT GETTING CLOSER TO oRIGIN");
+
+                let (closest_point_a, closest_point_b) = simplex.closest_points();
+                return CollisionInfo {
+                    collided: false,
+                    closest_point_a,
+                    closest_point_b,
+                };
+            }
+            last_simplex_distance = distance_squared;
+        }
+
         // This is probably wrong.
         if search_direction == Vector::<F, 3>::ZERO {
-            return true;
+            println!("ZERO SEARCH DIRECTION");
+
+            let (closest_point_a, closest_point_b) = simplex.closest_points();
+            return CollisionInfo {
+                collided: false,
+                closest_point_a,
+                closest_point_b,
+            };
         }
 
         // Transform the direction into the space of each polyhedron
@@ -130,9 +167,17 @@ pub fn gjk<F: NumericFloat>(
         let support = support_a - support_b;
 
         // This new point does not pass the origin so it cannot possibly enclose it, which means no collision.
+        /*
         if support.dot(search_direction) < F::ZERO {
-            return false;
+            println!("NOT PAST ORIGIN");
+            let (closest_point_a, closest_point_b) = simplex.closest_points();
+            return CollisionInfo {
+                collided: false,
+                closest_point_a,
+                closest_point_b,
+            };
         }
+        */
         simplex.points.push(SimplexVertex {
             point_a: support_a,
             point_b: support_b,
@@ -141,6 +186,7 @@ pub fn gjk<F: NumericFloat>(
         });
     }
 }
+
 struct Simplex<F: NumericFloat> {
     points: StackVec<SimplexVertex<F>, 4>,
 }
@@ -150,6 +196,52 @@ impl<F: NumericFloat> Simplex<F> {
         Self {
             points: StackVec::new(),
         }
+    }
+
+    /// Calculate the point on the simplex closest to the origin
+    fn closest_simplex_point(&self) -> Vector<F, 3> {
+        // Denominator
+        let mut denom = F::ZERO;
+        for p in &self.points[0..self.points.count] {
+            denom = denom + p.u;
+        }
+        denom = F::ONE / denom;
+
+        let mut u = [F::ZERO; 4];
+        for i in 0..self.points.count {
+            u[i] = self.points[i].u * denom;
+        }
+
+        let mut a = Vector::<F, 3>::ZERO;
+
+        for i in 0..self.points.count {
+            a += self.points[i].point * u[i];
+        }
+        a
+    }
+
+    /// Calculates the closest world space points from their barycentric coordinates.
+    fn closest_points(&self) -> (Vector<F, 3>, Vector<F, 3>) {
+        // Denominator
+        let mut denom = F::ZERO;
+        for p in &self.points[0..self.points.count] {
+            denom = denom + p.u;
+        }
+        denom = F::ONE / denom;
+
+        let mut u = [F::ZERO; 4];
+        for i in 0..self.points.count {
+            u[i] = self.points[i].u * denom;
+        }
+
+        let mut a = Vector::<F, 3>::ZERO;
+        let mut b = Vector::<F, 3>::ZERO;
+
+        for i in 0..self.points.count {
+            a += self.points[i].point_a * u[i];
+            b += self.points[i].point_b * u[i]
+        }
+        (a, b)
     }
 
     fn evolve(&mut self) {
@@ -212,7 +304,7 @@ impl<F: NumericFloat> Simplex<F> {
         let u_ca = a.dot(ac);
         let v_ca = c.dot(ca);
 
-        // These first three tests check if the origin is closest
+        // These first three tests check if the origin is closest to a corner
         if v_ab <= F::ZERO && u_ca <= F::ZERO {
             // Region A
             // Remove B, C
@@ -529,11 +621,11 @@ fn cube_vs_cube0() {
     let world_to_a = Mat4::IDENTITY;
     let world_to_b = Mat4::from_translation(Vec3::fill(0.5));
     let result = gjk(world_to_a, world_to_b, &shape_a, &shape_a);
-    assert!(result);
+    assert!(result.collided);
 
     let world_to_b = Mat4::from_translation(Vec3::fill(2.5));
     let result = gjk(world_to_a, world_to_b, &shape_a, &shape_a);
-    assert!(!result);
+    assert!(!result.collided);
 }
 
 #[test]
@@ -552,5 +644,43 @@ fn cube_vs_cube1() {
     let a_to_world = Mat4::IDENTITY;
     let b_to_world = Mat4::from_translation(Vec3::X * 0.5);
     let result = gjk(a_to_world, b_to_world, &shape_a, &shape_a);
-    assert!(result);
+    assert!(result.collided);
+}
+
+#[test]
+fn cube_vs_cube_points() {
+    let shape_a = [
+        Vec3::ZERO,
+        Vec3::X,
+        Vec3::X + Vec3::Z,
+        Vec3::Z,
+        Vec3::ZERO + Vec3::Y,
+        Vec3::X + Vec3::Y,
+        Vec3::X + Vec3::Z + Vec3::Y,
+        Vec3::Z + Vec3::Y,
+    ];
+
+    let world_to_a = Mat4::IDENTITY;
+    let world_to_b = Mat4::from_translation(Vec3::fill(-1.5));
+    let result = gjk(world_to_a, world_to_b, &shape_a, &shape_a);
+    println!("RESULT: {:#?}", result);
+}
+
+#[test]
+fn cube_vs_cube2() {
+    let shape_a = [
+        Vec3::ZERO,
+        Vec3::X,
+        Vec3::X + Vec3::Z,
+        Vec3::Z,
+        Vec3::ZERO + Vec3::Y,
+        Vec3::X + Vec3::Y,
+        Vec3::X + Vec3::Z + Vec3::Y,
+        Vec3::Z + Vec3::Y,
+    ];
+
+    let a_to_world = Mat4::from_translation(Vec3::X * 1.5);
+    let b_to_world = Mat4::IDENTITY;
+    let result = gjk(a_to_world, b_to_world, &shape_a, &shape_a);
+    assert!(!result.collided);
 }

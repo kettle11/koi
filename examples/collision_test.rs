@@ -7,6 +7,13 @@ fn main() {
     App::new().setup_and_run(|world: &mut World| {
         // Setup things here.
 
+        // Spawn a light
+        world.spawn((
+            Light::new(LightMode::Directional, Color::WHITE, 1.0),
+            Transform::new().with_position([0., 8.0, 8.0].into()),
+            Material::UNLIT,
+        ));
+
         // Spawn a camera and make it look towards the origin.
         world.spawn((
             Transform::new()
@@ -16,9 +23,33 @@ fn main() {
             CameraControls::new(),
         ));
 
+        let collision_marker_a = world.spawn((
+            Transform::new().with_scale(Vec3::fill(0.1)),
+            Mesh::SPHERE,
+            Material::UNLIT,
+            Color::BLUE,
+        ));
+        let collision_marker_b = world.spawn((
+            Transform::new().with_scale(Vec3::fill(0.1)),
+            Mesh::SPHERE,
+            Material::UNLIT,
+            Color::GREEN,
+        ));
+
         // Spawn a cube that we can control
-        let object_a = world.spawn((Transform::new(), Mesh::CUBE, Material::UNLIT, Controlled, Color::WHITE));
-        let object_b = world.spawn((Transform::new().with_rotation(Random::new().quaternion()), Mesh::CUBE, Material::UNLIT, Color::WHITE));
+        let object_a = world.spawn((
+            Transform::new(),
+            Mesh::CUBE,
+            Controlled,
+            Color::WHITE,
+            Material::DEFAULT,
+        ));
+        let object_b = world.spawn((
+            Transform::new(), //.with_rotation(Random::new().quaternion()),
+            Mesh::CUBE,
+            Color::WHITE,
+            Material::DEFAULT,
+        ));
 
         move |event: Event, world: &mut World| {
             match event {
@@ -44,21 +75,50 @@ fn main() {
                     })
                     .run(world);
 
-                    (|meshes: &Assets<Mesh>, mut objects: Query<(&GlobalTransform, &mut Color, &Handle<Mesh>)>| {
-                       let (transform_a, _, a_mesh) = objects.get_entity_components(object_a).unwrap();
-                       let (transform_b, _, b_mesh) = objects.get_entity_components(object_b).unwrap();
-                       let mesh_a = meshes.get(a_mesh);
-                       let mesh_b = meshes.get(a_mesh);
+                    (|meshes: &Assets<Mesh>,
+                      mut objects: Query<(
+                        &mut Transform,
+                        &GlobalTransform,
+                        &mut Color,
+                        &Handle<Mesh>,
+                    )>| {
+                        let (_, transform_a, _, a_mesh) =
+                            objects.get_entity_components(object_a).unwrap();
+                        let (_, transform_b, _, b_mesh) =
+                            objects.get_entity_components(object_b).unwrap();
 
-                        let intersects = check_intersection(transform_a, transform_b, &mesh_a.mesh_data.as_ref().unwrap().positions, &mesh_b.mesh_data.as_ref().unwrap().positions);
-                        let new_color = if intersects {
+                        println!("position a: {:?}", transform_a.position);
+                        println!("position b: {:?}", transform_b.position);
+
+                        let mesh_a = meshes.get(a_mesh);
+                        let mesh_b = meshes.get(a_mesh);
+
+                        let points_a = &mesh_a.mesh_data.as_ref().unwrap().positions;
+                        let points_b = &mesh_b.mesh_data.as_ref().unwrap().positions;
+                        let collision_info = kphysics::gjk(
+                            transform_a.model(),
+                            transform_b.model(),
+                            points_a,
+                            points_b,
+                        );
+                        let new_color = if collision_info.collided {
                             Color::RED
                         } else {
                             Color::WHITE
                         };
-                        for (_, color, _) in &mut objects {
-                            *color = new_color;
-                        }
+                        *objects.get_entity_components_mut(object_a).unwrap().2 = new_color;
+                        *objects.get_entity_components_mut(object_b).unwrap().2 = new_color;
+
+                        objects
+                            .get_entity_components_mut(collision_marker_a)
+                            .unwrap()
+                            .0
+                            .position = collision_info.closest_point_a;
+                        objects
+                            .get_entity_components_mut(collision_marker_b)
+                            .unwrap()
+                            .0
+                            .position = collision_info.closest_point_b;
                     })
                     .run(world)
                 }
@@ -72,24 +132,4 @@ fn main() {
             false
         }
     });
-}
-
-fn check_intersection(
-    transform_a: &GlobalTransform,
-    transform_b: &GlobalTransform,
-    points_a: &[Vec3],
-    points_b: &[Vec3],
-) -> bool {
-    /*
-    let inverse_a = transform_a.model() * transform_b.model().inversed();
-
-    // Transform b into the space of a.
-    let points_b: Vec<_> = points_b
-        .iter()
-        .map(|p| inverse_a.transform_point(*p))
-        .collect();
-
-    kphysics::gjk(&points_a, &points_b)
-    */
-    kphysics::gjk(transform_a.model(), transform_b.model(), points_a, points_b)
 }
