@@ -26,15 +26,26 @@ fn main() {
         let collision_marker_a = world.spawn((
             Transform::new().with_scale(Vec3::fill(0.1)),
             Mesh::SPHERE,
-            Material::UNLIT,
+            // Material::UNLIT,
             Color::BLUE,
         ));
         let collision_marker_b = world.spawn((
             Transform::new().with_scale(Vec3::fill(0.1)),
             Mesh::SPHERE,
-            Material::UNLIT,
+            // Material::UNLIT,
             Color::GREEN,
         ));
+
+        let mut contact_markers = Vec::new();
+        for _ in 0..4 {
+            let e = world.spawn((
+                Transform::new().with_scale(Vec3::fill(0.1)),
+                Mesh::SPHERE,
+                Material::UNLIT,
+                Color::from_srgb_hex(0xFFFF00, 1.0),
+            ));
+            contact_markers.push(e);
+        }
 
         // Spawn a cube that we can control
         let object_a = world.spawn((
@@ -45,7 +56,8 @@ fn main() {
             Material::DEFAULT,
         ));
         let object_b = world.spawn((
-            Transform::new(), //.with_rotation(Random::new().quaternion()),
+            Transform::new()
+                .with_rotation(Quat::from_angle_axis(std::f32::consts::TAU * 0.25, Vec3::Y)), //.with_rotation(Random::new_with_seed(2).quaternion()),
             Mesh::CUBE,
             Color::WHITE,
             Material::DEFAULT,
@@ -101,12 +113,29 @@ fn main() {
 
                         let points_a = &mesh_a.mesh_data.as_ref().unwrap().positions;
                         let points_b = &mesh_b.mesh_data.as_ref().unwrap().positions;
+                        let model_a = transform_a.model();
+                        let model_b = transform_b.model();
                         let collision_info = kphysics::gjk(
                             transform_a.model(),
                             transform_b.model(),
                             points_a,
                             points_b,
                         );
+                        if collision_info.collided {
+                            let contact_points = kphysics::find_planar_contact_points(
+                                collision_info.closest_point_a,
+                                Vec3::Y,
+                                &mesh_a.mesh_data.as_ref().unwrap().positions,
+                                &mesh_a.mesh_data.as_ref().unwrap().indices,
+                                &mesh_b.mesh_data.as_ref().unwrap().positions,
+                                &mesh_b.mesh_data.as_ref().unwrap().indices,
+                                model_a.inversed(),
+                                model_b.inversed(),
+                            );
+                            for (e, p) in contact_markers.iter().zip(contact_points.iter()) {
+                                objects.get_entity_components_mut(*e).unwrap().0.position = *p;
+                            }
+                        }
                         let new_color = if collision_info.collided {
                             Color::RED
                         } else {

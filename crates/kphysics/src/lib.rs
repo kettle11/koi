@@ -3,6 +3,100 @@ use std::fmt::Debug;
 use kmath::numeric_traits::NumericFloat;
 use kmath::*;
 
+fn clip_dirs_against_mesh<F: NumericFloat + Debug + GJKEpsilon>(
+    p: Vector<F, 3>,
+    dir0: Vector<F, 3>,
+    dir1: Vector<F, 3>,
+    mesh_a_vertices: &[Vector<F, 3>],
+    mesh_a_indices: &[[u32; 3]],
+    min0: &mut F,
+    max0: &mut F,
+    min1: &mut F,
+    max1: &mut F,
+) {
+    for tri in mesh_a_indices {
+        let middle_vert = mesh_a_vertices[tri[1] as usize];
+        let edge0 = middle_vert - mesh_a_vertices[tri[0] as usize];
+        let edge1 = mesh_a_vertices[tri[2] as usize] - middle_vert;
+        let plane_normal = edge0.cross(edge1).normalized();
+        let denom0 = dir0.dot(plane_normal);
+        let denom1 = dir1.dot(plane_normal);
+        if denom0.numeric_abs() > F::GJK_EPSILON {
+            let d0 = ((middle_vert - p).dot(plane_normal)) / denom0;
+            *min0 = min0.numeric_min(d0);
+            *max0 = max0.numeric_max(d0);
+        }
+        if denom1.numeric_abs() > F::GJK_EPSILON {
+            let d1 = ((middle_vert - p).dot(plane_normal)) / denom1;
+            *min1 = min1.numeric_min(d1);
+            *max1 = max1.numeric_max(d1);
+        }
+    }
+}
+
+pub fn find_planar_contact_points<F: NumericFloat + Debug + GJKEpsilon>(
+    p: Vector<F, 3>,
+    normal: Vector<F, 3>,
+    mesh_a_vertices: &[Vector<F, 3>],
+    mesh_a_indices: &[[u32; 3]],
+    mesh_b_vertices: &[Vector<F, 3>],
+    mesh_b_indices: &[[u32; 3]],
+    world_to_a: Matrix<F, 4, 4>,
+    world_to_b: Matrix<F, 4, 4>,
+) -> [Vector<F, 3>; 4] {
+    let dir0 = if normal.z != F::ZERO || normal.y != F::ZERO {
+        normal.cross(Vector::<F, 3>::X)
+    } else {
+        normal.cross(Vector::<F, 3>::Y)
+    };
+    let dir1 = dir0.cross(normal);
+
+    let mut min0_a = F::MAX;
+    let mut max0_a = F::MIN;
+    let mut min1_a = F::MAX;
+    let mut max1_a = F::MIN;
+    clip_dirs_against_mesh(
+        world_to_a.transform_point(p),
+        world_to_a.transform_vector(dir0),
+        world_to_a.transform_vector(dir1),
+        mesh_a_vertices,
+        mesh_a_indices,
+        &mut min0_a,
+        &mut max0_a,
+        &mut min1_a,
+        &mut max1_a,
+    );
+
+    let mut min0_b = F::MAX;
+    let mut max0_b = F::MIN;
+    let mut min1_b = F::MAX;
+    let mut max1_b = F::MIN;
+
+    clip_dirs_against_mesh(
+        world_to_b.transform_point(p),
+        world_to_b.transform_vector(dir0),
+        world_to_b.transform_vector(dir1),
+        mesh_b_vertices,
+        mesh_b_indices,
+        &mut min0_b,
+        &mut max0_b,
+        &mut min1_b,
+        &mut max1_b,
+    );
+
+    let min0 = min0_a.max_mumeric(min0_b);
+    let max0 = max0_a.min_mumeric(max0_b);
+    let min1 = min1_a.max_mumeric(min1_b);
+    let max1 = max1_a.min_mumeric(max1_b);
+
+    [
+        dir0 * min0 + p,
+        dir0 * max0 + p,
+        dir1 * min1 + p,
+        dir1 * max1 + p,
+    ]
+}
+
 pub trait GJKEpsilon {
     const GJK_EPSILON: Self;
 }
@@ -680,12 +774,7 @@ fn cube_vs_cube2() {
 
 #[test]
 fn plane_vs_plane0() {
-    let shape_a = [
-        Vec3::ZERO,
-        Vec3::X,
-        Vec3::X + Vec3::Z,
-        Vec3::Z,
-    ];
+    let shape_a = [Vec3::ZERO, Vec3::X, Vec3::X + Vec3::Z, Vec3::Z];
 
     let a_to_world = Mat4::IDENTITY;
     let b_to_world = Mat4::from_translation(Vec3::X * 0.5);
