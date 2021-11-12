@@ -656,6 +656,7 @@ fn cube_vs_cube_points() {
     let world_to_a = Mat4::IDENTITY;
     let world_to_b = Mat4::from_translation(Vec3::fill(-1.5));
     let result = gjk(world_to_a, world_to_b, &shape_a, &shape_a);
+    assert!(!result.collided)
 }
 
 #[test]
@@ -673,6 +674,25 @@ fn cube_vs_cube2() {
 
     let a_to_world = Mat4::from_translation(Vec3::X * 1.5);
     let b_to_world = Mat4::IDENTITY;
+    let result = gjk(a_to_world, b_to_world, &shape_a, &shape_a);
+    assert!(!result.collided);
+}
+
+#[test]
+fn plane_vs_plane0() {
+    let shape_a = [
+        Vec3::ZERO,
+        Vec3::X,
+        Vec3::X + Vec3::Z,
+        Vec3::Z,
+    ];
+
+    let a_to_world = Mat4::IDENTITY;
+    let b_to_world = Mat4::from_translation(Vec3::X * 0.5);
+    let result = gjk(a_to_world, b_to_world, &shape_a, &shape_a);
+    assert!(result.collided);
+
+    let b_to_world = Mat4::from_translation(Vec3::X * 2.5);
     let result = gjk(a_to_world, b_to_world, &shape_a, &shape_a);
     assert!(!result.collided);
 }
