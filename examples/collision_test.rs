@@ -38,7 +38,7 @@ fn main() {
 
         // Spawn a cube that we can control
         let object_a = world.spawn((
-            Transform::new(),
+            Transform::new().with_position(Vec3::X * 1.5),
             Mesh::CUBE,
             Controlled,
             Color::WHITE,
@@ -70,6 +70,12 @@ fn main() {
                             }
                             if input.key(Key::Down) {
                                 transform.position += Vec3::Z * 0.1;
+                            }
+                            if input.key(Key::NumPad2) {
+                                transform.position -= Vec3::Y * 0.1;
+                            }
+                            if input.key(Key::NumPad8) {
+                                transform.position += Vec3::Y * 0.1;
                             }
                         }
                     })

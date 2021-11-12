@@ -1,5 +1,19 @@
+use std::fmt::Debug;
+
 use kmath::numeric_traits::NumericFloat;
 use kmath::*;
+
+pub trait GJKEpsilon {
+    const GJK_EPSILON: Self;
+}
+
+// These consts are chosen totally arbitrarily.
+impl GJKEpsilon for f32 {
+    const GJK_EPSILON: Self = 0.00001;
+}
+impl GJKEpsilon for f64 {
+    const GJK_EPSILON: Self = 0.00001;
+}
 
 // A helper data structure that makes the GJK algorithm a bit cleaner.
 #[derive(Debug)]
@@ -55,7 +69,7 @@ fn find_support<F: NumericFloat>(points: &[Vector<F, 3>], direction: Vector<F, 3
     max_point
 }
 
-#[derive(Copy, Clone, Default)]
+#[derive(Copy, Clone, Default, Debug)]
 struct SimplexVertex<F: NumericFloat> {
     point_a: Vector<F, 3>, // Support point in polygon a
     point_b: Vector<F, 3>, // Support point in polygon b
@@ -70,7 +84,7 @@ pub struct CollisionInfo<F: NumericFloat> {
     pub closest_point_b: Vector<F, 3>,
 }
 
-pub fn gjk<F: NumericFloat>(
+pub fn gjk<F: NumericFloat + Debug + GJKEpsilon>(
     a_to_world: Matrix<F, 4, 4>,
     b_to_world: Matrix<F, 4, 4>,
     shape_a: &[Vector<F, 3>],
@@ -80,6 +94,7 @@ pub fn gjk<F: NumericFloat>(
     let world_to_b = b_to_world.inversed();
 
     let mut simplex = Simplex::<F>::new();
+
     let mut iterations = 0;
 
     let mut last_simplex_distance = F::MAX;
@@ -90,28 +105,11 @@ pub fn gjk<F: NumericFloat>(
         }
         iterations += 1;
         simplex.evolve();
+
+        let closest_simplex_point = simplex.closest_simplex_point();
         let search_direction = match simplex.points.count {
             0 => Vector::<F, 3>::X, // Completely arbitrary search direction for now
-            1 => -simplex.points[0].point,
-            2 => {
-                let ab = simplex.points[1].point - simplex.points[0].point;
-                let ao = -simplex.points[0].point;
-                // Calculate a new direction perpendicular to ab
-                // in the direction of the origin.
-                ab.cross(ao).cross(ab)
-            }
-            3 => {
-                let ab = simplex.points[1].point - simplex.points[0].point;
-                let ac = simplex.points[2].point - simplex.points[0].point;
-                let mut direction = ac.cross(ab);
-
-                // Ensure the direction faces the origin.
-                let d = direction.dot(-simplex.points[2].point);
-                if d < F::ZERO {
-                    direction = -direction;
-                }
-                direction
-            }
+            1 | 2 | 3 => -closest_simplex_point,
             4 => {
                 // The simplex is still a tetehedron which means the
                 // origin was contained within it which indicates an overlap
@@ -126,11 +124,10 @@ pub fn gjk<F: NumericFloat>(
         };
 
         if simplex.points.count != 0 {
-            let closest_point_on_simplex_to_origin = simplex.closest_simplex_point();
-            let distance_squared = closest_point_on_simplex_to_origin.length_squared();
+            let distance_squared = closest_simplex_point.length_squared();
+
             if distance_squared >= last_simplex_distance {
                 // Not getting closer to origin
-                println!("NOT GETTING CLOSER TO oRIGIN");
 
                 let (closest_point_a, closest_point_b) = simplex.closest_points();
                 return CollisionInfo {
@@ -143,12 +140,11 @@ pub fn gjk<F: NumericFloat>(
         }
 
         // This is probably wrong.
-        if search_direction == Vector::<F, 3>::ZERO {
-            println!("ZERO SEARCH DIRECTION");
+        if search_direction.length_squared() <= F::GJK_EPSILON {
 
             let (closest_point_a, closest_point_b) = simplex.closest_points();
             return CollisionInfo {
-                collided: false,
+                collided: true,
                 closest_point_a,
                 closest_point_b,
             };
@@ -166,27 +162,20 @@ pub fn gjk<F: NumericFloat>(
 
         let support = support_a - support_b;
 
-        // This new point does not pass the origin so it cannot possibly enclose it, which means no collision.
-        /*
-        if support.dot(search_direction) < F::ZERO {
-            println!("NOT PAST ORIGIN");
-            let (closest_point_a, closest_point_b) = simplex.closest_points();
-            return CollisionInfo {
-                collided: false,
-                closest_point_a,
-                closest_point_b,
-            };
-        }
-        */
+        // The following check can be used to early out if we're just looking for intersection and don't
+        // care about the closest points on the two objects.
+        // if support.dot(search_direction) < F::ZERO
+
         simplex.points.push(SimplexVertex {
             point_a: support_a,
             point_b: support_b,
             point: support,
-            u: F::ZERO, // This wil be set later.
+            u: F::ONE, // This wil be set later.
         });
     }
 }
 
+#[derive(Debug)]
 struct Simplex<F: NumericFloat> {
     points: StackVec<SimplexVertex<F>, 4>,
 }
