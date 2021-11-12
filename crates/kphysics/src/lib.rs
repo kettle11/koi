@@ -100,15 +100,21 @@ pub fn gjk<F: NumericFloat + Debug + GJKEpsilon>(
     let mut last_simplex_distance = F::MAX;
 
     loop {
+        // Just in case.
         if iterations > 1000 {
             panic!()
         }
         iterations += 1;
+
+        // Prune the simplex to only the vertices that are closest to the origin and update
+        // the points and barycentric coordinates associated with each simplex vertex.
         simplex.evolve();
 
+        // Find the closest point on the simplex to the origin. This point will be used for a new search direction
+        // and to check if the closest point is closer to the origin.
         let closest_simplex_point = simplex.closest_simplex_point();
         let search_direction = match simplex.points.count {
-            0 => Vector::<F, 3>::X, // Completely arbitrary search direction for now
+            0 => Vector::<F, 3>::X, // Our initial search direction doesn't matter. Maybe later this can be seeded to get results in fewer cyces.
             1 | 2 | 3 => -closest_simplex_point,
             4 => {
                 // The simplex is still a tetehedron which means the
@@ -127,8 +133,7 @@ pub fn gjk<F: NumericFloat + Debug + GJKEpsilon>(
             let distance_squared = closest_simplex_point.length_squared();
 
             if distance_squared >= last_simplex_distance {
-                // Not getting closer to origin
-
+                // If the origin isn't closer to this new simplex then no progress is being made.
                 let (closest_point_a, closest_point_b) = simplex.closest_points();
                 return CollisionInfo {
                     collided: false,
@@ -139,7 +144,7 @@ pub fn gjk<F: NumericFloat + Debug + GJKEpsilon>(
             last_simplex_distance = distance_squared;
         }
 
-        // This is probably wrong.
+        // If the closest point is the origin then this is a collision.
         if search_direction.length_squared() <= F::GJK_EPSILON {
             let (closest_point_a, closest_point_b) = simplex.closest_points();
             return CollisionInfo {
