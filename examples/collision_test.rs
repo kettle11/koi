@@ -93,8 +93,8 @@ fn main() {
                         let (_, transform_b, _, b_mesh) =
                             objects.get_entity_components(object_b).unwrap();
 
-                        println!("position a: {:?}", transform_a.position);
-                        println!("position b: {:?}", transform_b.position);
+                        // println!("position a: {:?}", transform_a.position);
+                        // println!("position b: {:?}", transform_b.position);
 
                         let mesh_a = meshes.get(a_mesh);
                         let mesh_b = meshes.get(a_mesh);

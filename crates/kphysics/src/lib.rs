@@ -141,7 +141,6 @@ pub fn gjk<F: NumericFloat + Debug + GJKEpsilon>(
 
         // This is probably wrong.
         if search_direction.length_squared() <= F::GJK_EPSILON {
-
             let (closest_point_a, closest_point_b) = simplex.closest_points();
             return CollisionInfo {
                 collided: true,
@@ -258,7 +257,7 @@ impl<F: NumericFloat> Simplex<F> {
             // B isn't contributing to the simplex so remove it.
             self.points.remove(1);
             self.points[0].u = F::ONE;
-        } else if v <= F::ZERO {
+        } else if u <= F::ZERO {
             // Region B
             // A isn't contributing to the simplex so remove it.
             self.points.remove(0);
@@ -652,7 +651,6 @@ fn cube_vs_cube_points() {
     let world_to_a = Mat4::IDENTITY;
     let world_to_b = Mat4::from_translation(Vec3::fill(-1.5));
     let result = gjk(world_to_a, world_to_b, &shape_a, &shape_a);
-    println!("RESULT: {:#?}", result);
 }
 
 #[test]
