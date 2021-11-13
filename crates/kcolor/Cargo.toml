@@ -10,4 +10,4 @@ kecs = {path = "../kecs"}
 kmath = {path = "../kmath"}
 
 # This is copied / modified locally because it can't build presently with `glam` disabled.
-kolor = {path = "../../third_party/koi_kolor/build/kolor", default-features=false, features=["f32", "std"]}
+kolor = {version = "0.1.8", default-features=false, features=["f32", "std"]}

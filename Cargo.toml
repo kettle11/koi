@@ -5,7 +5,7 @@ edition = "2018"
 license = "Zlib OR Apache-2.0 OR MIT"
 
 [workspace]
-members = ["crates/*", "third_party/koi_kolor/build/kolor"]
+members = ["crates/*"]
 
 [features]
 default = ["audio", "graphics", "renderer", "drawer2d", "png", "jpeg", "gltf", "ui", "hdri", "physics"]
