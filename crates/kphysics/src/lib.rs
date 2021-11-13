@@ -1,3 +1,4 @@
+use std::cmp::Ordering;
 use std::fmt::Debug;
 
 use kmath::numeric_traits::NumericFloat;
@@ -19,17 +20,30 @@ fn clip_dirs_against_mesh<F: NumericFloat + Debug + GJKEpsilon>(
         let edge0 = middle_vert - mesh_a_vertices[tri[0] as usize];
         let edge1 = mesh_a_vertices[tri[2] as usize] - middle_vert;
         let plane_normal = edge0.cross(edge1).normalized();
-        let denom0 = dir0.dot(plane_normal);
-        let denom1 = dir1.dot(plane_normal);
-        if denom0.numeric_abs() > F::GJK_EPSILON {
-            let d0 = ((middle_vert - p).dot(plane_normal)) / denom0;
-            *min0 = min0.numeric_min(d0);
-            *max0 = max0.numeric_max(d0);
+
+        let v = plane_normal * (middle_vert - p).dot(plane_normal);
+        let v0 = v.dot(dir0);
+        let v1 = v.dot(dir1);
+
+        match plane_normal.dot(dir0).partial_cmp(&F::ZERO) {
+            Some(Ordering::Less) => {
+                *min0 = min0.numeric_max(v0);
+            }
+            Some(Ordering::Greater) => {
+                *max0 = max0.numeric_min(v0);
+                println!("V0: {:?}", v0);
+            }
+            _ => {}
         }
-        if denom1.numeric_abs() > F::GJK_EPSILON {
-            let d1 = ((middle_vert - p).dot(plane_normal)) / denom1;
-            *min1 = min1.numeric_min(d1);
-            *max1 = max1.numeric_max(d1);
+        match plane_normal.dot(dir1).partial_cmp(&F::ZERO) {
+            Some(Ordering::Less) => {
+                *min1 = min1.numeric_max(v1);
+            }
+            Some(Ordering::Greater) => {
+                *max1 = max1.numeric_min(v1);
+                println!("V1: {:?}", v1);
+            }
+            _ => {}
         }
     }
 }
@@ -44,6 +58,7 @@ pub fn find_planar_contact_points<F: NumericFloat + Debug + GJKEpsilon>(
     world_to_a: Matrix<F, 4, 4>,
     world_to_b: Matrix<F, 4, 4>,
 ) -> [Vector<F, 3>; 4] {
+    println!("HERE");
     let dir0 = if normal.z != F::ZERO || normal.y != F::ZERO {
         normal.cross(Vector::<F, 3>::X)
     } else {
@@ -51,10 +66,11 @@ pub fn find_planar_contact_points<F: NumericFloat + Debug + GJKEpsilon>(
     };
     let dir1 = dir0.cross(normal);
 
-    let mut min0_a = F::MAX;
-    let mut max0_a = F::MIN;
-    let mut min1_a = F::MAX;
-    let mut max1_a = F::MIN;
+    let mut min0_a = F::MIN;
+    let mut max0_a = F::MAX;
+    let mut min1_a = F::MIN;
+    let mut max1_a = F::MAX;
+
     clip_dirs_against_mesh(
         world_to_a.transform_point(p),
         world_to_a.transform_vector(dir0),
@@ -67,10 +83,10 @@ pub fn find_planar_contact_points<F: NumericFloat + Debug + GJKEpsilon>(
         &mut max1_a,
     );
 
-    let mut min0_b = F::MAX;
-    let mut max0_b = F::MIN;
-    let mut min1_b = F::MAX;
-    let mut max1_b = F::MIN;
+    let mut min0_b = F::MIN;
+    let mut max0_b = F::MAX;
+    let mut min1_b = F::MIN;
+    let mut max1_b = F::MAX;
 
     clip_dirs_against_mesh(
         world_to_b.transform_point(p),
@@ -84,10 +100,10 @@ pub fn find_planar_contact_points<F: NumericFloat + Debug + GJKEpsilon>(
         &mut max1_b,
     );
 
-    let min0 = min0_a.max_mumeric(min0_b);
-    let max0 = max0_a.min_mumeric(max0_b);
-    let min1 = min1_a.max_mumeric(min1_b);
-    let max1 = max1_a.min_mumeric(max1_b);
+    let min0 = min0_a.max_numeric(min0_b);
+    let max0 = max0_a.min_numeric(max0_b);
+    let min1 = min1_a.max_numeric(min1_b);
+    let max1 = max1_a.min_numeric(max1_b);
 
     [
         dir0 * min0 + p,
@@ -784,4 +800,82 @@ fn plane_vs_plane0() {
     let b_to_world = Mat4::from_translation(Vec3::X * 2.5);
     let result = gjk(a_to_world, b_to_world, &shape_a, &shape_a);
     assert!(!result.collided);
+}
+
+#[test]
+fn rotated_cube() {
+    let positions = vec![
+        // First face
+        [-0.5, -0.5, 0.5].into(),
+        [0.5, -0.5, 0.5].into(),
+        [0.5, 0.5, 0.5].into(),
+        [-0.5, 0.5, 0.5].into(),
+        // Second face
+        [-0.5, -0.5, -0.5].into(),
+        [-0.5, -0.5, 0.5].into(),
+        [-0.5, 0.5, 0.5].into(),
+        [-0.5, 0.5, -0.5].into(),
+        // Third face
+        [0.5, -0.5, -0.5].into(),
+        [-0.5, -0.5, -0.5].into(),
+        [-0.5, 0.5, -0.5].into(),
+        [0.5, 0.5, -0.5].into(),
+        // Fourth face
+        [0.5, -0.5, 0.5].into(),
+        [0.5, -0.5, -0.5].into(),
+        [0.5, 0.5, -0.5].into(),
+        [0.5, 0.5, 0.5].into(),
+        // Top Face
+        [-0.5, 0.5, -0.5].into(),
+        [-0.5, 0.5, 0.5].into(),
+        [0.5, 0.5, 0.5].into(),
+        [0.5, 0.5, -0.5].into(),
+        // Bottom face
+        [-0.5, -0.5, 0.5].into(),
+        [-0.5, -0.5, -0.5].into(),
+        [0.5, -0.5, -0.5].into(),
+        [0.5, -0.5, 0.5].into(),
+    ];
+
+    let indices = vec![
+        // First face
+        [0, 1, 2],
+        [0, 2, 3],
+        // Second face
+        [4, 5, 6],
+        [4, 6, 7],
+        // Third face
+        [8, 9, 10],
+        [8, 10, 11],
+        // Fourth face
+        [12, 13, 14],
+        [12, 14, 15],
+        // Fifth face
+        [16, 17, 18],
+        [16, 18, 19],
+        // Sixth face
+        [20, 21, 22],
+        [20, 22, 23],
+    ];
+
+    let a_to_world = Mat4::from_translation(Vec3::Y * 0.75 + Vec3::X * 0.9);
+    let b_to_world = Mat4::from_quaternion(Quat::from_angle_axis(
+        std::f32::consts::TAU * 0.125,
+        Vec3::X,
+    ));
+    let result = gjk(a_to_world, b_to_world, &positions, &positions);
+    assert!(result.collided);
+
+    let points = find_planar_contact_points(
+        result.closest_point_a,
+        Vec3::Y,
+        &positions,
+        &indices,
+        &positions,
+        &indices,
+        a_to_world.inversed(),
+        b_to_world.inversed(),
+    );
+
+    println!("POINTS: {:#?}", points);
 }

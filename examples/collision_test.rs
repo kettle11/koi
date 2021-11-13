@@ -26,13 +26,13 @@ fn main() {
         let collision_marker_a = world.spawn((
             Transform::new().with_scale(Vec3::fill(0.1)),
             Mesh::SPHERE,
-            // Material::UNLIT,
+            Material::UNLIT,
             Color::BLUE,
         ));
         let collision_marker_b = world.spawn((
             Transform::new().with_scale(Vec3::fill(0.1)),
             Mesh::SPHERE,
-            // Material::UNLIT,
+            Material::UNLIT,
             Color::GREEN,
         ));
 
@@ -49,15 +49,14 @@ fn main() {
 
         // Spawn a cube that we can control
         let object_a = world.spawn((
-            Transform::new().with_position(Vec3::X * 1.5),
+            Transform::new().with_position(Vec3::Y * 0.75 + Vec3::X * 0.9),
             Mesh::CUBE,
             Controlled,
             Color::WHITE,
             Material::DEFAULT,
         ));
         let object_b = world.spawn((
-            Transform::new()
-                .with_rotation(Quat::from_angle_axis(std::f32::consts::TAU * 0.25, Vec3::Y)), //.with_rotation(Random::new_with_seed(2).quaternion()),
+            Transform::new().with_rotation(Random::new_with_seed(2).quaternion()),
             Mesh::CUBE,
             Color::WHITE,
             Material::DEFAULT,
@@ -132,6 +131,7 @@ fn main() {
                                 model_a.inversed(),
                                 model_b.inversed(),
                             );
+                            println!("POINTS: {:#?}", contact_points);
                             for (e, p) in contact_markers.iter().zip(contact_points.iter()) {
                                 objects.get_entity_components_mut(*e).unwrap().0.position = *p;
                             }

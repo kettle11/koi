@@ -32,8 +32,8 @@ pub trait NumericFloat:
     fn tan_numeric(self) -> Self;
     fn is_nan_numeric(self) -> bool;
     fn copysign_numeric(self, sign: Self) -> Self;
-    fn min_mumeric(self, other: Self) -> Self;
-    fn max_mumeric(self, other: Self) -> Self;
+    fn min_numeric(self, other: Self) -> Self;
+    fn max_numeric(self, other: Self) -> Self;
     fn powf_numeric(self, other: Self) -> Self;
 }
 
@@ -51,11 +51,11 @@ impl NumericFloat for f32 {
     fn copysign_numeric(self, sign: Self) -> Self {
         self.copysign(sign)
     }
-    fn min_mumeric(self, other: Self) -> Self {
+    fn min_numeric(self, other: Self) -> Self {
         self.min(other)
     }
 
-    fn max_mumeric(self, other: Self) -> Self {
+    fn max_numeric(self, other: Self) -> Self {
         self.max(other)
     }
     fn powf_numeric(self, other: Self) -> Self {
@@ -77,10 +77,10 @@ impl NumericFloat for f64 {
     fn copysign_numeric(self, sign: Self) -> Self {
         self.copysign(sign)
     }
-    fn min_mumeric(self, other: Self) -> Self {
+    fn min_numeric(self, other: Self) -> Self {
         self.min(other)
     }
-    fn max_mumeric(self, other: Self) -> Self {
+    fn max_numeric(self, other: Self) -> Self {
         self.max(other)
     }
     fn powf_numeric(self, other: Self) -> Self {
