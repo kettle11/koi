@@ -59,6 +59,11 @@ mod ui;
 #[cfg(feature = "ui")]
 pub use ui::*;
 
+#[cfg(feature = "physics")]
+mod physics;
+#[cfg(feature = "physics")]
+pub use physics::*;
+
 pub use kapp::{Event as KappEvent, Key, PointerButton};
 
 #[cfg(target_arch = "wasm32")]
@@ -182,6 +187,8 @@ impl App {
         let app = app.add_plugin(camera_controls_plugin());
         #[cfg(feature = "ui")]
         let app = app.add_plugin(ui_plugin());
+        #[cfg(feature = "physics")]
+        let app = app.add_plugin(physics_plguin());
 
         // Non-default plugins
         #[cfg(feature = "xr")]

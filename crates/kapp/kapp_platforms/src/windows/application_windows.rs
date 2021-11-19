@@ -366,7 +366,7 @@ impl PlatformEventLoopTrait for PlatformEventLoop {
 pub struct PlatformUserEventSender;
 
 impl PlatformUserEventSenderTrait for PlatformUserEventSender {
-    fn send(&self, id: usize, data: usize) {
+    fn send(&self, _id: usize, _data: usize) {
         todo!()
     }
 }

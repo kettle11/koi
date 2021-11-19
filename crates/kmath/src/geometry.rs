@@ -1,3 +1,4 @@
+use crate::numeric_traits::*;
 use crate::*;
 
 /// A circle in 2D, a sphere in 3D.
@@ -132,5 +133,72 @@ impl<T: Numeric + PartialOrd + 'static, const DIMENSIONS: usize> BoundingBox<T, 
 
     pub fn center(self) -> Vector<T, DIMENSIONS> {
         (self.max - self.min) / T::TWO + self.min
+    }
+}
+
+pub struct Ray<T: NumericFloat, const DIM: usize> {
+    pub origin: Vector<T, DIM>,
+    pub direction: Vector<T, DIM>,
+}
+
+impl<T: NumericFloat, const DIM: usize> Ray<T, DIM> {
+    pub fn new(origin: Vector<T, DIM>, direction: Vector<T, DIM>) -> Self {
+        let direction = direction.normalized();
+        Self { origin, direction }
+    }
+    pub fn get_point(self, distance: T) -> Vector<T, DIM> {
+        self.origin + self.direction * distance
+    }
+}
+
+impl<T: NumericFloat> Matrix<T, 4, 4> {
+    pub fn transform_ray(&self, ray: Ray<T, 3>) -> Ray<T, 3> {
+        let direction = self.transform_vector(ray.direction);
+        Ray {
+            origin: self.transform_point(ray.origin),
+            direction,
+        }
+    }
+}
+
+pub struct Plane<T: NumericFloat, const DIM: usize> {
+    pub normal: Vector<T, DIM>,
+    pub distance_along_normal: T,
+}
+
+impl<T: NumericFloat, const DIM: usize> Plane<T, DIM> {
+    pub fn new(normal: Vector<T, DIM>, point_on_plane: Vector<T, DIM>) -> Self {
+        let distance_along_normal = normal.dot(point_on_plane);
+        Plane {
+            normal,
+            distance_along_normal,
+        }
+    }
+
+    pub fn distance_to_point(&self, point: Vector<T, DIM>) -> T {
+        self.normal.dot(point) - self.distance_along_normal
+    }
+}
+
+// https://en.wikipedia.org/wiki/Line%E2%80%93plane_intersection
+/// Returns distance along the ray if it intersects
+pub fn ray_with_plane<F: NumericFloat, const DIM: usize>(
+    ray: Ray<F, DIM>,
+    plane: Plane<F, DIM>,
+) -> Option<F> {
+    let bottom = ray.direction.dot(plane.normal);
+
+    if bottom == F::ZERO {
+        None // No intersection
+    } else {
+        let top = ((plane.normal * plane.distance_along_normal) - ray.origin).dot(plane.normal);
+
+        if top == F::ZERO {
+            None // Technically it intersects the entire plane, because the line is on the plane.
+                 // However for now we're just saying it doesn't intersect.
+        } else {
+            let distance = top / bottom;
+            Some(distance)
+        }
     }
 }

@@ -87,7 +87,7 @@ pub struct GraphicsViewInfo {
     pub projection_matrix: Mat4,
     /// How this view should be offset from the camera transform.
     pub offset_transform: Mat4,
-    pub output_rectangle: BoundingBox<f32, 2>,
+    pub output_rectangle: Rect,
 }
 
 #[derive(Clone, Copy)]

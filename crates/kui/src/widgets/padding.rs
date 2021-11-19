@@ -25,18 +25,12 @@ impl<Style: Send + 'static, Data: Send + 'static, W: WidgetTrait<Style, Data>>
         self.child.size(style, data) + Vec2::fill(self.amount) * 2.0
     }
 
-    fn draw(
-        &mut self,
-        style: &mut Style,
-        data: &mut Data,
-        drawer: &mut Drawer,
-        rectangle: Rectangle,
-    ) {
+    fn draw(&mut self, style: &mut Style, data: &mut Data, drawer: &mut Drawer, rectangle: Rect) {
         self.child.draw(
             style,
             data,
             drawer,
-            Rectangle::new(
+            Rect::new(
                 rectangle.min + Vec2::fill(self.amount),
                 rectangle.max - Vec2::fill(self.amount),
             ),

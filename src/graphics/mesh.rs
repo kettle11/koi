@@ -1,5 +1,6 @@
 use crate::*;
 use kgraphics::*;
+use kmath::geometry::*;
 
 pub struct Mesh {
     pub gpu_mesh: Option<GPUMesh>,

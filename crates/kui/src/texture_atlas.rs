@@ -6,7 +6,7 @@ pub struct TextureAtlas {
     pub width: u32,
     pub height: u32,
     packer: rect_packer::Packer,
-    characters: HashMap<fontdue::layout::GlyphRasterConfig, RectangleU32>,
+    characters: HashMap<fontdue::layout::GlyphRasterConfig, RectU32>,
     last_frame_characters: HashSet<fontdue::layout::GlyphRasterConfig>,
     this_frame_characters: HashSet<fontdue::layout::GlyphRasterConfig>,
     already_repacked: bool,
@@ -50,7 +50,7 @@ impl TextureAtlas {
     pub fn get_character_no_rasterize(
         &self,
         c: fontdue::layout::GlyphRasterConfig,
-    ) -> Option<RectangleU32> {
+    ) -> Option<RectU32> {
         self.characters.get(&c).map_or(None, |i| Some(*i))
     }
     */
@@ -59,7 +59,7 @@ impl TextureAtlas {
         &mut self,
         font: &fontdue::Font,
         c: fontdue::layout::GlyphRasterConfig,
-    ) -> Option<RectangleU32> {
+    ) -> Option<RectU32> {
         if let Some(rectangle) = self.characters.get(&c) {
             self.this_frame_characters.insert(c);
             Some(*rectangle)
@@ -67,7 +67,7 @@ impl TextureAtlas {
             let (metrics, new_data) = font.rasterize_config(c);
 
             if metrics.width == 0 && metrics.height == 0 {
-                return Some(RectangleU32::new(0, 0, 0, 0));
+                return Some(RectU32::new(0, 0, 0, 0));
             }
             let rectangle = self.pack_character(c, metrics.width as u32, metrics.height as u32);
 
@@ -100,11 +100,11 @@ impl TextureAtlas {
         c: fontdue::layout::GlyphRasterConfig,
         width: u32,
         height: u32,
-    ) -> Option<RectangleU32> {
+    ) -> Option<RectU32> {
         // Just crash for now if there's not space for character.
         let rect = self.packer.pack(width as i32, height as i32, false);
         if let Some(rect) = rect {
-            let rectangle = RectangleU32::new(
+            let rectangle = RectU32::new(
                 rect.x as u32,
                 rect.y as u32,
                 rect.width as u32,
@@ -182,8 +182,8 @@ impl TextureAtlas {
         old_data: &[u8],
         new_data: &mut Vec<u8>,
         copying_characters: &HashSet<fontdue::layout::GlyphRasterConfig>,
-        characters: &HashMap<fontdue::layout::GlyphRasterConfig, RectangleU32>,
-        new_characters: &mut HashMap<fontdue::layout::GlyphRasterConfig, RectangleU32>,
+        characters: &HashMap<fontdue::layout::GlyphRasterConfig, RectU32>,
+        new_characters: &mut HashMap<fontdue::layout::GlyphRasterConfig, RectU32>,
     ) {
         for c in copying_characters.iter() {
             let old_rectangle = characters[c];
@@ -206,7 +206,7 @@ impl TextureAtlas {
                     }
                 }
 
-                let rectangle = RectangleU32::new(
+                let rectangle = RectU32::new(
                     new_rectangle.x as u32,
                     new_rectangle.y as u32,
                     new_rectangle.width as u32,
@@ -221,14 +221,14 @@ impl TextureAtlas {
 }
 
 #[derive(Copy, Clone, Debug)]
-pub struct RectangleU32 {
+pub struct RectU32 {
     pub x: u32,
     pub y: u32,
     pub width: u32,
     pub height: u32,
 }
 
-impl RectangleU32 {
+impl RectU32 {
     fn new(x: u32, y: u32, width: u32, height: u32) -> Self {
         Self {
             x,

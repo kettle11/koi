@@ -33,7 +33,7 @@ impl Ray {
 }
 
 // https://tavianator.com/fast-branchless-raybounding-box-intersections-part-2-nans/
-pub fn ray_with_bounding_box(r: Ray, b: BoundingBox<f32, 3>) -> (bool, f32) {
+pub fn ray_with_bounding_box(r: Ray, b: geometry::BoundingBox<f32, 3>) -> (bool, f32) {
     let min_sub_origin_times_inverse =
         (b.min - r.origin).mul_by_component(r.multiplicative_inverse);
     let max_sub_origin_times_inverse =

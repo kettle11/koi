@@ -25,6 +25,7 @@ type AudioOutputFormat = f32;
 pub fn begin_audio_thread(
     audio_callback: impl FnMut(&mut [AudioOutputFormat], StreamInfo) + Send + 'static,
 ) {
+    return;
     let sample_rate = 44100;
     unsafe {
         let hresult = winapi::um::combaseapi::CoInitializeEx(

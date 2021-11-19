@@ -12,8 +12,8 @@ pub struct Panel<
     handle_sliding: bool,
     first_widget: FirstWidget,
     second_widget: SecondWidget,
-    handle_bounding_box: Rectangle,
-    total_bounding_box: Rectangle,
+    handle_bounding_box: Rect,
+    total_bounding_box: Rect,
     reverse: bool,
     phantom: std::marker::PhantomData<fn() -> (Style, Data)>,
 }
@@ -33,8 +33,8 @@ pub fn panel_horizontal<
         handle_sliding: false,
         first_widget,
         second_widget,
-        handle_bounding_box: BoundingBox::ZERO,
-        total_bounding_box: BoundingBox::ZERO,
+        handle_bounding_box: Rect::ZERO,
+        total_bounding_box: Rect::ZERO,
         reverse: false,
         phantom: std::marker::PhantomData,
     }
@@ -68,13 +68,7 @@ impl<
         Vec2::MAX
     }
 
-    fn draw(
-        &mut self,
-        style: &mut Style,
-        data: &mut Data,
-        drawer: &mut Drawer,
-        rectangle: Rectangle,
-    ) {
+    fn draw(&mut self, style: &mut Style, data: &mut Data, drawer: &mut Drawer, rectangle: Rect) {
         let old_clipping_mask = drawer.clipping_mask;
 
         let handle_size = 2.;
@@ -88,14 +82,14 @@ impl<
         }
 
         let first_rectangle =
-            Rectangle::new_with_min_corner_and_size(rectangle.min, Vec2::new(first_width, height));
+            Rect::new_with_min_corner_and_size(rectangle.min, Vec2::new(first_width, height));
 
-        let second_rectangle = Rectangle::new_with_min_corner_and_size(
+        let second_rectangle = Rect::new_with_min_corner_and_size(
             rectangle.min + Vec2::X * (first_width + handle_size / 2.0),
             Vec2::new(second_width, height),
         );
 
-        let handle_rectangle = Rectangle::new_with_min_corner_and_size(
+        let handle_rectangle = Rect::new_with_min_corner_and_size(
             rectangle.min + Vec2::X * first_width,
             Vec2::new(handle_size, height),
         );
@@ -111,7 +105,7 @@ impl<
         drawer.rectangle(handle_rectangle, Color::WHITE);
 
         let handle_padding = 10.0;
-        let padded_handle = BoundingBox::new(
+        let padded_handle = Rect::new(
             handle_rectangle.min - Vec2::X * handle_padding,
             handle_rectangle.max + Vec2::X * handle_padding,
         );

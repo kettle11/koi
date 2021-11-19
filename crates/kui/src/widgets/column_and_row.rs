@@ -78,7 +78,7 @@ impl<
         style: &mut Style,
         data: &mut Data,
         drawer: &mut Drawer,
-        rectangle: Rectangle,
+        rectangle: Rect,
     ) {
         let Self {
             create_children,
@@ -96,7 +96,7 @@ impl<
             children,
             for_each: &mut |child_data, child| {
                 let size = sizes[index];
-                let rectangle = Rectangle::new(
+                let rectangle = Rect::new(
                     Vec2::new(rectangle.min.x, y),
                     Vec2::new(rectangle.max.x, y + size.y),
                 );
@@ -190,7 +190,7 @@ impl<
         style: &mut Style,
         data: &mut Data,
         drawer: &mut Drawer,
-        rectangle: Rectangle,
+        rectangle: Rect,
     ) {
         let Self {
             create_children,
@@ -208,7 +208,7 @@ impl<
             children,
             for_each: &mut |child_data, child| {
                 let size = sizes[index];
-                let rectangle = Rectangle::new(
+                let rectangle = Rect::new(
                     Vec2::new(x, rectangle.min.y),
                     Vec2::new(x + size.x, rectangle.max.y),
                 );

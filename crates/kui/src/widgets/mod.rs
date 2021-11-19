@@ -32,7 +32,7 @@ pub trait WidgetTrait<Style, Data>: Send + 'static {
         style: &mut Style,
         data: &mut Data,
         drawer: &mut Drawer,
-        rectangle: Rectangle,
+        rectangle: Rect,
     ) {
     }
 
@@ -60,21 +60,21 @@ impl<Style, Data> WidgetTrait<Style, Data> for Fill {
         _style: &mut Style,
         _data: &mut Data,
         drawer: &mut Drawer,
-        rectangle: Rectangle,
+        rectangle: Rect,
     ) {
         drawer.rectangle(rectangle, self.color);
     }
 }
 
-pub fn colored_rectangle(size: Vec2, color: Color) -> ColoredRectangle {
-    ColoredRectangle { size, color }
+pub fn colored_rectangle(size: Vec2, color: Color) -> ColoredRect {
+    ColoredRect { size, color }
 }
-pub struct ColoredRectangle {
+pub struct ColoredRect {
     pub size: Vec2,
     pub color: Color,
 }
 
-impl<Style, Data> WidgetTrait<Style, Data> for ColoredRectangle {
+impl<Style, Data> WidgetTrait<Style, Data> for ColoredRect {
     fn size(&mut self, _style: &mut Style, _data: &mut Data) -> Vec2 {
         self.size
     }
@@ -83,11 +83,11 @@ impl<Style, Data> WidgetTrait<Style, Data> for ColoredRectangle {
         _style: &mut Style,
         _data: &mut Data,
         drawer: &mut Drawer,
-        rectangle: Rectangle,
+        rectangle: Rect,
     ) {
         let size = rectangle.size().min(self.size);
         drawer.rectangle(
-            Rectangle::new(rectangle.min, rectangle.min + size),
+            Rect::new(rectangle.min, rectangle.min + size),
             self.color,
         );
     }
@@ -103,7 +103,7 @@ impl<Style: 'static, Data: 'static> WidgetTrait<Style, Data> for Box<dyn WidgetT
         style: &mut Style,
         data: &mut Data,
         drawer: &mut Drawer,
-        rectangle: Rectangle,
+        rectangle: Rect,
     ) {
         self.deref_mut().draw(style, data, drawer, rectangle)
     }

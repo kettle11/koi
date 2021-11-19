@@ -27,6 +27,8 @@ pub trait NumericFloat:
     Numeric + NumericSqrt + NumericAbs + Neg<Output = Self> + std::cmp::PartialOrd
 {
     const HALF: Self;
+    const INFINITY: Self;
+    const NEG_INFINITY: Self;
 
     fn sin_cos_numeric(self) -> (Self, Self);
     fn tan_numeric(self) -> Self;
@@ -39,6 +41,9 @@ pub trait NumericFloat:
 
 impl NumericFloat for f32 {
     const HALF: Self = 0.5;
+    const INFINITY: Self = Self::INFINITY;
+    const NEG_INFINITY: Self = Self::NEG_INFINITY;
+
     fn sin_cos_numeric(self) -> (Self, Self) {
         self.sin_cos()
     }
@@ -65,6 +70,9 @@ impl NumericFloat for f32 {
 
 impl NumericFloat for f64 {
     const HALF: Self = 0.5;
+    const INFINITY: Self = Self::INFINITY;
+    const NEG_INFINITY: Self = Self::NEG_INFINITY;
+
     fn sin_cos_numeric(self) -> (Self, Self) {
         self.sin_cos()
     }

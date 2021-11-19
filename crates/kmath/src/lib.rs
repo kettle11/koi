@@ -15,7 +15,7 @@ pub use vector::*;
 
 mod default_types {
     use super::{Matrix, Quaternion, Vector};
-    use crate::geometry::BoundingBox;
+    use crate::geometry::*;
 
     pub type Vec2 = Vector<f32, 2>;
     pub type Vec3 = Vector<f32, 3>;
@@ -34,6 +34,11 @@ mod default_types {
 
     pub type Quat = Quaternion<f32>;
     pub type Rect = BoundingBox<f32, 2>;
+
+    pub type Ray2 = Ray<f32, 2>;
+    pub type Ray3 = Ray<f32, 3>;
+
+    pub type Plane = crate::geometry::Plane<f32, 3>;
 }
 pub use default_types::*;
 
@@ -41,4 +46,3 @@ pub use default_types::*;
 // mod tests;
 
 pub mod geometry;
-pub use geometry::*;

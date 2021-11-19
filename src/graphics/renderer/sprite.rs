@@ -1,16 +1,15 @@
 use crate::*;
-use kmath::BoundingBox;
 
 #[derive(Component, Clone, Debug)]
 pub struct Sprite {
     pub texture_handle: Handle<Texture>,
     /// The a rectangle specified in percentage of the texture, not pixels!
-    pub sprite_source_bounds: BoundingBox<f32, 2>,
+    pub sprite_source_bounds: Rect,
 }
 
 impl Sprite {
     /// sprite_source_bounds is a rectangle specified in percentage of the texture, not pixels!
-    pub fn new(texture_handle: Handle<Texture>, sprite_source_bounds: BoundingBox<f32, 2>) -> Self {
+    pub fn new(texture_handle: Handle<Texture>, sprite_source_bounds: Rect) -> Self {
         Self {
             texture_handle,
             sprite_source_bounds,
@@ -49,7 +48,7 @@ impl SpriteMap {
         let xy = Vec2::new(x as f32, y as f32);
         Sprite {
             texture_handle: self.texture_handle.clone(),
-            sprite_source_bounds: BoundingBox::new_with_min_corner_and_size(
+            sprite_source_bounds: Rect::new_with_min_corner_and_size(
                 xy.mul_by_component(self.scale),
                 self.scale - self.padding_scale,
             ),

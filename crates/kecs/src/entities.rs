@@ -7,6 +7,16 @@ pub struct Entity {
     pub(crate) generation: u32,
 }
 
+impl Entity {
+    pub fn index(&self) -> u32 {
+        self.index
+    }
+
+    pub fn generation(&self) -> u32 {
+        self.generation
+    }
+}
+
 /// Where the [Entity] is stored in the [World]
 #[derive(Debug, Clone, Copy)]
 pub struct EntityLocation {

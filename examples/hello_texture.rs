@@ -8,8 +8,10 @@ fn main() {
         world.spawn((Transform::new(), camera));
 
         let textures = world.get_single_component_mut::<Assets<Texture>>().unwrap();
-        let texture =
-            textures.load_with_options("assets/royal_esplanade_1k.hdr", TextureSettings::default());
+        let texture = textures.load_with_options(
+            "examples/assets/shudu_lake_1k.hdr",
+            TextureSettings::default(),
+        );
 
         let sprite = Sprite::new(texture, BoundingBox::new(Vec2::ZERO, Vec2::ONE));
 

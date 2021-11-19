@@ -31,7 +31,7 @@ struct ViewInfo {
     projection_matrix: Mat4,
     view_matrix: Mat4,
     camera_position: Vec3,
-    viewport: BoundingBox<f32, 2>,
+    viewport: Rect,
 }
 
 struct MaterialInfo<'a> {
@@ -80,7 +80,7 @@ impl<'a, 'b: 'a> Renderer<'a, 'b> {
         mesh_assets: &'a Assets<Mesh>,
         texture_assets: &'a Assets<Texture>,
         camera_info: &'a [ViewInfo],
-        viewport: BoundingBox<u32, 2>,
+        viewport: kmath::geometry::BoundingBox<u32, 2>,
         multiview_enabled: bool,
     ) -> Self {
         // let camera_info = Self::get_camera_info(camera_transform, camera);
@@ -110,7 +110,7 @@ impl<'a, 'b: 'a> Renderer<'a, 'b> {
         camera_global_transform: &GlobalTransform,
         offset: Mat4,
         projection_matrix: Mat4,
-        viewport: BoundingBox<f32, 2>,
+        viewport: Rect,
     ) -> ViewInfo {
         // Is this `offset *` correct?
         let camera_position = offset.transform_point(camera_global_transform.position);
@@ -490,7 +490,7 @@ pub fn render_scene<'a>(
                         camera_global_transform,
                         Mat4::IDENTITY,
                         camera.projection_matrix(),
-                        BoundingBox {
+                        Rect {
                             min: Vec2::ZERO,
                             max: Vec2::ONE,
                         },
@@ -521,7 +521,7 @@ pub fn render_scene<'a>(
                     texture_assets,
                     // &lights,
                     &camera_info,
-                    BoundingBox {
+                    kmath::geometry::BoundingBox::<u32, 2> {
                         min: Vector::ZERO,
                         max: Vector::<u32, 2>::new(width, height),
                     },

@@ -32,7 +32,7 @@ impl<Style: Send + 'static, Data: Send + 'static, W: WidgetTrait<Style, Data>>
         style: &mut Style,
         data: &mut Data,
         drawer: &mut Drawer,
-        mut rectangle: Rectangle,
+        mut rectangle: Rect,
     ) {
         // This behavior ensures that as the window size changes the offset value updates as appropriate.
         let mut size_diff = rectangle.size() - self.child_size;

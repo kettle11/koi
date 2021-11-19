@@ -18,7 +18,7 @@ impl<Style: GetStandardStyleTrait> UI<Style> {
             Handle::<Mesh>::default(),
             Material::UI,
             Transform::new(),
-            Sprite::new(Handle::default(), BoundingBox::ZERO),
+            Sprite::new(Handle::default(), Rect::ZERO),
             RenderLayers::USER_INTERFACE,
         ));
 
@@ -139,8 +139,7 @@ impl<Style: GetStandardStyleTrait> UI<Style> {
                         )
                         .unwrap();
                     let new_texture_handle = textures.add(new_texture);
-                    sprite =
-                        Sprite::new(new_texture_handle, BoundingBox::new(Vec2::ZERO, Vec2::ONE));
+                    sprite = Sprite::new(new_texture_handle, Rect::new(Vec2::ZERO, Vec2::ONE));
                 }
             })
             .run(world);
@@ -205,7 +204,7 @@ impl<STYLE: GetStandardStyleTrait> UIComponent<STYLE> {
             style,
             data,
             drawer,
-            Rectangle::new(Vec2::ZERO, Vec2::new(width, height)),
+            Rect::new(Vec2::ZERO, Vec2::new(width, height)),
         )
     }
 }

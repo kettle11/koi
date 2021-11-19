@@ -6,7 +6,7 @@ pub struct Button<Style, Data> {
     on_press: fn(&mut Data),
     text: Text<Style, Data>,
     text_size: Vec2,
-    hit_rectangle: BoundingBox<f32, 2>,
+    hit_rectangle: Rect,
     held_down: bool,
 }
 
@@ -23,7 +23,7 @@ pub fn button<Style: GetStandardStyleTrait, Data: 'static>(
             |style: &Style| style.standard().primary_text_size,
         ),
         text_size: Vec2::ZERO,
-        hit_rectangle: BoundingBox::ZERO,
+        hit_rectangle: Rect::ZERO,
         held_down: false,
     }
 }
@@ -36,14 +36,8 @@ impl<Style: 'static + GetStandardStyleTrait, Data: 'static> WidgetTrait<Style, D
         self.text_size + Vec2::fill(style.standard().padding) * 2.0
     }
 
-    fn draw(
-        &mut self,
-        style: &mut Style,
-        data: &mut Data,
-        drawer: &mut Drawer,
-        rectangle: Rectangle,
-    ) {
-        let draw_rectangle = Rectangle::new(
+    fn draw(&mut self, style: &mut Style, data: &mut Data, drawer: &mut Drawer, rectangle: Rect) {
+        let draw_rectangle = Rect::new(
             rectangle.min,
             rectangle.min + self.text_size + Vec2::fill(style.standard().padding) * 2.0,
         );
@@ -60,7 +54,7 @@ impl<Style: 'static + GetStandardStyleTrait, Data: 'static> WidgetTrait<Style, D
             style,
             data,
             drawer,
-            Rectangle::new(
+            Rect::new(
                 rectangle.min + Vec2::fill(style.standard().padding),
                 rectangle.min + self.text_size + Vec2::fill(style.standard().padding) * 2.0,
             ),

@@ -3,6 +3,7 @@ use std::ops::Mul;
 use crate::*;
 
 use kecs::Query;
+use kmath::geometry::BoundingBox;
 
 pub fn transform_plugin() -> Plugin {
     Plugin {
