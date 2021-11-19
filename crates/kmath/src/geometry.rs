@@ -136,6 +136,7 @@ impl<T: Numeric + PartialOrd + 'static, const DIMENSIONS: usize> BoundingBox<T, 
     }
 }
 
+#[derive(Copy, Clone, Debug)]
 pub struct Ray<T: NumericFloat, const DIM: usize> {
     pub origin: Vector<T, DIM>,
     pub direction: Vector<T, DIM>,
@@ -161,6 +162,7 @@ impl<T: NumericFloat> Matrix<T, 4, 4> {
     }
 }
 
+#[derive(Copy, Clone, Debug)]
 pub struct Plane<T: NumericFloat, const DIM: usize> {
     pub normal: Vector<T, DIM>,
     pub distance_along_normal: T,
@@ -181,7 +183,8 @@ impl<T: NumericFloat, const DIM: usize> Plane<T, DIM> {
 }
 
 // https://en.wikipedia.org/wiki/Line%E2%80%93plane_intersection
-/// Returns distance along the ray if it intersects
+/// Returns distance along the ray if it intersects.
+/// The ray will not intersect if it points away from the plane or is parallel to the plane.
 pub fn ray_with_plane<F: NumericFloat, const DIM: usize>(
     ray: Ray<F, DIM>,
     plane: Plane<F, DIM>,
@@ -202,3 +205,128 @@ pub fn ray_with_plane<F: NumericFloat, const DIM: usize>(
         }
     }
 }
+
+// https://tavianator.com/fast-branchless-raybounding-box-intersections-part-2-nans/
+pub fn ray_with_bounding_box<F: NumericFloat, const DIM: usize>(
+    r: Ray<F, DIM>,
+    b: geometry::BoundingBox<F, DIM>,
+) -> (bool, F) {
+    // This could be cached for extra speed.
+    let multiplicative_inverse = r.direction.reciprocal();
+
+    let min_sub_origin_times_inverse = (b.min - r.origin).mul_by_component(multiplicative_inverse);
+    let max_sub_origin_times_inverse = (b.max - r.origin).mul_by_component(multiplicative_inverse);
+
+    let min = min_sub_origin_times_inverse.min(max_sub_origin_times_inverse);
+    let max = min_sub_origin_times_inverse.max(max_sub_origin_times_inverse);
+
+    let tmin = min.max_component();
+    let tmax = max.min_component();
+
+    let tmin = tmin.numeric_max(F::ZERO);
+    (tmax >= tmin, tmin)
+}
+
+// Möller–Trumbore intersection algorithm
+// https://en.wikipedia.org/wiki/M%C3%B6ller%E2%80%93Trumbore_intersection_algorithm
+pub fn ray_with_tri(ray: Ray3, vertex0: Vec3, vertex1: Vec3, vertex2: Vec3) -> (bool, f32, Vec3) {
+    const EPSILON: f32 = 0.000_000_1;
+    let edge1 = vertex1 - vertex0;
+    let edge2 = vertex2 - vertex0;
+    let h = Vec3::cross(ray.direction, edge2);
+    let a = Vec3::dot(edge1, h);
+
+    if a > -EPSILON && a < EPSILON {
+        return (false, 0., Vec3::ZERO);
+    }
+
+    let f = 1.0 / a;
+    let s = ray.origin - vertex0;
+    let u = f * Vec3::dot(s, h);
+
+    if !(0.0..=1.0).contains(&u) {
+        return (false, 0., Vec3::ZERO);
+    }
+
+    let q = Vec3::cross(s, edge1);
+    let v = f * Vec3::dot(ray.direction, q);
+    if v < 0.0 || u + v > 1.0 {
+        return (false, 0., Vec3::ZERO);
+    }
+
+    // At this stage we can compute t to find out where the intersection point is on the line.
+    let t = f * Vec3::dot(edge2, q);
+
+    if t > EPSILON {
+        let out_intersection_point = ray.origin + ray.direction * t;
+        (true, t, out_intersection_point)
+    } else {
+        // This means that there is a line intersection but not a ray intersection.
+        (false, t, Vec3::ZERO)
+    }
+}
+
+// Brute force ray with mesh ray test.
+pub fn ray_with_mesh(ray: Ray3, vertices: &[Vec3], indices: &[[u32; 3]]) -> Option<f32> {
+    let mut nearest = std::f32::MAX;
+    let mut intersects = false;
+    for [i0, i1, i2] in indices.iter() {
+        let result = ray_with_tri(
+            ray,
+            vertices[*i0 as usize],
+            vertices[*i1 as usize],
+            vertices[*i2 as usize],
+        );
+
+        if result.0 {
+            let dis = result.1;
+
+            if dis < nearest {
+                nearest = dis;
+                intersects = true;
+            }
+        }
+    }
+
+    if intersects {
+        Some(nearest)
+    } else {
+        None
+    }
+}
+
+/*
+pub struct Frustum {
+    pub left: Plane,
+    pub right: Plane,
+    pub top: Plane,
+    pub bottom: Plane,
+    pub near: Plane,
+    pub far: Plane,
+}
+
+impl Frustum {
+    pub fn from_matrix(matrix: &Mat4) -> Frustum {
+        let row0 = matrix.row(0);
+        let row1 = matrix.row(1);
+        let row2 = matrix.row(2);
+        let row3 = matrix.row(3);
+
+        let left = (row3 + row0).normalized();
+        let right = (row3 - row0).normalized();
+        let top = (row3 - row1).normalized();
+        let bottom = (row3 + row1).normalized();
+        let near = (row3 + row2).normalized();
+        let far = (row3 - row2).normalized();
+
+        Frustum {
+            left: Plane::new(left[3], left.xyz()),
+            right: Plane::new(right[3], right.xyz()),
+            top: Plane::new(top[3], top.xyz()),
+            bottom: Plane::new(bottom[3], bottom.xyz()),
+            near: Plane::new(near[3], near.xyz()),
+            far: Plane::new(far[3], far.xyz()),
+        }
+    }
+}
+*/

@@ -25,9 +25,6 @@ pub use transform::*;
 mod commands;
 pub use commands::*;
 
-mod math;
-pub use math::*;
-
 mod temporary;
 pub use temporary::*;
 
