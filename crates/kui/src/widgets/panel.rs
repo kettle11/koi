@@ -12,8 +12,8 @@ pub struct Panel<
     handle_sliding: bool,
     first_widget: FirstWidget,
     second_widget: SecondWidget,
-    handle_bounding_box: Rect,
-    total_bounding_box: Rect,
+    handle_bounding_box: Box2,
+    total_bounding_box: Box2,
     reverse: bool,
     phantom: std::marker::PhantomData<fn() -> (Style, Data)>,
 }
@@ -33,8 +33,8 @@ pub fn panel_horizontal<
         handle_sliding: false,
         first_widget,
         second_widget,
-        handle_bounding_box: Rect::ZERO,
-        total_bounding_box: Rect::ZERO,
+        handle_bounding_box: Box2::ZERO,
+        total_bounding_box: Box2::ZERO,
         reverse: false,
         phantom: std::marker::PhantomData,
     }
@@ -68,7 +68,7 @@ impl<
         Vec2::MAX
     }
 
-    fn draw(&mut self, style: &mut Style, data: &mut Data, drawer: &mut Drawer, rectangle: Rect) {
+    fn draw(&mut self, style: &mut Style, data: &mut Data, drawer: &mut Drawer, rectangle: Box2) {
         let old_clipping_mask = drawer.clipping_mask;
 
         let handle_size = 2.;
@@ -82,14 +82,14 @@ impl<
         }
 
         let first_rectangle =
-            Rect::new_with_min_corner_and_size(rectangle.min, Vec2::new(first_width, height));
+            Box2::new_with_min_corner_and_size(rectangle.min, Vec2::new(first_width, height));
 
-        let second_rectangle = Rect::new_with_min_corner_and_size(
+        let second_rectangle = Box2::new_with_min_corner_and_size(
             rectangle.min + Vec2::X * (first_width + handle_size / 2.0),
             Vec2::new(second_width, height),
         );
 
-        let handle_rectangle = Rect::new_with_min_corner_and_size(
+        let handle_rectangle = Box2::new_with_min_corner_and_size(
             rectangle.min + Vec2::X * first_width,
             Vec2::new(handle_size, height),
         );
@@ -105,7 +105,7 @@ impl<
         drawer.rectangle(handle_rectangle, Color::WHITE);
 
         let handle_padding = 10.0;
-        let padded_handle = Rect::new(
+        let padded_handle = Box2::new(
             handle_rectangle.min - Vec2::X * handle_padding,
             handle_rectangle.max + Vec2::X * handle_padding,
         );

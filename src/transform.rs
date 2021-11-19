@@ -135,7 +135,7 @@ impl Transform {
         self.rotation.rotate_vector3(Vec3::Z)
     }
 
-    pub fn transform_bounding_box(&self, bounding_box: BoundingBox<f32, 3>) -> BoundingBox<f32, 3> {
+    pub fn transform_bounding_box(&self, bounding_box: Box3) -> Box3 {
         let model = self.model();
         let min = model.transform_point(bounding_box.min);
         let max = model.transform_point(bounding_box.max);

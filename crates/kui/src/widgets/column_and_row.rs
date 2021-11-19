@@ -73,13 +73,7 @@ impl<
         total_size
     }
 
-    fn draw(
-        &mut self,
-        style: &mut Style,
-        data: &mut Data,
-        drawer: &mut Drawer,
-        rectangle: Rect,
-    ) {
+    fn draw(&mut self, style: &mut Style, data: &mut Data, drawer: &mut Drawer, rectangle: Box2) {
         let Self {
             create_children,
             children,
@@ -96,7 +90,7 @@ impl<
             children,
             for_each: &mut |child_data, child| {
                 let size = sizes[index];
-                let rectangle = Rect::new(
+                let rectangle = Box2::new(
                     Vec2::new(rectangle.min.x, y),
                     Vec2::new(rectangle.max.x, y + size.y),
                 );
@@ -185,13 +179,7 @@ impl<
         total_size
     }
 
-    fn draw(
-        &mut self,
-        style: &mut Style,
-        data: &mut Data,
-        drawer: &mut Drawer,
-        rectangle: Rect,
-    ) {
+    fn draw(&mut self, style: &mut Style, data: &mut Data, drawer: &mut Drawer, rectangle: Box2) {
         let Self {
             create_children,
             children,
@@ -208,7 +196,7 @@ impl<
             children,
             for_each: &mut |child_data, child| {
                 let size = sizes[index];
-                let rectangle = Rect::new(
+                let rectangle = Box2::new(
                     Vec2::new(x, rectangle.min.y),
                     Vec2::new(x + size.x, rectangle.max.y),
                 );

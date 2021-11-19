@@ -67,7 +67,7 @@ impl<Style: GetStandardStyleTrait, Data> Text<Style, Data> {
         &mut self,
         style: &mut Style,
         drawer: &mut Drawer,
-        rectangle: Rect,
+        rectangle: Box2,
         color: Color,
     ) {
         let layout = &mut self.layout;
@@ -118,8 +118,8 @@ where
         let size = layout
             .glyphs()
             .iter()
-            .fold(Rect::ZERO, |total_bounds, glyph| {
-                total_bounds.join(Rect::new_with_min_corner_and_size(
+            .fold(Box2::ZERO, |total_bounds, glyph| {
+                total_bounds.join(Box2::new_with_min_corner_and_size(
                     Vec2::new(glyph.x, glyph.y) / ui_scale,
                     Vec2::new(glyph.width as f32, glyph.height as f32) / ui_scale,
                 ))
@@ -128,7 +128,7 @@ where
         size
     }
 
-    fn draw(&mut self, style: &mut Style, _data: &mut Data, drawer: &mut Drawer, rectangle: Rect) {
+    fn draw(&mut self, style: &mut Style, _data: &mut Data, drawer: &mut Drawer, rectangle: Box2) {
         let color = (self.get_color)(style);
         self.draw_with_color(style, drawer, rectangle, color)
     }

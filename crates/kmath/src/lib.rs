@@ -33,7 +33,9 @@ mod default_types {
     pub type Mat4 = Matrix<f32, 4, 4>;
 
     pub type Quat = Quaternion<f32>;
-    pub type Rect = BoundingBox<f32, 2>;
+
+    pub type Box2 = BoundingBox<f32, 2>;
+    pub type Box3 = BoundingBox<f32, 3>;
 
     pub type Ray2 = Ray<f32, 2>;
     pub type Ray3 = Ray<f32, 3>;

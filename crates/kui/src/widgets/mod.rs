@@ -27,14 +27,7 @@ pub trait WidgetTrait<Style, Data>: Send + 'static {
         Vec2::ZERO
     }
     #[allow(unused)]
-    fn draw(
-        &mut self,
-        style: &mut Style,
-        data: &mut Data,
-        drawer: &mut Drawer,
-        rectangle: Rect,
-    ) {
-    }
+    fn draw(&mut self, style: &mut Style, data: &mut Data, drawer: &mut Drawer, rectangle: Box2) {}
 
     #[allow(unused)]
     fn event(&mut self, data: &mut Data, event: &Event) -> bool {
@@ -54,14 +47,7 @@ impl<Style, Data> WidgetTrait<Style, Data> for Fill {
         // Takes up no space but will render to all available space allocated.
         Vec2::ZERO
     }
-    fn draw(
-        &mut self,
-
-        _style: &mut Style,
-        _data: &mut Data,
-        drawer: &mut Drawer,
-        rectangle: Rect,
-    ) {
+    fn draw(&mut self, _style: &mut Style, _data: &mut Data, drawer: &mut Drawer, rectangle: Box2) {
         drawer.rectangle(rectangle, self.color);
     }
 }
@@ -78,18 +64,9 @@ impl<Style, Data> WidgetTrait<Style, Data> for ColoredRect {
     fn size(&mut self, _style: &mut Style, _data: &mut Data) -> Vec2 {
         self.size
     }
-    fn draw(
-        &mut self,
-        _style: &mut Style,
-        _data: &mut Data,
-        drawer: &mut Drawer,
-        rectangle: Rect,
-    ) {
+    fn draw(&mut self, _style: &mut Style, _data: &mut Data, drawer: &mut Drawer, rectangle: Box2) {
         let size = rectangle.size().min(self.size);
-        drawer.rectangle(
-            Rect::new(rectangle.min, rectangle.min + size),
-            self.color,
-        );
+        drawer.rectangle(Box2::new(rectangle.min, rectangle.min + size), self.color);
     }
 }
 use std::ops::DerefMut;
@@ -98,13 +75,7 @@ pub struct Empty;
 impl<Style, Data> WidgetTrait<Style, Data> for Empty {}
 
 impl<Style: 'static, Data: 'static> WidgetTrait<Style, Data> for Box<dyn WidgetTrait<Style, Data>> {
-    fn draw(
-        &mut self,
-        style: &mut Style,
-        data: &mut Data,
-        drawer: &mut Drawer,
-        rectangle: Rect,
-    ) {
+    fn draw(&mut self, style: &mut Style, data: &mut Data, drawer: &mut Drawer, rectangle: Box2) {
         self.deref_mut().draw(style, data, drawer, rectangle)
     }
 

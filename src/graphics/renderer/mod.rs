@@ -31,7 +31,7 @@ struct ViewInfo {
     projection_matrix: Mat4,
     view_matrix: Mat4,
     camera_position: Vec3,
-    viewport: Rect,
+    viewport: Box2,
 }
 
 struct MaterialInfo<'a> {
@@ -110,7 +110,7 @@ impl<'a, 'b: 'a> Renderer<'a, 'b> {
         camera_global_transform: &GlobalTransform,
         offset: Mat4,
         projection_matrix: Mat4,
-        viewport: Rect,
+        viewport: Box2,
     ) -> ViewInfo {
         // Is this `offset *` correct?
         let camera_position = offset.transform_point(camera_global_transform.position);
@@ -490,7 +490,7 @@ pub fn render_scene<'a>(
                         camera_global_transform,
                         Mat4::IDENTITY,
                         camera.projection_matrix(),
-                        Rect {
+                        Box2 {
                             min: Vec2::ZERO,
                             max: Vec2::ONE,
                         },

@@ -11,7 +11,7 @@ pub struct Drawer {
     pub(crate) view_width: f32,
     pub(crate) view_height: f32,
     pub texture_atlas: TextureAtlas,
-    pub clipping_mask: Rect,
+    pub clipping_mask: Box2,
 }
 
 impl Default for Drawer {
@@ -30,7 +30,7 @@ impl Drawer {
             view_width: 100.,
             view_height: 100.,
             texture_atlas: TextureAtlas::new(1024),
-            clipping_mask: Rect::new(-Vec2::MAX, Vec2::MAX),
+            clipping_mask: Box2::new(-Vec2::MAX, Vec2::MAX),
         }
     }
 
@@ -44,7 +44,7 @@ impl Drawer {
         self.texture_coordinates.clear();
         self.colors.clear();
         self.indices.clear();
-        self.clipping_mask = Rect::new(-Vec2::MAX, Vec2::MAX);
+        self.clipping_mask = Box2::new(-Vec2::MAX, Vec2::MAX);
     }
 
     pub fn text(
@@ -61,7 +61,7 @@ impl Drawer {
                 .get_character(fontdue_font, c.key)
                 .unwrap();
 
-            let atlas_rectangle = Rect::new_with_min_corner_and_size(
+            let atlas_rectangle = Box2::new_with_min_corner_and_size(
                 Vec2::new(
                     atlas_rectangle.x as f32 / self.texture_atlas.width as f32,
                     atlas_rectangle.y as f32 / self.texture_atlas.height as f32,
@@ -102,12 +102,12 @@ impl Drawer {
         }
     }
 
-    fn clip_rectangle(&mut self, rectangle: Rect) -> Rect {
+    fn clip_rectangle(&mut self, rectangle: Box2) -> Box2 {
         rectangle.intersection(self.clipping_mask)
     }
 
     /// Returns the rectangle that will actually be displayed.
-    pub fn rectangle(&mut self, rectangle: Rect, color: Color) -> Rect {
+    pub fn rectangle(&mut self, rectangle: Box2, color: Color) -> Box2 {
         let rectangle = self.clip_rectangle(rectangle);
         if rectangle.area() != 0.0 {
             let color = color.to_linear_srgb();
@@ -197,10 +197,10 @@ impl Drawer {
     /// Returns the rectangle that will actually be displayed.
     pub fn rounded_rectangle(
         &mut self,
-        rectangle: Rect,
+        rectangle: Box2,
         corner_radius: Vec4,
         color: Color,
-    ) -> Rect {
+    ) -> Box2 {
         let clipped_rectangle = self.clip_rectangle(rectangle);
         if clipped_rectangle.area() != 0.0 {
             if corner_radius == Vec4::fill(0.0) {
