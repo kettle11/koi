@@ -40,7 +40,8 @@ mod default_types {
     pub type Ray2 = Ray<f32, 2>;
     pub type Ray3 = Ray<f32, 3>;
 
-    pub type Plane = crate::geometry::Plane<f32, 3>;
+    pub type Plane2 = crate::geometry::Plane<f32, 2>;
+    pub type Plane3 = crate::geometry::Plane<f32, 3>;
 }
 pub use default_types::*;
 
