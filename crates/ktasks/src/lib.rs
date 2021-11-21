@@ -627,7 +627,7 @@ mod worker_enqueue_waker {
     unsafe fn clone(worker_data: *const ()) -> RawWaker {
         let worker_data = Arc::from_raw(worker_data as *const WakerData);
         let cloned_worker_data = worker_data.clone();
-        Arc::into_raw(worker_data); // Don't drop the original Arc here.
+        let _ = Arc::into_raw(worker_data); // Don't drop the original Arc here.
         RawWaker::new(Arc::into_raw(cloned_worker_data) as *const (), &VTABLE)
     }
 
@@ -670,8 +670,8 @@ mod worker_enqueue_waker {
 
         worker_data.worker_waker.wake_all();
 
-        // Is this into_raw call correct
-        Arc::into_raw(worker_data);
+        // Is this into_raw call correct?
+        let _ = Arc::into_raw(worker_data);
     }
 
     unsafe fn drop(worker_data: *const ()) {
@@ -711,7 +711,7 @@ mod worker_enqueue_waker_local {
     unsafe fn clone(worker_data: *const ()) -> RawWaker {
         let worker_data = Arc::from_raw(worker_data as *const WakerData);
         let cloned_worker_data = worker_data.clone();
-        Arc::into_raw(worker_data); // Don't drop the original Arc here.
+        let _ = Arc::into_raw(worker_data); // Don't drop the original Arc here.
         RawWaker::new(Arc::into_raw(cloned_worker_data) as *const (), &VTABLE)
     }
 
@@ -751,7 +751,7 @@ mod worker_enqueue_waker_local {
         // This could run on any thread, so wake all that might be waiting for a task.
         worker_data.worker_waker.wake_all();
 
-        Arc::into_raw(worker_data);
+        let _ = Arc::into_raw(worker_data);
     }
 
     unsafe fn drop(worker_data: *const ()) {
