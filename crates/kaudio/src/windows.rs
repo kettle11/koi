@@ -1,7 +1,10 @@
 extern crate winapi;
+use winapi::um::audioclient::IAudioClient;
+
 use crate::windows::winapi::Interface;
 use crate::*;
 
+const SAMPLE_RATE: u32 = 44100;
 pub trait AudioSource {
     fn provide_samples(&mut self, samples: &mut [f32]);
     fn handle_event() {}
@@ -23,10 +26,8 @@ type AudioOutputFormat = f32;
 // https://github.com/floooh/sokol/blob/master/sokol_audio.h
 // And cpal: https://github.com/RustAudio/cpal/blob/master/src/host/wasapi/device.rs
 pub fn begin_audio_thread(
-    audio_callback: impl FnMut(&mut [AudioOutputFormat], StreamInfo) + Send + 'static,
+    mut audio_callback: impl FnMut(&mut [AudioOutputFormat], StreamInfo) + Send + 'static,
 ) {
-    return;
-    let sample_rate = 44100;
     unsafe {
         let hresult = winapi::um::combaseapi::CoInitializeEx(
             std::ptr::null_mut(),
@@ -68,10 +69,10 @@ pub fn begin_audio_thread(
         let audio_client = audio_client as *mut winapi::um::audioclient::IAudioClient;
 
         // Setup the streaming format for the audio.
-        let wFormatTag = winapi::shared::mmreg::WAVE_FORMAT_PCM;
+        let wFormatTag = winapi::shared::mmreg::WAVE_FORMAT_IEEE_FLOAT;
         let nChannels = 2;
-        let nSamplesPerSec = sample_rate;
-        let wBitsPerSample = 16;
+        let nSamplesPerSec = SAMPLE_RATE;
+        let wBitsPerSample = 32;
 
         let nBlockAlign = (nChannels as u32 * wBitsPerSample as u32) / 8; // Size of a sample. Required equation. See below link
         let nAvgBytesPerSec = nSamplesPerSec as u32 * nBlockAlign as u32; // Required equation. See below link
@@ -93,14 +94,17 @@ pub fn begin_audio_thread(
         // https://docs.microsoft.com/en-us/windows/win32/api/audioclient/nf-audioclient-iaudioclient-initialize
         let buffer_frames = 2048; // Number of frames in streaming buffer
 
-        let duration = (buffer_frames as f64) / (sample_rate as f64 * (1.0 / 10000000.0));
+        let duration = (buffer_frames as f64) / (SAMPLE_RATE as f64 * (1.0 / 10000000.0));
+
+        // AUDCLNT_STREAMFLAGS_RATEADJUST lets us use a sample rate that's different from the hardware and the OS
+        // will resample for us.
         let hresult = (*audio_client).Initialize(
-            AUDCLNT_SHAREMODE_SHARED,          // ShareMode
-            AUDCLNT_STREAMFLAGS_EVENTCALLBACK, // StreamFlgs
-            duration as i64,                   // hnsBufferDuration
-            0,                                 // hnsPeriodicity
-            &format,                           // *pFormat
-            std::ptr::null(),                  // AudioSessionGuid
+            AUDCLNT_SHAREMODE_SHARED, // ShareMode
+            AUDCLNT_STREAMFLAGS_EVENTCALLBACK | AUDCLNT_STREAMFLAGS_RATEADJUST, // StreamFlgs
+            duration as i64,          // hnsBufferDuration
+            0,                        // hnsPeriodicity
+            &format,                  // *pFormat
+            std::ptr::null(),         // AudioSessionGuid
         );
         check_result(hresult).unwrap();
 
@@ -142,7 +146,7 @@ pub fn begin_audio_thread(
         std::thread::spawn(move || loop {
             let mut buffer_position: u32 = 0;
             loop {
-                let result = winapi::um::synchapi::WaitForSingleObject(
+                let _result = winapi::um::synchapi::WaitForSingleObject(
                     thread_data.event,
                     winapi::um::winbase::INFINITE,
                 );
@@ -151,7 +155,6 @@ pub fn begin_audio_thread(
                 let hresult = (*thread_data.audio_client).GetCurrentPadding(&mut padding);
                 check_result(hresult).unwrap();
 
-                // println!("PADDING: {:?}", padding);
                 let frames_to_write = pNumBufferFrames - padding;
 
                 let mut buffer: *mut winapi::shared::minwindef::BYTE =
@@ -161,16 +164,18 @@ pub fn begin_audio_thread(
                 check_result(hresult).unwrap();
 
                 let buffer_len = frames_to_write as usize * nChannels as usize;
-                let samples_slice: &mut [i16] =
-                    std::slice::from_raw_parts_mut(buffer as *mut i16, buffer_len);
-                samples_slice.fill(0);
+                let samples_slice: &mut [f32] =
+                    std::slice::from_raw_parts_mut(buffer as *mut f32, buffer_len);
+                samples_slice.fill(0.0);
 
-                // Don't provide audio for now
-                //  audio_source.provide_samples(samples_slice);
+                let stream_info = StreamInfo {
+                    channels: 2,
+                    sample_rate: SAMPLE_RATE,
+                };
+
+                (audio_callback)(samples_slice, stream_info);
                 let hresult = (*thread_data.render_client).ReleaseBuffer(frames_to_write, 0);
                 check_result(hresult).unwrap();
-
-                //println!("REQUESTING AUDIO");
             }
         });
 

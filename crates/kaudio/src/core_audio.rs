@@ -283,7 +283,7 @@ unsafe extern "C" fn callback(
     let channels = (*io_data).mBuffers[0].mNumberChannels;
     let stream_info = StreamInfo {
         channels,
-        sample_rate: 44100,
+        sample_rate: SAMPLE_RATE,
     };
 
     // Call user callback.
