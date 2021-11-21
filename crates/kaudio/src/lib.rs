@@ -1,4 +1,5 @@
 #[cfg(target_os = "windows")]
+#[allow(non_camel_case_types, non_snake_case, non_upper_case_globals)]
 mod windows;
 #[cfg(target_os = "windows")]
 pub use windows::*;
@@ -13,13 +14,6 @@ pub use core_audio::*;
 mod web;
 #[cfg(target_arch = "wasm32")]
 pub use web::*;
-
-/*
-pub trait AudioSource {
-    fn initialize(&mut self, frame_size: usize);
-    fn provide_samples(&mut self, samples: &mut [f32]);
-}
-*/
 
 mod sound;
 pub use sound::*;
