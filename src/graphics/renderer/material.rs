@@ -14,6 +14,7 @@ pub struct Material {
     vec4_properties: HashMap<String, Vec4>,
     mat4_properties: HashMap<String, Mat4>,
     pub(crate) texture_properties: HashMap<String, (Handle<Texture>, u8)>,
+    pub(crate) cube_map_properties: HashMap<String, (Handle<CubeMap>, u8)>,
     pub(crate) max_texture_unit: u8,
 }
 
@@ -59,6 +60,7 @@ impl Material {
             vec4_properties: HashMap::new(),
             mat4_properties: HashMap::new(),
             texture_properties: HashMap::new(),
+            cube_map_properties: HashMap::new(),
             max_texture_unit: 0,
         }
     }
@@ -104,11 +106,30 @@ impl Material {
         *texture_handle = texture;
     }
 
+    pub fn set_cube_map(&mut self, name: &str, texture: Handle<CubeMap>) {
+        let Self {
+            cube_map_properties,
+            max_texture_unit,
+            ..
+        } = self;
+        let (texture_handle, _) =
+            cube_map_properties
+                .entry(name.to_string())
+                .or_insert_with(|| {
+                    *max_texture_unit += 1;
+                    (Handle::default(), *max_texture_unit - 1)
+                });
+        *texture_handle = texture;
+    }
+
+    // Todo: Each material should hold an immutable Arc to its Pipeline's metadata that it can use
+    // to lookup the properties once instead of doing this.
     pub fn bind_material(
         &self,
         render_pass: &mut RenderPass,
         pipeline: &Pipeline,
         texture_assets: &Assets<Texture>,
+        cube_map_assets: &Assets<CubeMap>,
     ) {
         for (name, value) in self.float_properties.iter() {
             if let Ok(property) = pipeline.get_float_property(name) {
@@ -153,15 +174,27 @@ impl Material {
                 println!("WARNING: Shader does not have texture property '{}'", name);
             }
         }
+
+        for (name, (texture, texture_unit)) in self.cube_map_properties.iter() {
+            if let Ok(property) = pipeline.get_cubemap_property(name) {
+                let texture = cube_map_assets.get(texture);
+                render_pass.set_cube_map_property(&property, Some(texture), *texture_unit);
+            } else {
+                println!("WARNING: Shader does not have cube map property '{}'", name);
+            }
+        }
     }
 }
 
-pub struct MaterialAssetLoader {}
-impl AssetLoader<Material> for MaterialAssetLoader {
-    fn new() -> Self {
-        Self {}
-    }
+pub struct MaterialAssetLoader;
 
+impl MaterialAssetLoader {
+    pub fn new() -> Self {
+        Self
+    }
+}
+
+impl AssetLoader<Material> for MaterialAssetLoader {
     fn load_with_options(
         &mut self,
         _path: &str,

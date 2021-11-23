@@ -68,15 +68,17 @@ impl LoadableAssetTrait for Sound {
     type AssetLoader = SoundAssetLoader;
 }
 
-impl AssetLoader<Sound> for SoundAssetLoader {
-    fn new() -> Self {
+impl SoundAssetLoader {
+    pub fn new() -> Self {
         let (sender, receiver) = mpsc::channel();
         Self {
             sender: SyncGuard::new(sender),
             receiver: SyncGuard::new(receiver),
         }
     }
+}
 
+impl AssetLoader<Sound> for SoundAssetLoader {
     fn load_with_options(
         &mut self,
         path: &str,

@@ -31,6 +31,7 @@ pub(super) enum CommandBufferAction {
     SetVec4Uniform((UniformLocation, BumpHandle)),
     SetMat4Uniform((UniformLocation, BumpHandle)),
     SetTextureUnit((UniformLocation, u8, Option<gl_native::TextureNative>)),
+    SetTextureUnitToCubeMap((UniformLocation, u8, Option<gl_native::TextureNative>)),
     SetViewport((u32, u32, u32, u32)),
     DrawTriangles(u32),
     DrawTriangleArrays(u32),
@@ -268,6 +269,7 @@ impl<'a> RenderPassTrait for RenderPass<'a> {
         let texture = texture.map(|t| match t.texture_type {
             TextureType::Texture(t) => t,
             TextureType::DefaultFramebuffer => panic!("Cannot update default framebuffer"),
+            TextureType::CubeMap { .. } => todo!(),
         });
         // The minimum number of texture units is 16
         // In the future this could cache bindings and if they're already the same this command could be ignored
@@ -279,6 +281,30 @@ impl<'a> RenderPassTrait for RenderPass<'a> {
                     uniform_location,
                     texture_unit,
                     texture,
+                )))
+        } else {
+            // println!("WARNING: Binding texture to non-existent uniform")
+        }
+    }
+
+    /// The texture unit should be 0 to 16
+    /// Perhaps that restriction should be waved later after research.
+    fn set_cube_map_property(
+        &mut self,
+        property: &CubeMapProperty,
+        texture: Option<&CubeMap>,
+        texture_unit: u8,
+    ) {
+        // The minimum number of texture units is 16
+        // In the future this could cache bindings and if they're already the same this command could be ignored
+        debug_assert!(texture_unit < 16);
+        if let Some(uniform_location) = property.location {
+            self.command_buffer
+                .actions
+                .push(CommandBufferAction::SetTextureUnitToCubeMap((
+                    uniform_location,
+                    texture_unit,
+                    texture.map(|t| t.texture),
                 )))
         } else {
             // println!("WARNING: Binding texture to non-existent uniform")

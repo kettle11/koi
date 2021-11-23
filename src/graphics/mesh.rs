@@ -39,11 +39,14 @@ pub struct GPUMesh {
 }
 
 pub struct MeshAssetLoader {}
-impl AssetLoader<Mesh> for MeshAssetLoader {
-    fn new() -> Self {
+
+impl MeshAssetLoader {
+    pub fn new() -> Self {
         Self {}
     }
+}
 
+impl AssetLoader<Mesh> for MeshAssetLoader {
     fn load_with_options(
         &mut self,
         _path: &str,

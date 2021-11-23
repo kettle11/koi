@@ -15,7 +15,7 @@ pub fn world_assets_plugin() -> Plugin {
 }
 
 fn setup_prefabs(world: &mut World) {
-    let assets = Assets::<World>::new(World::new());
+    let assets = Assets::<World>::new(World::new(), WorldLoader::new());
     world.spawn(assets);
 }
 
@@ -128,7 +128,7 @@ pub struct WorldLoader {
     receiver: SyncGuard<mpsc::Receiver<PrefabLoadMessage>>,
 }
 
-impl AssetLoader<World> for WorldLoader {
+impl WorldLoader {
     fn new() -> Self {
         let (sender, receiver) = mpsc::channel();
         Self {
@@ -136,7 +136,9 @@ impl AssetLoader<World> for WorldLoader {
             receiver: SyncGuard::new(receiver),
         }
     }
+}
 
+impl AssetLoader<World> for WorldLoader {
     fn load_with_options(
         &mut self,
         path: &str,

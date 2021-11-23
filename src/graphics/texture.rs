@@ -188,7 +188,7 @@ pub fn jpeg_data_from_bytes(bytes: &[u8], srgb: bool) -> TextureLoadData {
 }
 
 #[cfg(feature = "hdri")]
-pub fn hdri_data_from_bytes(bytes: &[u8], _srgb: bool) -> TextureLoadData {
+pub fn hdri_data_from_bytes(bytes: &[u8]) -> TextureLoadData {
     // This data is always assumed to be linear sRGB
 
     let image = hdrldr::load(bytes).expect("Failed to decode HDRI image data");
@@ -207,15 +207,44 @@ pub fn hdri_data_from_bytes(bytes: &[u8], _srgb: bool) -> TextureLoadData {
     }
 }
 
-impl AssetLoader<Texture> for TextureAssetLoader {
-    fn new() -> Self {
+pub(crate) async fn texture_data_from_path(
+    path: &str,
+    options: &mut TextureSettings,
+) -> TextureLoadData {
+    let extension = std::path::Path::new(&path)
+        .extension()
+        .and_then(std::ffi::OsStr::to_str);
+
+    let bytes = crate::fetch_bytes(&path)
+        .await
+        .unwrap_or_else(|_| panic!("Failed to open file: {}", path));
+    match extension {
+        #[cfg(feature = "png")]
+        Some("png") => png_data_from_bytes(&bytes, options.srgb),
+        #[cfg(feature = "jpeg")]
+        Some("jpg") | Some("jpeg") => jpeg_data_from_bytes(&bytes, options.srgb),
+        #[cfg(feature = "hdri")]
+        Some("hdr") => {
+            options.srgb = false;
+            options.generate_mipmaps = false;
+            hdri_data_from_bytes(&bytes)
+        }
+        None => panic!("No file extension for path: {:?}", path),
+        _ => panic!("Unsupported texture extension: {:?}", path),
+    }
+}
+
+impl TextureAssetLoader {
+    pub fn new() -> Self {
         let (sender, receiver) = mpsc::channel();
         Self {
             sender: SyncGuard::new(sender),
             receiver: SyncGuard::new(receiver),
         }
     }
+}
 
+impl AssetLoader<Texture> for TextureAssetLoader {
     fn load_with_options(
         &mut self,
         path: &str,
@@ -226,58 +255,16 @@ impl AssetLoader<Texture> for TextureAssetLoader {
         let sender = self.sender.inner().clone();
 
         ktasks::spawn(async move {
-            let extension = std::path::Path::new(&path)
-                .extension()
-                .and_then(std::ffi::OsStr::to_str);
+            let texture_load_data = texture_data_from_path(&path, &mut options).await;
 
-            // println!("LOADING PATH: {:?}", path);
-            let result = match extension {
-                #[cfg(feature = "png")]
-                Some("png") => {
-                    let bytes = crate::fetch_bytes(&path)
-                        .await
-                        .unwrap_or_else(|_| panic!("Failed to open file: {}", path));
-                    let texture_load_data = png_data_from_bytes(&bytes, options.srgb);
-
-                    TextureLoadMessage {
-                        texture_load_data,
-                        handle,
-                        texture_settings: options,
-                    }
-                }
-                #[cfg(feature = "jpeg")]
-                Some("jpg") | Some("jpeg") => {
-                    let bytes = crate::fetch_bytes(&path)
-                        .await
-                        .unwrap_or_else(|_| panic!("Failed to open file: {}", path));
-                    let texture_load_data = jpeg_data_from_bytes(&bytes, options.srgb);
-                    TextureLoadMessage {
-                        texture_load_data,
-                        handle,
-                        texture_settings: options,
-                    }
-                }
-                #[cfg(feature = "hdri")]
-                Some("hdr") => {
-                    let bytes = crate::fetch_bytes(&path)
-                        .await
-                        .unwrap_or_else(|_| panic!("Failed to open file: {}", path));
-                    let texture_load_data = hdri_data_from_bytes(&bytes, options.srgb);
-                    options.srgb = false;
-                    options.generate_mipmaps = false;
-                    TextureLoadMessage {
-                        texture_load_data,
-                        handle,
-                        texture_settings: options,
-                    }
-                }
-                None => panic!("No file extension for path: {:?}", path),
-                _ => panic!("Unsupported texture extension: {:?}", path),
-            };
             // Send data to GPU AssetLoader channel.
             // Potentially this could occur if somehow the main thread shuts down first.
             // But in that case it's OK to simply do nothing.
-            let _ = sender.send(result);
+            let _ = sender.send(TextureLoadMessage {
+                texture_load_data,
+                handle,
+                texture_settings: options,
+            });
         })
         .run();
     }

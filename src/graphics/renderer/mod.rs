@@ -22,16 +22,16 @@ pub fn renderer_plugin() -> Plugin {
 
 pub fn setup_renderer(world: &mut World) {
     let default_material = new_pbr_material(Shader::PHYSICALLY_BASED, PBRProperties::default());
-    let mut materials = Assets::<Material>::new(default_material);
+    let mut materials = Assets::<Material>::new(default_material, MaterialAssetLoader::new());
     Material::initialize_static_materials(&mut materials);
     world.spawn(materials);
 }
 
-struct ViewInfo {
-    projection_matrix: Mat4,
-    view_matrix: Mat4,
-    camera_position: Vec3,
-    viewport: Box2,
+pub struct ViewInfo {
+    pub projection_matrix: Mat4,
+    pub view_matrix: Mat4,
+    pub camera_position: Vec3,
+    pub viewport: Box2,
 }
 
 struct MaterialInfo<'a> {
@@ -63,6 +63,7 @@ struct Renderer<'a, 'b: 'a> {
     material_assets: &'a Assets<Material>,
     mesh_assets: &'a Assets<Mesh>,
     texture_assets: &'a Assets<Texture>,
+    cube_map_assets: &'a Assets<CubeMap>,
     bound_mesh: Option<&'a Handle<Mesh>>,
     bound_shader: Option<&'a Handle<Shader>>,
     material_info: Option<MaterialInfo<'a>>,
@@ -79,6 +80,7 @@ impl<'a, 'b: 'a> Renderer<'a, 'b> {
         material_assets: &'a Assets<Material>,
         mesh_assets: &'a Assets<Mesh>,
         texture_assets: &'a Assets<Texture>,
+        cube_map_assets: &'a Assets<CubeMap>,
         camera_info: &'a [ViewInfo],
         viewport: kmath::geometry::BoundingBox<u32, 2>,
         multiview_enabled: bool,
@@ -95,6 +97,7 @@ impl<'a, 'b: 'a> Renderer<'a, 'b> {
             shader_assets,
             material_assets,
             texture_assets,
+            cube_map_assets,
             mesh_assets,
             bound_mesh: None,
             bound_shader: None,
@@ -313,7 +316,12 @@ impl<'a, 'b: 'a> Renderer<'a, 'b> {
             }
 
             // Rebind the material properties.
-            material.bind_material(self.render_pass, pipeline, self.texture_assets);
+            material.bind_material(
+                self.render_pass,
+                pipeline,
+                self.texture_assets,
+                self.cube_map_assets,
+            );
         }
     }
 
@@ -454,6 +462,7 @@ pub fn render_scene<'a>(
     material_assets: &Assets<Material>,
     mesh_assets: &Assets<Mesh>,
     texture_assets: &Assets<Texture>,
+    cube_map_assets: &Assets<CubeMap>,
     cameras: Query<(&GlobalTransform, &Camera)>,
     renderables: Renderables<'a>,
     lights: Query<(&'static GlobalTransform, &'static Light)>,
@@ -519,6 +528,7 @@ pub fn render_scene<'a>(
                     material_assets,
                     mesh_assets,
                     texture_assets,
+                    cube_map_assets,
                     // &lights,
                     &camera_info,
                     kmath::geometry::BoundingBox::<u32, 2> {

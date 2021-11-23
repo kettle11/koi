@@ -35,15 +35,17 @@ struct ShaderLoadMessage {
     pipeline_settings: PipelineSettings,
 }
 
-impl AssetLoader<Shader> for ShaderAssetLoader {
-    fn new() -> Self {
+impl ShaderAssetLoader {
+    pub fn new() -> Self {
         let (sender, receiver) = mpsc::channel();
         Self {
             sender: SyncGuard::new(sender),
             receiver: SyncGuard::new(receiver),
         }
     }
+}
 
+impl AssetLoader<Shader> for ShaderAssetLoader {
     fn load_with_options(
         &mut self,
         path: &str,
@@ -89,6 +91,7 @@ pub(crate) fn initialize_static_shaders(graphics: &mut Graphics, shaders: &mut A
                 PipelineSettings {
                     faces_to_render: FacesToRender::FrontAndBack,
                     blending: Some((BlendFactor::SourceAlpha, BlendFactor::OneMinusSourceAlpha)),
+                    ..Default::default()
                 },
             )
             .unwrap(),
@@ -102,6 +105,7 @@ pub(crate) fn initialize_static_shaders(graphics: &mut Graphics, shaders: &mut A
                 PipelineSettings {
                     faces_to_render: FacesToRender::Front,
                     blending: Some((BlendFactor::SourceAlpha, BlendFactor::OneMinusSourceAlpha)),
+                    ..Default::default()
                 },
             )
             .unwrap(),
@@ -115,6 +119,7 @@ pub(crate) fn initialize_static_shaders(graphics: &mut Graphics, shaders: &mut A
                 PipelineSettings {
                     faces_to_render: FacesToRender::Front,
                     blending: Some((BlendFactor::SourceAlpha, BlendFactor::OneMinusSourceAlpha)),
+                    ..Default::default()
                 },
             )
             .unwrap(),

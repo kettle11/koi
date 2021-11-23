@@ -21,7 +21,7 @@ pub fn audio_plugin() -> Plugin {
 
 pub fn setup_audio(world: &mut World) {
     let placeholder_sound = Sound::new_from_slice(&[0.0]);
-    let sound_assets = Assets::new(placeholder_sound);
+    let sound_assets = Assets::new(placeholder_sound, SoundAssetLoader::new());
 
     const QUIET_AMPLITUDE: f32 = 0.001;
 

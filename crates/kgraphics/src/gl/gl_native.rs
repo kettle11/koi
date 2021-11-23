@@ -240,15 +240,7 @@ impl GL {
     pub unsafe fn delete_texture(&self, texture: TextureNative) {
         self.gl.DeleteTextures(1, &texture.0);
     }
-
-    /*
-    pub unsafe fn create_framebuffer(&self) -> Result<Framebuffer, String> {
-        let mut framebuffer = 0;
-        self.gl.GenFramebuffers(1, &mut framebuffer);
-        Ok(Framebuffer(framebuffer))
-    }
-    */
-
+ 
     pub unsafe fn clear_color(&self, red: f32, green: f32, blue: f32, alpha: f32) {
         self.gl.ClearColor(red, green, blue, alpha);
     }
@@ -261,7 +253,12 @@ impl GL {
         self.gl.BindFramebuffer(target, framebuffer.0);
     }
 
-    /*
+    pub unsafe fn create_framebuffer(&self) -> Result<Framebuffer, String> {
+        let mut framebuffer = 0;
+        self.gl.GenFramebuffers(1, &mut framebuffer);
+        Ok(Framebuffer(framebuffer))
+    }
+    
     pub unsafe fn framebuffer_texture_2d(
         &self,
         target: GLenum,
@@ -279,11 +276,9 @@ impl GL {
         );
     }
 
-
     pub unsafe fn delete_framebuffer(&self, framebuffer: Framebuffer) {
         self.gl.DeleteFramebuffers(1, &framebuffer.0);
     }
-    */
 
     pub unsafe fn use_program(&self, program: Option<Program>) {
         self.gl.UseProgram(program.map_or(0, |v| v.0));

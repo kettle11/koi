@@ -63,43 +63,6 @@
         {
             "type": "lldb",
             "request": "launch",
-            "name": "Debug example 'state_tracking'",
-            "cargo": {
-                "args": [
-                    "build",
-                    "--example=state_tracking",
-                    "--package=kapp"
-                ],
-                "filter": {
-                    "name": "state_tracking",
-                    "kind": "example"
-                }
-            },
-            "args": [],
-            "cwd": "${workspaceFolder}"
-        },
-        {
-            "type": "lldb",
-            "request": "launch",
-            "name": "Debug unit tests in example 'state_tracking'",
-            "cargo": {
-                "args": [
-                    "test",
-                    "--no-run",
-                    "--example=state_tracking",
-                    "--package=kapp"
-                ],
-                "filter": {
-                    "name": "state_tracking",
-                    "kind": "example"
-                }
-            },
-            "args": [],
-            "cwd": "${workspaceFolder}"
-        },
-        {
-            "type": "lldb",
-            "request": "launch",
             "name": "Debug example 'hello'",
             "cargo": {
                 "args": [
@@ -137,43 +100,6 @@
         {
             "type": "lldb",
             "request": "launch",
-            "name": "Debug example 'text_input'",
-            "cargo": {
-                "args": [
-                    "build",
-                    "--example=text_input",
-                    "--package=kapp"
-                ],
-                "filter": {
-                    "name": "text_input",
-                    "kind": "example"
-                }
-            },
-            "args": [],
-            "cwd": "${workspaceFolder}"
-        },
-        {
-            "type": "lldb",
-            "request": "launch",
-            "name": "Debug unit tests in example 'text_input'",
-            "cargo": {
-                "args": [
-                    "test",
-                    "--no-run",
-                    "--example=text_input",
-                    "--package=kapp"
-                ],
-                "filter": {
-                    "name": "text_input",
-                    "kind": "example"
-                }
-            },
-            "args": [],
-            "cwd": "${workspaceFolder}"
-        },
-        {
-            "type": "lldb",
-            "request": "launch",
             "name": "Debug example 'hello_async'",
             "cargo": {
                 "args": [
@@ -202,6 +128,80 @@
                 ],
                 "filter": {
                     "name": "hello_async",
+                    "kind": "example"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug example 'state_tracking'",
+            "cargo": {
+                "args": [
+                    "build",
+                    "--example=state_tracking",
+                    "--package=kapp"
+                ],
+                "filter": {
+                    "name": "state_tracking",
+                    "kind": "example"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in example 'state_tracking'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--example=state_tracking",
+                    "--package=kapp"
+                ],
+                "filter": {
+                    "name": "state_tracking",
+                    "kind": "example"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug example 'text_input'",
+            "cargo": {
+                "args": [
+                    "build",
+                    "--example=text_input",
+                    "--package=kapp"
+                ],
+                "filter": {
+                    "name": "text_input",
+                    "kind": "example"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in example 'text_input'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--example=text_input",
+                    "--package=kapp"
+                ],
+                "filter": {
+                    "name": "text_input",
                     "kind": "example"
                 }
             },
@@ -417,15 +417,15 @@
         {
             "type": "lldb",
             "request": "launch",
-            "name": "Debug example 'spawn_main'",
+            "name": "Debug example 'hello'",
             "cargo": {
                 "args": [
                     "build",
-                    "--example=spawn_main",
+                    "--example=hello",
                     "--package=ktasks"
                 ],
                 "filter": {
-                    "name": "spawn_main",
+                    "name": "hello",
                     "kind": "example"
                 }
             },
@@ -435,16 +435,16 @@
         {
             "type": "lldb",
             "request": "launch",
-            "name": "Debug unit tests in example 'spawn_main'",
+            "name": "Debug unit tests in example 'hello'",
             "cargo": {
                 "args": [
                     "test",
                     "--no-run",
-                    "--example=spawn_main",
+                    "--example=hello",
                     "--package=ktasks"
                 ],
                 "filter": {
-                    "name": "spawn_main",
+                    "name": "hello",
                     "kind": "example"
                 }
             },
@@ -491,15 +491,15 @@
         {
             "type": "lldb",
             "request": "launch",
-            "name": "Debug example 'hello'",
+            "name": "Debug example 'spawn_main'",
             "cargo": {
                 "args": [
                     "build",
-                    "--example=hello",
+                    "--example=spawn_main",
                     "--package=ktasks"
                 ],
                 "filter": {
-                    "name": "hello",
+                    "name": "spawn_main",
                     "kind": "example"
                 }
             },
@@ -509,16 +509,16 @@
         {
             "type": "lldb",
             "request": "launch",
-            "name": "Debug unit tests in example 'hello'",
+            "name": "Debug unit tests in example 'spawn_main'",
             "cargo": {
                 "args": [
                     "test",
                     "--no-run",
-                    "--example=hello",
+                    "--example=spawn_main",
                     "--package=ktasks"
                 ],
                 "filter": {
-                    "name": "hello",
+                    "name": "spawn_main",
                     "kind": "example"
                 }
             },
@@ -585,43 +585,6 @@
         {
             "type": "lldb",
             "request": "launch",
-            "name": "Debug example 'sine'",
-            "cargo": {
-                "args": [
-                    "build",
-                    "--example=sine",
-                    "--package=kaudio"
-                ],
-                "filter": {
-                    "name": "sine",
-                    "kind": "example"
-                }
-            },
-            "args": [],
-            "cwd": "${workspaceFolder}"
-        },
-        {
-            "type": "lldb",
-            "request": "launch",
-            "name": "Debug unit tests in example 'sine'",
-            "cargo": {
-                "args": [
-                    "test",
-                    "--no-run",
-                    "--example=sine",
-                    "--package=kaudio"
-                ],
-                "filter": {
-                    "name": "sine",
-                    "kind": "example"
-                }
-            },
-            "args": [],
-            "cwd": "${workspaceFolder}"
-        },
-        {
-            "type": "lldb",
-            "request": "launch",
             "name": "Debug example 'file'",
             "cargo": {
                 "args": [
@@ -650,6 +613,43 @@
                 ],
                 "filter": {
                     "name": "file",
+                    "kind": "example"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug example 'sine'",
+            "cargo": {
+                "args": [
+                    "build",
+                    "--example=sine",
+                    "--package=kaudio"
+                ],
+                "filter": {
+                    "name": "sine",
+                    "kind": "example"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in example 'sine'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--example=sine",
+                    "--package=kaudio"
+                ],
+                "filter": {
+                    "name": "sine",
                     "kind": "example"
                 }
             },
@@ -810,15 +810,15 @@
         {
             "type": "lldb",
             "request": "launch",
-            "name": "Debug example 'read_and_write'",
+            "name": "Debug example 'custom_serialize_deserialize'",
             "cargo": {
                 "args": [
                     "build",
-                    "--example=read_and_write",
+                    "--example=custom_serialize_deserialize",
                     "--package=kserde"
                 ],
                 "filter": {
-                    "name": "read_and_write",
+                    "name": "custom_serialize_deserialize",
                     "kind": "example"
                 }
             },
@@ -828,16 +828,16 @@
         {
             "type": "lldb",
             "request": "launch",
-            "name": "Debug unit tests in example 'read_and_write'",
+            "name": "Debug unit tests in example 'custom_serialize_deserialize'",
             "cargo": {
                 "args": [
                     "test",
                     "--no-run",
-                    "--example=read_and_write",
+                    "--example=custom_serialize_deserialize",
                     "--package=kserde"
                 ],
                 "filter": {
-                    "name": "read_and_write",
+                    "name": "custom_serialize_deserialize",
                     "kind": "example"
                 }
             },
@@ -884,15 +884,15 @@
         {
             "type": "lldb",
             "request": "launch",
-            "name": "Debug example 'custom_serialize_deserialize'",
+            "name": "Debug example 'read_and_write'",
             "cargo": {
                 "args": [
                     "build",
-                    "--example=custom_serialize_deserialize",
+                    "--example=read_and_write",
                     "--package=kserde"
                 ],
                 "filter": {
-                    "name": "custom_serialize_deserialize",
+                    "name": "read_and_write",
                     "kind": "example"
                 }
             },
@@ -902,16 +902,16 @@
         {
             "type": "lldb",
             "request": "launch",
-            "name": "Debug unit tests in example 'custom_serialize_deserialize'",
+            "name": "Debug unit tests in example 'read_and_write'",
             "cargo": {
                 "args": [
                     "test",
                     "--no-run",
-                    "--example=custom_serialize_deserialize",
+                    "--example=read_and_write",
                     "--package=kserde"
                 ],
                 "filter": {
-                    "name": "custom_serialize_deserialize",
+                    "name": "read_and_write",
                     "kind": "example"
                 }
             },
@@ -997,6 +997,43 @@
         {
             "type": "lldb",
             "request": "launch",
+            "name": "Debug example 'box'",
+            "cargo": {
+                "args": [
+                    "build",
+                    "--example=box",
+                    "--package=kgltf"
+                ],
+                "filter": {
+                    "name": "box",
+                    "kind": "example"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in example 'box'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--example=box",
+                    "--package=kgltf"
+                ],
+                "filter": {
+                    "name": "box",
+                    "kind": "example"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
             "name": "Debug example 'glb'",
             "cargo": {
                 "args": [
@@ -1071,43 +1108,6 @@
         {
             "type": "lldb",
             "request": "launch",
-            "name": "Debug example 'box'",
-            "cargo": {
-                "args": [
-                    "build",
-                    "--example=box",
-                    "--package=kgltf"
-                ],
-                "filter": {
-                    "name": "box",
-                    "kind": "example"
-                }
-            },
-            "args": [],
-            "cwd": "${workspaceFolder}"
-        },
-        {
-            "type": "lldb",
-            "request": "launch",
-            "name": "Debug unit tests in example 'box'",
-            "cargo": {
-                "args": [
-                    "test",
-                    "--no-run",
-                    "--example=box",
-                    "--package=kgltf"
-                ],
-                "filter": {
-                    "name": "box",
-                    "kind": "example"
-                }
-            },
-            "args": [],
-            "cwd": "${workspaceFolder}"
-        },
-        {
-            "type": "lldb",
-            "request": "launch",
             "name": "Debug example 'roundtrip'",
             "cargo": {
                 "args": [
@@ -1164,6 +1164,43 @@
         {
             "type": "lldb",
             "request": "launch",
+            "name": "Debug example 'framebuffer'",
+            "cargo": {
+                "args": [
+                    "build",
+                    "--example=framebuffer",
+                    "--package=kgraphics"
+                ],
+                "filter": {
+                    "name": "framebuffer",
+                    "kind": "example"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in example 'framebuffer'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--example=framebuffer",
+                    "--package=kgraphics"
+                ],
+                "filter": {
+                    "name": "framebuffer",
+                    "kind": "example"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
             "name": "Debug example 'hello'",
             "cargo": {
                 "args": [
@@ -1201,35 +1238,17 @@
         {
             "type": "lldb",
             "request": "launch",
-            "name": "Debug example 'framebuffer'",
-            "cargo": {
-                "args": [
-                    "build",
-                    "--example=framebuffer",
-                    "--package=kgraphics"
-                ],
-                "filter": {
-                    "name": "framebuffer",
-                    "kind": "example"
-                }
-            },
-            "args": [],
-            "cwd": "${workspaceFolder}"
-        },
-        {
-            "type": "lldb",
-            "request": "launch",
-            "name": "Debug unit tests in example 'framebuffer'",
+            "name": "Debug unit tests in library 'kphysics'",
             "cargo": {
                 "args": [
                     "test",
                     "--no-run",
-                    "--example=framebuffer",
-                    "--package=kgraphics"
+                    "--lib",
+                    "--package=kphysics"
                 ],
                 "filter": {
-                    "name": "framebuffer",
-                    "kind": "example"
+                    "name": "kphysics",
+                    "kind": "lib"
                 }
             },
             "args": [],
@@ -1369,15 +1388,15 @@
         {
             "type": "lldb",
             "request": "launch",
-            "name": "Debug example 'hierarchy'",
+            "name": "Debug example 'collision_test'",
             "cargo": {
                 "args": [
                     "build",
-                    "--example=hierarchy",
+                    "--example=collision_test",
                     "--package=koi"
                 ],
                 "filter": {
-                    "name": "hierarchy",
+                    "name": "collision_test",
                     "kind": "example"
                 }
             },
@@ -1387,16 +1406,90 @@
         {
             "type": "lldb",
             "request": "launch",
-            "name": "Debug unit tests in example 'hierarchy'",
+            "name": "Debug unit tests in example 'collision_test'",
             "cargo": {
                 "args": [
                     "test",
                     "--no-run",
-                    "--example=hierarchy",
+                    "--example=collision_test",
                     "--package=koi"
                 ],
                 "filter": {
-                    "name": "hierarchy",
+                    "name": "collision_test",
+                    "kind": "example"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug example 'gltf'",
+            "cargo": {
+                "args": [
+                    "build",
+                    "--example=gltf",
+                    "--package=koi"
+                ],
+                "filter": {
+                    "name": "gltf",
+                    "kind": "example"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in example 'gltf'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--example=gltf",
+                    "--package=koi"
+                ],
+                "filter": {
+                    "name": "gltf",
+                    "kind": "example"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug example 'hello'",
+            "cargo": {
+                "args": [
+                    "build",
+                    "--example=hello",
+                    "--package=koi"
+                ],
+                "filter": {
+                    "name": "hello",
+                    "kind": "example"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in example 'hello'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--example=hello",
+                    "--package=koi"
+                ],
+                "filter": {
+                    "name": "hello",
                     "kind": "example"
                 }
             },
@@ -1434,6 +1527,154 @@
                 ],
                 "filter": {
                     "name": "hello_texture",
+                    "kind": "example"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug example 'hello_triangle'",
+            "cargo": {
+                "args": [
+                    "build",
+                    "--example=hello_triangle",
+                    "--package=koi"
+                ],
+                "filter": {
+                    "name": "hello_triangle",
+                    "kind": "example"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in example 'hello_triangle'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--example=hello_triangle",
+                    "--package=koi"
+                ],
+                "filter": {
+                    "name": "hello_triangle",
+                    "kind": "example"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug example 'hierarchy'",
+            "cargo": {
+                "args": [
+                    "build",
+                    "--example=hierarchy",
+                    "--package=koi"
+                ],
+                "filter": {
+                    "name": "hierarchy",
+                    "kind": "example"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in example 'hierarchy'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--example=hierarchy",
+                    "--package=koi"
+                ],
+                "filter": {
+                    "name": "hierarchy",
+                    "kind": "example"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug example 'sound'",
+            "cargo": {
+                "args": [
+                    "build",
+                    "--example=sound",
+                    "--package=koi"
+                ],
+                "filter": {
+                    "name": "sound",
+                    "kind": "example"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in example 'sound'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--example=sound",
+                    "--package=koi"
+                ],
+                "filter": {
+                    "name": "sound",
+                    "kind": "example"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug example 'sprite_map'",
+            "cargo": {
+                "args": [
+                    "build",
+                    "--example=sprite_map",
+                    "--package=koi"
+                ],
+                "filter": {
+                    "name": "sprite_map",
+                    "kind": "example"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in example 'sprite_map'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--example=sprite_map",
+                    "--package=koi"
+                ],
+                "filter": {
+                    "name": "sprite_map",
                     "kind": "example"
                 }
             },
@@ -1508,154 +1749,6 @@
                 ],
                 "filter": {
                     "name": "xr",
-                    "kind": "example"
-                }
-            },
-            "args": [],
-            "cwd": "${workspaceFolder}"
-        },
-        {
-            "type": "lldb",
-            "request": "launch",
-            "name": "Debug example 'sound'",
-            "cargo": {
-                "args": [
-                    "build",
-                    "--example=sound",
-                    "--package=koi"
-                ],
-                "filter": {
-                    "name": "sound",
-                    "kind": "example"
-                }
-            },
-            "args": [],
-            "cwd": "${workspaceFolder}"
-        },
-        {
-            "type": "lldb",
-            "request": "launch",
-            "name": "Debug unit tests in example 'sound'",
-            "cargo": {
-                "args": [
-                    "test",
-                    "--no-run",
-                    "--example=sound",
-                    "--package=koi"
-                ],
-                "filter": {
-                    "name": "sound",
-                    "kind": "example"
-                }
-            },
-            "args": [],
-            "cwd": "${workspaceFolder}"
-        },
-        {
-            "type": "lldb",
-            "request": "launch",
-            "name": "Debug example 'hello'",
-            "cargo": {
-                "args": [
-                    "build",
-                    "--example=hello",
-                    "--package=koi"
-                ],
-                "filter": {
-                    "name": "hello",
-                    "kind": "example"
-                }
-            },
-            "args": [],
-            "cwd": "${workspaceFolder}"
-        },
-        {
-            "type": "lldb",
-            "request": "launch",
-            "name": "Debug unit tests in example 'hello'",
-            "cargo": {
-                "args": [
-                    "test",
-                    "--no-run",
-                    "--example=hello",
-                    "--package=koi"
-                ],
-                "filter": {
-                    "name": "hello",
-                    "kind": "example"
-                }
-            },
-            "args": [],
-            "cwd": "${workspaceFolder}"
-        },
-        {
-            "type": "lldb",
-            "request": "launch",
-            "name": "Debug example 'gltf_viewer'",
-            "cargo": {
-                "args": [
-                    "build",
-                    "--example=gltf_viewer",
-                    "--package=koi"
-                ],
-                "filter": {
-                    "name": "gltf_viewer",
-                    "kind": "example"
-                }
-            },
-            "args": [],
-            "cwd": "${workspaceFolder}"
-        },
-        {
-            "type": "lldb",
-            "request": "launch",
-            "name": "Debug unit tests in example 'gltf_viewer'",
-            "cargo": {
-                "args": [
-                    "test",
-                    "--no-run",
-                    "--example=gltf_viewer",
-                    "--package=koi"
-                ],
-                "filter": {
-                    "name": "gltf_viewer",
-                    "kind": "example"
-                }
-            },
-            "args": [],
-            "cwd": "${workspaceFolder}"
-        },
-        {
-            "type": "lldb",
-            "request": "launch",
-            "name": "Debug example 'hello_triangle'",
-            "cargo": {
-                "args": [
-                    "build",
-                    "--example=hello_triangle",
-                    "--package=koi"
-                ],
-                "filter": {
-                    "name": "hello_triangle",
-                    "kind": "example"
-                }
-            },
-            "args": [],
-            "cwd": "${workspaceFolder}"
-        },
-        {
-            "type": "lldb",
-            "request": "launch",
-            "name": "Debug unit tests in example 'hello_triangle'",
-            "cargo": {
-                "args": [
-                    "test",
-                    "--no-run",
-                    "--example=hello_triangle",
-                    "--package=koi"
-                ],
-                "filter": {
-                    "name": "hello_triangle",
                     "kind": "example"
                 }
             },

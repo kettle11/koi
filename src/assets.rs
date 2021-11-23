@@ -224,7 +224,7 @@ unsafe impl<T: LoadableAssetTrait> Send for Assets<T> {}
 unsafe impl<T: LoadableAssetTrait> Sync for Assets<T> {}
 
 impl<T: LoadableAssetTrait> Assets<T> {
-    pub fn new(default_placeholder: T) -> Self {
+    pub fn new(default_placeholder: T, asset_loader: T::AssetLoader) -> Self {
         let (send_drop_channel, receive_drop_channel) = mpsc::channel();
         let mut s = Self {
             indirection_storage: IndirectionStorage::new(),
@@ -232,7 +232,7 @@ impl<T: LoadableAssetTrait> Assets<T> {
             receive_drop_channel: SyncGuard::new(receive_drop_channel),
             path_to_handle: HashMap::new(),
             handle_to_path: HashMap::new(),
-            asset_loader: T::AssetLoader::new(),
+            asset_loader,
         };
         // To ensure the default place-holder stays around forever
         // we drop it without calling its destructor.
@@ -323,7 +323,6 @@ pub trait LoadableAssetTrait: Sized + 'static {
 }
 
 pub trait AssetLoader<T: LoadableAssetTrait> {
-    fn new() -> Self;
     fn load_with_options(&mut self, path: &str, handle: Handle<T>, options: T::Options);
 }
 

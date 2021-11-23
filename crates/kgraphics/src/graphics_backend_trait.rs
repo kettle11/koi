@@ -14,6 +14,8 @@ pub trait PipelineTrait {
     fn get_vec4_property(&self, name: &str) -> Result<Vec4Property, ()>;
     fn get_mat4_property(&self, name: &str) -> Result<Mat4Property, ()>;
     fn get_texture_property(&self, name: &str) -> Result<TextureProperty, ()>;
+    fn get_cubemap_property(&self, name: &str) -> Result<CubeMapProperty, ()>;
+
     fn get_vertex_attribute<T>(&self, name: &str) -> Result<VertexAttribute<T>, String>;
 }
 
@@ -53,6 +55,13 @@ pub trait RenderPassTrait {
         &mut self,
         property: &TextureProperty,
         texture: Option<&Texture>,
+        texture_unit: u8,
+    );
+
+    fn set_cube_map_property(
+        &mut self,
+        property: &CubeMapProperty,
+        cube_map: Option<&CubeMap>,
         texture_unit: u8,
     );
 
@@ -154,4 +163,11 @@ pub trait GraphicsContextTrait: Sized {
 
     fn new_command_buffer(&mut self) -> CommandBuffer;
     fn commit_command_buffer(&mut self, command_buffer: CommandBuffer);
+    fn new_framebuffer(
+        &mut self,
+        color_texture: Option<&Texture>,
+        depth_texture: Option<&Texture>,
+        stencil_texture: Option<&Texture>,
+    ) -> Framebuffer;
+    fn delete_framebuffer(&mut self, framebuffer: Framebuffer);
 }

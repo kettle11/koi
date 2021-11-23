@@ -20,6 +20,9 @@ pub use render_layers::*;
 mod texture;
 pub use texture::*;
 
+mod cube_map;
+pub use cube_map::*;
+
 mod mesh;
 pub use mesh::*;
 
@@ -34,8 +37,6 @@ pub use light::*;
 
 mod shader_parser;
 
-mod cubemap;
-
 #[cfg(feature = "renderer")]
 mod renderer;
 #[cfg(feature = "renderer")]
@@ -49,7 +50,11 @@ pub fn graphics_plugin() -> Plugin {
             check_for_dropped_graphics_assets.system(),
         ],
         draw_systems: vec![load_shaders.system(), resize_window.system()],
-        end_of_frame_systems: vec![load_textures.system(), request_window_redraw.system()],
+        end_of_frame_systems: vec![
+            load_textures.system(),
+            load_cube_maps.system(),
+            request_window_redraw.system(),
+        ],
         ..Default::default()
     }
 }
@@ -94,6 +99,7 @@ pub struct GraphicsViewInfo {
 pub struct PipelineSettings {
     pub faces_to_render: FacesToRender,
     pub blending: Option<(BlendFactor, BlendFactor)>,
+    pub depth_test: DepthTest,
 }
 
 impl Default for PipelineSettings {
@@ -101,6 +107,7 @@ impl Default for PipelineSettings {
         Self {
             faces_to_render: FacesToRender::Front,
             blending: None,
+            depth_test: DepthTest::LessOrEqual,
         }
     }
 }
@@ -158,13 +165,16 @@ fn setup_graphics(world: &mut World) {
     );
 
     let default_mesh = graphics.new_gpu_mesh(&MeshData::default()).unwrap();
-    let mut mesh_assets = Assets::<Mesh>::new(Mesh {
-        gpu_mesh: Some(default_mesh),
-        mesh_data: Some(MeshData::default()),
+    let mut mesh_assets = Assets::<Mesh>::new(
+        Mesh {
+            gpu_mesh: Some(default_mesh),
+            mesh_data: Some(MeshData::default()),
 
-        // The default mesh is empty so give it no bounding-box.
-        bounding_box: None,
-    });
+            // The default mesh is empty so give it no bounding-box.
+            bounding_box: None,
+        },
+        MeshAssetLoader::new(),
+    );
 
     // Initialize asset stores and their placeholders.
     let white_texture = graphics
@@ -179,7 +189,7 @@ fn setup_graphics(world: &mut World) {
             },
         )
         .unwrap();
-    let mut texture_assets = Assets::new(white_texture);
+    let mut texture_assets = Assets::new(white_texture, TextureAssetLoader::new());
 
     let default_shader = graphics
         .new_shader(
@@ -187,19 +197,43 @@ fn setup_graphics(world: &mut World) {
             PipelineSettings {
                 faces_to_render: FacesToRender::Front,
                 blending: None,
+                ..Default::default()
             },
         )
         .unwrap();
-    let mut shaders = Assets::new(default_shader);
+    let mut shader_assets = Assets::new(default_shader, ShaderAssetLoader::new());
 
     initialize_static_primitives(&mut graphics, &mut mesh_assets);
     initialize_static_textures(&mut graphics, &mut texture_assets);
-    initialize_static_shaders(&mut graphics, &mut shaders);
+    initialize_static_shaders(&mut graphics, &mut shader_assets);
+
+    let white_cube_map = graphics
+        .new_cube_map(
+            Some([
+                &[255, 255, 0, 255],
+                &[255, 255, 0, 255],
+                &[255, 255, 0, 255],
+                &[255, 255, 0, 255],
+                &[255, 255, 0, 255],
+                &[255, 255, 0, 255],
+            ]),
+            1,
+            1,
+            PixelFormat::RGBA8Unorm,
+            TextureSettings {
+                srgb: false,
+                ..Default::default()
+            },
+        )
+        .unwrap();
+
+    let cube_map_assets = Assets::new(white_cube_map, CubeMapAssetLoader::new(&mut graphics));
 
     world.spawn(graphics);
     world.spawn(mesh_assets);
     world.spawn(texture_assets);
-    world.spawn(shaders);
+    world.spawn(shader_assets);
+    world.spawn(cube_map_assets);
 }
 
 fn assign_current_camera_target(graphics: &mut Graphics, events: &KappEvents) {
@@ -289,6 +323,19 @@ impl GraphicsInner {
             pixel_format,
             texture_settings,
         )?))
+    }
+
+    pub fn new_cube_map(
+        &mut self,
+        data: Option<[&[u8]; 6]>,
+        width: u32,
+        height: u32,
+        pixel_format: PixelFormat,
+        texture_settings: kgraphics::TextureSettings,
+    ) -> Result<CubeMap, ()> {
+        Ok(self
+            .context
+            .new_cube_map(width, height, data, pixel_format, texture_settings)?)
     }
 
     pub fn new_gpu_mesh(&mut self, mesh_data: &MeshData) -> Result<GPUMesh, ()> {

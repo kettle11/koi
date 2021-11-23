@@ -71,6 +71,10 @@ pub struct IndexBuffer {
 #[derive(Debug)]
 enum TextureType {
     Texture(gl_native::TextureNative),
+    CubeMap {
+        face: u8,
+        texture_native: gl_native::TextureNative,
+    },
     DefaultFramebuffer,
 }
 
@@ -83,6 +87,18 @@ pub struct Texture {
 #[derive(Debug)]
 pub struct CubeMap {
     texture: gl_native::TextureNative,
+}
+
+impl CubeMap {
+    pub fn get_face_texture(&self, face: usize) -> Texture {
+        assert!(face < 6);
+        Texture {
+            texture_type: TextureType::CubeMap {
+                face: face as u8,
+                texture_native: self.texture,
+            },
+        }
+    }
 }
 
 #[derive(Clone)]
@@ -162,7 +178,6 @@ impl Vec4Property {
 }
 
 #[derive(Clone, Debug, PartialEq)]
-
 pub struct TextureProperty {
     location: Option<gl_native::UniformLocation>,
 }
@@ -173,8 +188,18 @@ impl TextureProperty {
     }
 }
 
-#[derive(Clone, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
+pub struct CubeMapProperty {
+    location: Option<gl_native::UniformLocation>,
+}
 
+impl CubeMapProperty {
+    pub fn exists(&self) -> bool {
+        self.location.is_some()
+    }
+}
+
+#[derive(Clone, PartialEq)]
 pub struct Mat4Property {
     location: Option<gl_native::UniformLocation>,
 }
@@ -243,6 +268,12 @@ impl PipelineTrait for Pipeline {
     fn get_texture_property(&self, name: &str) -> Result<TextureProperty, ()> {
         Ok(TextureProperty {
             location: self.get_property(name, GL_SAMPLER_2D)?,
+        })
+    }
+
+    fn get_cubemap_property(&self, name: &str) -> Result<CubeMapProperty, ()> {
+        Ok(CubeMapProperty {
+            location: self.get_property(name, GL_SAMPLER_CUBE)?,
         })
     }
 
@@ -491,8 +522,15 @@ impl GraphicsContextTrait for GraphicsContext {
         pixel_format_in: PixelFormat,
         texture_settings: TextureSettings,
     ) {
-        let texture = match texture.texture_type {
-            TextureType::Texture(t) => t,
+        let (target, texture) = match texture.texture_type {
+            TextureType::Texture(t) => (GL_TEXTURE_2D, t),
+            TextureType::CubeMap {
+                face,
+                texture_native,
+            } => (
+                GLenum(GL_TEXTURE_CUBE_MAP_POSITIVE_X.0 + face as u32),
+                texture_native,
+            ),
             TextureType::DefaultFramebuffer => panic!("Cannot update default framebuffer"),
         };
         unsafe {
@@ -511,9 +549,9 @@ impl GraphicsContextTrait for GraphicsContext {
                     texture_settings.srgb,
                 );
 
-            self.gl.bind_texture(GL_TEXTURE_2D, Some(texture));
+            self.gl.bind_texture(target, Some(texture));
             self.gl.tex_image_2d(
-                GL_TEXTURE_2D,
+                target,
                 0,                         /* mip level */
                 inner_pixel_format as i32, // Internal format, how the GPU stores these pixels.
                 width as i32,
@@ -532,28 +570,22 @@ impl GraphicsContextTrait for GraphicsContext {
             let magnification_filter =
                 magnification_filter_to_gl_enum(texture_settings.magnification_filter);
 
-            self.gl.tex_parameter_i32(
-                GL_TEXTURE_2D,
-                GL_TEXTURE_MIN_FILTER,
-                minification_filter as i32,
-            );
+            self.gl
+                .tex_parameter_i32(target, GL_TEXTURE_MIN_FILTER, minification_filter as i32);
 
-            self.gl.tex_parameter_i32(
-                GL_TEXTURE_2D,
-                GL_TEXTURE_MAG_FILTER,
-                magnification_filter as i32,
-            );
+            self.gl
+                .tex_parameter_i32(target, GL_TEXTURE_MAG_FILTER, magnification_filter as i32);
 
             let wrapping_horizontal = wrapping_to_gl_enum(texture_settings.wrapping_horizontal);
             let wrapping_vertical = wrapping_to_gl_enum(texture_settings.wrapping_vertical);
 
             self.gl
-                .tex_parameter_i32(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, wrapping_horizontal as i32);
+                .tex_parameter_i32(target, GL_TEXTURE_WRAP_S, wrapping_horizontal as i32);
             self.gl
-                .tex_parameter_i32(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, wrapping_vertical as i32);
+                .tex_parameter_i32(target, GL_TEXTURE_WRAP_T, wrapping_vertical as i32);
 
             if texture_settings.generate_mipmaps {
-                self.gl.generate_mipmap(GL_TEXTURE_2D);
+                self.gl.generate_mipmap(target);
             }
         }
     }
@@ -561,6 +593,7 @@ impl GraphicsContextTrait for GraphicsContext {
     fn delete_texture(&self, texture: Texture) {
         let texture = match texture.texture_type {
             TextureType::Texture(t) => t,
+            TextureType::CubeMap { .. } => return,
             TextureType::DefaultFramebuffer => panic!("Cannot delete default framebuffer"),
         };
         unsafe { self.gl.delete_texture(texture) }
@@ -604,11 +637,12 @@ impl GraphicsContextTrait for GraphicsContext {
                 texture_settings.srgb,
             );
         unsafe {
+            println!("INITIALIZING CUBE MAP");
             self.gl
                 .bind_texture(GL_TEXTURE_CUBE_MAP, Some(cube_map.texture));
             for i in 0..6 {
                 self.gl.tex_image_2d(
-                    GL_TEXTURE_2D,
+                    GLenum(GL_TEXTURE_CUBE_MAP_POSITIVE_X.0 + i as u32),
                     0,                         /* mip level */
                     inner_pixel_format as i32, // Internal format, how the GPU stores these pixels.
                     width as i32,
@@ -620,39 +654,31 @@ impl GraphicsContextTrait for GraphicsContext {
                 );
             }
 
-            let minification_filter = minification_filter_to_gl_enum(
-                texture_settings.minification_filter,
-                texture_settings.mipmap_filter,
-                texture_settings.generate_mipmaps,
-            );
-            let magnification_filter =
-                magnification_filter_to_gl_enum(texture_settings.magnification_filter);
-
             self.gl.tex_parameter_i32(
-                GL_TEXTURE_2D,
+                GL_TEXTURE_CUBE_MAP,
                 GL_TEXTURE_MIN_FILTER,
-                minification_filter as i32,
+                GL_LINEAR.0 as i32,
             );
-
             self.gl.tex_parameter_i32(
-                GL_TEXTURE_2D,
+                GL_TEXTURE_CUBE_MAP,
                 GL_TEXTURE_MAG_FILTER,
-                magnification_filter as i32,
+                GL_LINEAR.0 as i32,
             );
 
             let wrapping_horizontal = wrapping_to_gl_enum(texture_settings.wrapping_horizontal);
             let wrapping_vertical = wrapping_to_gl_enum(texture_settings.wrapping_vertical);
 
-            self.gl
-                .tex_parameter_i32(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, wrapping_horizontal as i32);
-            self.gl
-                .tex_parameter_i32(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, wrapping_vertical as i32);
-
-            if texture_settings.generate_mipmaps {
-                self.gl.generate_mipmap(GL_TEXTURE_2D);
-            }
+            self.gl.tex_parameter_i32(
+                GL_TEXTURE_CUBE_MAP,
+                GL_TEXTURE_WRAP_S,
+                wrapping_horizontal as i32,
+            );
+            self.gl.tex_parameter_i32(
+                GL_TEXTURE_CUBE_MAP,
+                GL_TEXTURE_WRAP_T,
+                wrapping_vertical as i32,
+            );
         }
-        todo!()
     }
 
     fn delete_cube_map(&self, cube_map: CubeMap) {
@@ -687,8 +713,6 @@ impl GraphicsContextTrait for GraphicsContext {
                         depth,
                         stencil,
                     })) => {
-
-
                         // I wonder if this causes slow-down on some platforms?
                         let framebuffer = self.gl.create_framebuffer().unwrap();
 
@@ -852,6 +876,11 @@ impl GraphicsContextTrait for GraphicsContext {
                         self.gl.active_texture(GL_TEXTURE0.0 + unit as u32);
                         self.gl.bind_texture(GL_TEXTURE_2D, texture);
                     }
+                    SetTextureUnitToCubeMap((uniform_location, unit, texture)) => {
+                        self.gl.uniform_1_i32(Some(uniform_location), unit as i32);
+                        self.gl.active_texture(GL_TEXTURE0.0 + unit as u32);
+                        self.gl.bind_texture(GL_TEXTURE_CUBE_MAP, texture);
+                    }
                     SetViewport((x, y, width, height)) => {
                         self.gl
                             .viewport(x as i32, y as i32, width as i32, height as i32);
@@ -891,6 +920,65 @@ impl GraphicsContextTrait for GraphicsContext {
         pipeline_builder.fragment = Some(fragment_function);
         pipeline_builder.output_pixel_format = output_pixel_format;
         pipeline_builder
+    }
+
+    fn new_framebuffer(
+        &mut self,
+        color_texture: Option<&Texture>,
+        depth_texture: Option<&Texture>,
+        stencil_texture: Option<&Texture>,
+    ) -> Framebuffer {
+        fn get_target_and_native_texture(
+            texture: Option<&Texture>,
+        ) -> (GLenum, Option<TextureNative>) {
+            let texture_type = texture.map(|t| &t.texture_type);
+            match texture_type {
+                Some(TextureType::Texture(t)) => (GL_TEXTURE_2D, Some(*t)),
+                Some(TextureType::CubeMap {
+                    face,
+                    texture_native,
+                }) => (
+                    GLenum(GL_TEXTURE_CUBE_MAP_POSITIVE_X.0 + *face as u32),
+                    Some(*texture_native),
+                ),
+                Some(TextureType::DefaultFramebuffer) => {
+                    panic!("Cannot update default framebuffer")
+                }
+                None => (GL_TEXTURE_2D, None),
+            }
+        }
+        unsafe {
+            let framebuffer = self.gl.create_framebuffer().unwrap();
+
+            self.gl.bind_framebuffer(GL_FRAMEBUFFER, framebuffer);
+
+            let (target, texture) = get_target_and_native_texture(color_texture);
+            self.gl.framebuffer_texture_2d(
+                GL_FRAMEBUFFER,
+                GL_COLOR_ATTACHMENT0,
+                target,
+                texture,
+                0,
+            );
+            let (target, texture) = get_target_and_native_texture(depth_texture);
+            self.gl
+                .framebuffer_texture_2d(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, target, texture, 0);
+            let (target, texture) = get_target_and_native_texture(stencil_texture);
+            self.gl.framebuffer_texture_2d(
+                GL_FRAMEBUFFER,
+                GL_STENCIL_ATTACHMENT,
+                target,
+                texture,
+                0,
+            );
+            framebuffer
+        }
+    }
+
+    fn delete_framebuffer(&mut self, framebuffer: Framebuffer) {
+        unsafe {
+            self.gl.delete_framebuffer(framebuffer);
+        }
     }
 }
 

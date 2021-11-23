@@ -208,6 +208,138 @@ pub fn cube() -> MeshData {
     }
 }
 
+/// A cube used for cube-map rendering. 2.0 on each dimension and inverted.
+pub fn cube_map_cube() -> MeshData {
+    // Data for a cube mesh
+    let positions = vec![
+        // First face
+        [-1.0, -1.0, 1.0].into(),
+        [1.0, -1.0, 1.0].into(),
+        [1.0, 1.0, 1.0].into(),
+        [-1.0, 1.0, 1.0].into(),
+        // Second face
+        [-1.0, -1.0, -1.0].into(),
+        [-1.0, -1.0, 1.0].into(),
+        [-1.0, 1.0, 1.0].into(),
+        [-1.0, 1.0, -1.0].into(),
+        // Third face
+        [1.0, -1.0, -1.0].into(),
+        [-1.0, -1.0, -1.0].into(),
+        [-1.0, 1.0, -1.0].into(),
+        [1.0, 1.0, -1.0].into(),
+        // Fourth face
+        [1.0, -1.0, 1.0].into(),
+        [1.0, -1.0, -1.0].into(),
+        [1.0, 1.0, -1.0].into(),
+        [1.0, 1.0, 1.0].into(),
+        // Top Face
+        [-1.0, 1.0, -1.0].into(),
+        [-1.0, 1.0, 1.0].into(),
+        [1.0, 1.0, 1.0].into(),
+        [1.0, 1.0, -1.0].into(),
+        // Bottom face
+        [-1.0, -1.0, 1.0].into(),
+        [-1.0, -1.0, -1.0].into(),
+        [1.0, -1.0, -1.0].into(),
+        [1.0, -1.0, 1.0].into(),
+    ];
+
+    let texture_coordinates = vec![
+        // 0
+        [0.0, 0.0].into(),
+        [1.0, 0.0].into(),
+        [1.0, 1.0].into(),
+        [0.0, 1.0].into(),
+        // 1
+        [0.0, 0.0].into(),
+        [1.0, 0.0].into(),
+        [1.0, 1.0].into(),
+        [0.0, 1.0].into(),
+        // 2
+        [0.0, 0.0].into(),
+        [1.0, 0.0].into(),
+        [1.0, 1.0].into(),
+        [0.0, 1.0].into(),
+        // 3
+        [0.0, 0.0].into(),
+        [1.0, 0.0].into(),
+        [1.0, 1.0].into(),
+        [0.0, 1.0].into(),
+        // 4
+        [0.0, 0.0].into(),
+        [1.0, 0.0].into(),
+        [1.0, 1.0].into(),
+        [0.0, 1.0].into(),
+        // 5
+        [0.0, 0.0].into(),
+        [1.0, 0.0].into(),
+        [1.0, 1.0].into(),
+        [0.0, 1.0].into(),
+    ];
+
+    let normals = vec![
+        // 0
+        [0.0, 0.0, 1.0].into(),
+        [0.0, 0.0, 1.0].into(),
+        [0.0, 0.0, 1.0].into(),
+        [0.0, 0.0, 1.0].into(),
+        //
+        [-1.0, 0.0, 0.0].into(),
+        [-1.0, 0.0, 0.0].into(),
+        [-1.0, 0.0, 0.0].into(),
+        [-1.0, 0.0, 0.0].into(),
+        //
+        [0.0, 0.0, -1.0].into(),
+        [0.0, 0.0, -1.0].into(),
+        [0.0, 0.0, -1.0].into(),
+        [0.0, 0.0, -1.0].into(),
+        //
+        [1.0, 0.0, 0.0].into(),
+        [1.0, 0.0, 0.0].into(),
+        [1.0, 0.0, 0.0].into(),
+        [1.0, 0.0, 0.0].into(),
+        //
+        [0.0, 1.0, 0.0].into(),
+        [0.0, 1.0, 0.0].into(),
+        [0.0, 1.0, 0.0].into(),
+        [0.0, 1.0, 0.0].into(),
+        //
+        [0.0, -1.0, 0.0].into(),
+        [0.0, -1.0, 0.0].into(),
+        [0.0, -1.0, 0.0].into(),
+        [0.0, -1.0, 0.0].into(),
+    ];
+
+    let indices = vec![
+        // First face
+        [2, 1, 0],
+        [3, 2, 0],
+        // Second face
+        [6, 5, 4],
+        [7, 6, 4],
+        // Third face
+        [10, 9, 8],
+        [11, 10, 8],
+        // Fourth face
+        [14, 13, 12],
+        [15, 14, 12],
+        // Fifth face
+        [18, 17, 16],
+        [19, 18, 16],
+        // Sixth face
+        [22, 21, 20],
+        [23, 22, 20],
+    ];
+
+    MeshData {
+        positions,
+        indices,
+        normals,
+        texture_coordinates,
+        ..Default::default()
+    }
+}
+
 /// A triangle for debugging purposes
 pub fn triangle() -> MeshData {
     let positions = vec![
@@ -493,6 +625,7 @@ impl Mesh {
     pub const RING: Handle<Mesh> = Handle::<Mesh>::new_with_just_index(5);
     pub const TRIANGLE: Handle<Mesh> = Handle::<Mesh>::new_with_just_index(6);
     pub const CONE: Handle<Mesh> = Handle::<Mesh>::new_with_just_index(7);
+    pub const CUBE_MAP_CUBE: Handle<Mesh> = Handle::<Mesh>::new_with_just_index(8);
 }
 
 pub(crate) fn initialize_static_primitives(
@@ -514,4 +647,6 @@ pub(crate) fn initialize_static_primitives(
     meshes.add_and_leak(Mesh::new(graphics, mesh_data), &Mesh::TRIANGLE);
     let mesh_data = cone(0.7, 1.0, 20);
     meshes.add_and_leak(Mesh::new(graphics, mesh_data), &Mesh::CONE);
+    let mesh_data = cube_map_cube();
+    meshes.add_and_leak(Mesh::new(graphics, mesh_data), &Mesh::CUBE_MAP_CUBE);
 }
