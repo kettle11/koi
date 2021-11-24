@@ -207,15 +207,15 @@ fn setup_graphics(world: &mut World) {
     initialize_static_textures(&mut graphics, &mut texture_assets);
     initialize_static_shaders(&mut graphics, &mut shader_assets);
 
-    let white_cube_map = graphics
+    let black_cube_map = graphics
         .new_cube_map(
             Some([
-                &[255, 255, 0, 255],
-                &[255, 255, 0, 255],
-                &[255, 255, 0, 255],
-                &[255, 255, 0, 255],
-                &[255, 255, 0, 255],
-                &[255, 255, 0, 255],
+                &[0, 0, 0, 0],
+                &[0, 0, 0, 0],
+                &[0, 0, 0, 0],
+                &[0, 0, 0, 0],
+                &[0, 0, 0, 0],
+                &[0, 0, 0, 0],
             ]),
             1,
             1,
@@ -227,7 +227,7 @@ fn setup_graphics(world: &mut World) {
         )
         .unwrap();
 
-    let cube_map_assets = Assets::new(white_cube_map, CubeMapAssetLoader::new(&mut graphics));
+    let cube_map_assets = Assets::new(black_cube_map, CubeMapAssetLoader::new(&mut graphics));
 
     world.spawn(graphics);
     world.spawn(mesh_assets);

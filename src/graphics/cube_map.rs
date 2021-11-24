@@ -109,9 +109,6 @@ fn render_cube_map(
     ];
 
     for i in 0..6 {
-        // let mut rd: renderdoc::RenderDoc<renderdoc::V110> =
-        //     renderdoc::RenderDoc::new().expect("Unable to connect");
-
         let mut command_buffer = graphics.context.new_command_buffer();
 
         let face_texture = cube_map.get_face_texture(i);
@@ -149,14 +146,9 @@ fn render_cube_map(
             // Render mesh here.
             render_pass.draw_triangles(cube_mesh.triangle_count, &cube_mesh.index_buffer);
         }
-        // rd.start_frame_capture(std::ptr::null(), std::ptr::null());
         graphics.context.commit_command_buffer(command_buffer);
-        // rd.end_frame_capture(std::ptr::null(), std::ptr::null());
-
-        //  graphics.context.delete_framebuffer(framebuffer);
+        graphics.context.delete_framebuffer(framebuffer);
     }
-
-    println!("HERE CREATING CUBEMAP");
 }
 
 pub fn bind_view(

@@ -637,7 +637,6 @@ impl GraphicsContextTrait for GraphicsContext {
                 texture_settings.srgb,
             );
         unsafe {
-            println!("INITIALIZING CUBE MAP");
             self.gl
                 .bind_texture(GL_TEXTURE_CUBE_MAP, Some(cube_map.texture));
             for i in 0..6 {

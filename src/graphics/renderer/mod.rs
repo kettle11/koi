@@ -71,6 +71,7 @@ struct Renderer<'a, 'b: 'a> {
     multiview_enabled: bool,
     current_pipeline: Option<&'a Pipeline>,
     dither_scale: f32,
+    just_changed_material: bool,
 }
 
 impl<'a, 'b: 'a> Renderer<'a, 'b> {
@@ -106,6 +107,7 @@ impl<'a, 'b: 'a> Renderer<'a, 'b> {
             multiview_enabled,
             current_pipeline: None,
             dither_scale: 4.0,
+            just_changed_material: false,
         }
     }
 
@@ -239,6 +241,8 @@ impl<'a, 'b: 'a> Renderer<'a, 'b> {
     ) {
         // Avoid unnecessary [Material] rebinds.
         if Some(material_handle) != self.material_info.as_ref().map(|m| m.material_handle) {
+            self.just_changed_material = true;
+
             // When a pipeline change occurs a bunch of uniforms need to be rebound.
             let material = self.material_assets.get(material_handle);
             let shader = self.shader_assets.get(&material.shader);
@@ -376,8 +380,9 @@ impl<'a, 'b: 'a> Renderer<'a, 'b> {
             let mesh = self.mesh_assets.get(mesh_handle);
 
             if let Some(gpu_mesh) = &mesh.gpu_mesh {
-                // Only rebind the mesh attributes if the mesh has changed.
-                if Some(mesh_handle) != self.bound_mesh {
+                // Only rebind the mesh attributes if the mesh has changed
+                // or if the material has been changed since the mesh was bound.
+                if Some(mesh_handle) != self.bound_mesh || self.just_changed_material {
                     self.render_pass.set_vertex_attribute(
                         &material_info.position_attribute,
                         Some(&gpu_mesh.positions),
@@ -432,6 +437,7 @@ impl<'a, 'b: 'a> Renderer<'a, 'b> {
                 }
             }
         }
+        self.just_changed_material = false;
     }
 
     pub fn render_scene(

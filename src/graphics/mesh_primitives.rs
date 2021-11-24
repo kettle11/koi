@@ -501,63 +501,43 @@ pub fn cone(radius: f32, height: f32, resolution: usize) -> MeshData {
     }
 }
 
-// Adapted from here:
-// http://www.songho.ca/opengl/gl_sphere.html
-pub fn uv_sphere(sector_count: u32, stack_count: u32, uv_scale: Vec2) -> MeshData {
-    use std::f32::consts::{PI, TAU};
-
-    let sector_step = TAU / (sector_count as f32);
-    let stack_step = PI / (stack_count as f32);
+pub fn uv_sphere(horizontal_segments: u32, vertical_segments: u32, uv_scale: Vec2) -> MeshData {
+    use std::f32::consts::PI;
 
     let mut positions = Vec::new();
     let mut normals = Vec::new();
     let mut uvs = Vec::new();
 
-    for i in 0..=stack_count {
-        let stack_angle = PI / 2. - (i as f32) * stack_step;
-        let (y, xz) = stack_angle.sin_cos();
+    for y in 0..=vertical_segments {
+        let y_segment = (y as f32) / (vertical_segments as f32);
+        let y = -(y_segment * PI).cos();
+        for x in 0..=horizontal_segments {
+            let x_segment = (x as f32) / (horizontal_segments as f32);
 
-        for j in 0..=sector_count {
-            let sector_angle = (j as f32) * sector_step;
+            let x = (x_segment * 2.0 * PI).cos() * (y_segment * PI).sin();
+            let z = (x_segment * 2.0 * PI).sin() * (y_segment * PI).sin();
 
-            let x = xz * (sector_angle).cos();
-            let z = xz * (sector_angle).sin();
             // Multiply by 0.5 to make the sphere's radius 0.5 by default
             positions.push(Vec3::new(x, y, z) * 0.5);
-
             normals.push(Vec3::new(x, y, z).normalized());
-
-            let s = (j as f32) / (sector_count as f32);
-            let t = (i as f32) / (stack_count as f32);
-            uvs.push(Vec2::new(s * uv_scale[0], t * uv_scale[1]));
+            uvs.push(Vec2::new(x_segment * uv_scale[0], y_segment * uv_scale[1]));
         }
     }
 
     let mut indices = Vec::new();
-    for i in 0..stack_count {
-        let mut k1 = i * (sector_count + 1);
-        let mut k2 = k1 + sector_count + 1;
-
-        for _ in 0..sector_count {
-            if i != 0 {
-                indices.push([k1 + 1, k2, k1]);
-            }
-
-            if i != (stack_count - 1) {
-                indices.push([k2 + 1, k2, k1 + 1]);
-            }
-
-            k1 += 1;
-            k2 += 1;
+    for y in 0..vertical_segments {
+        for x in 0..horizontal_segments {
+            indices.push([
+                y * (horizontal_segments + 1) + x,
+                (y + 1) * (horizontal_segments + 1) + x,
+                y * (horizontal_segments + 1) + x + 1,
+            ]);
+            indices.push([
+                (y + 1) * (horizontal_segments + 1) + x,
+                (y + 1) * (horizontal_segments + 1) + x + 1,
+                y * (horizontal_segments + 1) + x + 1,
+            ]);
         }
-    }
-
-    let mut min = Vec3::new(f32::MAX, f32::MAX, f32::MAX);
-    let mut max = Vec3::new(f32::MIN, f32::MIN, f32::MIN);
-
-    for p in positions.iter() {
-        max = max.max(*p);
-        min = min.min(*p);
     }
 
     MeshData {
@@ -639,7 +619,7 @@ pub(crate) fn initialize_static_primitives(
 
     let mesh_data = cube();
     meshes.add_and_leak(Mesh::new(graphics, mesh_data), &Mesh::CUBE);
-    let mesh_data = uv_sphere(20, 20, Vec2::ONE);
+    let mesh_data = uv_sphere(32, 32, Vec2::ONE);
     meshes.add_and_leak(Mesh::new(graphics, mesh_data), &Mesh::SPHERE);
     let mesh_data = ring(0.1, 1.0, 8, 20);
     meshes.add_and_leak(Mesh::new(graphics, mesh_data), &Mesh::RING);
