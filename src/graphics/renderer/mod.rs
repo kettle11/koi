@@ -235,6 +235,7 @@ impl<'a, 'b: 'a> Renderer<'a, 'b> {
         &mut self,
         material_handle: &'a Handle<Material>,
         lights: &Query<'_, (&'static GlobalTransform, &'static Light)>,
+        reflection_probes: &Query<(&'static GlobalTransform, &'static ReflectionProbe)>,
     ) {
         // Avoid unnecessary [Material] rebinds.
         if Some(material_handle) != self.material_info.as_ref().map(|m| m.material_handle) {
@@ -299,6 +300,20 @@ impl<'a, 'b: 'a> Renderer<'a, 'b> {
                 let base_color_property = pipeline.get_vec4_property("p_base_color").unwrap();
 
                 self.bind_light_info(pipeline, lights);
+
+                // Bind the reflection probe
+                let reflection_probe_cube_map = self.cube_map_assets.get(
+                    reflection_probes
+                        .iter()
+                        .next()
+                        .map_or(&Handle::default(), |p| &p.1.irradiance_map),
+                );
+                self.render_pass.set_cube_map_property(
+                    &pipeline.get_cube_map_property(&"p_irradiance_map").unwrap(),
+                    Some(reflection_probe_cube_map),
+                    material.max_texture_unit + 1,
+                );
+
                 self.bound_shader = Some(&material.shader);
                 self.material_info = Some(MaterialInfo {
                     material_handle,
@@ -424,13 +439,14 @@ impl<'a, 'b: 'a> Renderer<'a, 'b> {
         camera: &Camera,
         renderables: &'a Renderables,
         lights: &Query<'_, (&'static GlobalTransform, &'static Light)>,
+        reflection_probes: &Query<(&'static GlobalTransform, &'static ReflectionProbe)>,
     ) {
         for (transform, material_handle, mesh_handle, render_layer, optional_sprite, color) in
             renderables.iter()
         {
             let render_layer = render_layer.cloned().unwrap_or(RenderLayers::DEFAULT);
             if camera.render_layers.includes_layer(render_layer) {
-                self.change_material(material_handle, lights);
+                self.change_material(material_handle, lights, reflection_probes);
                 if let Some(sprite) = optional_sprite {
                     self.prepare_sprite(sprite);
                 }
@@ -466,6 +482,7 @@ pub fn render_scene<'a>(
     cameras: Query<(&GlobalTransform, &Camera)>,
     renderables: Renderables<'a>,
     lights: Query<(&'static GlobalTransform, &'static Light)>,
+    reflection_probes: Query<(&'static GlobalTransform, &'static ReflectionProbe)>,
 ) {
     let mut command_buffer = graphics.context.new_command_buffer();
 
@@ -538,7 +555,7 @@ pub fn render_scene<'a>(
                     multiview_enabled,
                 );
 
-                renderer.render_scene(camera, &renderables, &lights);
+                renderer.render_scene(camera, &renderables, &lights, &reflection_probes);
             }
         }
     }

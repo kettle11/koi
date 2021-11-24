@@ -84,7 +84,7 @@ pub struct Texture {
 }
 
 // Presently this isn't dropped appropriately.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct CubeMap {
     texture: gl_native::TextureNative,
 }

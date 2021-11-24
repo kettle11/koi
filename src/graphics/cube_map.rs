@@ -344,3 +344,8 @@ impl AssetLoader<CubeMap> for CubeMapAssetLoader {
         .run();
     }
 }
+
+#[derive(Component, Clone)]
+pub struct ReflectionProbe {
+    pub irradiance_map: Handle<CubeMap>,
+}
