@@ -270,6 +270,14 @@ impl<T: LoadableAssetTrait> Assets<T> {
         self.load_with_options(path, Default::default())
     }
 
+    /// Create a new asset handle initialized to the default placeholder.
+    pub fn new_handle(&mut self) -> Handle<T> {
+        let indirection_index = self.indirection_storage.get_new_indirection_index();
+        let new_handle =
+            Handle::<T>::new(indirection_index, self.send_drop_channel.inner().clone());
+        new_handle
+    }
+
     pub fn load_with_options(&mut self, path: &str, options: T::Options) -> Handle<T> {
         // Check first if we've already loaded this path.
         // The weak handle upgrade may fail, but if that happens proceed to load a new instance of the asset.
@@ -280,9 +288,7 @@ impl<T: LoadableAssetTrait> Assets<T> {
             }
         }
 
-        let indirection_index = self.indirection_storage.get_new_indirection_index();
-        let new_handle =
-            Handle::<T>::new(indirection_index, self.send_drop_channel.inner().clone());
+        let new_handle = self.new_handle();
         self.path_to_handle
             .insert(path.to_string(), new_handle.clone_weak());
         self.handle_to_path

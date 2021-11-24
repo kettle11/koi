@@ -14,7 +14,7 @@ pub trait PipelineTrait {
     fn get_vec4_property(&self, name: &str) -> Result<Vec4Property, ()>;
     fn get_mat4_property(&self, name: &str) -> Result<Mat4Property, ()>;
     fn get_texture_property(&self, name: &str) -> Result<TextureProperty, ()>;
-    fn get_cubemap_property(&self, name: &str) -> Result<CubeMapProperty, ()>;
+    fn get_cube_map_property(&self, name: &str) -> Result<CubeMapProperty, ()>;
 
     fn get_vertex_attribute<T>(&self, name: &str) -> Result<VertexAttribute<T>, String>;
 }

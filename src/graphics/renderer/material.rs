@@ -176,7 +176,7 @@ impl Material {
         }
 
         for (name, (texture, texture_unit)) in self.cube_map_properties.iter() {
-            if let Ok(property) = pipeline.get_cubemap_property(name) {
+            if let Ok(property) = pipeline.get_cube_map_property(name) {
                 let texture = cube_map_assets.get(texture);
                 render_pass.set_cube_map_property(&property, Some(texture), *texture_unit);
             } else {

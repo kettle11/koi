@@ -271,7 +271,7 @@ impl PipelineTrait for Pipeline {
         })
     }
 
-    fn get_cubemap_property(&self, name: &str) -> Result<CubeMapProperty, ()> {
+    fn get_cube_map_property(&self, name: &str) -> Result<CubeMapProperty, ()> {
         Ok(CubeMapProperty {
             location: self.get_property(name, GL_SAMPLER_CUBE)?,
         })

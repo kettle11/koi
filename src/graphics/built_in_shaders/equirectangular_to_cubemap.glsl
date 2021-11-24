@@ -18,7 +18,7 @@ void main()
 out vec4 color_out;
 in vec3 local_position;
 
-uniform sampler2D equirectangular_map;
+uniform sampler2D p_texture;
 
 const vec2 invAtan = vec2(0.1591, 0.3183);
 
@@ -34,6 +34,6 @@ void main()
 {		
     vec2 uv = SampleSphericalMap(normalize(local_position)); // make sure to normalize localPos
     uv.y = 1.0 - uv.y;
-    vec3 color = texture(equirectangular_map, uv).rgb;
+    vec3 color = texture(p_texture, uv).rgb;
     color_out = vec4(color, 1.0);
 }
