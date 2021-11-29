@@ -17,6 +17,15 @@ struct ShaderAndProperties {
     position_attribute: VertexAttribute<Vec3>,
 }
 
+struct SpecularIrradianceProperties {
+    shader: Shader,
+    projection_property: Mat4Property,
+    view_property: Mat4Property,
+    p_texture: CubeMapProperty,
+    p_roughness: FloatProperty,
+    a_position: VertexAttribute<Vec3>,
+}
+
 fn get_shader_and_properties(
     graphics: &mut Graphics,
     source: &str,
@@ -59,7 +68,8 @@ fn get_shader_and_properties(
 
 pub struct CubeMapRenderer {
     equirectangular_to_cubemap_shader: ShaderAndProperties,
-    irradiance_convolution_shader: ShaderAndProperties,
+    diffuse_irradiance_convolution_shader: ShaderAndProperties,
+    specular_irradiance_shader: SpecularIrradianceProperties,
 }
 
 impl CubeMapRenderer {
@@ -69,14 +79,44 @@ impl CubeMapRenderer {
             include_str!("built_in_shaders/equirectangular_to_cubemap.glsl"),
             false,
         );
-        let irradiance_convolution_shader = get_shader_and_properties(
+        let diffuse_irradiance_convolution_shader = get_shader_and_properties(
             graphics,
             include_str!("built_in_shaders/irradiance_convolution.glsl"),
             true,
         );
+        let specular_irradiance_convolution_shader = graphics
+            .new_shader(
+                include_str!("built_in_shaders/specular_irradiance_convolution.glsl"),
+                PipelineSettings {
+                    depth_test: DepthTest::LessOrEqual,
+                    ..PipelineSettings::default()
+                },
+            )
+            .unwrap();
+        let specular_irradiance_shader = SpecularIrradianceProperties {
+            projection_property: specular_irradiance_convolution_shader
+                .pipeline
+                .get_mat4_property("p_projection")
+                .unwrap(),
+            view_property: specular_irradiance_convolution_shader
+                .pipeline
+                .get_mat4_property("p_view")
+                .unwrap(),
+            p_roughness: specular_irradiance_convolution_shader
+                .pipeline
+                .get_float_property("p_roughness")
+                .unwrap(),
+            p_texture: specular_irradiance_convolution_shader
+                .pipeline
+                .get_cube_map_property("p_texture")
+                .unwrap(),
+            a_position: shader.pipeline.get_vertex_attribute("a_position").unwrap(),
+            shader: specular_irradiance_convolution_shader,
+        };
         CubeMapRenderer {
             equirectangular_to_cubemap_shader,
-            irradiance_convolution_shader,
+            diffuse_irradiance_convolution_shader,
+            specular_irradiance_shader,
         }
     }
 }
@@ -148,6 +188,66 @@ fn render_cube_map(
         }
         graphics.context.commit_command_buffer(command_buffer);
         graphics.context.delete_framebuffer(framebuffer);
+
+        // Probably should generate mipmaps here to reduce artifacts
+    }
+}
+
+fn render_specular_irradiance_cube_map(
+    graphics: &mut Graphics,
+    meshes: &Assets<Mesh>,
+    shader: &SpecularIrradianceProperties,
+    environment_texture: &CubeMap,
+    cube_map: &CubeMap,
+    size: usize,
+) {
+    let cube_mesh = meshes.get(&Mesh::CUBE_MAP_CUBE).gpu_mesh.as_ref().unwrap();
+
+    let projection: Mat4 =
+        kmath::projection_matrices::perspective_gl(90.0_f32.to_radians(), 1.0, 0.1, 10.);
+
+    // I assume the -Y here is to flip the image as well.
+    let views = [
+        Mat4::looking_at(Vec3::ZERO, Vec3::X, -Vec3::Y),
+        Mat4::looking_at(Vec3::ZERO, -Vec3::X, -Vec3::Y),
+        Mat4::looking_at(Vec3::ZERO, Vec3::Y, Vec3::Z),
+        Mat4::looking_at(Vec3::ZERO, -Vec3::Y, -Vec3::Z),
+        Mat4::looking_at(Vec3::ZERO, Vec3::Z, -Vec3::Y),
+        Mat4::looking_at(Vec3::ZERO, -Vec3::Z, -Vec3::Y),
+    ];
+
+    let mip_map_levels = 5;
+    for mip in 0..mip_map_levels {
+        let mip_width = (128.0 * (0.5f32).powf(mip as f32)) as u32;
+        let mip_height = mip_width;
+
+        let roughness = mip as f32 / (mip_map_levels - 1) as f32;
+
+        for i in 0..6 {
+            let mut command_buffer = graphics.context.new_command_buffer();
+
+            let face_texture = cube_map.get_face_texture(i).with_mip(mip);
+            let framebuffer = graphics
+                .context
+                .new_framebuffer(Some(&face_texture), None, None);
+            {
+                let mut render_pass = command_buffer
+                    .begin_render_pass_with_framebuffer(&framebuffer, Some((1.0, 0.0, 0.0, 1.0)));
+                render_pass.set_viewport(0, 0, mip_width, mip_height);
+
+                render_pass.set_pipeline(&shader.shader.pipeline);
+                render_pass.set_mat4_property(&shader.projection_property, projection.as_array());
+                render_pass.set_mat4_property(&shader.view_property, views[i].as_array());
+                render_pass.set_float_property(&shader.p_roughness, roughness);
+                render_pass.set_cube_map_property(&shader.p_texture, Some(environment_texture), 0);
+                render_pass.set_vertex_attribute(&shader.a_position, Some(&cube_mesh.positions));
+
+                // Render mesh here.
+                render_pass.draw_triangles(cube_mesh.triangle_count, &cube_mesh.index_buffer);
+            }
+            graphics.context.commit_command_buffer(command_buffer);
+            graphics.context.delete_framebuffer(framebuffer);
+        }
     }
 }
 
@@ -182,7 +282,7 @@ struct CubeMapLoadMessage {
     handle: Handle<CubeMap>,
     texture_load_data: TextureLoadData,
     texture_settings: TextureSettings,
-    convoluted_handle: Option<Handle<CubeMap>>,
+    diffuse_and_specular_irradiance_cubemaps: Option<(Handle<CubeMap>, Handle<CubeMap>)>,
 }
 
 /// A system that loads textures onto the GPU
@@ -237,9 +337,11 @@ pub(crate) fn load_cube_maps(
         );
 
         // If we also want to convolute the CubeMap do so here.
-        if let Some(convoluted_handle) = message.convoluted_handle {
+        if let Some((diffuse_handle, specular_handle)) =
+            message.diffuse_and_specular_irradiance_cubemaps
+        {
             let size = 32;
-            let convoluted_cube_map = graphics
+            let diffuse_irradiance_cubemap = graphics
                 .new_cube_map(
                     None,
                     size,
@@ -251,6 +353,7 @@ pub(crate) fn load_cube_maps(
                         magnification_filter: FilterMode::Linear,
                         wrapping_horizontal: WrappingMode::ClampToEdge,
                         wrapping_vertical: WrappingMode::ClampToEdge,
+                        generate_mipmaps: false,
                         ..Default::default()
                     },
                 )
@@ -263,13 +366,31 @@ pub(crate) fn load_cube_maps(
                 &cube_maps
                     .asset_loader
                     .cube_map_renderer
-                    .irradiance_convolution_shader,
+                    .diffuse_irradiance_convolution_shader,
                 TextureIn::CubeMap(&cube_map),
-                &convoluted_cube_map,
+                &diffuse_irradiance_cubemap,
                 size as usize,
             );
 
-            cube_maps.replace_placeholder(&convoluted_handle, convoluted_cube_map)
+            cube_maps.replace_placeholder(&diffuse_handle, diffuse_irradiance_cubemap);
+
+            let specular_irradiance_cubemap = graphics
+                .new_cube_map(
+                    None,
+                    128,
+                    128,
+                    PixelFormat::RGB16F,
+                    TextureSettings {
+                        srgb: false,
+                        minification_filter: FilterMode::Linear,
+                        magnification_filter: FilterMode::Linear,
+                        wrapping_horizontal: WrappingMode::ClampToEdge,
+                        wrapping_vertical: WrappingMode::ClampToEdge,
+                        generate_mipmaps: true,
+                        ..Default::default()
+                    },
+                )
+                .unwrap();
         }
 
         cube_maps.replace_placeholder(&message.handle, cube_map);
@@ -278,14 +399,14 @@ pub(crate) fn load_cube_maps(
 
 pub struct CubeMapOptions {
     pub texture_settings: TextureSettings,
-    pub convoluted_cube_map: Option<Handle<CubeMap>>,
+    pub diffuse_and_specular_irradiance_cubemaps: Option<(Handle<CubeMap>, Handle<CubeMap>)>,
 }
 
 impl Default for CubeMapOptions {
     fn default() -> Self {
         Self {
             texture_settings: TextureSettings::default(),
-            convoluted_cube_map: None,
+            diffuse_and_specular_irradiance_cubemaps: None,
         }
     }
 }
@@ -330,7 +451,8 @@ impl AssetLoader<CubeMap> for CubeMapAssetLoader {
                 texture_load_data,
                 handle,
                 texture_settings: options.texture_settings,
-                convoluted_handle: options.convoluted_cube_map,
+                diffuse_and_specular_irradiance_cubemaps: options
+                    .diffuse_and_specular_irradiance_cubemaps,
             });
         })
         .run();
@@ -339,5 +461,31 @@ impl AssetLoader<CubeMap> for CubeMapAssetLoader {
 
 #[derive(Component, Clone)]
 pub struct ReflectionProbe {
-    pub irradiance_map: Handle<CubeMap>,
+    pub source: Handle<CubeMap>,
+    pub diffuse_irradiance_map: Handle<CubeMap>,
+    pub specular_irradiance_map: Handle<CubeMap>,
+}
+
+impl Assets<CubeMap> {
+    pub fn load_reflection_probe(&mut self, path: &str) -> ReflectionProbe {
+        let diffuse_irradiance_map = self.new_handle();
+        let specular_irradiance_map = self.new_handle();
+
+        let source = self.load_with_options(
+            path,
+            CubeMapOptions {
+                diffuse_and_specular_irradiance_cubemaps: Some((
+                    diffuse_irradiance_map.clone(),
+                    specular_irradiance_map.clone(),
+                )),
+                ..Default::default()
+            },
+        );
+
+        ReflectionProbe {
+            source,
+            diffuse_irradiance_map,
+            specular_irradiance_map,
+        }
+    }
 }

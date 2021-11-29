@@ -53,6 +53,7 @@ impl RenderTargetTrait for RenderTarget {
     fn current_frame(&self) -> Result<Texture, ()> {
         Ok(Texture {
             texture_type: TextureType::DefaultFramebuffer,
+            mip: 0,
         })
     }
 }
@@ -68,7 +69,7 @@ pub struct IndexBuffer {
     buffer: gl_native::Buffer,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 enum TextureType {
     Texture(gl_native::TextureNative),
     CubeMap {
@@ -81,6 +82,16 @@ enum TextureType {
 #[derive(Debug)]
 pub struct Texture {
     texture_type: TextureType,
+    mip: u8,
+}
+
+impl Texture {
+    pub fn with_mip(&self, level: u8) -> Texture {
+        Texture {
+            texture_type: self.texture_type.clone(),
+            mip: level,
+        }
+    }
 }
 
 // Presently this isn't dropped appropriately.
@@ -97,6 +108,7 @@ impl CubeMap {
                 face: face as u8,
                 texture_native: self.texture,
             },
+            mip: 0,
         }
     }
 }
@@ -500,6 +512,7 @@ impl GraphicsContextTrait for GraphicsContext {
             let texture = self.gl.create_texture().unwrap();
             let texture = Texture {
                 texture_type: TextureType::Texture(texture),
+                mip: 0,
             };
             self.update_texture(
                 &texture,
@@ -653,15 +666,23 @@ impl GraphicsContextTrait for GraphicsContext {
                 );
             }
 
+            let minification_filter = minification_filter_to_gl_enum(
+                texture_settings.minification_filter,
+                texture_settings.mipmap_filter,
+                texture_settings.generate_mipmaps,
+            );
+            let magnification_filter =
+                magnification_filter_to_gl_enum(texture_settings.magnification_filter);
+
             self.gl.tex_parameter_i32(
                 GL_TEXTURE_CUBE_MAP,
                 GL_TEXTURE_MIN_FILTER,
-                GL_LINEAR.0 as i32,
+                minification_filter as i32,
             );
             self.gl.tex_parameter_i32(
                 GL_TEXTURE_CUBE_MAP,
                 GL_TEXTURE_MAG_FILTER,
-                GL_LINEAR.0 as i32,
+                magnification_filter as i32,
             );
 
             let wrapping_horizontal = wrapping_to_gl_enum(texture_settings.wrapping_horizontal);
@@ -677,6 +698,10 @@ impl GraphicsContextTrait for GraphicsContext {
                 GL_TEXTURE_WRAP_T,
                 wrapping_vertical as i32,
             );
+
+            if texture_settings.generate_mipmaps {
+                self.gl.generate_mipmap(GL_TEXTURE_CUBE_MAP);
+            }
         }
     }
 
@@ -929,21 +954,23 @@ impl GraphicsContextTrait for GraphicsContext {
     ) -> Framebuffer {
         fn get_target_and_native_texture(
             texture: Option<&Texture>,
-        ) -> (GLenum, Option<TextureNative>) {
+        ) -> (GLenum, Option<TextureNative>, i32) {
             let texture_type = texture.map(|t| &t.texture_type);
+            let level = texture.map_or(0, |t| t.mip as i32);
             match texture_type {
-                Some(TextureType::Texture(t)) => (GL_TEXTURE_2D, Some(*t)),
+                Some(TextureType::Texture(t)) => (GL_TEXTURE_2D, Some(*t), level),
                 Some(TextureType::CubeMap {
                     face,
                     texture_native,
                 }) => (
                     GLenum(GL_TEXTURE_CUBE_MAP_POSITIVE_X.0 + *face as u32),
                     Some(*texture_native),
+                    level,
                 ),
                 Some(TextureType::DefaultFramebuffer) => {
                     panic!("Cannot update default framebuffer")
                 }
-                None => (GL_TEXTURE_2D, None),
+                None => (GL_TEXTURE_2D, None, 0),
             }
         }
         unsafe {
@@ -951,24 +978,29 @@ impl GraphicsContextTrait for GraphicsContext {
 
             self.gl.bind_framebuffer(GL_FRAMEBUFFER, framebuffer);
 
-            let (target, texture) = get_target_and_native_texture(color_texture);
+            let (target, texture, level) = get_target_and_native_texture(color_texture);
             self.gl.framebuffer_texture_2d(
                 GL_FRAMEBUFFER,
                 GL_COLOR_ATTACHMENT0,
                 target,
                 texture,
-                0,
+                level,
             );
-            let (target, texture) = get_target_and_native_texture(depth_texture);
-            self.gl
-                .framebuffer_texture_2d(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, target, texture, 0);
-            let (target, texture) = get_target_and_native_texture(stencil_texture);
+            let (target, texture, level) = get_target_and_native_texture(depth_texture);
+            self.gl.framebuffer_texture_2d(
+                GL_FRAMEBUFFER,
+                GL_DEPTH_ATTACHMENT,
+                target,
+                texture,
+                level,
+            );
+            let (target, texture, level) = get_target_and_native_texture(stencil_texture);
             self.gl.framebuffer_texture_2d(
                 GL_FRAMEBUFFER,
                 GL_STENCIL_ATTACHMENT,
                 target,
                 texture,
-                0,
+                level,
             );
             framebuffer
         }

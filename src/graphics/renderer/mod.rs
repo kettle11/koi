@@ -310,7 +310,7 @@ impl<'a, 'b: 'a> Renderer<'a, 'b> {
                     reflection_probes
                         .iter()
                         .next()
-                        .map_or(&Handle::default(), |p| &p.1.irradiance_map),
+                        .map_or(&Handle::default(), |p| &p.1.diffuse_irradiance_map),
                 );
                 self.render_pass.set_cube_map_property(
                     &pipeline.get_cube_map_property(&"p_irradiance_map").unwrap(),

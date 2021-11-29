@@ -66,6 +66,8 @@ uniform mat4 p_world_to_light_space_1;
 uniform mat4 p_world_to_light_space_2;
 uniform mat4 p_world_to_light_space_3;
 
+uniform samplerCube p_irradiance_map;
+
 // Up to 4 cascades are supported.
 // uniform float p_shadow_cascades[4];
 
@@ -141,7 +143,7 @@ vec3 fresnelSchlick(float cosTheta, vec3 F0)
     // cause pow to return NaN. 
     // It'd be worth testing for later.
    // cosTheta = min(cosTheta, 1.0);
-    return F0 + (1.0 - F0) * pow(1.0 - cosTheta, 5.0);
+    return F0 + (1.0 - F0) * pow(clamp(1.0 - cosTheta, 0.0, 1.0), 5.0);
 }
 // ----------------------------------------------------------------------------
 
@@ -211,7 +213,6 @@ void main()
     vec3 emissive = p_emissive * texture(p_emissive_texture, TexCoords).rgb;
     vec3 debug_color = vec3(0.0);
 
-    if (fog_factor != 1.0) {
         vec4 metallic_roughness = texture(p_metallic_roughness_texture, TexCoords);
         vec4 base_color_rgba = (p_base_color * texture(p_base_color_texture, TexCoords));
         vec3 base_color = base_color_rgba.rgb;
@@ -225,8 +226,9 @@ void main()
     //  float metallic  = 1.0 - p_metallic;
     //  float roughness = p_roughness;
 
-
-        vec3 N = getNormalFromMap();
+        // When interpolating between face normals the normal can get shorted, so renormalize here.
+        vec3 N = normalize(Normal);
+     //   vec3 N = getNormalFromMap();
         vec3 V = normalize(p_camera_positions[0] - WorldPosition);
 
         // calculate reflectance at normal incidence; if dia-electric (like plastic) use F0 
@@ -332,9 +334,19 @@ void main()
 
         // ambient lighting (note that the next IBL tutorial will replace 
         // this ambient lighting with environment lighting).
-        vec3 ambient = ambient_light * base_color * ambient_amount;
+       // vec3 ambient = ambient_light * base_color * ambient_amount;
+
+        // Here we calculate how much energy is specular. Then we use the remaining energy for the diffuse portion.
+        // Until the specular part is implemented this will have the effect of darkening edges for the fresnel effect occurs.
+        vec3 kS = fresnelSchlick(max(dot(N, V), 0.0), F0);
+        vec3 kD = 1.0 - kS;
+        kD *= 1.0 - metallic;	  
+        vec3 irradiance = texture(p_irradiance_map, N).rgb;
+        vec3 diffuse    = irradiance * base_color;
+        vec3 ambient    =  (kD * diffuse) * ambient_amount; 
+
         color = ambient + Lo;//+ emissive;
-    }
+    
     
     // This should be applied before the shader instead.
   //  color = mix(color, p_fog_color, fog_factor );

@@ -247,8 +247,10 @@ extern "system" {
     pub fn SetCursor(hCursor: HCURSOR) -> HCURSOR;
     pub fn SetCursorPos(X: c_int, Y: c_int) -> BOOL;
     pub fn ShowCursor(bShow: BOOL) -> c_int;
+    /*
     pub fn SetWindowLongW(hWnd: HWND, nIndex: c_int, dwNewLong: LONG) -> LONG;
     pub fn GetWindowLongW(hWnd: HWND, nIndex: c_int) -> LONG;
+    */
     #[cfg(target_pointer_width = "64")]
     pub fn SetWindowLongPtrW(hWnd: HWND, nIndex: c_int, dwNewLong: LONG_PTR) -> LONG_PTR;
 
