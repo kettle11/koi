@@ -18,9 +18,11 @@ var gl_web_object = {
 
         // Get an extension to allow linearly filtering float textures.
         gl.getExtension('OES_texture_float_linear');
+        gl.getExtension('EXT_color_buffer_half_float');
 
         // Setup some stuff that won't change
         gl.enable(gl.DEPTH_TEST);
+        gl.enable(gl.TEXTURE_CUBE_MAP_SEAMLESS);
 
         let vertex_array_object = gl.createVertexArray();
         gl.bindVertexArray(vertex_array_object);

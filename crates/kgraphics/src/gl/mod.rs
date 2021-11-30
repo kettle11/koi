@@ -417,6 +417,8 @@ impl GraphicsContextTrait for GraphicsContext {
             let vertex_array_object = gl.create_vertex_array().unwrap();
             gl.bind_vertex_array(Some(vertex_array_object));
 
+            gl.enable(GL_TEXTURE_CUBE_MAP_SEAMLESS);
+
             Ok(GraphicsContext {
                 gl_context,
                 gl,
