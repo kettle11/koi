@@ -96,11 +96,11 @@ impl CubeMapRenderer {
         let specular_irradiance_shader = SpecularIrradianceProperties {
             projection_property: specular_irradiance_convolution_shader
                 .pipeline
-                .get_mat4_property("p_projection")
+                .get_mat4_property("p_projections[0]")
                 .unwrap(),
             view_property: specular_irradiance_convolution_shader
                 .pipeline
-                .get_mat4_property("p_view")
+                .get_mat4_property("p_views[0]")
                 .unwrap(),
             p_roughness: specular_irradiance_convolution_shader
                 .pipeline
@@ -249,6 +249,7 @@ fn render_specular_irradiance_cube_map(
                 // Render mesh here.
                 render_pass.draw_triangles(cube_mesh.triangle_count, &cube_mesh.index_buffer);
             }
+
             graphics.context.commit_command_buffer(command_buffer);
             graphics.context.delete_framebuffer(framebuffer);
         }
