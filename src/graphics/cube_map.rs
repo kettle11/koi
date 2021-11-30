@@ -202,8 +202,9 @@ fn render_specular_irradiance_cube_map(
     shader: &SpecularIrradianceProperties,
     environment_texture: &CubeMap,
     cube_map: &CubeMap,
-    size: usize,
 ) {
+    let size = 128.0;
+
     let cube_mesh = meshes.get(&Mesh::CUBE_MAP_CUBE).gpu_mesh.as_ref().unwrap();
 
     let projection: Mat4 =
@@ -221,7 +222,7 @@ fn render_specular_irradiance_cube_map(
 
     let mip_map_levels = 5;
     for mip in 0..mip_map_levels {
-        let mip_width = (128.0 * (0.5f32).powf(mip as f32)) as u32;
+        let mip_width = (size * (0.5f32).powf(mip as f32)) as u32;
         let mip_height = mip_width;
 
         let roughness = mip as f32 / (mip_map_levels - 1) as f32;
@@ -299,13 +300,17 @@ pub(crate) fn load_cube_maps(
     // the same time.
     let messages: Vec<CubeMapLoadMessage> =
         cube_maps.asset_loader.receiver.inner().try_iter().collect();
-    for mut message in messages.into_iter() {
+    for message in messages.into_iter() {
         // Force ClampToEdge because other WrappingModes create a seam for CubeMaps.
-        message.texture_settings.wrapping_horizontal = WrappingMode::ClampToEdge;
-        message.texture_settings.wrapping_vertical = WrappingMode::ClampToEdge;
-        message.texture_settings.minification_filter = FilterMode::Linear;
-        message.texture_settings.magnification_filter = FilterMode::Linear;
-        message.texture_settings.generate_mipmaps = true;
+
+        let texture_settings = TextureSettings {
+            wrapping_horizontal: WrappingMode::ClampToEdge,
+            wrapping_vertical: WrappingMode::ClampToEdge,
+            minification_filter: FilterMode::Linear,
+            magnification_filter: FilterMode::Linear,
+            generate_mipmaps: true,
+            ..message.texture_settings
+        };
 
         // Create a GPU texture to process into the CubeMap
         let texture = graphics
@@ -314,7 +319,7 @@ pub(crate) fn load_cube_maps(
                 message.texture_load_data.width,
                 message.texture_load_data.height,
                 message.texture_load_data.pixel_format,
-                message.texture_settings,
+                texture_settings,
             )
             .unwrap();
 
@@ -326,7 +331,7 @@ pub(crate) fn load_cube_maps(
                 face_size,
                 face_size,
                 message.texture_load_data.pixel_format,
-                message.texture_settings,
+                texture_settings,
             )
             .unwrap();
 
@@ -398,6 +403,19 @@ pub(crate) fn load_cube_maps(
                     },
                 )
                 .unwrap();
+
+            render_specular_irradiance_cube_map(
+                graphics,
+                meshes,
+                &cube_maps
+                    .asset_loader
+                    .cube_map_renderer
+                    .specular_irradiance_shader,
+                &cube_map,
+                &specular_irradiance_cubemap,
+            );
+
+            cube_maps.replace_placeholder(&specular_handle, specular_irradiance_cubemap);
         }
 
         cube_maps.replace_placeholder(&message.handle, cube_map);

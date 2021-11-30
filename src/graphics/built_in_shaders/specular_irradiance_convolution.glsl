@@ -123,5 +123,5 @@ void main()
 
     prefilteredColor = prefilteredColor / totalWeight;
 
-    color_out = vec4(prefilteredColor, 1.0);
+    color_out = vec4(0.0, 0.0, 1.0, 1.0);//vec4(prefilteredColor, 1.0);
 }

@@ -226,7 +226,6 @@ pub(crate) async fn texture_data_from_path(
         #[cfg(feature = "hdri")]
         Some("hdr") => {
             options.srgb = false;
-            options.generate_mipmaps = false;
             hdri_data_from_bytes(&bytes)
         }
         None => panic!("No file extension for path: {:?}", path),
