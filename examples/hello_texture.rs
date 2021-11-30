@@ -12,7 +12,7 @@ fn main() {
         ));
 
         let cube_maps = world.get_single_component_mut::<Assets<CubeMap>>().unwrap();
-        let reflection_probe = cube_maps.load_reflection_probe("assets/shudu_lake_1k.hdr");
+        let reflection_probe = cube_maps.load_reflection_probe("assets/kloppenheim_02_1k.hdr");
 
         let skybox_material = (|graphics: &mut Graphics,
                                 shaders: &mut Assets<Shader>,
@@ -121,26 +121,28 @@ fn main() {
         ));
         */
 
-        let mut toggle = true;
+        let mut toggle = 2;
 
         move |event, world| {
             match event {
                 Event::Draw => {
                     (|input: &Input, materials: &mut Assets<Material>| {
                         if input.key_down(Key::Space) {
-                            toggle = !toggle;
+                            toggle += 1;
+                            if toggle == 3 {
+                                toggle = 0;
+                            }
                             println!("TOGGLING!");
                         }
-                        if toggle {
-                            materials
-                                .get_mut(&skybox_material)
-                                .set_cube_map("p_environment_map", reflection_probe.source.clone())
-                        } else {
-                            materials.get_mut(&skybox_material).set_cube_map(
-                                "p_environment_map",
-                                reflection_probe.diffuse_irradiance_map.clone(),
-                            )
-                        }
+                        let t = match toggle {
+                            0 => reflection_probe.source.clone(),
+                            1 => reflection_probe.diffuse_irradiance_map.clone(),
+                            2 => reflection_probe.specular_irradiance_map.clone(),
+                            _ => unreachable!(),
+                        };
+                        materials
+                            .get_mut(&skybox_material)
+                            .set_cube_map("p_environment_map", t)
                     })
                     .run(world);
                 }
