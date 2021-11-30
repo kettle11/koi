@@ -110,7 +110,10 @@ impl CubeMapRenderer {
                 .pipeline
                 .get_cube_map_property("p_texture")
                 .unwrap(),
-            a_position: shader.pipeline.get_vertex_attribute("a_position").unwrap(),
+            a_position: specular_irradiance_convolution_shader
+                .pipeline
+                .get_vertex_attribute("a_position")
+                .unwrap(),
             shader: specular_irradiance_convolution_shader,
         };
         CubeMapRenderer {
@@ -300,6 +303,9 @@ pub(crate) fn load_cube_maps(
         // Force ClampToEdge because other WrappingModes create a seam for CubeMaps.
         message.texture_settings.wrapping_horizontal = WrappingMode::ClampToEdge;
         message.texture_settings.wrapping_vertical = WrappingMode::ClampToEdge;
+        message.texture_settings.minification_filter = FilterMode::Linear;
+        message.texture_settings.magnification_filter = FilterMode::Linear;
+        message.texture_settings.generate_mipmaps = true;
 
         // Create a GPU texture to process into the CubeMap
         let texture = graphics
@@ -335,6 +341,7 @@ pub(crate) fn load_cube_maps(
             &cube_map,
             face_size as usize,
         );
+        graphics.context.generate_mip_map_for_cube_map(&cube_map);
 
         // If we also want to convolute the CubeMap do so here.
         if let Some((diffuse_handle, specular_handle)) =

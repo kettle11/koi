@@ -612,6 +612,24 @@ impl GraphicsContextTrait for GraphicsContext {
         unsafe { self.gl.delete_texture(texture) }
     }
 
+    fn generate_mip_map_for_texture(&self, texture: &Texture) {
+        let (target, texture) = match texture.texture_type {
+            TextureType::Texture(t) => (GL_TEXTURE_2D, t),
+            TextureType::CubeMap {
+                face,
+                texture_native,
+            } => (
+                GLenum(GL_TEXTURE_CUBE_MAP_POSITIVE_X.0 + face as u32),
+                texture_native,
+            ),
+            TextureType::DefaultFramebuffer => panic!("Cannot update default framebuffer"),
+        };
+        unsafe {
+            self.gl.bind_texture(target, Some(texture));
+            self.gl.generate_mipmap(target);
+        }
+    }
+
     fn new_cube_map(
         &self,
         width: u32,
@@ -707,6 +725,14 @@ impl GraphicsContextTrait for GraphicsContext {
 
     fn delete_cube_map(&self, cube_map: CubeMap) {
         unsafe { self.gl.delete_texture(cube_map.texture) }
+    }
+
+    fn generate_mip_map_for_cube_map(&self, texture: &CubeMap) {
+        unsafe {
+            self.gl
+                .bind_texture(GL_TEXTURE_CUBE_MAP, Some(texture.texture));
+            self.gl.generate_mipmap(GL_TEXTURE_CUBE_MAP);
+        }
     }
 
     fn new_command_buffer(&mut self) -> CommandBuffer {

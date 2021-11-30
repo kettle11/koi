@@ -133,6 +133,8 @@ pub trait GraphicsContextTrait: Sized {
 
     fn delete_texture(&self, texture: Texture);
 
+    fn generate_mip_map_for_texture(&self, texture: &Texture);
+
     fn new_cube_map(
         &self,
         width: u32,
@@ -153,6 +155,8 @@ pub trait GraphicsContextTrait: Sized {
     );
 
     fn delete_cube_map(&self, cube_map: CubeMap);
+
+    fn generate_mip_map_for_cube_map(&self, cube_map: &CubeMap);
 
     fn new_pipeline(
         &mut self,
