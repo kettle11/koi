@@ -21,10 +21,10 @@ pub fn vertical_quad() -> MeshData {
 
     let normals = vec![
         // 0
-        [0.0, 1.0, 0.0].into(),
-        [0.0, 1.0, 0.0].into(),
-        [0.0, 1.0, 0.0].into(),
-        [0.0, 1.0, 0.0].into(),
+        [0.0, 0.0, 1.0].into(),
+        [0.0, 0.0, 1.0].into(),
+        [0.0, 0.0, 1.0].into(),
+        [0.0, 0.0, 1.0].into(),
     ];
 
     let indices = vec![

@@ -10,7 +10,14 @@ pub use pbr_material::*;
 mod sprite;
 pub use sprite::*;
 
+mod brdf_lookup;
+
 use crate::graphics::texture::Texture;
+
+#[derive(NotCloneComponent)]
+pub struct RendererInfo {
+    pub brdf_lookup_table: Handle<Texture>,
+}
 
 pub fn renderer_plugin() -> Plugin {
     Plugin {
@@ -25,6 +32,14 @@ pub fn setup_renderer(world: &mut World) {
     let mut materials = Assets::<Material>::new(default_material, MaterialAssetLoader::new());
     Material::initialize_static_materials(&mut materials);
     world.spawn(materials);
+
+    let brdf_lookup_table = brdf_lookup::generate_brdf_lookup.run(world);
+    let brdf_lookup_table = world
+        .get_single_component_mut::<Assets<Texture>>()
+        .unwrap()
+        .add(brdf_lookup_table);
+    let renderer_info = RendererInfo { brdf_lookup_table };
+    world.spawn(renderer_info);
 }
 
 pub struct ViewInfo {
@@ -356,6 +371,7 @@ impl<'a, 'b: 'a> Renderer<'a, 'b> {
     pub fn prepare_sprite(&mut self, sprite: &Sprite) {
         if let Some(material_info) = &self.material_info {
             let primary_texture = self.texture_assets.get(&sprite.texture_handle);
+
             self.render_pass.set_texture_property(
                 &material_info.base_color_texture_property,
                 Some(primary_texture),

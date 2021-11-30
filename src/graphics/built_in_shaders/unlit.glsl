@@ -43,5 +43,5 @@ void main()
         
     color = pow(color, vec3(1.0/2.2)) + dither; 
 
-    color_out = vec4( VertexColor.rgb, 1.0);
+    color_out = vec4( color, 1.0);
 }
