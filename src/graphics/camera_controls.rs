@@ -19,7 +19,6 @@ pub enum CameraControlsMode {
 #[derive(Clone, Component)]
 pub struct CameraControls {
     velocity: Vec3,
-    last_mouse_position: Option<Vec2>,
     pub max_speed: f32,
     pub acceleration: f32,
     pub friction: f32,
@@ -43,7 +42,6 @@ impl CameraControls {
             acceleration: 4000.0,
             max_speed: 10.2,
             friction: 0.001,
-            last_mouse_position: None,
             rotation_sensitivity: 1.5,
             mode: CameraControlsMode::Fly,
             rotate_button: PointerButton::Secondary,
@@ -65,17 +63,8 @@ pub fn update_camera_controls(
     mut query: Query<(&mut CameraControls, &mut Camera, &mut Transform)>,
 ) {
     for (controls, camera, transform) in &mut query {
-        let position = input.pointer_position();
-        let (view_width, view_height) = camera.get_view_size();
-        let position = Vec2::new(
-            position.0 as f32 / view_width as f32,
-            position.1 as f32 / view_height as f32,
-        );
-        let difference = if let Some(last_mouse_position) = controls.last_mouse_position {
-            position - last_mouse_position
-        } else {
-            Vec2::ZERO
-        };
+        let (x, y) = input.mouse_motion();
+        let difference: Vec2 = Vec2::new(x as f32, y as f32) / 1000.;
 
         let mut direction = Vec3::ZERO;
 
@@ -121,7 +110,6 @@ pub fn update_camera_controls(
 
             (-difference[1] * scale, -difference[0] * scale)
         } else {
-            controls.last_mouse_position = None;
             (0.0, 0.0)
         };
 
@@ -195,6 +183,5 @@ pub fn update_camera_controls(
                 transform.rotation = Quat::from_forward_up(new_direction, new_up);
             }
         }
-        controls.last_mouse_position = Some(position);
     }
 }
