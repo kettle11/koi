@@ -54,6 +54,65 @@ macro_rules! STRUCT {
     );
 }
 
+macro_rules! UNION {
+    ($(#[$attrs:meta])* union $name:ident {
+        [$stype:ty; $ssize:expr],
+        $($variant:ident $variant_mut:ident: $ftype:ty,)+
+    }) => (
+        #[repr(C)] $(#[$attrs])*
+        pub struct $name([$stype; $ssize]);
+        impl Copy for $name {}
+        impl Clone for $name {
+            #[inline]
+            fn clone(&self) -> $name { *self }
+        }
+        #[cfg(feature = "impl-default")]
+        impl Default for $name {
+            #[inline]
+            fn default() -> $name { unsafe { $crate::_core::mem::zeroed() } }
+        }
+        impl $name {$(
+            #[inline]
+            pub unsafe fn $variant(&self) -> &$ftype {
+                &*(self as *const _ as *const $ftype)
+            }
+            #[inline]
+            pub unsafe fn $variant_mut(&mut self) -> &mut $ftype {
+                &mut *(self as *mut _ as *mut $ftype)
+            }
+        )+}
+    );
+    ($(#[$attrs:meta])* union $name:ident {
+        [$stype32:ty; $ssize32:expr] [$stype64:ty; $ssize64:expr],
+        $($variant:ident $variant_mut:ident: $ftype:ty,)+
+    }) => (
+        #[repr(C)] $(#[$attrs])* #[cfg(target_pointer_width = "32")]
+        pub struct $name([$stype32; $ssize32]);
+        #[repr(C)] $(#[$attrs])* #[cfg(target_pointer_width = "64")]
+        pub struct $name([$stype64; $ssize64]);
+        impl Copy for $name {}
+        impl Clone for $name {
+            #[inline]
+            fn clone(&self) -> $name { *self }
+        }
+        #[cfg(feature = "impl-default")]
+        impl Default for $name {
+            #[inline]
+            fn default() -> $name { unsafe { $crate::_core::mem::zeroed() } }
+        }
+        impl $name {$(
+            #[inline]
+            pub unsafe fn $variant(&self) -> &$ftype {
+                &*(self as *const _ as *const $ftype)
+            }
+            #[inline]
+            pub unsafe fn $variant_mut(&mut self) -> &mut $ftype {
+                &mut *(self as *mut _ as *mut $ftype)
+            }
+        )+}
+    );
+}
+
 macro_rules! FN {
     (stdcall $func:ident($($t:ty,)*) -> $ret:ty) => (
         pub type $func = Option<unsafe extern "system" fn($($t,)*) -> $ret>;
@@ -73,6 +132,9 @@ macro_rules! FN {
 pub type LONG = c_long;
 pub type WCHAR = wchar_t;
 pub type LPCWSTR = *const WCHAR;
+pub type USHORT = u16;
+pub type ULONG = u32;
+pub type BYTE = u8;
 
 // Copied from https://github.com/retep998/winapi-rs/blob/0.3/src/lib.rs
 pub mod ctypes {
@@ -533,8 +595,86 @@ pub const WM_NCDESTROY: UINT = 0x0082;
 pub const WM_GETMINMAXINFO: UINT = 0x0024;
 //pub const WM_NCCREATE: UINT = 0x0081;
 pub const WM_CREATE: UINT = 0x0001;
+pub const WM_INPUT: UINT = 0x00FF;
 
 pub const XBUTTON1: WORD = 0x0001;
 pub const XBUTTON2: WORD = 0x0002;
 
 pub const GCS_COMPSTR: UINT = 8;
+
+type HANDLE = *mut std::ffi::c_void;
+STRUCT! {struct RAWINPUTHEADER {
+    dwType: DWORD,
+    dwSize: DWORD,
+    hDevice: HANDLE,
+    wParam: WPARAM,
+}}
+UNION! {union RAWINPUT_data {
+    [u32; 6],
+    mouse mouse_mut: RAWMOUSE,
+    keyboard keyboard_mut: RAWKEYBOARD,
+    hid hid_mut: RAWHID,
+}}
+STRUCT! {struct RAWINPUT {
+    header: RAWINPUTHEADER,
+    data: RAWINPUT_data,
+}}
+STRUCT! {struct RAWMOUSE {
+    usFlags: USHORT,
+    memory_padding: USHORT, // 16bit Padding for 32bit align in following union
+    usButtonFlags: USHORT,
+    usButtonData: USHORT,
+    ulRawButtons: ULONG,
+    lLastX: LONG,
+    lLastY: LONG,
+    ulExtraInformation: ULONG,
+}}
+STRUCT! {struct RAWKEYBOARD {
+    MakeCode: USHORT,
+    Flags: USHORT,
+    Reserved: USHORT,
+    VKey: USHORT,
+    Message: UINT,
+    ExtraInformation: ULONG,
+}}
+STRUCT! {struct RAWHID {
+    dwSizeHid: DWORD,
+    dwCount: DWORD,
+    bRawData: [BYTE; 1],
+}}
+
+extern "system" {
+    pub fn RegisterRawInputDevices(
+        pRawInputDevices: PCRAWINPUTDEVICE,
+        uiNumDevices: UINT,
+        cbSize: UINT,
+    ) -> BOOL;
+}
+STRUCT! {struct RAWINPUTDEVICE {
+    usUsagePage: USHORT,
+    usUsage: USHORT,
+    dwFlags: DWORD,
+    hwndTarget: HWND,
+}}
+
+type USAGE = USHORT;
+pub type PCRAWINPUTDEVICE = *const RAWINPUTDEVICE;
+pub const RIDEV_DEVNOTIFY: DWORD = 0x00002000;
+pub const RIDEV_INPUTSINK: DWORD = 0x00000100;
+pub const HID_USAGE_PAGE_GENERIC: USAGE = 0x01;
+pub const HID_USAGE_GENERIC_MOUSE: USAGE = 0x02;
+
+extern "system" {
+    pub fn GetRawInputData(
+        hRawInput: HRAWINPUT,
+        uiCommand: UINT,
+        pData: LPVOID,
+        pcbSize: PUINT,
+        cbSizeHeader: UINT,
+    ) -> UINT;
+}
+
+DECLARE_HANDLE! {HRAWINPUT, HRAWINPUT__}
+
+type PUINT = *mut c_uint;
+pub const RID_INPUT: DWORD = 0x10000003;

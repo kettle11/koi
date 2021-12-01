@@ -376,6 +376,44 @@ pub unsafe extern "system" fn window_callback(
             // Deallocate data associated with this window.
             let _ = Box::from_raw(GetWindowLongPtrW(hwnd, GWLP_USERDATA) as *mut WindowData);
         }
+        WM_INPUT => {
+            let mut data: RAWINPUT = std::mem::zeroed();
+            let mut data_size = std::mem::size_of::<RAWINPUT>() as UINT;
+            let header_size = std::mem::size_of::<RAWINPUTHEADER>() as UINT;
+
+            GetRawInputData(
+                l_param as _,
+                RID_INPUT,
+                &mut data as *mut _ as _,
+                &mut data_size,
+                header_size,
+            );
+
+            match data.header.dwType {
+                0 => {
+                    const MOUSE_MOVE_RELATIVE: USHORT = 0;
+                    let mouse_input = data.data.mouse();
+
+                    // Only report relative mouse input events.
+                    if mouse_input.usFlags & MOUSE_MOVE_RELATIVE == MOUSE_MOVE_RELATIVE {
+                        let delta_x = mouse_input.lLastX as f64;
+                        let delta_y = mouse_input.lLastY as f64;
+                        produce_event(Event::MouseMotion {
+                            delta_x,
+                            delta_y,
+                            timestamp: get_message_time(),
+                        });
+                    }
+                }
+                1 => {
+                    // Keyboard
+                }
+                2 => {
+                    // Other
+                }
+                _ => {}
+            }
+        }
         _ => {}
     }
     // DefWindowProcW is the default Window event handler.

@@ -261,6 +261,23 @@ impl PlatformApplicationTrait for PlatformApplication {
                 data,
             );
 
+            // RIDEV_DEVNOTIFY: receive hotplug events
+            // RIDEV_INPUTSINK: receive events even if we're not in the foreground
+            let flags = RIDEV_DEVNOTIFY | RIDEV_INPUTSINK;
+
+            let devices: [RAWINPUTDEVICE; 1] = [RAWINPUTDEVICE {
+                usUsagePage: HID_USAGE_PAGE_GENERIC,
+                usUsage: HID_USAGE_GENERIC_MOUSE,
+                dwFlags: flags,
+                hwndTarget: window_handle,
+            }];
+
+            RegisterRawInputDevices(
+                devices.as_ptr() as _,
+                devices.len() as _,
+                std::mem::size_of::<RAWINPUTDEVICE>() as UINT,
+            );
+
             let window_id = WindowId::new(window_handle as *mut std::ffi::c_void);
             // When a window is created immediately request that it should redraw
             redraw_manager::add_draw_request(window_id);
