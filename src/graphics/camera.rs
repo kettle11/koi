@@ -226,6 +226,8 @@ pub fn resize_camera(mut cameras: Query<(&mut Camera,)>, window: &NotSendSync<ka
     // This is very incorrect, but it works for now with the single window assumption
     for camera in &mut cameras {
         let (width, height) = window.size();
-        camera.set_view_size(width, height);
+        if width != 0 && height != 0 {
+            camera.set_view_size(width, height);
+        }
     }
 }
