@@ -546,6 +546,9 @@ pub fn run(callback: Box<dyn FnMut(kapp_platform_common::Event)>) {
             // We only reach here if there are redraw requests.
             // Iterate through all messages without blocking.
             while PeekMessageW(&mut message, null_mut(), 0, 0, PM_REMOVE) > 0 {
+                if message.message == WM_QUIT {
+                    break;
+                }
                 TranslateMessage(&message as *const MSG);
                 DispatchMessageW(&message as *const MSG);
             }

@@ -261,17 +261,16 @@ impl PlatformApplicationTrait for PlatformApplication {
                 data,
             );
 
-            // RIDEV_DEVNOTIFY: receive hotplug events
-            // RIDEV_INPUTSINK: receive events even if we're not in the foreground
-            let flags = RIDEV_DEVNOTIFY | RIDEV_INPUTSINK;
-
             let devices: [RAWINPUTDEVICE; 1] = [RAWINPUTDEVICE {
                 usUsagePage: HID_USAGE_PAGE_GENERIC,
                 usUsage: HID_USAGE_GENERIC_MOUSE,
-                dwFlags: flags,
+                // RIDEV_DEVNOTIFY: receive hotplug events
+                // RIDEV_INPUTSINK: receive events even if we're not in the foreground
+                dwFlags: RIDEV_DEVNOTIFY | RIDEV_INPUTSINK,
                 hwndTarget: window_handle,
             }];
 
+            
             RegisterRawInputDevices(
                 devices.as_ptr() as _,
                 devices.len() as _,
