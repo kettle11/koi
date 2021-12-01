@@ -40,6 +40,12 @@ pub struct Pipeline {
     //depth_clear_value: f32,
 }
 
+impl Pipeline {
+    pub fn blending(&self) -> Option<(BlendFactor, BlendFactor)> {
+        self.blending
+    }
+}
+
 /// OpenGL doesn't handle multiple render targets correctly.
 pub struct RenderTarget {
     pixel_format: PixelFormat,

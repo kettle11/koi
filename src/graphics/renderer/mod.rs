@@ -87,10 +87,12 @@ struct Renderer<'a, 'b: 'a> {
     current_pipeline: Option<&'a Pipeline>,
     dither_scale: f32,
     just_changed_material: bool,
+    brdf_lookup_texture: &'a Texture,
 }
 
 impl<'a, 'b: 'a> Renderer<'a, 'b> {
     pub fn new(
+        renderer_info: &RendererInfo,
         render_pass: &'a mut RenderPass<'b>,
         shader_assets: &'a Assets<Shader>,
         material_assets: &'a Assets<Material>,
@@ -107,6 +109,7 @@ impl<'a, 'b: 'a> Renderer<'a, 'b> {
         let size = viewport.size();
         render_pass.set_viewport(min.x as u32, min.y as u32, size.x as u32, size.y as u32);
 
+        let brdf_lookup_texture = texture_assets.get(&renderer_info.brdf_lookup_table);
         Self {
             render_pass,
             // camera_info,
@@ -123,6 +126,7 @@ impl<'a, 'b: 'a> Renderer<'a, 'b> {
             current_pipeline: None,
             dither_scale: 4.0,
             just_changed_material: false,
+            brdf_lookup_texture,
         }
     }
 
@@ -321,16 +325,40 @@ impl<'a, 'b: 'a> Renderer<'a, 'b> {
                 self.bind_light_info(pipeline, lights);
 
                 // Bind the reflection probe
-                let reflection_probe_cube_map = self.cube_map_assets.get(
-                    reflection_probes
-                        .iter()
-                        .next()
-                        .map_or(&Handle::default(), |p| &p.1.diffuse_irradiance_map),
-                );
+                let (reflection_probe_diffuse, reflection_probe_specular) =
+                    if let Some((_, reflection_probe)) = reflection_probes.iter().next() {
+                        (
+                            self.cube_map_assets
+                                .get(&reflection_probe.diffuse_irradiance_map),
+                            self.cube_map_assets
+                                .get(&reflection_probe.specular_irradiance_map),
+                        )
+                    } else {
+                        (
+                            self.cube_map_assets.get(&Handle::default()),
+                            self.cube_map_assets.get(&Handle::default()),
+                        )
+                    };
+
                 self.render_pass.set_cube_map_property(
                     &pipeline.get_cube_map_property(&"p_irradiance_map").unwrap(),
-                    Some(reflection_probe_cube_map),
+                    Some(reflection_probe_diffuse),
                     material.max_texture_unit + 1,
+                );
+
+                self.render_pass.set_cube_map_property(
+                    &pipeline.get_cube_map_property(&"p_prefilter_map").unwrap(),
+                    Some(reflection_probe_specular),
+                    material.max_texture_unit + 2,
+                );
+
+                // Bind the brdf lookup table.
+                self.render_pass.set_texture_property(
+                    &pipeline
+                        .get_texture_property(&"p_brdf_lookup_table")
+                        .unwrap(),
+                    Some(self.brdf_lookup_texture),
+                    material.max_texture_unit + 3,
                 );
 
                 self.bound_shader = Some(&material.shader);
@@ -459,24 +487,59 @@ impl<'a, 'b: 'a> Renderer<'a, 'b> {
     pub fn render_scene(
         &mut self,
         camera: &Camera,
+        camera_transform: &GlobalTransform,
         renderables: &'a Renderables,
         lights: &Query<'_, (&'static GlobalTransform, &'static Light)>,
         reflection_probes: &Query<(&'static GlobalTransform, &'static ReflectionProbe)>,
     ) {
-        for (transform, material_handle, mesh_handle, render_layer, optional_sprite, color) in
-            renderables.iter()
-        {
+        let camera_position = camera_transform.position;
+        let camera_forward = -camera_transform.forward();
+
+        let mut transparent_renderables = Vec::new();
+
+        for renderable in renderables.iter() {
+            let (transform, material_handle, mesh_handle, render_layer, optional_sprite, color) =
+                renderable;
             let render_layer = render_layer.cloned().unwrap_or(RenderLayers::DEFAULT);
             if camera.render_layers.includes_layer(render_layer) {
-                self.change_material(material_handle, lights, reflection_probes);
-                if let Some(sprite) = optional_sprite {
-                    self.prepare_sprite(sprite);
+                let is_transparent = self
+                    .shader_assets
+                    .get(&self.material_assets.get(material_handle).shader)
+                    .pipeline
+                    .blending()
+                    .is_some();
+
+                if is_transparent {
+                    transparent_renderables.push(renderable);
+                } else {
+                    self.change_material(material_handle, lights, reflection_probes);
+                    if let Some(sprite) = optional_sprite {
+                        self.prepare_sprite(sprite);
+                    }
+                    if let Some(color) = color {
+                        self.set_color(*color);
+                    }
+                    self.render_mesh(transform, mesh_handle);
                 }
-                if let Some(color) = color {
-                    self.set_color(*color);
-                }
-                self.render_mesh(transform, mesh_handle);
             }
+        }
+        transparent_renderables.sort_by(|(a, ..), (b, ..)| {
+            let v0 = (a.position - camera_position).dot(camera_forward);
+            let v1 = (b.position - camera_position).dot(camera_forward);
+            v0.partial_cmp(&v1).unwrap_or(std::cmp::Ordering::Equal)
+        });
+
+        for renderable in transparent_renderables.iter() {
+            let (transform, material_handle, mesh_handle, _render_layer, optional_sprite, color) =
+                *renderable;
+            self.change_material(material_handle, lights, reflection_probes);
+            if let Some(sprite) = optional_sprite {
+                self.prepare_sprite(sprite);
+            }
+            if let Some(color) = color {
+                self.set_color(*color);
+            }
+            self.render_mesh(transform, mesh_handle);
         }
     }
 }
@@ -505,6 +568,7 @@ pub fn render_scene<'a>(
     renderables: Renderables<'a>,
     lights: Query<(&'static GlobalTransform, &'static Light)>,
     reflection_probes: Query<(&'static GlobalTransform, &'static ReflectionProbe)>,
+    renderer_info: &RendererInfo,
 ) {
     let mut command_buffer = graphics.context.new_command_buffer();
 
@@ -562,6 +626,7 @@ pub fn render_scene<'a>(
                 let (width, height) = camera.get_view_size();
 
                 let mut renderer = Renderer::new(
+                    renderer_info,
                     &mut render_pass,
                     shader_assets,
                     material_assets,
@@ -577,7 +642,13 @@ pub fn render_scene<'a>(
                     multiview_enabled,
                 );
 
-                renderer.render_scene(camera, &renderables, &lights, &reflection_probes);
+                renderer.render_scene(
+                    camera,
+                    camera_global_transform,
+                    &renderables,
+                    &lights,
+                    &reflection_probes,
+                );
             }
         }
     }

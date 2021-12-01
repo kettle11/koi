@@ -90,7 +90,7 @@ pub(crate) fn initialize_static_shaders(graphics: &mut Graphics, shaders: &mut A
                 // that will be flipped.
                 PipelineSettings {
                     faces_to_render: FacesToRender::FrontAndBack,
-                    blending: Some((BlendFactor::SourceAlpha, BlendFactor::OneMinusSourceAlpha)),
+                    blending: None,
                     ..Default::default()
                 },
             )
@@ -104,7 +104,7 @@ pub(crate) fn initialize_static_shaders(graphics: &mut Graphics, shaders: &mut A
                 include_str!("built_in_shaders/physically_based.glsl"),
                 PipelineSettings {
                     faces_to_render: FacesToRender::Front,
-                    blending: Some((BlendFactor::SourceAlpha, BlendFactor::OneMinusSourceAlpha)),
+                    blending: None,
                     ..Default::default()
                 },
             )

@@ -1,10 +1,8 @@
-use kgraphics::{
-    CommandBufferTrait, DepthTest, GraphicsContextTrait, PipelineTrait, RenderPassTrait,
-};
+use kgraphics::{CommandBufferTrait, DepthTest, GraphicsContextTrait, RenderPassTrait};
 
 use crate::*;
 
-pub(crate) fn generate_brdf_lookup(graphics: &mut Graphics, meshes: &Assets<Mesh>) -> Texture {
+pub(crate) fn generate_brdf_lookup(graphics: &mut Graphics) -> Texture {
     let new_shader = graphics
         .new_shader(
             include_str!("../built_in_shaders/brdf_lookup.glsl"),

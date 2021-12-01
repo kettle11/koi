@@ -67,6 +67,8 @@ uniform mat4 p_world_to_light_space_2;
 uniform mat4 p_world_to_light_space_3;
 
 uniform samplerCube p_irradiance_map;
+uniform samplerCube p_prefilter_map;
+uniform sampler2D p_brdf_lookup_table;
 
 // Up to 4 cascades are supported.
 // uniform float p_shadow_cascades[4];
@@ -145,6 +147,10 @@ vec3 fresnelSchlick(float cosTheta, vec3 F0)
    // cosTheta = min(cosTheta, 1.0);
     return F0 + (1.0 - F0) * pow(clamp(1.0 - cosTheta, 0.0, 1.0), 5.0);
 }
+vec3 fresnelSchlickRoughness(float cosTheta, vec3 F0, float roughness)
+{
+    return F0 + (max(vec3(1.0 - roughness), F0) - F0) * pow(clamp(1.0 - cosTheta, 0.0, 1.0), 5.0);
+}  
 // ----------------------------------------------------------------------------
 
 // Portal 2 Screenspace dithering (modified for VR):
@@ -227,8 +233,8 @@ void main()
     //  float roughness = p_roughness;
 
         // When interpolating between face normals the normal can get shorted, so renormalize here.
-        vec3 N = normalize(Normal);
-     //   vec3 N = getNormalFromMap();
+      //  vec3 N = normalize(Normal);
+        vec3 N = getNormalFromMap();
         vec3 V = normalize(p_camera_positions[0] - WorldPosition);
 
         // calculate reflectance at normal incidence; if dia-electric (like plastic) use F0 
@@ -338,14 +344,23 @@ void main()
 
         // Here we calculate how much energy is specular. Then we use the remaining energy for the diffuse portion.
         // Until the specular part is implemented this will have the effect of darkening edges for the fresnel effect occurs.
-        vec3 kS = fresnelSchlick(max(dot(N, V), 0.0), F0);
+        vec3 kS = fresnelSchlickRoughness(max(dot(N, V), 0.0), F0, roughness);
         vec3 kD = 1.0 - kS;
         kD *= 1.0 - metallic;	  
         vec3 irradiance = texture(p_irradiance_map, N).rgb;
         vec3 diffuse    = irradiance * base_color;
-        vec3 ambient    =  (kD * diffuse) * ambient_amount; 
 
-        color = ambient + Lo;//+ emissive;
+        const float MAX_REFLECTION_LOD = 4.0;
+        vec3 prefilteredColor = textureLod(p_prefilter_map, R,  roughness * MAX_REFLECTION_LOD).rgb; 
+
+        // 1.0 - rougnness because brdf_lookup_table is flipped vertically for now.   
+        vec2 brdf  = texture(p_brdf_lookup_table, vec2(max(dot(N, V), 0.0), 1.0 - roughness)).rg;
+        vec3 specular = prefilteredColor * (kS * brdf.x + brdf.y);
+
+
+        vec3 ambient = (kD * diffuse + specular) * ambient_amount; 
+
+        color = ambient + Lo;
     
     
     // This should be applied before the shader instead.

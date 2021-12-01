@@ -127,6 +127,12 @@ pub struct Pipeline {
     depth_clear_value: f32,
 }
 
+impl Pipeline {
+    pub fn blending(&self) -> Option<(BlendFactor, BlendFactor)> {
+        self.blending
+    }
+}
+
 #[derive(Clone)]
 pub struct VertexAttribute<T> {
     info: Option<VertexAttributeInfo>,
