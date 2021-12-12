@@ -276,7 +276,10 @@ impl<'a, 'b: 'a> Renderer<'a, 'b> {
             };
 
             // Avoid unnecessary pipeline / shader changes.
-            if self.bound_shader != Some(&material.shader) {
+            // For now this is commented out but it could be reintroduced later.
+            // This check would prevent pipleline changes if the material is different but the pipeline is the same.
+            // if self.bound_shader != Some(&material.shader)
+            {
                 self.current_pipeline = Some(pipeline);
                 self.render_pass.set_pipeline(pipeline);
 
