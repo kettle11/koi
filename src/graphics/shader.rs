@@ -78,6 +78,7 @@ impl Shader {
         Handle::<Shader>::new_with_just_index(3);
     pub const DEPTH_ONLY: Handle<Shader> = Handle::<Shader>::new_with_just_index(4);
     pub const UI: Handle<Shader> = Handle::<Shader>::new_with_just_index(5);
+    pub const SKY_BOX: Handle<Shader> = Handle::<Shader>::new_with_just_index(6);
 }
 
 pub(crate) fn initialize_static_shaders(graphics: &mut Graphics, shaders: &mut Assets<Shader>) {
@@ -150,5 +151,15 @@ pub(crate) fn initialize_static_shaders(graphics: &mut Graphics, shaders: &mut A
             )
             .unwrap(),
         &Shader::UI,
+    );
+
+    shaders.add_and_leak(
+        graphics
+            .new_shader(
+                include_str!("built_in_shaders/skybox.glsl"),
+                PipelineSettings::default(),
+            )
+            .unwrap(),
+        &Shader::SKY_BOX,
     );
 }
