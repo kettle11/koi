@@ -343,7 +343,6 @@ void main()
        // vec3 ambient = ambient_light * base_color * ambient_amount;
 
         // Here we calculate how much energy is specular. Then we use the remaining energy for the diffuse portion.
-        // Until the specular part is implemented this will have the effect of darkening edges for the fresnel effect occurs.
         vec3 kS = fresnelSchlickRoughness(max(dot(N, V), 0.0), F0, roughness);
         vec3 kD = 1.0 - kS;
         kD *= 1.0 - metallic;	  
@@ -351,10 +350,10 @@ void main()
         vec3 diffuse    = irradiance * base_color;
 
         const float MAX_REFLECTION_LOD = 4.0;
-        vec3 prefilteredColor = textureLod(p_prefilter_map, R,  roughness * MAX_REFLECTION_LOD).rgb; 
+        vec3 prefilteredColor = textureLod(p_prefilter_map, R, roughness * MAX_REFLECTION_LOD).rgb; 
 
         // 1.0 - rougnness because brdf_lookup_table is flipped vertically for now.   
-        vec2 brdf  = texture(p_brdf_lookup_table, vec2(max(dot(N, V), 0.0), 1.0 - roughness)).rg;
+        vec2 brdf  = texture(p_brdf_lookup_table, vec2(max(dot(N, V), 0.0), roughness)).rg;
         vec3 specular = prefilteredColor * (kS * brdf.x + brdf.y);
 
 
