@@ -28,54 +28,63 @@ impl<Style: GetStandardStyleTrait> UI<Style> {
     }
 
     /// Returns `true` if the event was consumed by the UI.
-    pub fn handle_event(&mut self, world: &mut World, event: KappEvent) -> bool {
-        let ui_scale = (|window: &NotSendSync<kapp::Window>| window.scale()).run(world);
-        let mut ui_entities = Vec::new();
-        (|query: Query<&mut UIComponent<Style>>| {
-            for (entity, _) in query.entities_and_components() {
-                ui_entities.push(*entity);
+    pub fn handle_event(&mut self, world: &mut World, style: &mut Style, event: Event) -> bool {
+        match event {
+            Event::Draw => {
+                self.draw(world, style);
+                false
             }
-        })
-        .run(world);
-
-        for entity in ui_entities {
-            let mut ui = world
-                .remove_component::<UIComponent<Style>>(entity)
-                .unwrap();
-
-            // Only pass some events through and edit their coordinates to be scaled to match the UI.
-            let handled_event = match event {
-                KappEvent::PointerDown { .. }
-                | KappEvent::PointerUp { .. }
-                | KappEvent::PointerMoved { .. }
-                | KappEvent::Scroll { .. } => {
-                    let mut event = event.clone();
-                    match &mut event {
-                        KappEvent::PointerDown { x, y, .. }
-                        | KappEvent::PointerUp { x, y, .. }
-                        | KappEvent::PointerMoved { x, y, .. } => {
-                            *x /= ui_scale as f64;
-                            *y /= ui_scale as f64;
-                        }
-                        KappEvent::Scroll {
-                            delta_x, delta_y, ..
-                        } => {
-                            *delta_x /= ui_scale as f64;
-                            *delta_y /= ui_scale as f64;
-                        }
-                        _ => unreachable!(),
+            Event::KappEvent(event) => {
+                let ui_scale = (|window: &NotSendSync<kapp::Window>| window.scale()).run(world);
+                let mut ui_entities = Vec::new();
+                (|query: Query<&mut UIComponent<Style>>| {
+                    for (entity, _) in query.entities_and_components() {
+                        ui_entities.push(*entity);
                     }
-                    ui.handle_event(world, &event)
-                }
-                _ => false,
-            };
-            world.add_component(entity, ui).unwrap();
+                })
+                .run(world);
 
-            if handled_event {
-                return true;
+                for entity in ui_entities {
+                    let mut ui = world
+                        .remove_component::<UIComponent<Style>>(entity)
+                        .unwrap();
+
+                    // Only pass some events through and edit their coordinates to be scaled to match the UI.
+                    let handled_event = match event {
+                        KappEvent::PointerDown { .. }
+                        | KappEvent::PointerUp { .. }
+                        | KappEvent::PointerMoved { .. }
+                        | KappEvent::Scroll { .. } => {
+                            let mut event = event.clone();
+                            match &mut event {
+                                KappEvent::PointerDown { x, y, .. }
+                                | KappEvent::PointerUp { x, y, .. }
+                                | KappEvent::PointerMoved { x, y, .. } => {
+                                    *x /= ui_scale as f64;
+                                    *y /= ui_scale as f64;
+                                }
+                                KappEvent::Scroll {
+                                    delta_x, delta_y, ..
+                                } => {
+                                    *delta_x /= ui_scale as f64;
+                                    *delta_y /= ui_scale as f64;
+                                }
+                                _ => unreachable!(),
+                            }
+                            ui.handle_event(world, &event)
+                        }
+                        _ => false,
+                    };
+                    world.add_component(entity, ui).unwrap();
+
+                    if handled_event {
+                        return true;
+                    }
+                }
+                false
             }
+            _ => false,
         }
-        false
     }
 
     // Call during the pre-draw step to update the UI.

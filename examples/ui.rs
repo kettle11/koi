@@ -40,18 +40,8 @@ fn main() {
         let mut ui = UI::new(world, root);
 
         move |event: Event, world: &mut World| {
-            match event {
-                Event::FixedUpdate => {}
-                Event::KappEvent(event) => {
-                    if ui.handle_event(world, event) {
-                        return true;
-                    }
-                }
-                Event::Draw => {
-                    // Update and draw the UI.
-                    ui.draw(world, &mut style);
-                }
-            }
+            ui.handle_event(world, &mut style, event);
+
             false
         }
     });
