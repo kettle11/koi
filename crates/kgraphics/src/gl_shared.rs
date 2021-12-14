@@ -16,6 +16,7 @@ pub const FLOAT_VEC3: c_uint = 0x8B51;
 pub const FLOAT_VEC4: c_uint = 0x8B52;
 pub const FLOAT_MAT4: c_uint = 0x8B5C;
 pub const SAMPLER_2D: c_uint = 0x8B5E;
+pub const SAMPLER_CUBE: c_uint = 0x8B60;
 
 pub const LESS: c_uint = 0x0201;
 pub const EQUAL: c_uint = 0x0202;
@@ -63,6 +64,14 @@ pub const SRGB8_ALPHA8: c_uint = 0x8C43;
 pub const RGB32F: c_uint = 0x8815;
 
 pub const TEXTURE0: c_uint = 0x84C0;
+
+pub const TEXTURE_2D: c_uint = 0x0DE1;
+pub const TEXTURE_CUBE_MAP: c_uint = 0x8513;
+pub const TEXTURE_CUBE_MAP_POSITIVE_X: c_uint = 0x8515;
+
+pub const COLOR_ATTACHMENT0: c_uint = 0x8CE0;
+pub const DEPTH_ATTACHMENT: c_uint = 0x8D00;
+pub const STENCIL_ATTACHMENT: c_uint = 0x8D20;
 
 #[inline]
 fn srgb_to_linear(byte: u8) -> u8 {

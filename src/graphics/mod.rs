@@ -227,7 +227,10 @@ fn setup_graphics(world: &mut World) {
         )
         .unwrap();
 
-    let cube_map_assets = Assets::new(black_cube_map, CubeMapAssetLoader::new(&mut graphics));
+    let cube_map_assets = Assets::new(
+        black_cube_map,
+        NotSendSync::new(CubeMapAssetLoader::new(&mut graphics)),
+    );
 
     world.spawn(graphics);
     world.spawn(mesh_assets);

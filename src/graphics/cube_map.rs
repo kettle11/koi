@@ -439,7 +439,7 @@ impl Default for CubeMapOptions {
 
 impl LoadableAssetTrait for CubeMap {
     type Options = CubeMapOptions;
-    type AssetLoader = CubeMapAssetLoader;
+    type AssetLoader = NotSendSync<CubeMapAssetLoader>;
 }
 
 pub struct CubeMapAssetLoader {
@@ -459,7 +459,7 @@ impl CubeMapAssetLoader {
     }
 }
 
-impl AssetLoader<CubeMap> for CubeMapAssetLoader {
+impl AssetLoader<CubeMap> for NotSendSync<CubeMapAssetLoader> {
     fn load_with_options(
         &mut self,
         path: &str,

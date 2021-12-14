@@ -27,15 +27,48 @@ impl Default for Framebuffer {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 enum TextureType {
     Texture(JSObjectDynamic),
+    CubeMap {
+        face: u8,
+        texture_native: JSObjectDynamic,
+    },
     DefaultFramebuffer,
 }
 
 #[derive(Debug)]
 pub struct Texture {
     texture_type: TextureType,
+    mip: u8,
+}
+
+impl Texture {
+    pub fn with_mip(&self, level: u8) -> Texture {
+        Texture {
+            texture_type: self.texture_type.clone(),
+            mip: level,
+        }
+    }
+}
+
+// Presently this isn't dropped appropriately.
+#[derive(Debug, Clone)]
+pub struct CubeMap {
+    texture: JSObjectDynamic,
+}
+
+impl CubeMap {
+    pub fn get_face_texture(&self, face: usize) -> Texture {
+        assert!(face < 6);
+        Texture {
+            texture_type: TextureType::CubeMap {
+                face: face as u8,
+                texture_native: self.texture.clone(),
+            },
+            mip: 0,
+        }
+    }
 }
 
 impl RenderTargetTrait for RenderTarget {
@@ -46,6 +79,7 @@ impl RenderTargetTrait for RenderTarget {
     fn current_frame(&self) -> Result<Texture, ()> {
         Ok(Texture {
             texture_type: TextureType::DefaultFramebuffer,
+            mip: 0,
         })
     }
 }
@@ -90,6 +124,7 @@ enum Command {
     SetViewport = 12,
     DrawTriangles = 13,
     // Present = 14,
+    SetCubeMapUniform = 15,
 }
 
 pub struct CommandBuffer {
@@ -109,6 +144,7 @@ pub struct Vec3Property(JSObjectDynamic);
 pub struct Vec4Property(JSObjectDynamic);
 pub struct Mat4Property(JSObjectDynamic);
 pub struct TextureProperty(JSObjectDynamic);
+pub struct CubeMapProperty(JSObjectDynamic);
 
 #[derive(Clone, Copy)]
 pub struct VertexAttributeInfo {
@@ -198,6 +234,10 @@ impl PipelineTrait for Pipeline {
 
     fn get_texture_property(&self, name: &str) -> Result<TextureProperty, ()> {
         Ok(TextureProperty(self.get_property(name, SAMPLER_2D)?))
+    }
+
+    fn get_cube_map_property(&self, name: &str) -> Result<CubeMapProperty, ()> {
+        Ok(CubeMapProperty(self.get_property(name, SAMPLER_CUBE)?))
     }
 
     fn get_vertex_attribute<T>(&self, name: &str) -> Result<VertexAttribute<T>, String> {
@@ -358,17 +398,42 @@ impl RenderPassTrait for RenderPass<'_> {
         texture: Option<&Texture>,
         texture_unit: u8,
     ) {
+        debug_assert!(texture_unit < 16);
+
         if !property.0.is_null() {
             self.command_buffer
                 .commands
                 .push(Command::SetTextureUniform);
             let texture_index = texture.map_or(0, |t| match &t.texture_type {
                 TextureType::Texture(t) => t.index(),
+                TextureType::CubeMap { .. } => {
+                    todo!()
+                }
                 TextureType::DefaultFramebuffer => panic!("Cannot update default framebuffer"),
             });
             self.command_buffer.u32_data.extend_from_slice(&[
                 property.0.index(),
                 texture_index,
+                texture_unit as u32,
+            ]);
+        }
+    }
+
+    fn set_cube_map_property(
+        &mut self,
+        property: &CubeMapProperty,
+        texture: Option<&CubeMap>,
+        texture_unit: u8,
+    ) {
+        debug_assert!(texture_unit < 16);
+
+        if !property.0.is_null() {
+            self.command_buffer
+                .commands
+                .push(Command::SetCubeMapUniform);
+            self.command_buffer.u32_data.extend_from_slice(&[
+                property.0.index(),
+                texture.map_or(0, |t| t.texture.index()),
                 texture_unit as u32,
             ]);
         }
@@ -437,11 +502,13 @@ impl CommandBufferTrait for CommandBuffer {
     /// all textures will bind to the default framebuffer.
     fn begin_render_pass<'a>(
         &'a mut self,
-        color_texture: Option<&Texture>,
-        depth_texture: Option<&Texture>,
-        stencil_texture: Option<&Texture>,
-        clear_color: Option<(f32, f32, f32, f32)>,
+        _color_texture: Option<&Texture>,
+        _depth_texture: Option<&Texture>,
+        _stencil_texture: Option<&Texture>,
+        _clear_color: Option<(f32, f32, f32, f32)>,
     ) -> RenderPass<'a> {
+        todo!()
+        /*
         debug_assert!(
             color_texture.is_none() && depth_texture.is_none() && stencil_texture.is_none(),
             "Configurable render textures are disabled for now"
@@ -487,6 +554,7 @@ impl CommandBufferTrait for CommandBuffer {
         RenderPass {
             command_buffer: self,
         }
+        */
     }
 }
 
@@ -509,6 +577,11 @@ struct WebGLJS {
     run_command_buffer: JSObjectDynamic,
     get_attribute_location: JSObjectDynamic,
     get_multiview_supported: JSObjectDynamic,
+    generate_mip_map: JSObjectDynamic,
+    framebuffer_texture_2d: JSObjectDynamic,
+    bind_framebuffer: JSObjectDynamic,
+    create_framebuffer: JSObjectDynamic,
+    delete_framebuffer: JSObjectDynamic,
 }
 
 impl WebGLJS {
@@ -533,6 +606,11 @@ impl WebGLJS {
             run_command_buffer: o.get_property("run_command_buffer"),
             get_attribute_location: o.get_property("get_attribute_location"),
             get_multiview_supported: o.get_property("get_multiview_supported"),
+            generate_mip_map: o.get_property("generate_mip_map"),
+            framebuffer_texture_2d: o.get_property("framebuffer_texture_2d"),
+            bind_framebuffer: o.get_property("bind_framebuffer"),
+            create_framebuffer: o.get_property("create_framebuffer"),
+            delete_framebuffer: o.get_property("delete_framebuffer"),
         }
     }
 }
@@ -651,6 +729,7 @@ impl GraphicsContextTrait for GraphicsContext {
 
         let texture = Texture {
             texture_type: TextureType::Texture(js_object),
+            mip: 0,
         };
         self.update_texture(
             &texture,
@@ -680,9 +759,16 @@ impl GraphicsContextTrait for GraphicsContext {
                 texture_settings.srgb,
             );
 
-        let texture = match &texture.texture_type {
-            TextureType::Texture(js_object) => js_object,
-            TextureType::DefaultFramebuffer => panic!("Can't update default framebuffer"),
+        let (target, texture) = match &texture.texture_type {
+            TextureType::Texture(t) => (TEXTURE_2D, t.index()),
+            TextureType::CubeMap {
+                face,
+                texture_native,
+            } => (
+                TEXTURE_CUBE_MAP_POSITIVE_X + *face as u32,
+                texture_native.index(),
+            ),
+            TextureType::DefaultFramebuffer => panic!("Cannot update default framebuffer"),
         };
 
         let minification_filter = minification_filter_to_gl_enum(
@@ -705,7 +791,9 @@ impl GraphicsContextTrait for GraphicsContext {
         let (data_ptr, data_len) = data.map_or((0, 0), |d| (d.as_ptr() as u32, d.len() as u32));
 
         self.js.update_texture.call_raw(&[
-            texture.index(),
+            texture,
+            target,
+            target,
             inner_pixel_format,
             width,
             height,
@@ -726,6 +814,7 @@ impl GraphicsContextTrait for GraphicsContext {
             TextureType::Texture(js_object) => {
                 self.js.delete_texture.call_1_arg(&js_object);
             }
+            TextureType::CubeMap { .. } => {}
             TextureType::DefaultFramebuffer => {
                 panic!("Can't delete default framebuffer");
             }
@@ -770,6 +859,162 @@ impl GraphicsContextTrait for GraphicsContext {
 
         command_buffer.clear();
         self.old_command_buffers.push(command_buffer);
+    }
+
+    fn new_cube_map(
+        &self,
+        width: u32,
+        height: u32,
+        data: Option<[&[u8]; 6]>,
+        pixel_format: PixelFormat,
+        texture_settings: TextureSettings,
+    ) -> Result<CubeMap, ()> {
+        let texture = self.js.new_texture.call().unwrap();
+
+        let cube_map = CubeMap { texture };
+        self.update_cube_map(
+            &cube_map,
+            width,
+            height,
+            data,
+            pixel_format,
+            texture_settings,
+        );
+        Ok(cube_map)
+    }
+
+    fn update_cube_map(
+        &self,
+        cube_map: &CubeMap,
+        width: u32,
+        height: u32,
+        data: Option<[&[u8]; 6]>,
+        pixel_format: PixelFormat,
+        texture_settings: TextureSettings,
+    ) {
+        // Convert data to linear instead of sRGB if needed and flip the image vertically.
+        let (pixel_format, inner_pixel_format, type_) =
+            crate::gl_shared::pixel_format_to_gl_format_and_inner_format_and_type(
+                pixel_format,
+                texture_settings.srgb,
+            );
+
+        let texture = &cube_map.texture;
+
+        let minification_filter = minification_filter_to_gl_enum(
+            texture_settings.minification_filter,
+            texture_settings.mipmap_filter,
+            texture_settings.generate_mipmaps,
+        );
+        let magnification_filter =
+            magnification_filter_to_gl_enum(texture_settings.magnification_filter);
+
+        let mipmaps = if texture_settings.generate_mipmaps {
+            1
+        } else {
+            0
+        };
+
+        let wrapping_horizontal = wrapping_to_gl_enum(texture_settings.wrapping_horizontal);
+        let wrapping_vertical = wrapping_to_gl_enum(texture_settings.wrapping_vertical);
+
+        let (data_ptr, data_len) = data.map_or((0, 0), |d| (d.as_ptr() as u32, d.len() as u32));
+
+        for i in 0..6 {
+            self.js.update_texture.call_raw(&[
+                texture.index(),
+                TEXTURE_CUBE_MAP,
+                TEXTURE_CUBE_MAP_POSITIVE_X + i as u32,
+                inner_pixel_format,
+                width,
+                height,
+                pixel_format,
+                type_,
+                data_ptr,
+                data_len,
+                minification_filter,
+                magnification_filter,
+                mipmaps,
+                wrapping_horizontal,
+                wrapping_vertical,
+            ]);
+        }
+    }
+
+    fn delete_cube_map(&self, cube_map: CubeMap) {
+        self.js.delete_texture.call_1_arg(&cube_map.texture);
+    }
+
+    fn generate_mip_map_for_texture(&self, texture: &Texture) {
+        let (target, texture) = match &texture.texture_type {
+            TextureType::Texture(t) => (TEXTURE_2D, t.index()),
+            TextureType::CubeMap {
+                face,
+                texture_native,
+            } => (
+                TEXTURE_CUBE_MAP_POSITIVE_X + *face as u32,
+                texture_native.index(),
+            ),
+            TextureType::DefaultFramebuffer => panic!("Cannot update default framebuffer"),
+        };
+        self.js.generate_mip_map.call_raw(&[texture, target]);
+    }
+
+    fn generate_mip_map_for_cube_map(&self, texture: &CubeMap) {
+        self.js
+            .generate_mip_map
+            .call_raw(&[texture.texture.index(), TEXTURE_CUBE_MAP]);
+    }
+
+    fn new_framebuffer(
+        &mut self,
+        color_texture: Option<&Texture>,
+        depth_texture: Option<&Texture>,
+        stencil_texture: Option<&Texture>,
+    ) -> Framebuffer {
+        fn get_target_and_native_texture(texture: Option<&Texture>) -> (u32, u32, u32) {
+            let texture_type = texture.map(|t| &t.texture_type);
+            let level = texture.map_or(0, |t| t.mip as u32);
+            match texture_type {
+                Some(TextureType::Texture(t)) => (TEXTURE_2D, t.index(), level),
+                Some(TextureType::CubeMap {
+                    face,
+                    texture_native,
+                }) => (
+                    TEXTURE_CUBE_MAP_POSITIVE_X + *face as u32,
+                    texture_native.index(),
+                    level,
+                ),
+                Some(TextureType::DefaultFramebuffer) => {
+                    panic!("Cannot update default framebuffer")
+                }
+                None => (TEXTURE_2D, 0, 0),
+            }
+        }
+        let framebuffer = self.js.create_framebuffer.call().unwrap();
+
+        self.js.bind_framebuffer.call_1_arg(&framebuffer);
+
+        let (target, texture, level) = get_target_and_native_texture(color_texture);
+        self.js
+            .framebuffer_texture_2d
+            .call_raw(&[COLOR_ATTACHMENT0, target, texture, level]);
+
+        let (target, texture, level) = get_target_and_native_texture(depth_texture);
+        self.js
+            .framebuffer_texture_2d
+            .call_raw(&[DEPTH_ATTACHMENT, target, texture, level]);
+        let (target, texture, level) = get_target_and_native_texture(stencil_texture);
+        self.js
+            .framebuffer_texture_2d
+            .call_raw(&[STENCIL_ATTACHMENT, target, texture, level]);
+        Framebuffer(Some(framebuffer))
+    }
+
+    fn delete_framebuffer(&mut self, framebuffer: Framebuffer) {
+        if let Some(framebuffer) = framebuffer.0 {
+            self.js.delete_framebuffer.call_1_arg(&framebuffer);
+        }
     }
 }
 

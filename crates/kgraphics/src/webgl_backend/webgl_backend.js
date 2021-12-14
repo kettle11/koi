@@ -22,7 +22,7 @@ var gl_web_object = {
 
         // Setup some stuff that won't change
         gl.enable(gl.DEPTH_TEST);
-        gl.enable(gl.TEXTURE_CUBE_MAP_SEAMLESS);
+        // gl.enable(gl.TEXTURE_CUBE_MAP_SEAMLESS);
 
         let vertex_array_object = gl.createVertexArray();
         gl.bindVertexArray(vertex_array_object);
@@ -75,7 +75,7 @@ var gl_web_object = {
         );
         return buffer;
     },
-    update_texture(texture_index, inner_pixel_format, width, height, pixel_format, type_, data_ptr, data_length, min, mag, mipmaps, wrapping_horizontal, wrapping_vertical) {
+    update_texture(texture_index, target, image_target, inner_pixel_format, width, height, pixel_format, type_, data_ptr, data_length, min, mag, mipmaps, wrapping_horizontal, wrapping_vertical) {
         /*
          console.log("UPDATE TEXTURE: width" + width + " height:" + height);
  
@@ -108,10 +108,10 @@ var gl_web_object = {
 
 
         let texture = self.kwasm_get_object(texture_index);
-        gl.bindTexture(gl.TEXTURE_2D, texture);
+        gl.bindTexture(target, texture);
 
         gl.texImage2D(
-            gl.TEXTURE_2D,
+            image_target,
             0, /* mip level */
             inner_pixel_format,
             width,
@@ -123,23 +123,23 @@ var gl_web_object = {
         );
 
         gl.texParameteri(
-            gl.TEXTURE_2D,
+            target,
             gl.TEXTURE_MIN_FILTER,
             min
         );
         gl.texParameteri(
-            gl.TEXTURE_2D,
+            target,
             gl.TEXTURE_MAG_FILTER,
             mag
         );
 
         gl.texParameteri(
-            gl.TEXTURE_2D,
+            target,
             gl.TEXTURE_WRAP_S,
             wrapping_horizontal
         );
         gl.texParameteri(
-            gl.TEXTURE_2D,
+            target,
             gl.TEXTURE_WRAP_T,
             wrapping_vertical
         );
@@ -147,7 +147,7 @@ var gl_web_object = {
         /* Border color should be set here too */
 
         if (mipmaps !== 0) {
-            gl.generateMipmap(gl.TEXTURE_2D);
+            gl.generateMipmap(target);
         }
 
     },
@@ -156,6 +156,13 @@ var gl_web_object = {
         return texture;
     },
     delete_texture(texture) {
+        gl.delete_texture(texture);
+    },
+    new_cube_map() {
+        let texture = gl.createTexture();
+        return texture;
+    },
+    delete_cube_map(texture) {
         gl.delete_texture(texture);
     },
     new_program(vertex_shader, fragment_shader) {
@@ -215,6 +222,31 @@ var gl_web_object = {
                 return 0;
             }
         }
+    },
+    generate_mip_map(texture_index, texture_type) {
+        let texture = self.kwasm_get_object(texture_index);
+        gl.bindTexture(texture_type, texture);
+        gl.generateMipmap(texture_type);
+    },
+    bind_framebuffer(framebuffer) {
+        gl.bindFramebuffer(gl.FRAMEBUFFER, framebuffer);
+    },
+    framebuffer_texture_2d(attachment, target, texture_index, level) {
+        let texture = self.kwasm_get_object(texture_index);
+
+        gl.framebufferTexture2D(
+            gl.FRAMEBUFFER,
+            attachment,
+            target,
+            texture,
+            level,
+        );
+    },
+    create_framebuffer() {
+        return gl.createFramebuffer();
+    },
+    delete_framebuffer(framebuffer) {
+        gl.deleteFramebuffer(framebuffer);
     },
     run_command_buffer(commands_ptr, commands_length, f32_data_ptr, f32_data_length, u32_data_ptr, u32_data_length) {
         const commands = new Uint8Array(self.kwasm_memory.buffer, commands_ptr, commands_length);
@@ -487,6 +519,18 @@ var gl_web_object = {
                     // Present
                     // No need to do anything
                     break;
+                }
+                case 15: {
+                    let uniform_location_index = u32_data[u32_offset++];
+                    let texture_index = u32_data[u32_offset++];
+                    let texture_unit = u32_data[u32_offset++];
+
+                    let uniform_location = kwasm_get_object(uniform_location_index);
+                    let texture = kwasm_get_object(texture_index);
+
+                    gl.activeTexture(gl.TEXTURE0 + texture_unit);
+                    gl.bindTexture(gl.TEXTURE_2D, texture);
+                    gl.uniform1i(uniform_location, texture_unit);
                 }
             }
         }

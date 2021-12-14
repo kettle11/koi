@@ -270,7 +270,6 @@ impl PlatformApplicationTrait for PlatformApplication {
                 hwndTarget: window_handle,
             }];
 
-            
             RegisterRawInputDevices(
                 devices.as_ptr() as _,
                 devices.len() as _,

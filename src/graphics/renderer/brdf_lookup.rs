@@ -15,7 +15,6 @@ pub(crate) fn generate_brdf_lookup(graphics: &mut Graphics) -> Texture {
 
     let size = 512;
 
-    println!("GENERATING BRDF");
     let texture = graphics
         .new_texture(
             None,

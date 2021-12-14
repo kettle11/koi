@@ -18,10 +18,10 @@ fn main() {
             Transform::new()
                 .with_position([0., 8.0, 8.0].into())
                 .looking_at(Vec3::ZERO, Vec3::Y),
-            Light::new(LightMode::Directional, Color::WHITE, 5.0),
+            Light::new(LightMode::Directional, Color::WHITE, 10.0),
         ));
 
-        let path = "assets/shiba/scene.gltf";
+        let path = "assets/silent_ash/scene.gltf";
 
         // Begin loading a GlTf
         let worlds = world.get_single_component_mut::<Assets<World>>().unwrap();
