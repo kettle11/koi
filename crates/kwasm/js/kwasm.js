@@ -100,6 +100,7 @@ function kwasm_stuff() {
         kwasm_new_worker: function (entry_point, stack_pointer, thread_local_storage_pointer,
             promise_worker_stack_pointer, promise_worker_thread_local_storage_pointer) {
             let worker = new Worker(kwasm_stuff_blob);
+
             worker.postMessage({
                 kwasm_memory: self.kwasm_memory,
                 kwasm_module: self.kwasm_module,
@@ -108,12 +109,17 @@ function kwasm_stuff() {
                 thread_local_storage_pointer: thread_local_storage_pointer,
                 promise_worker_stack_pointer: promise_worker_stack_pointer,
                 promise_worker_thread_local_storage_pointer: promise_worker_thread_local_storage_pointer,
-                kwasm_base_uri: document.baseURI
+                kwasm_base_uri: document.baseURI,
             });
+            worker.onmessage = function (e) {
+                if (e.data.promise_inner_future_ptr) {
+                    run_future(e.data.promise_inner_future_ptr);
+                }
+            }
         },
         kwasm_run_promise: function (promise_inner_future_ptr) {
             if (self.kwasm_is_worker) {
-                self.kwasm_promise_worker.postMessage({
+                postMessage({
                     promise_inner_future_ptr: promise_inner_future_ptr
                 })
             } else {
@@ -178,10 +184,6 @@ function kwasm_stuff() {
 
     // If we're a worker thread we'll use this to setup.
     onmessage = function (e) {
-        if (e.data.promise_inner_future_ptr) {
-            run_future(e.data.promise_inner_future_ptr);
-            return;
-        }
 
         self.kwasm_is_worker = true;
         self.kwasm_base_uri = e.data.kwasm_base_uri;
@@ -227,43 +229,9 @@ function kwasm_stuff() {
                 self.kwasm_exports.set_stack_pointer(e.data.stack_pointer);
                 self.kwasm_exports.__wasm_init_tls(e.data.thread_local_storage_pointer);
             }
-
-            // Create an extra web worker to handle promises per-worker. 
-            // This is done because a regular worker may be blocked within the wasm which doesn't give 
-            // complete promises a chance to alert the wasm code.
-            // This is a bit tailored to the needs of `koi`, but that's OK for now.
-            if (e.data.promise_worker_stack_pointer) {
-                var kwasm_stuff_blob = URL.createObjectURL(new Blob(
-                    ['(', kwasm_stuff.toString(), ')()'],
-                    { type: 'application/javascript' }
-                ));
-
-                let kwasm_promise_worker = new Worker(kwasm_stuff_blob);
-                kwasm_promise_worker.postMessage({
-                    kwasm_memory: e.data.kwasm_memory,
-                    kwasm_module: e.data.kwasm_module,
-                    stack_pointer: e.data.promise_worker_stack_pointer,
-                    kwasm_base_uri: self.kwasm_base_uri,
-                    thread_local_storage_pointer: e.data.promise_worker_thread_local_storage_pointer,
-                });
-                let entry_point = e.data.entry_point;
-
-                // Wait on a message from the promise worker before instantiating
-                // This avoids a bug in Chrome where the promise worker doesn't get created
-                // if the parent worker blocks too soon.
-                kwasm_promise_worker.onmessage = (e) => {
-                    self.kwasm_exports.kwasm_web_worker_entry_point(entry_point)
-                }
-                self.kwasm_promise_worker = kwasm_promise_worker;
-            } else {
-                this.postMessage("worker setup");
+            if (e.data.entry_point) {
+                self.kwasm_exports.kwasm_web_worker_entry_point(e.data.entry_point)
             }
-
-            //if (e.data.entry_point) {
-            //    //   setTimeout(function () {
-            //    self.kwasm_exports.kwasm_web_worker_entry_point(e.data.entry_point)
-            //    //  }, 5000);
-            //}
         });
     }
 
