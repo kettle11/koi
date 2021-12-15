@@ -521,6 +521,7 @@ var gl_web_object = {
                     break;
                 }
                 case 15: {
+                    // SetCubeMapUniform
                     let uniform_location_index = u32_data[u32_offset++];
                     let texture_index = u32_data[u32_offset++];
                     let texture_unit = u32_data[u32_offset++];
@@ -529,7 +530,7 @@ var gl_web_object = {
                     let texture = kwasm_get_object(texture_index);
 
                     gl.activeTexture(gl.TEXTURE0 + texture_unit);
-                    gl.bindTexture(gl.TEXTURE_2D, texture);
+                    gl.bindTexture(gl.TEXTURE_CUBE_MAP, texture);
                     gl.uniform1i(uniform_location, texture_unit);
                 }
             }
