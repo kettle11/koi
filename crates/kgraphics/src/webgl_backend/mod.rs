@@ -779,12 +779,6 @@ impl GraphicsContextTrait for GraphicsContext {
         let magnification_filter =
             magnification_filter_to_gl_enum(texture_settings.magnification_filter);
 
-        let mipmaps = if texture_settings.generate_mipmaps {
-            1
-        } else {
-            0
-        };
-
         let wrapping_horizontal = wrapping_to_gl_enum(texture_settings.wrapping_horizontal);
         let wrapping_vertical = wrapping_to_gl_enum(texture_settings.wrapping_vertical);
 
@@ -803,10 +797,13 @@ impl GraphicsContextTrait for GraphicsContext {
             data_len,
             minification_filter,
             magnification_filter,
-            mipmaps,
             wrapping_horizontal,
             wrapping_vertical,
         ]);
+
+        if texture_settings.generate_mipmaps {
+            self.js.generate_mip_map.call_raw(&[texture, TEXTURE_2D]);
+        }
     }
 
     fn delete_texture(&self, texture: Texture) {
@@ -909,12 +906,6 @@ impl GraphicsContextTrait for GraphicsContext {
         let magnification_filter =
             magnification_filter_to_gl_enum(texture_settings.magnification_filter);
 
-        let mipmaps = if texture_settings.generate_mipmaps {
-            1
-        } else {
-            0
-        };
-
         let wrapping_horizontal = wrapping_to_gl_enum(texture_settings.wrapping_horizontal);
         let wrapping_vertical = wrapping_to_gl_enum(texture_settings.wrapping_vertical);
 
@@ -934,10 +925,14 @@ impl GraphicsContextTrait for GraphicsContext {
                 data_len,
                 minification_filter,
                 magnification_filter,
-                mipmaps,
                 wrapping_horizontal,
                 wrapping_vertical,
             ]);
+        }
+        if texture_settings.generate_mipmaps {
+            self.js
+                .generate_mip_map
+                .call_raw(&[texture.index(), TEXTURE_CUBE_MAP]);
         }
     }
 

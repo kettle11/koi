@@ -192,17 +192,22 @@ pub fn hdri_data_from_bytes(bytes: &[u8]) -> TextureLoadData {
     // This data is always assumed to be linear sRGB
 
     let image = hdrldr::load(bytes).expect("Failed to decode HDRI image data");
+
+    // Pad with alpha.
+    // Some platforms (Firefox on web) don't support RGB32F well.
+    let mut texture: Vec<[f32; 4]> = Vec::with_capacity(image.data.len());
+    for hdrldr::RGB { r, g, b } in image.data {
+        texture.push([r, g, b, 0.0]);
+    }
+
     unsafe {
         TextureLoadData {
             // This isn't a great conversion. It allocates again which may be avoidable.
-            data: std::slice::from_raw_parts(
-                image.data.as_ptr() as *const u8,
-                image.data.len() * 3 * 4,
-            )
-            .into(),
+            data: std::slice::from_raw_parts(texture.as_ptr() as *const u8, texture.len() * 4 * 4)
+                .into(),
             width: image.width as u32,
             height: image.height as u32,
-            pixel_format: PixelFormat::RGB32F,
+            pixel_format: PixelFormat::RGBA32F,
         }
     }
 }

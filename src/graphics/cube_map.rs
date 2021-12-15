@@ -359,7 +359,7 @@ pub(crate) fn load_cube_maps(
                     None,
                     size,
                     size,
-                    PixelFormat::RGB16F,
+                    PixelFormat::RGBA16F,
                     TextureSettings {
                         srgb: false,
                         minification_filter: FilterMode::Linear,
@@ -392,7 +392,7 @@ pub(crate) fn load_cube_maps(
                     None,
                     128,
                     128,
-                    PixelFormat::RGB16F,
+                    PixelFormat::RGBA16F,
                     TextureSettings {
                         srgb: false,
                         minification_filter: FilterMode::Linear,

@@ -20,7 +20,7 @@ pub(crate) fn generate_brdf_lookup(graphics: &mut Graphics) -> Texture {
             None,
             size,
             size,
-            kgraphics::PixelFormat::RGB16F,
+            kgraphics::PixelFormat::RGBA16F,
             TextureSettings {
                 wrapping_horizontal: WrappingMode::ClampToEdge,
                 wrapping_vertical: WrappingMode::ClampToEdge,

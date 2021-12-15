@@ -1,5 +1,6 @@
 var gl = null;
 var canvas = null;
+
 var gl_web_object = {
     new(antialias) {
         canvas = document
@@ -16,9 +17,15 @@ var gl_web_object = {
             console.log("Could not initialize WebGL2 canvas!");
         }
 
-        // Get an extension to allow linearly filtering float textures.
-        gl.getExtension('OES_texture_float_linear');
-        gl.getExtension('EXT_color_buffer_half_float');
+        function enable_extension(gl, extension) {
+            if (!gl.getExtension(extension)) {
+                console.log("COULD NOT ENABLE EXTENSION: " + extension);
+            }
+        }
+
+        enable_extension(gl, 'OES_texture_float_linear');
+        //enable_extension(gl, 'EXT_color_buffer_half_float');
+        enable_extension(gl, 'EXT_color_buffer_float');
 
         // Setup some stuff that won't change
         gl.enable(gl.DEPTH_TEST);
@@ -75,30 +82,10 @@ var gl_web_object = {
         );
         return buffer;
     },
-    update_texture(texture_index, target, image_target, inner_pixel_format, width, height, pixel_format, type_, data_ptr, data_length, min, mag, mipmaps, wrapping_horizontal, wrapping_vertical) {
-        /*
-         console.log("UPDATE TEXTURE: width" + width + " height:" + height);
- 
-         console.log("width: " + width);
-         console.log("height: " + width);
- 
-         console.log("INNER PIXEL FORMAT: " + inner_pixel_format);
-         console.log("PIXEL FORMAT: " + pixel_format);
-         console.log("TYPE: " + type_);
- 
-         console.log("min: " + min);
-         console.log("mag: " + mag);
- 
-         console.log("wrapping_horizontal: " + wrapping_horizontal);
-         console.log("wrapping_vertical: " + wrapping_vertical);
- 
-         console.log("data: " + data_ptr);
-         console.log("data_length: " + data_length);
-        console.log("DATA: " + data);
-         */
+    update_texture(texture_index, target, image_target, inner_pixel_format, width, height, pixel_format, type_, data_ptr, data_length, min, mag, wrapping_horizontal, wrapping_vertical) {
         let data = null;
         if (data_ptr !== 0) {
-            if (type_ == 5126) {
+            if (type_ == gl.FLOAT) {
                 // If it's a floating point array
                 data = new Float32Array(self.kwasm_memory.buffer, data_ptr, data_length / 4);
             } else {
@@ -146,9 +133,6 @@ var gl_web_object = {
 
         /* Border color should be set here too */
 
-        if (mipmaps !== 0) {
-            gl.generateMipmap(target);
-        }
 
     },
     new_texture() {

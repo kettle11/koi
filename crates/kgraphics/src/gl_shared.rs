@@ -61,7 +61,10 @@ pub const RGBA8: c_uint = 0x8058;
 pub const SRGB8: c_uint = 0x8C41;
 pub const SRGB8_ALPHA8: c_uint = 0x8C43;
 
+pub const RGB16F: c_uint = 0x881B;
 pub const RGB32F: c_uint = 0x8815;
+pub const RGBA16F: c_uint = 0x881A;
+pub const RGBA32F: c_uint = 0x8814;
 
 pub const TEXTURE0: c_uint = 0x84C0;
 
@@ -126,8 +129,8 @@ pub unsafe fn flip_image(pixel_format: PixelFormat, width: usize, height: usize,
         PixelFormat::Depth16 | PixelFormat::Depth24 | PixelFormat::Depth32F => {
             flip_image_inner::<f32, 1>(data, width, height)
         }
-        PixelFormat::RGB16F => flip_image_inner::<[u8; 2], 3>(data, width, height),
-        PixelFormat::RGB32F => flip_image_inner::<f32, 3>(data, width, height),
+        PixelFormat::RGBA16F => flip_image_inner::<[u8; 2], 4>(data, width, height),
+        PixelFormat::RGBA32F => flip_image_inner::<f32, 4>(data, width, height),
     }
 }
 
@@ -177,8 +180,8 @@ pub fn pixel_format_to_gl_format_and_inner_format_and_type(
     let format = match pixel_format {
         PixelFormat::R8Unorm => RED,
         PixelFormat::RG8Unorm => RG,
-        PixelFormat::RGB8Unorm | PixelFormat::RGB32F | PixelFormat::RGB16F => RGB,
-        PixelFormat::RGBA8Unorm => RGBA,
+        PixelFormat::RGB8Unorm /*| PixelFormat::RGB32F | PixelFormat::RGB16F*/ => RGB,
+        PixelFormat::RGBA8Unorm  | PixelFormat::RGBA16F | PixelFormat::RGBA32F => RGBA,
         PixelFormat::Depth16 | PixelFormat::Depth24 | PixelFormat::Depth32F => DEPTH_COMPONENT,
     };
 
@@ -190,15 +193,18 @@ pub fn pixel_format_to_gl_format_and_inner_format_and_type(
         PixelFormat::RG8Unorm => RG8,
         PixelFormat::RGB8Unorm => RGB8,
         PixelFormat::RGBA8Unorm => RGBA8,
-        PixelFormat::RGB16F => RGB32F,
-        PixelFormat::RGB32F => RGB32F,
+        PixelFormat::RGBA16F => RGBA16F,
+        PixelFormat::RGBA32F => RGBA32F
+        // PixelFormat::RGB16F => RGB16F,
+        // PixelFormat::RGB32F => RGB32F,
     };
 
     let type_ = match pixel_format {
         PixelFormat::Depth16 => UNSIGNED_SHORT,
         PixelFormat::Depth24 => UNSIGNED_INT,
-        PixelFormat::RGB16F => HALF_FLOAT,
-        PixelFormat::Depth32F | PixelFormat::RGB32F => FLOAT,
+        // PixelFormat::RGB16F => HALF_FLOAT,
+        PixelFormat::RGBA16F => HALF_FLOAT,
+        PixelFormat::Depth32F | PixelFormat::RGBA32F => FLOAT,
         _ => UNSIGNED_BYTE,
     };
 
