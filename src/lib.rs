@@ -73,6 +73,13 @@ pub use kwasm;
 
 pub use klog;
 
+pub use ktracing_allocator::*;
+
+// Setup our own allocator to track total memory usage.
+#[global_allocator]
+static GLOBAL_ALLOCATOR: ktracing_allocator::TracingAllocator<std::alloc::System> =
+    ktracing_allocator::TracingAllocator(std::alloc::System);
+
 pub struct App {
     systems: Plugin,
     title: String,
@@ -197,6 +204,8 @@ impl App {
         mut self,
         setup_and_run_function: impl Fn(&mut World) -> S,
     ) {
+        ktracing_allocator::set_alloc_error_hook();
+
         // Todo: Base this on number of cores
         ktasks::create_workers(4);
 
@@ -282,6 +291,8 @@ pub struct KoiState {
 
 impl KoiState {
     fn handle_event(&mut self, event: KappEvent) {
+        ktasks::run_only_local_tasks();
+
         // Run user callback and give it a chance to consume the event.
         if (self.run_system)(crate::Event::KappEvent(event.clone()), &mut self.world) {
             return;
