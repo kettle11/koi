@@ -53,7 +53,7 @@ where
 {
     let f = Box::new(f) as Box<dyn FnOnce() + Send + 'static>;
 
-    let stack_size = 1 << 20; // 1 MB stack size.
+    let stack_size = 1000000; // 1 MB stack size.
 
     // #[cfg(not(feature = "wasm_bindgen_support"))]
     let (stack_memory, stack_pointer, thread_local_storage_memory) = {
@@ -108,16 +108,7 @@ where
 
         let (entry_point, stack_pointer, thread_local_storage_memory) = create_worker_data(f);
 
-        let (_, promise_worker_stack_pointer, promsise_worker_thread_local_storage_memory) =
-            create_worker_data(|| {});
-
-        kwasm_new_worker(
-            entry_point,
-            stack_pointer,
-            thread_local_storage_memory,
-            promise_worker_stack_pointer,
-            promsise_worker_thread_local_storage_memory,
-        );
+        kwasm_new_worker(entry_point, stack_pointer, thread_local_storage_memory);
     }
 }
 

@@ -6,6 +6,7 @@ function kwasm_stuff() {
     var kwasm_js_objects = [null, self];
     var kwasm_js_objects_free_indices = [];
 
+    let kwasm_workers = [];
     if (typeof document !== 'undefined') {
         self.kwasm_base_uri = document.baseURI;
     }
@@ -97,9 +98,12 @@ function kwasm_stuff() {
         kwasm_get_js_object_value_f64: function (object_index) {
             return kwasm_js_objects[object_index];
         },
-        kwasm_new_worker: function (entry_point, stack_pointer, thread_local_storage_pointer,
-            promise_worker_stack_pointer, promise_worker_thread_local_storage_pointer) {
+        kwasm_new_worker: function (entry_point, stack_pointer, thread_local_storage_pointer) {
             let worker = new Worker(kwasm_stuff_blob);
+
+            // This does nothing, but without it Firefox / Safari seem to do some sort of 
+            // fault optimization that incorrectly sets up or kills the worker early.
+            kwasm_workers.push(worker);
 
             worker.postMessage({
                 kwasm_memory: self.kwasm_memory,
@@ -107,8 +111,6 @@ function kwasm_stuff() {
                 entry_point: entry_point,
                 stack_pointer: stack_pointer,
                 thread_local_storage_pointer: thread_local_storage_pointer,
-                promise_worker_stack_pointer: promise_worker_stack_pointer,
-                promise_worker_thread_local_storage_pointer: promise_worker_thread_local_storage_pointer,
                 kwasm_base_uri: document.baseURI,
             });
             worker.onmessage = function (e) {
@@ -119,9 +121,10 @@ function kwasm_stuff() {
         },
         kwasm_run_promise: function (promise_inner_future_ptr) {
             if (self.kwasm_is_worker) {
+                // Ask the main thread to run this
                 postMessage({
                     promise_inner_future_ptr: promise_inner_future_ptr
-                })
+                });
             } else {
                 run_future(promise_inner_future_ptr);
             }
@@ -136,6 +139,7 @@ function kwasm_stuff() {
             let result_js_object = self.kwasm_new_js_object(result);
             self.kwasm_exports.kwasm_promise_complete(promise_inner_future_ptr, result_js_object);
             self.kwasm_free_js_object(function_to_run);
+        }, rejected => {
         });
         return;
     }
@@ -155,11 +159,16 @@ function kwasm_stuff() {
             // 5 is arbitrary here
             let shared_memory_supported = typeof SharedArrayBuffer !== 'undefined';
             console.log("Shared memory supported: " + shared_memory_supported);
+
+            // Start with a large amount of memory to avoid issues in Safari / Firefox with grow.
+            // It seems grow fails if called from another thread, so this solution isn't exceptionally robust.
             // 5 is arbitrary here
+            let starting_mem = Math.max(12800, (bytes.byteLength / 65536) + 5);
+
             if (shared_memory_supported) {
-                self.kwasm_memory = new WebAssembly.Memory({ initial: (bytes.byteLength / 65536) + 5, maximum: 16384, shared: true });
+                self.kwasm_memory = new WebAssembly.Memory({ initial: starting_mem, maximum: 16384 * 4, shared: true });
             } else {
-                self.kwasm_memory = new WebAssembly.Memory({ initial: (bytes.byteLength / 65536) + 5, maximum: 16384 });
+                self.kwasm_memory = new WebAssembly.Memory({ initial: starting_mem, maximum: 16384 * 4 });
             }
             imports.env.memory = self.kwasm_memory;
             return WebAssembly.instantiate(bytes, imports)
@@ -184,7 +193,6 @@ function kwasm_stuff() {
 
     // If we're a worker thread we'll use this to setup.
     onmessage = function (e) {
-
         self.kwasm_is_worker = true;
         self.kwasm_base_uri = e.data.kwasm_base_uri;
         let imports = {
@@ -230,7 +238,8 @@ function kwasm_stuff() {
                 self.kwasm_exports.__wasm_init_tls(e.data.thread_local_storage_pointer);
             }
             if (e.data.entry_point) {
-                self.kwasm_exports.kwasm_web_worker_entry_point(e.data.entry_point)
+                self.kwasm_exports.kwasm_web_worker_entry_point(e.data.entry_point);
+                console.error("FINISHED WASM WORKER THREAD");
             }
         });
     }

@@ -28,7 +28,6 @@ pub async fn fetch(path: &str) -> Result<Vec<u8>, ()> {
     let js_future = crate::JSFuture::new(
         move || {
             // This runs on the other thread.
-
             let path = JSString::new(&path);
             FETCH_CALL.with(|fetch_call| fetch_call.call_1_arg(&path).unwrap())
         },

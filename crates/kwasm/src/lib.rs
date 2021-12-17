@@ -65,8 +65,6 @@ extern "C" {
         entry_point: u32,
         stack_pointer: u32,
         thread_local_storage_pointer: u32,
-        promise_worker_stack_pointer: u32,
-        promise_worker_thread_local_storage_pointer: u32,
     );
     pub(crate) fn kwasm_run_promise(entry_point_pointer: u32);
 }

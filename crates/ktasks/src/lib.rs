@@ -339,8 +339,13 @@ impl<'a> Worker<'a> {
     }
 
     fn enqueue_task(&self, task: Task<'a>) {
-        // println!("ENQUEING TASK");
-        self.task_queue.lock().unwrap().push_back(Arc::new(task));
+        // Spin to acquire lock because the main thread isn't allowed to block.
+        loop {
+            if let Ok(mut task_queue) = self.task_queue.try_lock() {
+                task_queue.push_back(Arc::new(task));
+                break;
+            }
+        }
         self.new_task.wake_one()
     }
 
@@ -489,20 +494,23 @@ impl<'a> Worker<'a> {
             for q in self.other_task_queues.iter() {
                 let task = q.lock().unwrap().pop_front();
                 if let Some(task) = task {
-                    //  kwasm::log(&format!("WORKER {:?}: Stealing task!", self.id));
+                    // klog::log!("WORKER {:?}: Stealing task!", self.id);
                     task.run(self);
+                    // klog::log!("WORKER {:?}: FINISHED TASK", self.id);
                     ran_a_task = true;
                     // Only steal a single task before checking my own queue
                     break;
                 }
             }
 
+            // klog::log!("WORKER {:?}: No tasks in other queues", self.id);
+
             // If no tasks were available then go to sleep until tasks are available
             if !ran_a_task {
                 // klog::log!("WORKER {:?}: Waiting for tasks to steal", self.id);
                 // If I reach here then block until other tasks are enqueued.
                 self.new_task.wait();
-                //  klog::log!("WORKER {:?}: Woken up to steal a task", self.id);
+                // klog::log!("WORKER {:?}: Woken up to steal a task", self.id);
             }
         }
     }

@@ -9,15 +9,18 @@ extern "C" fn kwasm_promise_begin(js_future_inner: u32) -> u32 {
     let arc: Arc<Mutex<JSFutureInner>> =
         unsafe { Arc::from_raw(js_future_inner as *mut std::ffi::c_void as *mut _) };
     let function_to_run = {
-        let run_on_promise_thread = {
-            let mut inner = arc.lock().unwrap();
-            inner.run_on_promise_thread.take().unwrap()
+        // The main thread can't block, so do busy loop until it gets an opportunity to.
+        // This should never be contested for long at all.
+        let run_on_promise_thread = loop {
+            if let Ok(mut inner) = arc.try_lock() {
+                break inner.run_on_promise_thread.take().unwrap();
+            }
         };
         (run_on_promise_thread)()
     };
 
     // Leak this arc because it will be called again when completing
-    Arc::into_raw(arc);
+    let _ = Arc::into_raw(arc);
     unsafe { function_to_run.leak() }
 }
 #[no_mangle]
@@ -38,6 +41,7 @@ extern "C" fn kwasm_promise_complete(js_future_inner: u32, result: u32) {
         inner.result = Some(result.unwrap());
         inner.waker.take().unwrap()
     };
+
     waker.wake();
 }
 
@@ -89,6 +93,7 @@ impl<'a> Future for JSFuture {
             }
         };
 
+        // If the task is not yet running start it.
         if let Some(inner_pointer) = inner_pointer {
             unsafe {
                 kwasm_run_promise(inner_pointer as u32);
