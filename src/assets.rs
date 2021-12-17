@@ -78,6 +78,10 @@ impl<T> IndirectionStorage<T> {
     fn is_placeholder(&self, indirect_index: usize) -> bool {
         self.indirect_indices[indirect_index] == 0
     }
+
+    fn len(&self) -> usize {
+        self.items.len()
+    }
 }
 
 pub struct Handle<T> {
@@ -238,6 +242,10 @@ impl<T: LoadableAssetTrait> Assets<T> {
         // we drop it without calling its destructor.
         std::mem::forget(s.add(default_placeholder));
         s
+    }
+
+    pub fn len(&self) -> usize {
+        self.indirection_storage.len()
     }
 
     pub fn add(&mut self, asset: T) -> Handle<T> {
