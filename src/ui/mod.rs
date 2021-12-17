@@ -28,7 +28,7 @@ impl<Style: GetStandardStyleTrait> UI<Style> {
     }
 
     /// Returns `true` if the event was consumed by the UI.
-    pub fn handle_event(&mut self, world: &mut World, style: &mut Style, event: Event) -> bool {
+    pub fn handle_event(&mut self, world: &mut World, style: &mut Style, event: &Event) -> bool {
         match event {
             Event::Draw => {
                 self.draw(world, style);

@@ -40,8 +40,20 @@ fn main() {
         let mut ui = UI::new(world, root);
 
         move |event: Event, world: &mut World| {
-            ui.handle_event(world, &mut style, event);
+            ui.handle_event(world, &mut style, &event);
 
+            match event {
+                Event::Draw => {
+                    if world
+                        .get_single_component_mut::<Input>()
+                        .unwrap()
+                        .key_down(Key::T)
+                    {
+                        klog::log!("MEMORY USED: {:?}", ktracing_allocator::get_memory_used());
+                    }
+                }
+                _ => {}
+            }
             false
         }
     });
