@@ -1,3 +1,5 @@
+// This file is unused at the moment.
+
 function create_webgl1_context() {
     let canvas = document
         .getElementById("canvas");

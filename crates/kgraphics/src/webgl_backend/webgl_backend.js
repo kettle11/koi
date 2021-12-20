@@ -10,7 +10,8 @@ var gl_web_object = {
                 alpha: false,
                 desynchronized: false,
                 antialias: antialias !== 0,
-                depth: true
+                depth: true,
+                powerPreference: "high-performance"
             });
 
         if (gl === null) {
@@ -36,8 +37,10 @@ var gl_web_object = {
 
     },
     resize(width, height) {
-        canvas.width = width;
-        canvas.height = height;
+        if (width != canvas.width || height != canvas.height) {
+            canvas.width = width;
+            canvas.height = height;
+        }
     },
     new_vertex_function(shader_source) {
         var shader = gl.createShader(gl.VERTEX_SHADER);
