@@ -248,8 +248,11 @@ void main()
         vec3 ambient_light = vec3(0.0);
 
 
-        for(int i = 0; i < p_light_count; ++i) 
+        // int i = 0;
+        // for(int i = 0; i < p_light_count; ++i) 
+        if (p_light_count >= 1)
         {
+            int i = 0;
             Light light = p_lights[i];        
 
             // calculate per-light radiance
@@ -375,4 +378,5 @@ void main()
     color = pow(color, vec3(1.0/2.2)) + dither; 
         
     color_out = vec4(color, alpha);
+
 }
