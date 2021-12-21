@@ -248,7 +248,7 @@ void main()
         vec3 ambient_light = vec3(0.0);
 
 
-        // int i = 0;
+        // For loop commented out because Safari performs poorly with it.
         // for(int i = 0; i < p_light_count; ++i) 
         if (p_light_count >= 1)
         {
