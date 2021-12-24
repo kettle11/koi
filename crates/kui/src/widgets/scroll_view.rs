@@ -53,14 +53,18 @@ impl<Style: Send + 'static, Data: Send + 'static, W: WidgetTrait<Style, Data>>
     }
 
     fn event(&mut self, data: &mut Data, event: &Event) -> bool {
-        if let Event::Scroll {
-            delta_y, delta_x, ..
-        } = event
-        {
-            self.offset.x += *delta_x as f32;
-            self.offset.y += *delta_y as f32;
-        }
+        if !self.child.event(data, event) {
+            if let Event::Scroll {
+                delta_y, delta_x, ..
+            } = event
+            {
+                self.offset.x += *delta_x as f32;
+                self.offset.y += *delta_y as f32;
+                return true;
+            }
 
-        self.child.event(data, event)
+            return false;
+        }
+        return true;
     }
 }

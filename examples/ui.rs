@@ -40,7 +40,9 @@ fn main() {
         let mut ui = UI::new(world, root);
 
         move |event: Event, world: &mut World| {
-            ui.handle_event(world, &mut style, &event);
+            if ui.handle_event(world, &mut style, &event) {
+                return true;
+            }
 
             match event {
                 Event::Draw => {
