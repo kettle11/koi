@@ -316,7 +316,10 @@ fn get_texture(
         let bytes = &data.unwrap()[byte_offset..byte_offset + byte_length];
         let image_data = match image.mime_type.as_ref().unwrap() {
             kgltf::ImageMimeType::ImageJpeg => jpeg_data_from_bytes(bytes, srgb),
+            #[cfg(feature = "png")]
             kgltf::ImageMimeType::ImagePng => png_data_from_bytes(bytes, srgb),
+            #[cfg(not(feature = "png"))]
+            kgltf::ImageMimeType::ImagePng => panic!("PNG feature disabled"),
         };
 
         textures.add(
