@@ -221,6 +221,16 @@ impl<'a, 'b: 'a> Renderer<'a, 'b> {
                     .unwrap(),
                 if shadow_caster.is_some() { 1 } else { 0 },
             );
+            self.render_pass.set_float_property(
+                &pipeline
+                    .get_float_property(&format!("p_lights[{:?}].ibl_shadowing", i))
+                    .unwrap(),
+                if let Some(shadow_caster) = shadow_caster {
+                    shadow_caster.ibl_shadowing
+                } else {
+                    0.0
+                },
+            );
 
             // If this light casts shadows, update the shadow caster info.
             if let Some(shadow_caster) = shadow_caster {
@@ -767,26 +777,32 @@ pub fn render_depth_only(
 }
 
 // A shadow caster for a light.
-#[derive(Component, Clone)]
+#[derive(NotCloneComponent)]
 pub struct ShadowCaster {
     pub(crate) shadow_cascades: Vec<ShadowCascadeInfo>,
     pub(crate) texture_size: u32,
+    pub ibl_shadowing: f32,
 }
 
 impl ShadowCaster {
     pub fn new() -> Self {
         Self {
             shadow_cascades: Vec::new(),
-            texture_size: 2048,
+            texture_size: 1024,
+            ibl_shadowing: 0.0,
         }
+    }
+
+    pub fn with_ibl_shadowing(mut self, ibl_shadowing: f32) -> Self {
+        self.ibl_shadowing = ibl_shadowing;
+        self
     }
 }
 
-#[derive(Clone)]
 pub(crate) struct ShadowCascadeInfo {
     pub(crate) texture: Handle<Texture>,
     // Todo: this framebuffer leaks when ShadowCascadeInfo is dropped.
-    pub(crate) framebuffer: Framebuffer,
+    pub(crate) framebuffer: NotSendSync<Framebuffer>,
     pub(crate) world_to_light_space: Mat4,
 }
 
@@ -821,7 +837,7 @@ impl ShadowCaster {
 
                 let shadow_texture = textures.add(shadow_texture);
                 self.shadow_cascades.push(ShadowCascadeInfo {
-                    framebuffer,
+                    framebuffer: NotSendSync::new(framebuffer),
                     texture: shadow_texture,
                     world_to_light_space: Mat4::ZERO, // This gets set later.
                 });

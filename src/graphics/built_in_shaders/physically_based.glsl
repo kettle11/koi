@@ -47,6 +47,7 @@ struct Light {
     float radius;
     int shadows_enabled;
     float ambient;
+    float ibl_shadowing;
     // Ambient light added to shadows only
     // vec3 shadow_color;
 };  
@@ -219,34 +220,35 @@ void main()
     vec3 emissive = p_emissive * texture(p_emissive_texture, TexCoords).rgb;
     vec3 debug_color = vec3(0.0);
 
-        vec4 metallic_roughness = texture(p_metallic_roughness_texture, TexCoords);
-        vec4 base_color_rgba = (p_base_color * texture(p_base_color_texture, TexCoords));
-        vec3 base_color = base_color_rgba.rgb;
-        alpha = base_color_rgba.a;
+    vec4 metallic_roughness = texture(p_metallic_roughness_texture, TexCoords);
+    vec4 base_color_rgba = (p_base_color * texture(p_base_color_texture, TexCoords));
+    vec3 base_color = base_color_rgba.rgb;
+    alpha = base_color_rgba.a;
 
-        float metallic  = p_metallic * metallic_roughness.b;
-        float roughness = p_roughness * metallic_roughness.g;
-        float ambient_amount = p_ambient * texture(p_ambient_texture, TexCoords).r;
+    float metallic  = p_metallic * metallic_roughness.b;
+    float roughness = p_roughness * metallic_roughness.g;
+    float ambient_amount = p_ambient * texture(p_ambient_texture, TexCoords).r;
 
     // vec3 base_color = (p_base_color).rgb;
     //  float metallic  = 1.0 - p_metallic;
     //  float roughness = p_roughness;
 
-        // When interpolating between face normals the normal can get shorted, so renormalize here.
-      //  vec3 N = normalize(Normal);
-        vec3 N = getNormalFromMap();
-        vec3 V = normalize(p_camera_positions[0] - WorldPosition);
+    // When interpolating between face normals the normal can get shorted, so renormalize here.
+    //  vec3 N = normalize(Normal);
+    vec3 N = getNormalFromMap();
+    vec3 V = normalize(p_camera_positions[0] - WorldPosition);
 
-        // calculate reflectance at normal incidence; if dia-electric (like plastic) use F0 
-        // of 0.04 and if it's a metal, use the albedo color as F0 (metallic workflow)    
-        vec3 F0 = vec3(0.04); 
-        F0 = mix(F0, base_color, metallic);
+    // calculate reflectance at normal incidence; if dia-electric (like plastic) use F0 
+    // of 0.04 and if it's a metal, use the albedo color as F0 (metallic workflow)    
+    vec3 F0 = vec3(0.04); 
+    F0 = mix(F0, base_color, metallic);
 
-    // Reflection direction
-        vec3 R = reflect(-V, N);
+// Reflection direction
+    vec3 R = reflect(-V, N);
 
-        vec3 ambient_light = vec3(0.0);
+    vec3 ambient_light = vec3(0.0);
 
+    float ibl_scale = 1.0;
 
         // For loop commented out because Safari performs poorly with it.
         // for(int i = 0; i < p_light_count; ++i) 
@@ -283,8 +285,7 @@ void main()
                 attenuation = 1.0 / (distance * distance);
             }
 
-        //   debugColor = vec3(distance) / 30.;
-
+            // debugColor = vec3(distance) / 30.;
 
             vec3 radiance = light.color_and_intensity * attenuation;
             // Cook-Torrance BRDF
@@ -337,6 +338,8 @@ void main()
             // add to outgoing radiance Lo
             Lo += (kD * base_color / PI + specular) * radiance * NdotL * (1.0 - shadow);  // note that we already multiplied the BRDF by the Fresnel (kS) so we won't multiply by kS again
             
+            ibl_scale = min(ibl_scale, 1.0 - (light.ibl_shadowing * shadow * attenuation));
+
             // Add ambient light only to the shadow
             // Lo += shadow * light.shadow_color;
         }   
@@ -360,7 +363,7 @@ void main()
         vec3 specular = prefilteredColor * (kS * brdf.x + brdf.y);
 
 
-        vec3 ambient = (kD * diffuse + specular) * ambient_amount; 
+        vec3 ambient = (kD * diffuse + specular) * ambient_amount * ibl_scale; 
 
         color = ambient + Lo;
     
