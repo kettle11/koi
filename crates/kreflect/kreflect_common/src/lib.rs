@@ -116,24 +116,10 @@ pub fn token_stream_to_rust_tokens(
                                     ('*', '=') => Token::TimesEqual,
                                     ('<', '=') => Token::LessThanOrEqual,
                                     ('>', '=') => Token::GreaterThanOrEqual,
-                                    ('>', ',') => {
-                                        rust_tokens.push(Token::GreaterThan);
-                                        Token::Comma
-                                    }
                                     (':', ':') => Token::Colon2,
-                                    ('<', '<') => {
-                                        rust_tokens.push(Token::LessThan);
-                                        Token::LessThan
-                                    }
-                                    ('>', '>') => {
-                                        rust_tokens.push(Token::GreaterThan);
-                                        Token::GreaterThan
-                                    }
-                                    _ => {
-                                        unimplemented!(
-                                            "Unimplemented character combo: {:?}",
-                                            (c0, c1)
-                                        )
+                                    (a, b) => {
+                                        rust_tokens.push(char_to_token(a));
+                                        char_to_token(b)
                                     }
                                 }
                             }
