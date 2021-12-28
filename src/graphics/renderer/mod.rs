@@ -22,7 +22,7 @@ pub struct RendererInfo {
 pub fn renderer_plugin() -> Plugin {
     Plugin {
         setup_systems: vec![setup_renderer.system()],
-        end_of_frame_systems: vec![render_scene.system()],
+        end_of_frame_systems: vec![prepare_shadow_casters.system(), render_scene.system()],
         ..Default::default()
     }
 }
@@ -149,16 +149,12 @@ impl<'a, 'b: 'a> Renderer<'a, 'b> {
         }
     }
 
-    fn bind_light_info(
-        &mut self,
-        pipeline: &Pipeline,
-        lights: &Query<'_, (&'static GlobalTransform, &'static Light)>,
-    ) {
+    fn bind_light_info(&mut self, pipeline: &Pipeline, lights: &Lights, max_texture_unit: u8) {
         self.render_pass.set_int_property(
             &pipeline.get_int_property("p_light_count").unwrap(),
             lights.iter().count() as i32,
         );
-        for (i, (transform, light)) in lights.iter().enumerate() {
+        for (i, (transform, light, shadow_caster)) in lights.iter().enumerate() {
             if transform.position.is_nan() {
                 dbg!("Light position is NaN");
                 continue;
@@ -199,15 +195,6 @@ impl<'a, 'b: 'a> Renderer<'a, 'b> {
                 color_and_intensity.into(),
             );
 
-            // Set if the light has shadows enabled.
-            // Harcoded to false for now
-            self.render_pass.set_int_property(
-                &pipeline
-                    .get_int_property(&format!("p_lights[{:?}].shadows_enabled", i))
-                    .unwrap(),
-                0,
-            );
-
             self.render_pass.set_int_property(
                 &pipeline
                     .get_int_property(&format!("p_lights[{:?}].mode", i))
@@ -225,6 +212,38 @@ impl<'a, 'b: 'a> Renderer<'a, 'b> {
                         .unwrap(),
                     radius,
                 );
+            }
+
+            // Set if the light has shadows enabled.
+            self.render_pass.set_int_property(
+                &pipeline
+                    .get_int_property(&format!("p_lights[{:?}].shadows_enabled", i))
+                    .unwrap(),
+                if shadow_caster.is_some() { 1 } else { 0 },
+            );
+
+            // If this light casts shadows, update the shadow caster info.
+            if let Some(shadow_caster) = shadow_caster {
+                let mut texture_unit_offset = max_texture_unit;
+                for (index, cascade) in shadow_caster.shadow_cascades.iter().enumerate() {
+                    let depth_texture = self.texture_assets.get(&cascade.texture);
+
+                    self.render_pass.set_texture_property(
+                        &pipeline
+                            .get_texture_property(&format!("p_light_shadow_maps_{:?}", index))
+                            .unwrap(),
+                        Some(depth_texture),
+                        texture_unit_offset,
+                    );
+                    texture_unit_offset += 1;
+
+                    self.render_pass.set_mat4_property(
+                        &pipeline
+                            .get_mat4_property(&format!("p_world_to_light_space_{:?}", index))
+                            .unwrap(),
+                        cascade.world_to_light_space.as_array(),
+                    );
+                }
             }
         }
     }
@@ -255,7 +274,7 @@ impl<'a, 'b: 'a> Renderer<'a, 'b> {
     pub fn change_material(
         &mut self,
         material_handle: &'a Handle<Material>,
-        lights: &Query<'_, (&'static GlobalTransform, &'static Light)>,
+        lights: &Lights,
         reflection_probes: &Query<(&'static GlobalTransform, &'static ReflectionProbe)>,
     ) {
         // Avoid unnecessary [Material] rebinds.
@@ -325,7 +344,8 @@ impl<'a, 'b: 'a> Renderer<'a, 'b> {
                     .unwrap_or(material.max_texture_unit);
                 let base_color_property = pipeline.get_vec4_property("p_base_color").unwrap();
 
-                self.bind_light_info(pipeline, lights);
+                // Bind light and shadow info.
+                self.bind_light_info(pipeline, lights, material.max_texture_unit + 4);
 
                 // Bind the reflection probe
                 let (reflection_probe_diffuse, reflection_probe_specular) =
@@ -492,7 +512,7 @@ impl<'a, 'b: 'a> Renderer<'a, 'b> {
         camera: &Camera,
         camera_transform: &GlobalTransform,
         renderables: &'a Renderables,
-        lights: &Query<'_, (&'static GlobalTransform, &'static Light)>,
+        lights: &'a Lights,
         reflection_probes: &Query<(&'static GlobalTransform, &'static ReflectionProbe)>,
     ) {
         let camera_position = camera_transform.position;
@@ -560,7 +580,26 @@ type Renderables<'a> = Query<
     ),
 >;
 
-pub fn render_scene<'a>(
+type Lights<'a> = Query<
+    'a,
+    (
+        &'static GlobalTransform,
+        &'static Light,
+        Option<&'static mut ShadowCaster>,
+    ),
+>;
+
+pub fn prepare_shadow_casters(
+    graphics: &mut Graphics,
+    textures: &mut Assets<Texture>,
+    mut shadow_casters: Query<&mut ShadowCaster>,
+) {
+    for shadow_caster in &mut shadow_casters {
+        shadow_caster.prepare_shadow_casting(graphics, textures);
+    }
+}
+
+pub fn render_scene<'a, 'b>(
     graphics: &mut Graphics,
     shader_assets: &Assets<Shader>,
     material_assets: &Assets<Material>,
@@ -569,7 +608,7 @@ pub fn render_scene<'a>(
     cube_map_assets: &Assets<CubeMap>,
     cameras: Query<(&GlobalTransform, &Camera)>,
     renderables: Renderables<'a>,
-    lights: Query<(&'static GlobalTransform, &'static Light)>,
+    mut lights: Lights<'b>,
     reflection_probes: Query<(&'static GlobalTransform, &'static ReflectionProbe)>,
     renderer_info: &RendererInfo,
 ) {
@@ -587,9 +626,6 @@ pub fn render_scene<'a>(
             c.into()
         });
 
-        let mut render_pass = command_buffer
-            .begin_render_pass_with_framebuffer(&graphics.current_target_framebuffer, clear_color);
-
         for (camera_global_transform, camera) in &cameras {
             // Check that the camera is setup to render to the current CameraTarget.
             let camera_should_render = (graphics.current_camera_target.is_some()
@@ -599,6 +635,28 @@ pub fn render_scene<'a>(
 
             // Check that this camera targets the target currently being rendered.
             if camera_should_render {
+                // If this layer is going to render the default scene, including shadows, rerender shadows
+                // clipped to this camera's view.
+                if camera.render_layers.includes_layer(RenderLayers::DEFAULT) {
+                    // Render shadows clipped to this arbitrary camera.
+                    render_shadow_pass(
+                        shader_assets,
+                        mesh_assets,
+                        &mut command_buffer,
+                        camera,
+                        camera_global_transform,
+                        &mut lights,
+                        &renderables,
+                    );
+                }
+
+                // Start a new render pass per camera. This may be heavy and isn't critical, but it made
+                // organization easier with shadow-passes.
+                let mut render_pass = command_buffer.begin_render_pass_with_framebuffer(
+                    &graphics.current_target_framebuffer,
+                    clear_color,
+                );
+
                 let mut camera_info = Vec::new();
                 if graphics.override_views.is_empty() {
                     camera_info.push(Renderer::get_view_info(
@@ -657,4 +715,204 @@ pub fn render_scene<'a>(
     }
 
     graphics.context.commit_command_buffer(command_buffer);
+}
+
+pub fn render_depth_only(
+    shaders: &Assets<Shader>,
+    meshes: &Assets<Mesh>,
+    command_buffer: &mut CommandBuffer,
+    framebuffer: &Framebuffer,
+    view_matrix: &Mat4,
+    projection_matrix: &Mat4,
+    viewport_size: u32,
+    renderables: &Renderables,
+) {
+    let mut render_pass =
+        command_buffer.begin_render_pass_with_framebuffer(framebuffer, Some((0.0, 0.0, 0.0, 0.0)));
+    render_pass.set_viewport(0, 0, viewport_size, viewport_size);
+
+    let depth_shader = shaders.get(&Shader::DEPTH_ONLY);
+
+    render_pass.set_pipeline(&depth_shader.pipeline);
+    render_pass.set_mat4_property(
+        &depth_shader
+            .pipeline
+            .get_mat4_property("p_views[0]")
+            .unwrap(),
+        view_matrix.as_array(),
+    );
+    render_pass.set_mat4_property(
+        &depth_shader
+            .pipeline
+            .get_mat4_property("p_projections[0]")
+            .unwrap(),
+        projection_matrix.as_array(),
+    );
+
+    let model_property = depth_shader.pipeline.get_mat4_property("p_model").unwrap();
+    let position_attribute = depth_shader
+        .pipeline
+        .get_vertex_attribute::<Vec3>("a_position")
+        .unwrap();
+
+    for (global_transform, _, mesh, render_layers, _, _) in renderables {
+        if render_layers.map_or(true, |r| r.includes_layer(RenderLayers::DEFAULT)) {
+            if let Some(gpu_mesh) = meshes.get(mesh).gpu_mesh.as_ref() {
+                render_pass.set_mat4_property(&model_property, global_transform.model().as_array());
+                render_pass.set_vertex_attribute(&position_attribute, Some(&gpu_mesh.positions));
+                render_pass.draw_triangles(gpu_mesh.triangle_count, &gpu_mesh.index_buffer);
+            }
+        }
+    }
+}
+
+// A shadow caster for a light.
+#[derive(Component, Clone)]
+pub struct ShadowCaster {
+    pub(crate) shadow_cascades: Vec<ShadowCascadeInfo>,
+    pub(crate) texture_size: u32,
+}
+
+impl ShadowCaster {
+    pub fn new() -> Self {
+        Self {
+            shadow_cascades: Vec::new(),
+            texture_size: 2048,
+        }
+    }
+}
+
+#[derive(Clone)]
+pub(crate) struct ShadowCascadeInfo {
+    pub(crate) texture: Handle<Texture>,
+    // Todo: this framebuffer leaks when ShadowCascadeInfo is dropped.
+    pub(crate) framebuffer: Framebuffer,
+    pub(crate) world_to_light_space: Mat4,
+}
+
+impl ShadowCaster {
+    fn prepare_shadow_casting(&mut self, graphics: &mut Graphics, textures: &mut Assets<Texture>) {
+        if self.shadow_cascades.is_empty() {
+            // Setup shadow textures
+            for _ in 0..4 {
+                let shadow_texture = graphics
+                    .new_texture(
+                        None,
+                        self.texture_size,
+                        self.texture_size,
+                        kgraphics::PixelFormat::Depth32F,
+                        TextureSettings {
+                            // Nearest because this will not have mipmaps generated
+                            minification_filter: kgraphics::FilterMode::Nearest,
+                            magnification_filter: kgraphics::FilterMode::Nearest,
+                            wrapping_horizontal: kgraphics::WrappingMode::ClampToEdge, // This should be clamp to border but that's not supported on WebGL
+                            wrapping_vertical: kgraphics::WrappingMode::ClampToEdge, // This should be clamp to border but that's not supported on WebGL
+                            srgb: false,
+                            generate_mipmaps: false,
+                            ..Default::default()
+                        },
+                    )
+                    .unwrap();
+
+                let framebuffer =
+                    graphics
+                        .context
+                        .new_framebuffer(None, Some(&shadow_texture), None);
+
+                let shadow_texture = textures.add(shadow_texture);
+                self.shadow_cascades.push(ShadowCascadeInfo {
+                    framebuffer,
+                    texture: shadow_texture,
+                    world_to_light_space: Mat4::ZERO, // This gets set later.
+                });
+            }
+        }
+    }
+}
+
+pub fn render_shadow_pass(
+    shaders: &Assets<Shader>,
+    meshes: &Assets<Mesh>,
+    command_buffer: &mut CommandBuffer,
+    camera: &Camera,
+    camera_global_transform: &GlobalTransform,
+    lights: &mut Lights,
+    renderables: &Renderables,
+) {
+    let camera_view_matrix = camera_global_transform.model().inversed();
+    let camera_view_inversed = camera_view_matrix.inversed();
+
+    let splits = [20., 60., 140., 300.];
+    let mut z_near = camera.get_near_plane();
+    let mut camera_clip_space_to_world = [Mat4::ZERO; 4];
+    for (i, z_far) in splits.iter().enumerate() {
+        // The +1.0 to z_far here prevents an issue where lines appear between cascades.
+        let projection = camera.projection_matrix_with_z_near_and_z_far(z_near, z_far + 1.0);
+        camera_clip_space_to_world[i] = camera_view_inversed * projection.inversed();
+        z_near = *z_far;
+    }
+
+    // In the future this could be reduced to light's that area of influence overlaps the camera's frustum.
+    for (light_global_transform, _light, shadow_caster) in lights {
+        if let Some(shadow_caster) = shadow_caster {
+            // Render shadow map cascades
+            for (i, cascade) in shadow_caster.shadow_cascades.iter_mut().enumerate() {
+                let view_matrix = light_global_transform.model().inversed();
+                let camera_to_light_space = view_matrix * camera_clip_space_to_world[i];
+
+                // Is negative z correct here?
+                let corners = [
+                    camera_to_light_space * (Vec4::new(-1., -1., 1., 1.)),
+                    camera_to_light_space * (Vec4::new(1., -1., 1., 1.)),
+                    camera_to_light_space * (Vec4::new(1., 1., 1., 1.)),
+                    camera_to_light_space * (Vec4::new(-1., 1., 1., 1.)),
+                    camera_to_light_space * (Vec4::new(-1., -1., -1., 1.)),
+                    camera_to_light_space * (Vec4::new(1., -1., -1., 1.)),
+                    camera_to_light_space * (Vec4::new(1., 1., -1., 1.)),
+                    camera_to_light_space * (Vec4::new(-1., 1., -1., 1.)),
+                ];
+
+                let corners = [
+                    corners[0].xyz() / corners[0].w,
+                    corners[1].xyz() / corners[1].w,
+                    corners[2].xyz() / corners[2].w,
+                    corners[3].xyz() / corners[3].w,
+                    corners[4].xyz() / corners[4].w,
+                    corners[5].xyz() / corners[5].w,
+                    corners[6].xyz() / corners[6].w,
+                    corners[7].xyz() / corners[7].w,
+                ];
+
+                //println!("CORNERS: {:#?}", corners);
+
+                let bounding_box = Box3::from_points(&corners);
+
+                // The light's matrix must enclose these.
+
+                let projection_matrix = kmath::projection_matrices::orthographic_gl(
+                    bounding_box.min[0],
+                    bounding_box.max[0],
+                    bounding_box.min[1],
+                    bounding_box.max[1],
+                    -50.0, //-bounding_box.max[2], // I don't understand why these need to be negated and reversed
+                    -bounding_box.min[2],
+                );
+
+                // println!("PROJECTION MATRIX{:#?}", projection_matrix);
+
+                cascade.world_to_light_space = projection_matrix * view_matrix;
+
+                render_depth_only(
+                    shaders,
+                    meshes,
+                    command_buffer,
+                    &cascade.framebuffer,
+                    &view_matrix,
+                    &projection_matrix,
+                    shadow_caster.texture_size,
+                    renderables,
+                );
+            }
+        }
+    }
 }
