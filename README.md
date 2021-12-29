@@ -4,6 +4,8 @@ A game engine.
 
 Developed in the open but not yet fit for public use. `koi` is currently designed for my active projects but I'd like to eventually make it useful to others as well.
 
+**Expect frequent build breaks!**
+
 Most parts are incomplete, code quality varies dramatically, and there are lots of bugs to fix. 
 
 Runs on Mac, Windows, and Web.
