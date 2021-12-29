@@ -4,15 +4,6 @@ use ktasks::spawn;
 fn main() {
     App::new().setup_and_run(|world: &mut World| {
         // Spawn a camera
-        world.spawn((
-            Transform {
-                position: Vec3::new(-21.868414, 86.42386, 23.094368),
-                rotation: Quat::from_xyzw(-0.4105159, 0.38509429, -0.1969354, -0.8027361),
-                scale: Vec3::ONE,
-            },
-            Camera::new(),
-            CameraControls::new(),
-        ));
 
         world.spawn((
             Transform {
