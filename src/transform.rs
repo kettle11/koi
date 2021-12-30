@@ -220,12 +220,11 @@ fn update_descendent_transforms(
         let last_child = *hierarchy_node.last_child();
         let previous_sibling = *hierarchy_node.previous_sibling();
 
-        let my_model_matrix = if let Some(local_transform) = local_transform {
-            local_transform.model()
+        let my_global_matrix = if let Some(local_transform) = local_transform {
+            *parent_matrix * local_transform.model()
         } else {
             *parent_matrix
         };
-        let my_global_matrix = *parent_matrix * my_model_matrix;
 
         commands.add_component(
             child_entity,
