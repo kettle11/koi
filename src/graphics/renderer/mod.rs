@@ -858,7 +858,7 @@ pub fn render_shadow_pass(
     let camera_view_matrix = camera_global_transform.model().inversed();
     let camera_view_inversed = camera_view_matrix.inversed();
 
-    let splits = [20., 60., 140., 300.];
+    let splits = [10., 25., 47., 200.];
     let mut z_near = camera.get_near_plane();
     let mut camera_clip_space_to_world = [Mat4::ZERO; 4];
     for (i, z_far) in splits.iter().enumerate() {
@@ -899,19 +899,29 @@ pub fn render_shadow_pass(
                     corners[7].xyz() / corners[7].w,
                 ];
 
-                //println!("CORNERS: {:#?}", corners);
-
+                // Clamp the shadow map bounding box to texel edges to reduce shimmering
                 let bounding_box = Box3::from_points(&corners);
+                let world_units_per_texel = bounding_box.size() / shadow_caster.texture_size as f32;
+                let min = (bounding_box.min.div_by_component(world_units_per_texel))
+                    .floor()
+                    .mul_by_component(world_units_per_texel);
+                let max = (bounding_box.max.div_by_component(world_units_per_texel))
+                    .floor()
+                    .mul_by_component(world_units_per_texel);
+                let bounding_box = Box3 { min, max };
 
                 // The light's matrix must enclose these.
 
+                // It would be better to detect objects within the light's bounds and determine where the near
+                // and far planes should go appropriately.
+                let shadow_behind_light = 100.;
                 let projection_matrix = kmath::projection_matrices::orthographic_gl(
                     bounding_box.min[0],
                     bounding_box.max[0],
                     bounding_box.min[1],
                     bounding_box.max[1],
-                    -50.0, //-bounding_box.max[2], // I don't understand why these need to be negated and reversed
-                    -bounding_box.min[2],
+                    -bounding_box.max[2] - shadow_behind_light, // I don't understand why these need to be negated and reversed
+                    -bounding_box.min[2] + shadow_behind_light,
                 );
 
                 // println!("PROJECTION MATRIX{:#?}", projection_matrix);

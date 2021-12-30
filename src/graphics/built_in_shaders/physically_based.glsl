@@ -163,7 +163,7 @@ vec3 ScreenSpaceDither( vec2 vScreenPos )
     return ( vDither.rgb / 255.0 ) * 0.375;
 }
 
-float ShadowCalculation(in sampler2D shadowMap, vec4 fragPosLightSpace, vec3 lightDir)
+float ShadowCalculation(in sampler2D shadowMap, vec4 fragPosLightSpace, vec3 lightDir, float cascade_size)
 {
     // perform perspective divide
     vec3 projCoords = fragPosLightSpace.xyz / fragPosLightSpace.w;
@@ -175,27 +175,30 @@ float ShadowCalculation(in sampler2D shadowMap, vec4 fragPosLightSpace, vec3 lig
     float currentDepth = projCoords.z;
 
    // These lines are screwed up, but should be fixed to reduce peter-panning.
-   // vec3 normal = normalize(Normal);
-   // float bias = max(0.05 * (1.0 - dot(normal, lightDir)), 0.005);
+    vec3 normal = normalize(Normal);
+  //  float bias = max(0.005 * (1.0 - dot(normal, -lightDir)), 0.0005);
+    // float bias = max(0.05 * (1.0 - dot(normal, lightDir)), 0.005);
 
     // check whether d frag pos is in shadow
    // float shadow = currentDepth - 0.002 > closestDepth  ? 1.0 : 0.0;
 
-    float bias = 0.002;
+    float bias = 0.0005;
     float shadow = 0.0;
     vec2 texelSize = 1.0 / vec2(textureSize(shadowMap, 0));
 
+
     // Percentage-close filtering (PCF)
     // This could be improved in the future by taking fewer dithered samples.
-    for(int x = -1; x <= 1; ++x)
+    int shadow_samples = 0;
+    for(int x = -shadow_samples; x <= shadow_samples; ++x)
     {
-        for(int y = -1; y <= 1; ++y)
+        for(int y = -shadow_samples; y <= shadow_samples; ++y)
         {
             float pcfDepth = texture(shadowMap, projCoords.xy + vec2(x, y) * texelSize).r; 
             shadow += currentDepth - bias > pcfDepth ? 1.0 : 0.0;        
         }    
     }
-    shadow /= 9.0;
+    shadow /= (shadow_samples * 2 + 1) * (shadow_samples * 2 + 1);
 
     if(projCoords.z > 1.0)
         shadow = 0.0;
@@ -203,9 +206,12 @@ float ShadowCalculation(in sampler2D shadowMap, vec4 fragPosLightSpace, vec3 lig
     return shadow;
 }
 
+const float cascade_depths[4] = float[4](10., 25., 47., 200.);
 
 void main()
 {
+    vec3 normal = normalize(Normal);
+
     float z = gl_FragCoord.z / gl_FragCoord.w;
     float fog_factor = (z - p_fog_start) / (p_fog_end - p_fog_start);
     fog_factor = clamp(fog_factor, 0.0, 1.0 );
@@ -315,21 +321,23 @@ void main()
             float shadow = 0.0;
 
             if (p_lights[i].shadows_enabled == 1) {
-                if (z > 140.) {
-                    vec4 light_space_position = p_world_to_light_space_3 * vec4(WorldPosition, 1.0);
-                    shadow = ShadowCalculation(p_light_shadow_maps_3, light_space_position, L);
+                // Todo: his offset needs to be scaled with cascade otherwise acne is introduced at far distances.
+                vec4 offset_world_position = vec4(WorldPosition + normal * 0.1, 1.0);
+                if (z > cascade_depths[2]) {
+                    vec4 light_space_position = p_world_to_light_space_3 * offset_world_position;
+                    shadow = ShadowCalculation(p_light_shadow_maps_3, light_space_position, L, cascade_depths[3] - cascade_depths[2]);
                     //debug_color = vec3(1.0, 0.0, 0.0);
-                } else if (z > 60.) {
-                    vec4 light_space_position = p_world_to_light_space_2 * vec4(WorldPosition, 1.0);
-                    shadow = ShadowCalculation(p_light_shadow_maps_2, light_space_position, L);
+                } else if (z > cascade_depths[1]) {
+                    vec4 light_space_position = p_world_to_light_space_2 * offset_world_position;
+                    shadow = ShadowCalculation(p_light_shadow_maps_2, light_space_position, L, cascade_depths[2] - cascade_depths[1]);
                     //debug_color = vec3(0.0, 1.0, 0.0);
-                } else if (z > 20.) {
-                    vec4 light_space_position = p_world_to_light_space_1 * vec4(WorldPosition, 1.0);
-                    shadow = ShadowCalculation(p_light_shadow_maps_1, light_space_position, L);
+                } else if (z > cascade_depths[0]) {
+                    vec4 light_space_position = p_world_to_light_space_1 * offset_world_position;
+                    shadow = ShadowCalculation(p_light_shadow_maps_1, light_space_position, L, cascade_depths[1] - cascade_depths[0]);
                     //debug_color = vec3(0.0, 0.0, 1.0);
                 } else {
-                    vec4 light_space_position = p_world_to_light_space_0 * vec4(WorldPosition, 1.0);
-                    shadow = ShadowCalculation(p_light_shadow_maps_0, light_space_position, L);
+                    vec4 light_space_position = p_world_to_light_space_0 * offset_world_position;
+                    shadow = ShadowCalculation(p_light_shadow_maps_0, light_space_position, L, cascade_depths[0]);
                 }
             }
 
