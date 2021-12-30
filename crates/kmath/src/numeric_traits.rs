@@ -37,6 +37,7 @@ pub trait NumericFloat:
     fn min_numeric(self, other: Self) -> Self;
     fn max_numeric(self, other: Self) -> Self;
     fn powf_numeric(self, other: Self) -> Self;
+    fn floor_numeric(self) -> Self;
 }
 
 impl NumericFloat for f32 {
@@ -66,6 +67,9 @@ impl NumericFloat for f32 {
     fn powf_numeric(self, other: Self) -> Self {
         self.powf(other)
     }
+    fn floor_numeric(self) -> Self {
+        self.floor()
+    }
 }
 
 impl NumericFloat for f64 {
@@ -93,6 +97,9 @@ impl NumericFloat for f64 {
     }
     fn powf_numeric(self, other: Self) -> Self {
         self.powf(other)
+    }
+    fn floor_numeric(self) -> Self {
+        self.floor()
     }
 }
 
