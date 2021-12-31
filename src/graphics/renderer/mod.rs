@@ -19,6 +19,10 @@ pub struct RendererInfo {
     pub brdf_lookup_table: Handle<Texture>,
 }
 
+/// Attach to [Entity]s to ensure they are not culled by Frustum Culling.
+#[derive(Clone, Component)]
+pub struct IgnoreCulling;
+
 pub fn renderer_plugin() -> Plugin {
     Plugin {
         setup_systems: vec![setup_renderer.system()],
@@ -535,21 +539,31 @@ impl<'a, 'b: 'a> Renderer<'a, 'b> {
 
         let mut transparent_renderables = Vec::new();
 
-        let frustum = Frustum::from_matrix(camera_transform.model() * camera.projection_matrix());
+        let frustum =
+            Frustum::from_matrix(camera.projection_matrix() * camera_transform.model().inversed());
 
         for renderable in renderables.iter() {
-            let (transform, material_handle, mesh_handle, render_layer, optional_sprite, color) =
-                renderable;
+            let (
+                transform,
+                material_handle,
+                mesh_handle,
+                render_layer,
+                optional_sprite,
+                color,
+                ignore_culling,
+            ) = renderable;
             let render_layer = render_layer.cloned().unwrap_or(RenderLayers::DEFAULT);
             if camera.render_layers.includes_layer(render_layer) {
                 // Frustum cull models
                 // Always render models without bounding boxes.
-                let should_render = true;
-                /*self
-                    .mesh_assets
-                    .get(mesh_handle)
-                    .bounding_box
-                    .map_or(true, |b| frustum.intersects_box(b));*/
+                let should_render = ignore_culling.is_some()
+                    || self
+                        .mesh_assets
+                        .get(mesh_handle)
+                        .bounding_box
+                        .map_or(true, |b| {
+                            frustum.intersects_box(transform.transform_bounding_box(b))
+                        });
                 if should_render {
                     let is_transparent = self
                         .shader_assets
@@ -572,7 +586,7 @@ impl<'a, 'b: 'a> Renderer<'a, 'b> {
                         self.render_mesh(transform, mesh_handle);
                     }
                 } else {
-                    println!("CULLING");
+                    // println!("CULLING!");
                 }
             }
         }
@@ -583,7 +597,7 @@ impl<'a, 'b: 'a> Renderer<'a, 'b> {
         });
 
         for renderable in transparent_renderables.iter() {
-            let (transform, material_handle, mesh_handle, _render_layer, optional_sprite, color) =
+            let (transform, material_handle, mesh_handle, _render_layer, optional_sprite, color, _) =
                 *renderable;
             self.change_material(material_handle, lights, reflection_probes);
             if let Some(sprite) = optional_sprite {
@@ -607,6 +621,7 @@ type Renderables<'a> = Query<
         Option<&'static RenderLayers>,
         Option<&'static Sprite>,
         Option<&'static Color>,
+        Option<&'static IgnoreCulling>,
     ),
 >;
 
@@ -785,12 +800,23 @@ pub fn render_depth_only(
         .get_vertex_attribute::<Vec3>("a_position")
         .unwrap();
 
-    for (global_transform, _, mesh, render_layers, _, _) in renderables {
+    let culling_frustum = Frustum::from_matrix(*projection_matrix * *view_matrix);
+
+    for (global_transform, _, mesh, render_layers, _, _, ignore_culling) in renderables {
         if render_layers.map_or(true, |r| r.includes_layer(RenderLayers::DEFAULT)) {
-            if let Some(gpu_mesh) = meshes.get(mesh).gpu_mesh.as_ref() {
-                render_pass.set_mat4_property(&model_property, global_transform.model().as_array());
-                render_pass.set_vertex_attribute(&position_attribute, Some(&gpu_mesh.positions));
-                render_pass.draw_triangles(gpu_mesh.triangle_count, &gpu_mesh.index_buffer);
+            let mesh = meshes.get(mesh);
+            let should_render = ignore_culling.is_some()
+                || mesh
+                    .bounding_box
+                    .map_or(true, |b| culling_frustum.intersects_box(b));
+            if should_render {
+                if let Some(gpu_mesh) = mesh.gpu_mesh.as_ref() {
+                    render_pass
+                        .set_mat4_property(&model_property, global_transform.model().as_array());
+                    render_pass
+                        .set_vertex_attribute(&position_attribute, Some(&gpu_mesh.positions));
+                    render_pass.draw_triangles(gpu_mesh.triangle_count, &gpu_mesh.index_buffer);
+                }
             }
         }
     }

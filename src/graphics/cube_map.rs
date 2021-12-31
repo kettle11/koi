@@ -533,6 +533,7 @@ pub fn spawn_skybox(world: &mut World, path: &str) {
         Color::WHITE,
         crate::Texture::WHITE,
         skybox_material.clone(),
+        IgnoreCulling,
     ));
     world.spawn((Transform::new(), reflection_probe.clone()));
 }

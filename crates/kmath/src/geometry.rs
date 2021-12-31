@@ -321,50 +321,53 @@ pub fn ray_with_mesh(ray: Ray3, vertices: &[Vec3], indices: &[[u32; 3]]) -> Opti
     }
 }
 
+/// A Frustum. Does not include a far plane
+#[derive(Debug)]
 pub struct Frustum {
     // Left, right, top, bottom, near, far
-    pub planes: [Plane3; 6],
+    pub planes: [Plane3; 5],
 }
 
 impl Frustum {
+    /// Creates an `unnormalized` [Frustum]. For culling it is not necessary that the [Frustum] be normalized.
     pub fn from_matrix(matrix: Mat4) -> Frustum {
+        // http://www.cs.otago.ac.nz/postgrads/alexis/planeExtraction.pdf
+
         let row0 = matrix.row(0);
         let row1 = matrix.row(1);
         let row2 = matrix.row(2);
         let row3 = matrix.row(3);
 
-        let left = (row3 + row0).normalized();
-        let right = (row3 - row0).normalized();
-        let top = (row3 - row1).normalized();
-        let bottom = (row3 + row1).normalized();
-        let near = (row3 + row2).normalized();
-        let far = (row3 - row2).normalized();
+        let left = row3 + row0;
+        let right = row3 - row0;
+        let top = row3 - row1;
+        let bottom = row3 + row1;
+        let near = row3 + row2;
+        //let far = row3 - row2;
 
+        // I don't understand why `distance_along_normal` is negated here, but it was needed for
+        // a correct frustum to be generated.
         Frustum {
             planes: [
                 Plane3 {
                     normal: left.xyz(),
-                    distance_along_normal: left[3],
+                    distance_along_normal: -left[3],
                 },
                 Plane3 {
                     normal: right.xyz(),
-                    distance_along_normal: right[3],
+                    distance_along_normal: -right[3],
                 },
                 Plane3 {
                     normal: top.xyz(),
-                    distance_along_normal: top[3],
+                    distance_along_normal: -top[3],
                 },
                 Plane3 {
                     normal: bottom.xyz(),
-                    distance_along_normal: bottom[3],
+                    distance_along_normal: -bottom[3],
                 },
                 Plane3 {
                     normal: near.xyz(),
-                    distance_along_normal: near[3],
-                },
-                Plane3 {
-                    normal: far.xyz(),
-                    distance_along_normal: far[3],
+                    distance_along_normal: -near[3],
                 },
             ],
         }
@@ -375,7 +378,7 @@ impl Frustum {
         for plane in self.planes {
             let mut corners_outside_plane = 0;
             for corner in box3.corners() {
-                if plane.distance_to_point(corner) > 0.0 {
+                if plane.distance_to_point(corner) < 0.0 {
                     corners_outside_plane += 1;
                 }
             }
