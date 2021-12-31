@@ -535,30 +535,44 @@ impl<'a, 'b: 'a> Renderer<'a, 'b> {
 
         let mut transparent_renderables = Vec::new();
 
+        let frustum = Frustum::from_matrix(camera_transform.model() * camera.projection_matrix());
+
         for renderable in renderables.iter() {
             let (transform, material_handle, mesh_handle, render_layer, optional_sprite, color) =
                 renderable;
             let render_layer = render_layer.cloned().unwrap_or(RenderLayers::DEFAULT);
             if camera.render_layers.includes_layer(render_layer) {
-                let is_transparent = self
-                    .shader_assets
-                    .get(&self.material_assets.get(material_handle).shader)
-                    .pipeline
-                    .blending()
-                    .is_some();
+                // Frustum cull models
+                // Always render models without bounding boxes.
+                let should_render = true;
+                /*self
+                    .mesh_assets
+                    .get(mesh_handle)
+                    .bounding_box
+                    .map_or(true, |b| frustum.intersects_box(b));*/
+                if should_render {
+                    let is_transparent = self
+                        .shader_assets
+                        .get(&self.material_assets.get(material_handle).shader)
+                        .pipeline
+                        .blending()
+                        .is_some();
 
-                if is_transparent {
-                    transparent_renderables.push(renderable);
+                    if is_transparent {
+                        transparent_renderables.push(renderable);
+                    } else {
+                        self.change_material(material_handle, lights, reflection_probes);
+                        if let Some(sprite) = optional_sprite {
+                            self.prepare_sprite(sprite);
+                        }
+                        if let Some(color) = color {
+                            self.set_color(*color);
+                        }
+
+                        self.render_mesh(transform, mesh_handle);
+                    }
                 } else {
-                    self.change_material(material_handle, lights, reflection_probes);
-                    if let Some(sprite) = optional_sprite {
-                        self.prepare_sprite(sprite);
-                    }
-                    if let Some(color) = color {
-                        self.set_color(*color);
-                    }
-
-                    self.render_mesh(transform, mesh_handle);
+                    println!("CULLING");
                 }
             }
         }
@@ -861,8 +875,7 @@ pub fn render_shadow_pass(
     lights: &mut Lights,
     renderables: &Renderables,
 ) {
-    let camera_view_matrix = camera_global_transform.model().inversed();
-    let camera_view_inversed = camera_view_matrix.inversed();
+    let camera_view_inversed = camera_global_transform.model();
 
     let splits = [10., 25., 47., 200.];
     let mut z_near = camera.get_near_plane();

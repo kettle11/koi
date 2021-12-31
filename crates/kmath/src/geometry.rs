@@ -44,6 +44,32 @@ pub struct BoundingBox<T, const DIMENSIONS: usize> {
     pub max: Vector<T, DIMENSIONS>,
 }
 
+impl<T: Numeric> BoundingBox<T, 2> {
+    pub fn corners(&self) -> [Vector<T, 2>; 4] {
+        [
+            Vector::<T, 2>::new(self.min.x, self.min.y),
+            Vector::<T, 2>::new(self.max.x, self.min.y),
+            Vector::<T, 2>::new(self.max.x, self.max.y),
+            Vector::<T, 2>::new(self.min.x, self.max.y),
+        ]
+    }
+}
+
+impl<T: Numeric> BoundingBox<T, 3> {
+    pub fn corners(&self) -> [Vector<T, 3>; 8] {
+        [
+            Vector::<T, 3>::new(self.min.x, self.min.y, self.min.z),
+            Vector::<T, 3>::new(self.max.x, self.min.y, self.min.z),
+            Vector::<T, 3>::new(self.max.x, self.min.y, self.max.z),
+            Vector::<T, 3>::new(self.min.x, self.min.y, self.max.z),
+            Vector::<T, 3>::new(self.min.x, self.max.y, self.min.z),
+            Vector::<T, 3>::new(self.max.x, self.max.y, self.min.z),
+            Vector::<T, 3>::new(self.max.x, self.max.y, self.max.z),
+            Vector::<T, 3>::new(self.min.x, self.max.y, self.max.z),
+        ]
+    }
+}
+
 impl<T: Numeric + PartialOrd + 'static, const DIMENSIONS: usize> BoundingBox<T, DIMENSIONS> {
     pub const ZERO: Self = Self {
         min: Vector::<T, DIMENSIONS>::ZERO,
@@ -295,18 +321,13 @@ pub fn ray_with_mesh(ray: Ray3, vertices: &[Vec3], indices: &[[u32; 3]]) -> Opti
     }
 }
 
-/*
 pub struct Frustum {
-    pub left: Plane,
-    pub right: Plane,
-    pub top: Plane,
-    pub bottom: Plane,
-    pub near: Plane,
-    pub far: Plane,
+    // Left, right, top, bottom, near, far
+    pub planes: [Plane3; 6],
 }
 
 impl Frustum {
-    pub fn from_matrix(matrix: &Mat4) -> Frustum {
+    pub fn from_matrix(matrix: Mat4) -> Frustum {
         let row0 = matrix.row(0);
         let row1 = matrix.row(1);
         let row2 = matrix.row(2);
@@ -320,13 +341,51 @@ impl Frustum {
         let far = (row3 - row2).normalized();
 
         Frustum {
-            left: Plane::new(left[3], left.xyz()),
-            right: Plane::new(right[3], right.xyz()),
-            top: Plane::new(top[3], top.xyz()),
-            bottom: Plane::new(bottom[3], bottom.xyz()),
-            near: Plane::new(near[3], near.xyz()),
-            far: Plane::new(far[3], far.xyz()),
+            planes: [
+                Plane3 {
+                    normal: left.xyz(),
+                    distance_along_normal: left[3],
+                },
+                Plane3 {
+                    normal: right.xyz(),
+                    distance_along_normal: right[3],
+                },
+                Plane3 {
+                    normal: top.xyz(),
+                    distance_along_normal: top[3],
+                },
+                Plane3 {
+                    normal: bottom.xyz(),
+                    distance_along_normal: bottom[3],
+                },
+                Plane3 {
+                    normal: near.xyz(),
+                    distance_along_normal: near[3],
+                },
+                Plane3 {
+                    normal: far.xyz(),
+                    distance_along_normal: far[3],
+                },
+            ],
         }
     }
+
+    pub fn intersects_box(&self, box3: Box3) -> bool {
+        // For each plane check if all corners of the box are outside the plane
+        for plane in self.planes {
+            let mut corners_outside_plane = 0;
+            for corner in box3.corners() {
+                if plane.distance_to_point(corner) > 0.0 {
+                    corners_outside_plane += 1;
+                }
+            }
+            if corners_outside_plane == 8 {
+                return false;
+            }
+        }
+
+        // Some corners are not outside the plane
+        // Todo: Additional cases should be checked for here: https://www.iquilezles.org/www/articles/frustumcorrect/frustumcorrect.htm
+        return true;
+    }
 }
-*/
