@@ -49,8 +49,7 @@ pub struct ViewInfo {
     pub viewport: Box2,
 }
 
-struct MaterialInfo<'a> {
-    material_handle: &'a Handle<Material>,
+struct PipelineInfo {
     model_property: Mat4Property,
     position_attribute: VertexAttribute<Vec3>,
     normal_attribute: VertexAttribute<Vec3>,
@@ -60,7 +59,7 @@ struct MaterialInfo<'a> {
     base_color_texture_property: TextureProperty,
     texture_coordinate_offset_property: Vec2Property,
     texture_coordinate_scale_property: Vec2Property,
-    sprite_texture_unit: u8,
+    sprite_texture_unit: Option<u8>,
 }
 
 pub type RendererQuery<'a> = (
@@ -81,7 +80,8 @@ struct Renderer<'a, 'b: 'a> {
     cube_map_assets: &'a Assets<CubeMap>,
     bound_mesh: Option<&'a Handle<Mesh>>,
     bound_shader: Option<&'a Handle<Shader>>,
-    material_info: Option<MaterialInfo<'a>>,
+    material_handle: Option<&'a Handle<Material>>,
+    pipeline_info: Option<PipelineInfo>,
     #[allow(unused)]
     multiview_enabled: bool,
     current_pipeline: Option<&'a Pipeline>,
@@ -120,7 +120,8 @@ impl<'a, 'b: 'a> Renderer<'a, 'b> {
             mesh_assets,
             bound_mesh: None,
             bound_shader: None,
-            material_info: None,
+            material_handle: None,
+            pipeline_info: None,
             camera_info,
             multiview_enabled,
             current_pipeline: None,
@@ -288,7 +289,7 @@ impl<'a, 'b: 'a> Renderer<'a, 'b> {
         reflection_probes: &Query<(&'static GlobalTransform, &'static ReflectionProbe)>,
     ) {
         // Avoid unnecessary [Material] rebinds.
-        if Some(material_handle) != self.material_info.as_ref().map(|m| m.material_handle) {
+        if Some(material_handle) != self.material_handle {
             self.just_changed_material = true;
 
             // When a pipeline change occurs a bunch of uniforms need to be rebound.
@@ -304,11 +305,14 @@ impl<'a, 'b: 'a> Renderer<'a, 'b> {
                 &shader.pipeline
             };
 
+            // THIS IS A HACK FOR NOW
+            // This should be replaced with a pipeline-specific max-texture unit
+            let max_texture_unit = 5;
+
             // Avoid unnecessary pipeline / shader changes.
             // For now this is commented out but it could be reintroduced later.
             // This check would prevent pipleline changes if the material is different but the pipeline is the same.
-            // if self.bound_shader != Some(&material.shader)
-            {
+            if self.bound_shader != Some(&material.shader) {
                 self.current_pipeline = Some(pipeline);
                 self.render_pass.set_pipeline(pipeline);
 
@@ -350,12 +354,11 @@ impl<'a, 'b: 'a> Renderer<'a, 'b> {
                 let sprite_texture_unit = material
                     .texture_properties
                     .get("p_base_color_texture")
-                    .map(|p| p.1)
-                    .unwrap_or(material.max_texture_unit);
+                    .map(|p| p.1);
                 let base_color_property = pipeline.get_vec4_property("p_base_color").unwrap();
 
                 // Bind light and shadow info.
-                self.bind_light_info(pipeline, lights, material.max_texture_unit + 4);
+                self.bind_light_info(pipeline, lights, max_texture_unit + 4);
 
                 // Bind the reflection probe
                 let (reflection_probe_diffuse, reflection_probe_specular) =
@@ -376,13 +379,13 @@ impl<'a, 'b: 'a> Renderer<'a, 'b> {
                 self.render_pass.set_cube_map_property(
                     &pipeline.get_cube_map_property(&"p_irradiance_map").unwrap(),
                     Some(reflection_probe_diffuse),
-                    material.max_texture_unit + 1,
+                    max_texture_unit + 1,
                 );
 
                 self.render_pass.set_cube_map_property(
                     &pipeline.get_cube_map_property(&"p_prefilter_map").unwrap(),
                     Some(reflection_probe_specular),
-                    material.max_texture_unit + 2,
+                    max_texture_unit + 2,
                 );
 
                 // Bind the brdf lookup table.
@@ -391,12 +394,11 @@ impl<'a, 'b: 'a> Renderer<'a, 'b> {
                         .get_texture_property(&"p_brdf_lookup_table")
                         .unwrap(),
                     Some(self.brdf_lookup_texture),
-                    material.max_texture_unit + 3,
+                    max_texture_unit + 3,
                 );
 
                 self.bound_shader = Some(&material.shader);
-                self.material_info = Some(MaterialInfo {
-                    material_handle,
+                self.pipeline_info = Some(PipelineInfo {
                     model_property,
                     position_attribute,
                     normal_attribute,
@@ -409,6 +411,7 @@ impl<'a, 'b: 'a> Renderer<'a, 'b> {
                     sprite_texture_unit,
                 });
             }
+            self.material_handle = Some(material_handle);
 
             // Rebind the material properties.
             material.bind_material(
@@ -421,7 +424,7 @@ impl<'a, 'b: 'a> Renderer<'a, 'b> {
     }
 
     pub fn set_color(&mut self, color: Color) {
-        if let Some(material_info) = &self.material_info {
+        if let Some(material_info) = &self.pipeline_info {
             let rgb_color = color.to_rgb_color(color_spaces::LINEAR_SRGB);
 
             self.render_pass
@@ -430,30 +433,32 @@ impl<'a, 'b: 'a> Renderer<'a, 'b> {
     }
 
     pub fn prepare_sprite(&mut self, sprite: &Sprite) {
-        if let Some(material_info) = &self.material_info {
-            let primary_texture = self.texture_assets.get(&sprite.texture_handle);
+        if let Some(material_info) = &self.pipeline_info {
+            if let Some(sprite_texture_unit) = material_info.sprite_texture_unit {
+                let primary_texture = self.texture_assets.get(&sprite.texture_handle);
 
-            self.render_pass.set_texture_property(
-                &material_info.base_color_texture_property,
-                Some(primary_texture),
-                material_info.sprite_texture_unit,
-            );
+                self.render_pass.set_texture_property(
+                    &material_info.base_color_texture_property,
+                    Some(primary_texture),
+                    sprite_texture_unit,
+                );
 
-            self.render_pass.set_vec2_property(
-                &material_info.texture_coordinate_offset_property,
-                sprite.sprite_source_bounds.min.into(),
-            );
-            self.render_pass.set_vec2_property(
-                &material_info.texture_coordinate_scale_property,
-                sprite.sprite_source_bounds.size().into(),
-            );
+                self.render_pass.set_vec2_property(
+                    &material_info.texture_coordinate_offset_property,
+                    sprite.sprite_source_bounds.min.into(),
+                );
+                self.render_pass.set_vec2_property(
+                    &material_info.texture_coordinate_scale_property,
+                    sprite.sprite_source_bounds.size().into(),
+                );
+            }
         }
     }
 
     pub fn render_mesh(&mut self, transform: &Transform, mesh_handle: &'a Handle<Mesh>) {
         // Instead of checking this here there should always be standard material properties, just
         // for a default material.
-        if let Some(material_info) = &self.material_info {
+        if let Some(material_info) = &self.pipeline_info {
             let mesh = self.mesh_assets.get(mesh_handle);
 
             if let Some(gpu_mesh) = &mesh.gpu_mesh {
@@ -552,6 +557,7 @@ impl<'a, 'b: 'a> Renderer<'a, 'b> {
                     if let Some(color) = color {
                         self.set_color(*color);
                     }
+
                     self.render_mesh(transform, mesh_handle);
                 }
             }
@@ -914,7 +920,7 @@ pub fn render_shadow_pass(
 
                 // It would be better to detect objects within the light's bounds and determine where the near
                 // and far planes should go appropriately.
-                let shadow_behind_light = 100.;
+                let shadow_behind_light = 300.;
                 let projection_matrix = kmath::projection_matrices::orthographic_gl(
                     bounding_box.min[0],
                     bounding_box.max[0],
