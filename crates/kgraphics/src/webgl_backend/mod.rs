@@ -679,7 +679,7 @@ impl GraphicsContextTrait for GraphicsContext {
     }
 
     fn new_fragment_function(&self, source: &str) -> Result<FragmentFunction, String> {
-        let source = "#version 300 es\nprecision highp float;\n".to_owned() + source;
+        let source = "#version 300 es\nprecision mediump float;\n".to_owned() + source;
         let source = JSString::new(&source);
         let js_object = self.js.new_fragment_function.call_1_arg(&source).unwrap();
         Ok(FragmentFunction { js_object })

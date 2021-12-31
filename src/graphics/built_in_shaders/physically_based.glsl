@@ -198,7 +198,7 @@ float ShadowCalculation(in sampler2D shadowMap, vec4 fragPosLightSpace, vec3 lig
             shadow += currentDepth - bias > pcfDepth ? 1.0 : 0.0;        
         }    
     }
-    shadow /= (shadow_samples * 2 + 1) * (shadow_samples * 2 + 1);
+    shadow /= (float(shadow_samples) * 2.0 + 1.0) * (float(shadow_samples) * 2.0 + 1.0);
 
     if(projCoords.z > 1.0)
         shadow = 0.0;
