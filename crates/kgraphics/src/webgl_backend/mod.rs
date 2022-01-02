@@ -909,9 +909,10 @@ impl GraphicsContextTrait for GraphicsContext {
         let wrapping_horizontal = wrapping_to_gl_enum(texture_settings.wrapping_horizontal);
         let wrapping_vertical = wrapping_to_gl_enum(texture_settings.wrapping_vertical);
 
-        let (data_ptr, data_len) = data.map_or((0, 0), |d| (d.as_ptr() as u32, d.len() as u32));
-
         for i in 0..6 {
+            let (data_ptr, data_len) =
+                data.map_or((0, 0), |d| (d[i].as_ptr() as u32, d[i].len() as u32));
+
             self.js.update_texture.call_raw(&[
                 texture.index(),
                 TEXTURE_CUBE_MAP,
