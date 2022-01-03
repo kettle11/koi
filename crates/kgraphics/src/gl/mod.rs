@@ -1036,6 +1036,11 @@ impl GraphicsContextTrait for GraphicsContext {
                 texture,
                 level,
             );
+
+            // For some reason on macOS if the default framebuffer is not rebind here Mac OpenGL driver code segfaults.
+            self.gl
+                .bind_framebuffer(GL_FRAMEBUFFER, Framebuffer::default());
+
             framebuffer
         }
     }
