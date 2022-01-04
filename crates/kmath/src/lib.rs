@@ -42,10 +42,13 @@ mod default_types {
 
     pub type Plane2 = crate::geometry::Plane<f32, 2>;
     pub type Plane3 = crate::geometry::Plane<f32, 3>;
+
+    pub type Line2 = Line<f32, 2>;
+    pub type Line3 = Line<f32, 3>;
 }
 pub use default_types::*;
 
-pub use geometry::Frustum;
+pub use geometry::{Frustum, Line, Plane};
 
 // #[cfg(test)]
 // mod tests;

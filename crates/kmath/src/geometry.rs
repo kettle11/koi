@@ -2,7 +2,7 @@ use crate::numeric_traits::*;
 use crate::*;
 
 /// A circle in 2D, a sphere in 3D.
-#[derive(Clone)]
+#[derive(Clone, Copy)]
 pub struct Ball<T, const DIMENSIONS: usize> {
     pub center: Vector<T, DIMENSIONS>,
     pub radius: T,
@@ -14,11 +14,27 @@ impl<T, const DIMENSIONS: usize> Ball<T, DIMENSIONS> {
     }
 }
 
-pub struct Line<T, const DIMENSIONS: usize> {
+#[derive(Clone, Copy)]
+pub struct Line<T: Numeric, const DIMENSIONS: usize> {
     pub point: Vector<T, DIMENSIONS>,
     pub direction: Vector<T, DIMENSIONS>,
 }
 
+impl<T: Numeric + NumericSqrt, const DIMENSIONS: usize> Line<T, DIMENSIONS> {
+    pub fn new(a: Vector<T, DIMENSIONS>, b: Vector<T, DIMENSIONS>) -> Self {
+        let direction = (b - a).normalized();
+        Self {
+            point: a,
+            direction,
+        }
+    }
+
+    pub fn get_point(self, distance: T) -> Vector<T, DIMENSIONS> {
+        self.point + self.direction * distance
+    }
+}
+
+#[derive(Clone, Copy)]
 pub struct LineSegment<T, const DIMENSIONS: usize> {
     pub a: Vector<T, DIMENSIONS>,
     pub b: Vector<T, DIMENSIONS>,
@@ -208,20 +224,21 @@ impl<T: NumericFloat, const DIM: usize> Plane<T, DIM> {
     }
 }
 
-// https://en.wikipedia.org/wiki/Line%E2%80%93plane_intersection
 /// Returns distance along the ray if it intersects.
 /// The ray will not intersect if it points away from the plane or is parallel to the plane.
+/// Call [Ray::get_point] with the return value to get the intersection point.
 pub fn ray_with_plane<F: NumericFloat, const DIM: usize>(
     ray: Ray<F, DIM>,
     plane: Plane<F, DIM>,
 ) -> Option<F> {
+    // https://en.wikipedia.org/wiki/Line%E2%80%93plane_intersection
+
     let bottom = ray.direction.dot(plane.normal);
 
     if bottom == F::ZERO {
         None // No intersection
     } else {
-        let top = ((plane.normal * plane.distance_along_normal) - ray.origin).dot(plane.normal);
-
+        let top = ray.origin.dot(plane.normal) - plane.distance_along_normal;
         if top == F::ZERO {
             None // Technically it intersects the entire plane, because the line is on the plane.
                  // However for now we're just saying it doesn't intersect.
@@ -229,6 +246,24 @@ pub fn ray_with_plane<F: NumericFloat, const DIM: usize>(
             let distance = top / bottom;
             Some(distance)
         }
+    }
+}
+
+/// Returns distance along the [Line] away from `line.point` if it intersects.
+/// Call [Line::get_point] with the return value to get the intersection point.
+/// If [None] is returned the entire [Line] is on the plane.
+pub fn line_with_plane<F: NumericFloat, const DIM: usize>(
+    line: Line<F, DIM>,
+    plane: Plane<F, DIM>,
+) -> Option<Vector<F, DIM>> {
+    // https://en.wikipedia.org/wiki/Line%E2%80%93plane_intersection
+    let top = line.point.dot(plane.normal) - plane.distance_along_normal;
+    let bottom = line.direction.dot(plane.normal);
+    let d = top / bottom;
+    if d == F::ZERO {
+        None
+    } else {
+        Some(line.point - line.direction * (top / bottom))
     }
 }
 
