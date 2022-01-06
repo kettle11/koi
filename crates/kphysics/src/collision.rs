@@ -687,9 +687,13 @@ fn sutherland_hodgman_clipping<F: NumericFloat + Debug, const DIM: usize>(
                 if current_outside != previous_outside {
                     // Crossing
                     let line = Line::new(current_point, previous_point);
-                    // This can panic. 
-                    let cross_point = line_with_plane(line, plane).unwrap();
-                    output_points.push(cross_point);
+
+                    // `line_with_plane` can return `None` if the current point is on the plane.
+                    // In that case `current_outside` will be false and the point will be pushed.
+                    // But a cross point should not be pushed.
+                    if let Some(cross_point) = line_with_plane(line, plane) {
+                        output_points.push(cross_point);
+                    }
                 }
                 if !current_outside {
                     output_points.push(current_point);
