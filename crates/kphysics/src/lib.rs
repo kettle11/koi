@@ -1,4 +1,4 @@
-mod collision;
+pub mod collision;
 
 mod convex_mesh_collider;
 
@@ -56,6 +56,7 @@ pub struct MeshData<F: NumericFloat> {
     pub positions: Vec<Vector<F, 3>>,
     pub normals: Vec<Vector<F, 3>>,
     pub indices: Vec<[u32; 3]>,
+    pub planes: Vec<Plane<F, 3>>,
 }
 
 #[derive(Clone)]
@@ -180,6 +181,7 @@ impl<F: NumericFloat + PhysicsDefaults + Debug + GJKEpsilon> PhysicsWorld<F> {
                                     &mesh_b.positions,
                                 );
                                 if collision_info.collided {
+                                    /*
                                     let relative_velocity =
                                         rigid_body_a.velocity - rigid_body_b.velocity;
                                     if relative_velocity.length_squared() < F::GJK_EPSILON {
@@ -260,9 +262,13 @@ impl<F: NumericFloat + PhysicsDefaults + Debug + GJKEpsilon> PhysicsWorld<F> {
                                         rigid_body_b.position +=
                                             separation_direction * separation * mass_ratio_a;
                                     }
+
+                                    println!("POINTS: {:#?}", collision_points);
+                                    panic!();
                                     for (&point, &_normal) in
                                         collision_points.iter().zip(normals.iter())
                                     {
+                                        println!("POINT: {:?}", point);
                                         let normal = Vector::<F, 3>::Y;
                                         println!("normal: {:?}", normal);
 
@@ -324,8 +330,8 @@ impl<F: NumericFloat + PhysicsDefaults + Debug + GJKEpsilon> PhysicsWorld<F> {
                                         if rigid_body_a.mass != F::INFINITY {
                                             rigid_body_a.velocity += force / rigid_body_a.mass;
 
-                                            // rigid_body_a.angular_velocity +=
-                                            //     inverse_tensor_a * (ra.cross(force));
+                                            rigid_body_a.angular_velocity +=
+                                                inverse_tensor_a * (ra.cross(force));
 
                                             println!("VELOCITY A: {:?}", rigid_body_a.velocity);
                                             println!(
@@ -336,7 +342,7 @@ impl<F: NumericFloat + PhysicsDefaults + Debug + GJKEpsilon> PhysicsWorld<F> {
                                         }
 
                                         if rigid_body_b.mass != F::INFINITY {
-                                            //let response = impulse * mass_ratio;
+                                            // let response = impulse * mass_ratio;
                                             // let torque = impulse
                                             //     .cross(point - rigid_body_b.position);
                                             //
@@ -345,10 +351,12 @@ impl<F: NumericFloat + PhysicsDefaults + Debug + GJKEpsilon> PhysicsWorld<F> {
                                             rigid_body_b.velocity -= force / rigid_body_b.mass;
                                             println!("VELOCITY B: {:?}", rigid_body_b.velocity);
 
-                                            //  rigid_body_b.angular_velocity -=
-                                            //      inverse_tensor_b * (rb.cross(force));
+                                            rigid_body_b.angular_velocity -=
+                                                inverse_tensor_b * (rb.cross(force));
                                         }
                                     }
+                                    // panic!();
+                                    */
                                 }
                             }
                         }
@@ -470,14 +478,58 @@ impl<F: NumericFloat + PhysicsDefaults + Debug + GJKEpsilon> PhysicsWorld<F> {
         normals: &[Vector<F, 3>],
         indices: &[[u32; 3]],
     ) -> MeshDataHandle {
-        self.collider_meshes.push(MeshData {
-            positions: positions.into(),
-            normals: normals.into(),
-            indices: indices.into(),
-        });
+        // Calculate planes for this mesh, but deduplicate.
+        let mesh_data = create_mesh_data(positions, normals, indices);
+
+        self.collider_meshes.push(mesh_data);
+
         MeshDataHandle(self.collider_meshes.len() - 1)
     }
+
+    pub fn get_mesh_data(&self, mesh_data_handle: &MeshDataHandle) -> &MeshData<F> {
+        self.collider_meshes.get(mesh_data_handle.0).unwrap()
+    }
 }
+
+pub fn create_mesh_data<F: NumericFloat + GJKEpsilon>(
+    positions: &[Vector<F, 3>],
+    normals: &[Vector<F, 3>],
+    indices: &[[u32; 3]],
+) -> MeshData<F> {
+    // Calculate planes for this mesh, but deduplicate.
+    let mut planes: Vec<Plane<F, 3>> = Vec::new();
+    for [i0, i1, i2] in indices {
+        let (p0, p1, p2) = (
+            positions[*i0 as usize],
+            positions[*i1 as usize],
+            positions[*i2 as usize],
+        );
+        let normal = ((p1 - p0).cross(p2 - p1)).normalized();
+        let plane = Plane::new(normal, p0);
+        // Check that this plane does not already exist.
+        let mut new_plane = true;
+        for p in planes.iter() {
+            let matches = (p.normal - normal).length_squared() < F::GJK_EPSILON
+                && (p.distance_along_normal - plane.distance_along_normal).numeric_abs()
+                    < F::GJK_EPSILON;
+            if matches {
+                new_plane = false;
+                break;
+            }
+        }
+        if new_plane {
+            planes.push(plane);
+        }
+    }
+
+    MeshData {
+        positions: positions.into(),
+        normals: normals.into(),
+        indices: indices.into(),
+        planes,
+    }
+}
+
 /// A helper to get two mutable borrows from the same slice.
 fn index_twice<T>(slice: &mut [T], first: usize, second: usize) -> (&mut T, &mut T) {
     if first < second {

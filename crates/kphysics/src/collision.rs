@@ -1,191 +1,9 @@
 use std::cmp::Ordering;
 use std::fmt::Debug;
 
+use kmath::geometry::line_with_plane;
 use kmath::numeric_traits::NumericFloat;
 use kmath::*;
-
-/*
-pub fn find_on_plane<F: NumericFloat + GJKEpsilon>(
-    direction: Vector<F, 3>,
-    distance_along_plane: F,
-    points: &[Vector<F, 3>],
-) {
-    for p in points {
-        let projected_on_direction = p.dot(direction);
-        if (projected_on_direction - distance_along_plane).numeric_abs() < GJKEpsilon::GJK_EPSILON {
-            // This point is on the separating plane.
-
-        }
-    }
-}
-*/
-
-pub fn find_min_max_along_direction<F: NumericFloat>(
-    direction: Vector<F, 3>,
-    points: &[Vector<F, 3>],
-) -> (F, F) {
-    let mut min = F::MAX;
-    let mut max = F::MIN;
-    for p in points {
-        let v = direction.dot(*p);
-        min = min.numeric_min(v);
-        max = max.numeric_max(v);
-    }
-    (min, max)
-}
-
-fn clip_dirs_against_mesh<F: NumericFloat + Debug + GJKEpsilon>(
-    p: Vector<F, 3>,
-    dir0: Vector<F, 3>,
-    dir1: Vector<F, 3>,
-    mesh_a_vertices: &[Vector<F, 3>],
-    mesh_a_indices: &[[u32; 3]],
-    min0: &mut F,
-    max0: &mut F,
-    min1: &mut F,
-    max1: &mut F,
-    min0_normal: &mut Vector<F, 3>,
-    max0_normal: &mut Vector<F, 3>,
-    min1_normal: &mut Vector<F, 3>,
-    max1_normal: &mut Vector<F, 3>,
-) {
-    for tri in mesh_a_indices {
-        let middle_vert = mesh_a_vertices[tri[1] as usize];
-        let edge0 = middle_vert - mesh_a_vertices[tri[0] as usize];
-        let edge1 = mesh_a_vertices[tri[2] as usize] - middle_vert;
-        let plane_normal = edge0.cross(edge1).normalized();
-
-        let v = plane_normal * (middle_vert - p).dot(plane_normal);
-        let v0 = v.dot(dir0);
-        let v1 = v.dot(dir1);
-
-        match plane_normal.dot(dir0).partial_cmp(&F::ZERO) {
-            Some(Ordering::Less) => {
-                *min0 = min0.numeric_max(v0);
-                *min0_normal = plane_normal;
-            }
-            Some(Ordering::Greater) => {
-                *max0 = max0.numeric_min(v0);
-                *max0_normal = plane_normal;
-            }
-            _ => {}
-        }
-        match plane_normal.dot(dir1).partial_cmp(&F::ZERO) {
-            Some(Ordering::Less) => {
-                *min1 = min1.numeric_max(v1);
-                *min1_normal = plane_normal;
-            }
-            Some(Ordering::Greater) => {
-                *max1 = max1.numeric_min(v1);
-                *max1_normal = plane_normal;
-            }
-            _ => {}
-        }
-    }
-}
-
-pub fn find_planar_contact_points<F: NumericFloat + Debug + GJKEpsilon>(
-    p: Vector<F, 3>,
-    normal: Vector<F, 3>,
-    mesh_a_vertices: &[Vector<F, 3>],
-    mesh_a_indices: &[[u32; 3]],
-    mesh_b_vertices: &[Vector<F, 3>],
-    mesh_b_indices: &[[u32; 3]],
-    a_to_world: Matrix<F, 4, 4>,
-    b_to_world: Matrix<F, 4, 4>,
-    world_to_a: Matrix<F, 4, 4>,
-    world_to_b: Matrix<F, 4, 4>,
-) -> ([Vector<F, 3>; 4], [Vector<F, 3>; 4]) {
-    let dir0 = if normal.z != F::ZERO || normal.y != F::ZERO {
-        normal.cross(Vector::<F, 3>::X)
-    } else {
-        normal.cross(Vector::<F, 3>::Y)
-    };
-    let dir1 = dir0.cross(normal);
-
-    let mut min0_a = F::MIN;
-    let mut max0_a = F::MAX;
-    let mut min1_a = F::MIN;
-    let mut max1_a = F::MAX;
-
-    let mut min0_normal_a = Vector::<F, 3>::ZERO;
-    let mut max0_normal_a = Vector::<F, 3>::ZERO;
-    let mut min1_normal_a = Vector::<F, 3>::ZERO;
-    let mut max1_normal_a = Vector::<F, 3>::ZERO;
-
-    clip_dirs_against_mesh(
-        world_to_a.transform_point(p),
-        world_to_a.transform_vector(dir0),
-        world_to_a.transform_vector(dir1),
-        mesh_a_vertices,
-        mesh_a_indices,
-        &mut min0_a,
-        &mut max0_a,
-        &mut min1_a,
-        &mut max1_a,
-        &mut min0_normal_a,
-        &mut max0_normal_a,
-        &mut min1_normal_a,
-        &mut max1_normal_a,
-    );
-
-    let mut min0_b = F::MIN;
-    let mut max0_b = F::MAX;
-    let mut min1_b = F::MIN;
-    let mut max1_b = F::MAX;
-
-    let mut min0_normal_b = Vector::<F, 3>::ZERO;
-    let mut max0_normal_b = Vector::<F, 3>::ZERO;
-    let mut min1_normal_b = Vector::<F, 3>::ZERO;
-    let mut max1_normal_b = Vector::<F, 3>::ZERO;
-
-    clip_dirs_against_mesh(
-        world_to_b.transform_point(p),
-        world_to_b.transform_vector(dir0),
-        world_to_b.transform_vector(dir1),
-        mesh_b_vertices,
-        mesh_b_indices,
-        &mut min0_b,
-        &mut max0_b,
-        &mut min1_b,
-        &mut max1_b,
-        &mut min0_normal_b,
-        &mut max0_normal_b,
-        &mut min1_normal_b,
-        &mut max1_normal_b,
-    );
-
-    let (min0, normal0) = if min0_a < min0_b {
-        (min0_b, b_to_world.transform_vector(min0_normal_b))
-    } else {
-        (min0_a, a_to_world.transform_vector(min0_normal_a))
-    };
-    let (max0, normal1) = if max0_a > max0_b {
-        (max0_b, b_to_world.transform_vector(max0_normal_b))
-    } else {
-        (max0_a, a_to_world.transform_vector(max0_normal_a))
-    };
-    let (min1, normal2) = if min1_a < min1_b {
-        (min1_b, b_to_world.transform_vector(min1_normal_b))
-    } else {
-        (min1_a, a_to_world.transform_vector(min1_normal_a))
-    };
-    let (max1, normal3) = if max1_a > max1_b {
-        (max1_b, b_to_world.transform_vector(max1_normal_b))
-    } else {
-        (max1_a, a_to_world.transform_vector(max1_normal_a))
-    };
-
-    (
-        [
-            dir0 * min0 + p,
-            dir0 * max0 + p,
-            dir1 * min1 + p,
-            dir1 * max1 + p,
-        ],
-        [normal0, normal1, normal2, normal3],
-    )
-}
 
 pub trait GJKEpsilon {
     const GJK_EPSILON: Self;
@@ -197,6 +15,19 @@ impl GJKEpsilon for f32 {
 }
 impl GJKEpsilon for f64 {
     const GJK_EPSILON: Self = 0.00001;
+}
+
+// An arbitrary large number used to initiate the clipping polygon for contact point finding.
+pub trait VeryLargeNumber {
+    const VERY_LARGE_NUMBER: Self;
+}
+
+impl VeryLargeNumber for f32 {
+    const VERY_LARGE_NUMBER: Self = 999999.;
+}
+
+impl VeryLargeNumber for f64 {
+    const VERY_LARGE_NUMBER: Self = 999999.;
 }
 
 // A helper data structure that makes the GJK algorithm a bit cleaner.
@@ -782,6 +613,179 @@ impl<F: NumericFloat> Simplex<F> {
     }
 }
 
+fn find_largest_square_within_convex_polygon<F: NumericFloat>(
+    polygon_points: &[Vector<F, 3>],
+    normal: Vector<F, 3>,
+) -> [Vector<F, 3>; 4] {
+    // Is there a better way to choose the first point than arbitrarily?
+    // One way is to choose the furthest point in a direction, which would improve coherence between frames.
+
+    let p0 = polygon_points[0];
+    let mut p1 = Vector::<F, 3>::ZERO;
+    let mut p2 = Vector::<F, 3>::ZERO;
+    let mut p3 = Vector::<F, 3>::ZERO;
+
+    let mut d = F::MIN;
+
+    // Find the furthest point
+    for (i, &p) in polygon_points.iter().enumerate() {
+        // Skip the first point which we're using as our starting point
+        if i != 0 {
+            let new_distance = (p0 - p).length_squared();
+            if new_distance < d {
+                p1 = p;
+                d = new_distance;
+            }
+        }
+    }
+
+    // Find the triangle that forms the max area.
+    let mut max_area = F::MIN;
+    for &p in polygon_points.iter() {
+        let d0 = p - p0;
+        let d1 = p - p1;
+        let signed_area = F::HALF * d0.cross(d1).dot(normal);
+        if signed_area > max_area {
+            max_area = signed_area;
+            p2 = p;
+        }
+    }
+
+    // Find the triangle that forms the min area.
+    let mut min_area = F::MAX;
+    for &p in polygon_points.iter() {
+        let d0 = p - p0;
+        let d1 = p - p1;
+        let signed_area = F::HALF * d0.cross(d1).dot(normal);
+        if signed_area < min_area {
+            min_area = signed_area;
+            p3 = p;
+        }
+    }
+
+    [p0, p1, p2, p3]
+}
+
+/// Clips the polygon defined by the `input_points` against the clipping planes.
+/// Returns the result in `output_points`
+fn sutherland_hodgman_clipping<F: NumericFloat + Debug, const DIM: usize>(
+    input_points: &mut Vec<Vector<F, DIM>>,
+    output_points: &mut Vec<Vector<F, DIM>>,
+    clipping_planes: &[Plane<F, DIM>],
+) {
+    // https://en.wikipedia.org/wiki/Sutherland–Hodgman_algorithm
+    for &plane in clipping_planes.iter() {
+        output_points.clear();
+
+        if let Some(mut previous_point) = input_points.last().cloned() {
+            let mut previous_outside = plane.distance_to_point(previous_point) > F::ZERO;
+
+            //println!("PLANE: {:#?}", plane);
+            for &current_point in input_points.iter() {
+                let current_outside = plane.distance_to_point(current_point) > F::ZERO;
+
+                if current_outside != previous_outside {
+                    // Crossing
+                    let line = Line::new(current_point, previous_point);
+                    // This can panic. 
+                    let cross_point = line_with_plane(line, plane).unwrap();
+                    output_points.push(cross_point);
+                }
+                if !current_outside {
+                    output_points.push(current_point);
+                }
+                previous_point = current_point;
+                previous_outside = current_outside;
+            }
+        }
+        //  println!("POINTS: {:#?}", output_points);
+        std::mem::swap(input_points, output_points);
+    }
+    std::mem::swap(input_points, output_points);
+}
+
+pub fn find_contact_points_on_plane<F: NumericFloat + VeryLargeNumber + GJKEpsilon + Debug>(
+    plane: Plane<F, 3>,
+    clipping_planes_a: &[Plane<F, 3>],
+    clipping_planes_b: &[Plane<F, 3>],
+    local_to_world_a: &Matrix<F, 4, 4>,
+    local_to_world_b: &Matrix<F, 4, 4>,
+) -> Vec<Vector<F, 3>> {
+    // Gather clipping planes transformed to world space.
+    // Skip clipping planes that are aligned with the plane normal.
+    let mut clipping_planes = Vec::new();
+    for p in clipping_planes_a {
+        let matches = (p.normal - plane.normal).length_squared() < F::GJK_EPSILON
+            && (p.distance_along_normal - plane.distance_along_normal).numeric_abs()
+                < F::GJK_EPSILON;
+        if !matches {
+            clipping_planes.push(local_to_world_a.transform_plane(*p));
+        }
+    }
+    for p in clipping_planes_b {
+        let matches = (p.normal - plane.normal).length_squared() < F::GJK_EPSILON
+            && (p.distance_along_normal - plane.distance_along_normal).numeric_abs()
+                < F::GJK_EPSILON;
+        if !matches {
+            clipping_planes.push(local_to_world_b.transform_plane(*p));
+        }
+    }
+
+    let other = if plane.normal != Vector::<F, 3>::Y {
+        Vector::<F, 3>::Y
+    } else {
+        Vector::<F, 3>::X
+    };
+
+    let up = plane.normal.cross(other).normalized();
+    let right = up.cross(plane.normal);
+
+    let point_on_plane = plane.normal * plane.distance_along_normal;
+    // Clip a huge polygon to find our points.
+    let mut polygon_points = vec![
+        (right + up) * F::VERY_LARGE_NUMBER + point_on_plane,
+        (-right + up) * F::VERY_LARGE_NUMBER + point_on_plane,
+        (-right + -up) * F::VERY_LARGE_NUMBER + point_on_plane,
+        (right + -up) * F::VERY_LARGE_NUMBER + point_on_plane,
+    ];
+    let mut output_points = Vec::new();
+
+    sutherland_hodgman_clipping(&mut polygon_points, &mut output_points, &clipping_planes);
+    polygon_points
+}
+
+#[test]
+fn test_clipping2() {
+    let clipping_planes = vec![
+        Plane::new(Vec3::new(-1., 0., 0.), Vec3::new(-1., 0., 0.)),
+        Plane::new(Vec3::new(0., 1., 0.), Vec3::new(0., 1., 0.)),
+        Plane::new(Vec3::new(1., 0., 0.), Vec3::new(1., 0., 0.)),
+        Plane::new(Vec3::new(0., -1., 0.), Vec3::new(0., -1., 0.)),
+    ];
+
+    let p = find_contact_points_on_plane(Plane::new(Vec3::Z, Vec3::ZERO), &clipping_planes, &[]);
+    println!("p: {:#?}", p);
+}
+
+#[test]
+fn test_clipping() {
+    let mut input_points = vec![
+        Vec3::new(-2., -2., 0.),
+        Vec3::new(2., -2., 0.),
+        Vec3::new(2., 2., 0.),
+        Vec3::new(-2., 2., 0.),
+    ];
+
+    let clipping_planes = vec![
+        Plane::new(Vec3::new(-1., 0., 0.), Vec3::new(-1., 0., 0.)),
+        Plane::new(Vec3::new(0., 1., 0.), Vec3::new(0., 1., 0.)),
+    ];
+    let mut output_points = Vec::new();
+    sutherland_hodgman_clipping(&mut input_points, &mut output_points, &clipping_planes);
+    println!("OUTPUT POINTS: {:#?}", output_points);
+}
+
+/*
 #[test]
 fn cube_vs_cube0() {
     let shape_a = [
@@ -955,3 +959,4 @@ fn rotated_cube() {
 
     println!("POINTS: {:#?}", points);
 }
+*/

@@ -202,6 +202,17 @@ impl<T: NumericFloat> Matrix<T, 4, 4> {
             direction,
         }
     }
+
+    pub fn transform_plane(&self, plane: Plane<T, 3>) -> Plane<T, 3> {
+        let normal = self.transform_vector(plane.normal).normalized();
+        // This could probably be more efficient.
+        let distance_along_normal =
+            (self.transform_point(plane.normal * plane.distance_along_normal)).dot(normal);
+        Plane {
+            normal,
+            distance_along_normal,
+        }
+    }
 }
 
 #[derive(Copy, Clone, Debug)]
