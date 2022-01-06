@@ -25,6 +25,8 @@ impl Material {
     /// A fully emissive material
     pub const EMISSIVE: Handle<Material> = Handle::new_with_just_index(3);
     pub const UI: Handle<Material> = Handle::new_with_just_index(4);
+    pub const UNLIT_TRANSPARENT: Handle<Material> = Handle::new_with_just_index(5);
+    pub const PHYSICALLY_BASED_TRANSPARENT: Handle<Material> = Handle::new_with_just_index(6);
 
     pub(crate) fn initialize_static_materials(materials: &mut Assets<Material>) {
         let mut unlit_material = Material::new(Shader::UNLIT);
@@ -49,6 +51,21 @@ impl Material {
         ui_material.set_base_color(Color::WHITE);
         ui_material.set_texture("p_base_color_texture", Texture::WHITE);
         materials.add_and_leak(ui_material, &Self::UI);
+
+        let mut unlit_material = Material::new(Shader::UNLIT_TRANSPARENT);
+        unlit_material.set_base_color(Color::WHITE);
+        unlit_material.set_texture("p_base_color_texture", Texture::WHITE);
+        unlit_material.set_vec2("p_texture_coordinate_offset", Vec2::ZERO);
+        unlit_material.set_vec2("p_texture_coordinate_scale", Vec2::ONE);
+        materials.add_and_leak(unlit_material, &Self::UNLIT_TRANSPARENT);
+
+        materials.add_and_leak(
+            new_pbr_material(
+                Shader::PHYSICALLY_BASED_TRANSPARENT,
+                PBRProperties::default(),
+            ),
+            &Self::PHYSICALLY_BASED_TRANSPARENT,
+        );
     }
 
     pub fn new(shader: Handle<Shader>) -> Self {

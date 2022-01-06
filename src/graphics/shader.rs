@@ -79,10 +79,10 @@ impl Shader {
     pub const DEPTH_ONLY: Handle<Shader> = Handle::<Shader>::new_with_just_index(4);
     pub const UI: Handle<Shader> = Handle::<Shader>::new_with_just_index(5);
     pub const SKY_BOX: Handle<Shader> = Handle::<Shader>::new_with_just_index(6);
+    pub const UNLIT_TRANSPARENT: Handle<Shader> = Handle::<Shader>::new_with_just_index(7);
 }
 
 pub(crate) fn initialize_static_shaders(graphics: &mut Graphics, shaders: &mut Assets<Shader>) {
-    // Perhaps there should be a separate unblended unlit shader?
     shaders.add_and_leak(
         graphics
             .new_shader(
@@ -161,5 +161,21 @@ pub(crate) fn initialize_static_shaders(graphics: &mut Graphics, shaders: &mut A
             )
             .unwrap(),
         &Shader::SKY_BOX,
+    );
+
+    shaders.add_and_leak(
+        graphics
+            .new_shader(
+                include_str!("built_in_shaders/unlit.glsl"),
+                // Render front and back as this may be used for sprites
+                // that will be flipped.
+                PipelineSettings {
+                    faces_to_render: FacesToRender::FrontAndBack,
+                    blending: Some((BlendFactor::SourceAlpha, BlendFactor::OneMinusSourceAlpha)),
+                    ..Default::default()
+                },
+            )
+            .unwrap(),
+        &Shader::UNLIT_TRANSPARENT,
     );
 }
