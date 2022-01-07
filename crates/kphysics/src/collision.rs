@@ -23,11 +23,11 @@ pub trait VeryLargeNumber {
 }
 
 impl VeryLargeNumber for f32 {
-    const VERY_LARGE_NUMBER: Self = 999999.;
+    const VERY_LARGE_NUMBER: Self = 9999.;
 }
 
 impl VeryLargeNumber for f64 {
-    const VERY_LARGE_NUMBER: Self = 999999.;
+    const VERY_LARGE_NUMBER: Self = 9999.;
 }
 
 // A helper data structure that makes the GJK algorithm a bit cleaner.
@@ -708,6 +708,20 @@ fn sutherland_hodgman_clipping<F: NumericFloat + Debug, const DIM: usize>(
     std::mem::swap(input_points, output_points);
 }
 
+pub fn find_min_max_along_direction<F: NumericFloat>(
+    direction: Vector<F, 3>,
+    points: &[Vector<F, 3>],
+) -> (F, F) {
+    let mut min = F::MAX;
+    let mut max = F::MIN;
+    for p in points {
+        let v = direction.dot(*p);
+        min = min.numeric_min(v);
+        max = max.numeric_max(v);
+    }
+    (min, max)
+}
+
 pub fn find_contact_points_on_plane<F: NumericFloat + VeryLargeNumber + GJKEpsilon + Debug>(
     plane: Plane<F, 3>,
     clipping_planes_a: &[Plane<F, 3>],
@@ -717,25 +731,22 @@ pub fn find_contact_points_on_plane<F: NumericFloat + VeryLargeNumber + GJKEpsil
 ) -> Vec<Vector<F, 3>> {
     // Gather clipping planes transformed to world space.
     // Skip clipping planes that are aligned with the plane normal.
+    // There can easily be duplicate or redundant clipping planes here.
     let mut clipping_planes = Vec::new();
     for p in clipping_planes_a {
-        let matches = (p.normal - plane.normal).length_squared() < F::GJK_EPSILON
-            && (p.distance_along_normal - plane.distance_along_normal).numeric_abs()
-                < F::GJK_EPSILON;
+        let matches = (p.normal.cross(plane.normal)).length_squared() < F::GJK_EPSILON;
         if !matches {
             clipping_planes.push(local_to_world_a.transform_plane(*p));
         }
     }
     for p in clipping_planes_b {
-        let matches = (p.normal - plane.normal).length_squared() < F::GJK_EPSILON
-            && (p.distance_along_normal - plane.distance_along_normal).numeric_abs()
-                < F::GJK_EPSILON;
+        let matches = (p.normal.cross(plane.normal)).length_squared() < F::GJK_EPSILON;
         if !matches {
             clipping_planes.push(local_to_world_b.transform_plane(*p));
         }
     }
 
-    let other = if plane.normal != Vector::<F, 3>::Y {
+    let other = if plane.normal.cross(Vector::<F, 3>::Y).length_squared() > F::GJK_EPSILON {
         Vector::<F, 3>::Y
     } else {
         Vector::<F, 3>::X
@@ -745,7 +756,10 @@ pub fn find_contact_points_on_plane<F: NumericFloat + VeryLargeNumber + GJKEpsil
     let right = up.cross(plane.normal);
 
     let point_on_plane = plane.normal * plane.distance_along_normal;
+
     // Clip a huge polygon to find our points.
+    // This should be improved because it won't work for points outside 9,999.
+    // Which isn't very big.
     let mut polygon_points = vec![
         (right + up) * F::VERY_LARGE_NUMBER + point_on_plane,
         (-right + up) * F::VERY_LARGE_NUMBER + point_on_plane,
@@ -755,7 +769,7 @@ pub fn find_contact_points_on_plane<F: NumericFloat + VeryLargeNumber + GJKEpsil
     let mut output_points = Vec::new();
 
     sutherland_hodgman_clipping(&mut polygon_points, &mut output_points, &clipping_planes);
-    polygon_points
+    output_points
 }
 
 #[test]

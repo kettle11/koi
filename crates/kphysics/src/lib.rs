@@ -2,9 +2,11 @@ pub mod collision;
 
 mod convex_mesh_collider;
 
+use std::convert::TryInto;
 use std::fmt::Debug;
 
-use collision::GJKEpsilon;
+use collision::{GJKEpsilon, VeryLargeNumber};
+use kmath::geometry::BoundingBox;
 use kmath::numeric_traits::NumericFloat;
 use kmath::*;
 
@@ -57,6 +59,7 @@ pub struct MeshData<F: NumericFloat> {
     pub normals: Vec<Vector<F, 3>>,
     pub indices: Vec<[u32; 3]>,
     pub planes: Vec<Plane<F, 3>>,
+    pub inertia_tensor_divided_by_mass: Matrix<F, 3, 3>,
 }
 
 #[derive(Clone)]
@@ -83,7 +86,9 @@ impl PhysicsDefaults for f64 {
     const TIME_STEP: Self = 1.0 / 60.0;
 }
 
-impl<F: NumericFloat + PhysicsDefaults + Debug + GJKEpsilon> PhysicsWorld<F> {
+impl<F: NumericFloat + PhysicsDefaults + Debug + GJKEpsilon + VeryLargeNumber + OneDividedBy12>
+    PhysicsWorld<F>
+{
     pub fn new() -> Self {
         let mut gravity = Vector::<F, 3>::ZERO;
         gravity[1] = F::GRAVITY;
@@ -95,16 +100,6 @@ impl<F: NumericFloat + PhysicsDefaults + Debug + GJKEpsilon> PhysicsWorld<F> {
             colliders: Vec::new(),
             collider_meshes: Vec::new(),
         }
-    }
-
-    fn relative_linear_velocity(
-        rigid_body: &RigidBodyData<F>,
-        point: Vector<F, 3>,
-    ) -> Vector<F, 3> {
-        rigid_body.velocity
-            + rigid_body
-                .angular_velocity
-                .cross(point - rigid_body.position)
     }
 
     pub fn update(&mut self) {
@@ -146,7 +141,7 @@ impl<F: NumericFloat + PhysicsDefaults + Debug + GJKEpsilon> PhysicsWorld<F> {
         let len = self.colliders.len();
 
         // Number of iterations to converge.
-        for _ in 0..10 {
+        for _ in 0..1 {
             // Check each collider pair for collision.
             // This should probably be changed to check based on relative offsets to the parent `RigidBody`.
             for i in 0..len {
@@ -158,6 +153,7 @@ impl<F: NumericFloat + PhysicsDefaults + Debug + GJKEpsilon> PhysicsWorld<F> {
                                 index_twice(&mut self.rigid_bodies, rigid_body_a.0, rigid_body_b.0);
                             if rigid_body_a.mass != F::INFINITY || rigid_body_b.mass != F::INFINITY
                             {
+                                // Ignore scale for now.
                                 let a_to_world = Matrix::<F, 4, 4>::from_translation_rotation_scale(
                                     rigid_body_a.position,
                                     rigid_body_a.rotation,
@@ -181,182 +177,203 @@ impl<F: NumericFloat + PhysicsDefaults + Debug + GJKEpsilon> PhysicsWorld<F> {
                                     &mesh_b.positions,
                                 );
                                 if collision_info.collided {
-                                    /*
+                                    println!("COLLIDED");
+
                                     let relative_velocity =
-                                        rigid_body_a.velocity - rigid_body_b.velocity;
+                                        rigid_body_b.velocity - rigid_body_a.velocity;
+
+                                    // If these things aren't moving relative to each-other, don't bother colliding.
                                     if relative_velocity.length_squared() < F::GJK_EPSILON {
                                         continue;
                                     }
-                                    let separation_direction = relative_velocity.normalized();
 
-                                    println!("SEPARATION DIRECTION: {:?}", separation_direction);
-                                    println!("POSITION Y HERE: {:?}", rigid_body_a.position);
-                                    let (min_a, max_a) = collision::find_min_max_along_direction(
-                                        a_to_world
-                                            .inversed()
-                                            .transform_vector(separation_direction),
-                                        &mesh_a.positions,
+                                    let world_to_a = a_to_world.inversed();
+                                    let world_to_b = b_to_world.inversed();
+
+                                    let relative_velocity_direction =
+                                        relative_velocity.normalized();
+
+                                    // Find the shortest separation direction along the relative velocity direction.
+                                    let orientation_along_velocity_to_separate = {
+                                        let direction_a = world_to_a
+                                            .transform_vector(relative_velocity_direction);
+                                        let direction_b = world_to_b
+                                            .transform_vector(relative_velocity_direction);
+
+                                        let (min_a, max_a) =
+                                            collision::find_min_max_along_direction(
+                                                direction_a,
+                                                &mesh_a.positions,
+                                            );
+                                        let offset_a = a_to_world
+                                            .transform_point(Vector::ZERO)
+                                            .dot(relative_velocity_direction);
+                                        let (min_a, max_a) = (min_a + offset_a, max_a + offset_a);
+                                        let (min_b, max_b) =
+                                            collision::find_min_max_along_direction(
+                                                direction_b,
+                                                &mesh_b.positions,
+                                            );
+                                        let offset_b = b_to_world
+                                            .transform_point(Vector::ZERO)
+                                            .dot(relative_velocity_direction);
+                                        let (min_b, max_b) = (min_b + offset_b, max_b + offset_b);
+                                        // Probably need to scale min and max here once scale is accounted for.
+
+                                        // Find direction along velocity to separate.
+                                        if (max_b - min_a) > (max_a - min_b) {
+                                            -F::ONE
+                                        } else {
+                                            F::ONE
+                                        }
+                                    };
+
+                                    // This plane points away from a towards b.
+                                    let contact_plane = Plane::new(
+                                        relative_velocity_direction
+                                            * -orientation_along_velocity_to_separate,
+                                        // Both collision points are equivalent in the event of a collision.
+                                        collision_info.closest_point_a,
                                     );
-                                    let offset_a = a_to_world
-                                        .transform_point(Vector::<F, 3>::ZERO)
-                                        .dot(separation_direction);
-                                    let (_, max_a) = (min_a + offset_a, max_a + offset_a);
 
-                                    let (min_b, max_b) = collision::find_min_max_along_direction(
-                                        b_to_world
-                                            .inversed()
-                                            .transform_vector(separation_direction),
-                                        &mesh_b.positions,
+                                    // They're moving apart, do nothing
+                                    if contact_plane.normal.dot(relative_velocity) > F::ZERO {
+                                        println!("MOVING APART");
+                                        continue;
+                                    }
+
+                                    // Find the contact points for this collision.
+                                    let contact_points = collision::find_contact_points_on_plane(
+                                        contact_plane,
+                                        &mesh_a.planes,
+                                        &mesh_b.planes,
+                                        &a_to_world,
+                                        &b_to_world,
                                     );
-                                    let offset_b = b_to_world
-                                        .transform_point(Vector::<F, 3>::ZERO)
-                                        .dot(separation_direction);
-                                    let (min_b, _) = (min_b + offset_b, max_b + offset_b);
 
-                                    let separation = min_b - max_a;
-                                    let point_on_separation_plane =
-                                        separation_direction * (max_a + separation);
+                                    println!("CONTACT POINTS: {:?}", contact_points);
 
-                                    println!("COLLISION!");
-                                    println!(
-                                        "POINT ON SEPARATION PLANE: {:?}",
-                                        point_on_separation_plane
-                                    );
-                                    println!("SEPARATION: {:?}", separation);
-
-                                    let (collision_points, normals) =
-                                        collision::find_planar_contact_points(
-                                            point_on_separation_plane,
-                                            separation_direction.normalized(),
-                                            &mesh_a.positions,
-                                            &mesh_a.indices,
-                                            &mesh_b.positions,
-                                            &mesh_b.indices,
-                                            a_to_world,
-                                            b_to_world,
-                                            a_to_world.inversed(),
-                                            b_to_world.inversed(),
-                                        );
-
-                                    let mut mass_ratio_a =
+                                    // Calculate how much each object should respond based on their relative masses.
+                                    let mut response_b =
                                         rigid_body_a.mass / (rigid_body_a.mass + rigid_body_b.mass);
 
-                                    if mass_ratio_a.is_nan_numeric() {
-                                        mass_ratio_a = F::ONE;
+                                    if response_b.is_nan_numeric() {
+                                        response_b = F::ONE;
                                     }
 
-                                    let mut mass_ratio_b =
+                                    let mut response_a =
                                         rigid_body_b.mass / (rigid_body_b.mass + rigid_body_b.mass);
 
-                                    if mass_ratio_b.is_nan_numeric() {
-                                        mass_ratio_b = F::ONE;
+                                    if response_a.is_nan_numeric() {
+                                        response_a = F::ONE;
                                     }
 
-                                    // Move the rigid bodies apart to the point they began colliding.
-                                    if rigid_body_a.mass != F::INFINITY {
-                                        rigid_body_a.position +=
-                                            separation_direction * separation * mass_ratio_b;
-                                    }
+                                    // Add additional bounce
+                                    // Low bounce objects absord some of the impact force.
+                                    // This simulates in the real world how less bouncy collisions lose energy
+                                    // to heat, sound waves, etc.
+                                    let bounciness =
+                                        rigid_body_a.bounciness * rigid_body_b.bounciness;
 
-                                    if rigid_body_b.mass != F::INFINITY {
-                                        rigid_body_b.position +=
-                                            separation_direction * separation * mass_ratio_a;
-                                    }
+                                    // let impulse = impulse + impulse * bounciness;
 
-                                    println!("POINTS: {:#?}", collision_points);
-                                    panic!();
-                                    for (&point, &_normal) in
-                                        collision_points.iter().zip(normals.iter())
-                                    {
-                                        println!("POINT: {:?}", point);
-                                        let normal = Vector::<F, 3>::Y;
-                                        println!("normal: {:?}", normal);
+                                    println!("MASS RATIO A: {:?}", response_b);
+                                    println!("MASS RATIO B: {:?}", response_a);
 
-                                        let velocity_at_point_a =
-                                            Self::relative_linear_velocity(rigid_body_a, point);
+                                    let tensor_a =
+                                        mesh_a.inertia_tensor_divided_by_mass * rigid_body_a.mass;
 
-                                        let velocity_at_point_b =
-                                            Self::relative_linear_velocity(rigid_body_b, point);
+                                    let tensor_b =
+                                        mesh_a.inertia_tensor_divided_by_mass * rigid_body_b.mass;
 
-                                        // println!("MASS RATIO: {:?}", mass_ratio);
-                                        // Cushion the bounce by the bounciness of the colliding objects.
-                                        let bounciness =
-                                            rigid_body_a.bounciness * rigid_body_b.bounciness;
+                                    // Todo: Store inversed tensor instead, because usually the inverse is needed.
+                                    let inverse_tensor_a: Matrix<F, 3, 3> =
+                                        if rigid_body_a.mass == F::INFINITY {
+                                            Matrix::ZERO
+                                        } else {
+                                            tensor_a.inversed()
+                                        };
+                                    let inverse_tensor_b: Matrix<F, 3, 3> =
+                                        if rigid_body_b.mass == F::INFINITY {
+                                            Matrix::ZERO
+                                        } else {
+                                            tensor_b.inversed()
+                                        };
 
-                                        let relative_velocity_at_collision =
-                                            normal.dot(velocity_at_point_a - velocity_at_point_b);
+                                    println!("INVERSE TENSOR A: {:?}", inverse_tensor_a);
+                                    println!("INVERSE TENSOR B: {:?}", inverse_tensor_b);
 
-                                        // The following equation is the equation for calculating the magnitude of the impulse.
-                                        let numerator =
-                                            -(F::ONE + bounciness) * relative_velocity_at_collision;
+                                    let velocity_a = rigid_body_a.velocity;
+                                    let angular_velocity_a = rigid_body_a.angular_velocity;
+
+                                    let velocity_b = rigid_body_b.velocity;
+                                    let angular_velocity_b = rigid_body_b.angular_velocity;
+
+                                    let mut angular_velocity_change_a = Vector::ZERO;
+                                    let mut angular_velocity_change_b = Vector::ZERO;
+
+                                    for &point in contact_points.iter() {
+                                        let velocity_at_point_a = velocity_a
+                                            + angular_velocity_a
+                                                .cross(rigid_body_a.position - point);
+
+                                        let velocity_at_point_b = velocity_b
+                                            + angular_velocity_b
+                                                .cross(rigid_body_b.position - point);
+
+                                        let relative_velocity_at_point =
+                                            velocity_at_point_b - velocity_at_point_a;
+
+                                        // Solve the impulse equation:
+
+                                        let numerator = (relative_velocity_at_point
+                                            * -(F::ONE + bounciness))
+                                            .dot(contact_plane.normal);
 
                                         let term0 = F::ONE / rigid_body_a.mass;
                                         let term1 = F::ONE / rigid_body_b.mass;
 
-                                        // Todo: these are wrong.
-                                        let inverse_tensor_a: Matrix<F, 3, 3> =
-                                            Matrix::<F, 3, 3>::IDENTITY;
-                                        let inverse_tensor_b: Matrix<F, 3, 3> =
-                                            Matrix::<F, 3, 3>::IDENTITY;
-
                                         let ra = point - rigid_body_a.position;
                                         let rb = point - rigid_body_b.position;
 
-                                        let term2 = normal
-                                            .dot(inverse_tensor_a * (ra.cross(normal)).cross(ra));
-                                        let term3 = normal
-                                            .dot(inverse_tensor_b * (rb.cross(normal)).cross(rb));
+                                        let ra_cross_normal = ra.cross(contact_plane.normal);
+                                        let rb_cross_normal = rb.cross(contact_plane.normal);
 
-                                        let magnitude = numerator / (term0 + term1 + term2 + term3);
+                                        let term2 = inverse_tensor_a * (ra_cross_normal).cross(ra);
+                                        let term3 = inverse_tensor_b * (rb_cross_normal).cross(rb);
 
-                                        // This force can then be directly added to the colliding rigid bodies' momentums.
-                                        // We store velocity and momentum = mass * velocity.
-                                        // So:
-                                        // momentum += force
-                                        // mass * velocity += force;
-                                        // velocity += force / mass;
+                                        let impulse_magnitude = numerator
+                                            / (term0
+                                                + term1
+                                                + (term2 + term3).dot(contact_plane.normal));
+                                        let impulse = contact_plane.normal * impulse_magnitude;
 
-                                        let force = normal * magnitude;
-                                        let relative_velocity =
-                                            rigid_body_a.velocity - rigid_body_b.velocity;
+                                        println!("VELOCITY before: {:?}", rigid_body_a.velocity);
 
-                                        let relative_velocity_along_normal =
-                                            relative_velocity.dot(normal).numeric_abs();
+                                        rigid_body_a.velocity -= impulse * response_a;
+                                        angular_velocity_change_a += -(inverse_tensor_a
+                                            * ra_cross_normal)
+                                            * impulse_magnitude;
 
-                                        let mut impulse = normal * relative_velocity_along_normal;
+                                        println!(
+                                            "ANGULAR VELOCITY CHANGE: {:?}",
+                                            (inverse_tensor_a * ra_cross_normal)
+                                                * -impulse_magnitude
+                                        );
+                                        println!("VELOCITY CHANGE A: {:#?}", -impulse * response_a);
+                                        println!("VELOCITY after: {:?}", rigid_body_a.velocity);
 
-                                        impulse += impulse * bounciness;
-
-                                        if rigid_body_a.mass != F::INFINITY {
-                                            rigid_body_a.velocity += force / rigid_body_a.mass;
-
-                                            rigid_body_a.angular_velocity +=
-                                                inverse_tensor_a * (ra.cross(force));
-
-                                            println!("VELOCITY A: {:?}", rigid_body_a.velocity);
-                                            println!(
-                                                "SEPARATING: {:?}",
-                                                separation_direction * separation * mass_ratio_b
-                                            );
-                                            println!("NEW POSITION: {:?}", rigid_body_a.position.y);
-                                        }
-
-                                        if rigid_body_b.mass != F::INFINITY {
-                                            // let response = impulse * mass_ratio;
-                                            // let torque = impulse
-                                            //     .cross(point - rigid_body_b.position);
-                                            //
-                                            // By moving the rigid bodies apart extra energy is introduced
-                                            //  into the system.
-                                            rigid_body_b.velocity -= force / rigid_body_b.mass;
-                                            println!("VELOCITY B: {:?}", rigid_body_b.velocity);
-
-                                            rigid_body_b.angular_velocity -=
-                                                inverse_tensor_b * (rb.cross(force));
-                                        }
+                                        rigid_body_b.velocity += impulse * response_b;
+                                        angular_velocity_change_b += (inverse_tensor_b
+                                            * rb_cross_normal)
+                                            * impulse_magnitude;
                                     }
-                                    // panic!();
-                                    */
+                                    //rigid_body_a.angular_velocity += angular_velocity_change_a;
+                                    println!(
+                                        "ANGULAR VELOCITY CHANGE TOTAL: {:?}",
+                                        angular_velocity_change_a
+                                    );
+                                    rigid_body_b.angular_velocity += angular_velocity_change_b;
                                 }
                             }
                         }
@@ -491,13 +508,26 @@ impl<F: NumericFloat + PhysicsDefaults + Debug + GJKEpsilon> PhysicsWorld<F> {
     }
 }
 
-pub fn create_mesh_data<F: NumericFloat + GJKEpsilon>(
+pub trait OneDividedBy12 {
+    const ONE_DIVIDED_BY_12: Self;
+}
+
+impl OneDividedBy12 for f32 {
+    const ONE_DIVIDED_BY_12: Self = 1.0 / 12.0;
+}
+
+impl OneDividedBy12 for f64 {
+    const ONE_DIVIDED_BY_12: Self = 1.0 / 12.0;
+}
+
+pub fn create_mesh_data<F: NumericFloat + GJKEpsilon + OneDividedBy12>(
     positions: &[Vector<F, 3>],
     normals: &[Vector<F, 3>],
     indices: &[[u32; 3]],
 ) -> MeshData<F> {
     // Calculate planes for this mesh, but deduplicate.
     let mut planes: Vec<Plane<F, 3>> = Vec::new();
+
     for [i0, i1, i2] in indices {
         let (p0, p1, p2) = (
             positions[*i0 as usize],
@@ -522,11 +552,25 @@ pub fn create_mesh_data<F: NumericFloat + GJKEpsilon>(
         }
     }
 
+    // Use bounding box to approximate tensor
+    // Using the tensor for a cuboid.
+    let bounds = BoundingBox::from_points(positions);
+    let size = bounds.size();
+    let size2 = size.mul_by_component(size);
+
+    let inertia_tensor_divided_by_mass = [
+        [F::ONE_DIVIDED_BY_12 * (size2.y + size2.z), F::ZERO, F::ZERO],
+        [F::ZERO, F::ONE_DIVIDED_BY_12 * (size2.x + size2.z), F::ZERO],
+        [F::ZERO, F::ZERO, F::ONE_DIVIDED_BY_12 * (size2.x * size2.y)],
+    ]
+    .into();
+
     MeshData {
         positions: positions.into(),
         normals: normals.into(),
         indices: indices.into(),
         planes,
+        inertia_tensor_divided_by_mass,
     }
 }
 

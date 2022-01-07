@@ -402,6 +402,37 @@ impl<T: Numeric, const R: usize, const C: usize> Matrix<T, R, C> {
     }
 }
 
+impl<T: NumericFloat> Matrix<T, 3, 3> {
+    pub fn inversed(self) -> Self {
+        let (m00, m01, m02) = self.column(0).into();
+        let (m10, m11, m12) = self.column(1).into();
+        let (m20, m21, m22) = self.column(2).into();
+
+        // computes the inverse of a matrix m
+        let det = m00 * (m11 * m22 - m21 * m12) - m01 * (m10 * m22 - m12 * m20)
+            + m02 * (m10 * m21 - m11 * m20);
+
+        let invdet = T::ONE / det;
+
+        let col0 = [
+            (m11 * m22 - m21 * m12) * invdet,
+            (m02 * m21 - m01 * m22) * invdet,
+            (m01 * m12 - m02 * m11) * invdet,
+        ];
+        let col1 = [
+            (m12 * m20 - m10 * m22) * invdet,
+            (m00 * m22 - m02 * m20) * invdet,
+            (m10 * m02 - m00 * m12) * invdet,
+        ];
+        let col2 = [
+            (m10 * m21 - m20 * m11) * invdet,
+            (m20 * m01 - m00 * m21) * invdet,
+            (m00 * m11 - m10 * m01) * invdet,
+        ];
+
+        Self([col0, col1, col2])
+    }
+}
 impl<T: NumericFloat> Matrix<T, 4, 4> {
     pub fn as_array(&self) -> &[T; 16] {
         self.as_slice().try_into().unwrap()

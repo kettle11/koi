@@ -24,7 +24,13 @@ pub trait Numeric:
 }
 
 pub trait NumericFloat:
-    Numeric + NumericSqrt + NumericAbs + Neg<Output = Self> + std::cmp::PartialOrd
+    Numeric
+    + NumericSqrt
+    + NumericAbs
+    + Neg<Output = Self>
+    + std::cmp::PartialOrd
+    + NumericSigNum
+    + 'static
 {
     const HALF: Self;
     const INFINITY: Self;
