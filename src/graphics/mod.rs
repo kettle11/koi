@@ -35,6 +35,9 @@ pub use mesh_primitives::*;
 mod light;
 pub use light::*;
 
+mod immediate_drawer;
+pub use immediate_drawer::*;
+
 mod shader_parser;
 
 #[cfg(feature = "renderer")]
