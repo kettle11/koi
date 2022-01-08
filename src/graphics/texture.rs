@@ -201,10 +201,15 @@ pub fn hdri_data_from_bytes(bytes: &[u8]) -> TextureLoadData {
     }
 
     unsafe {
+        // Is this conversion correct? I believe so because [f32; 4] is aligned on u8 boundaries.
+        let data: Vec<u8> = Vec::from_raw_parts(
+            texture.as_mut_ptr() as *mut u8,
+            texture.len() * 4 * std::mem::size_of::<f32>(),
+            texture.capacity() * 4 * std::mem::size_of::<f32>(),
+        );
+        texture.leak();
         TextureLoadData {
-            // This isn't a great conversion. It allocates again which may be avoidable.
-            data: std::slice::from_raw_parts(texture.as_ptr() as *const u8, texture.len() * 4 * 4)
-                .into(),
+            data,
             width: image.width as u32,
             height: image.height as u32,
             pixel_format: PixelFormat::RGBA32F,
