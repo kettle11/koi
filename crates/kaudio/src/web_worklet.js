@@ -96,6 +96,8 @@ function setup_worklet(entry_point, stack_pointer, thread_local_storage_pointer)
             // and should be replaced.
             let message = {
                 kwasm_memory: self.kwasm_memory,
+                // Inexplicably sending this wasm module causes Chrome to not delivery the message
+                // to the worklet. Why?
                 kwasm_module: self.kwasm_module,
                 entry_point: entry_point,
                 stack_pointer: stack_pointer,
@@ -103,6 +105,7 @@ function setup_worklet(entry_point, stack_pointer, thread_local_storage_pointer)
             };
 
             worklet.port.postMessage(message);
+            this.kaudio_audio_worklet = worklet;
         }
 
     };
