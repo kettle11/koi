@@ -12,6 +12,17 @@ Runs on Mac, Windows, and Web.
 
 Everything is subject to change.
 
+## How to run examples
+
+Install Rust: https://www.rust-lang.org/tools/install
+
+On Mac and Windows run `cargo run --example hello`
+
+For Web:
+* install `devserver` with `cargo install devserver`
+* run `./run.sh hello`
+* Navigate your browser to `localhost:8080`
+
 # Crates
 
 ## Stand-alone:
