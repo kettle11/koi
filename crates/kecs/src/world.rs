@@ -504,6 +504,13 @@ impl World {
     }
 
     /// Gets a single instance of a component from this [World].
+    /// If the component does not exist then [KecsError::NoMatchingComponent] this panics.
+    /// If multple of the same component exist then an arbitrary one is returned.
+    pub fn get_singleton<Component: ComponentTrait>(&mut self) -> &mut Component {
+        self.get_single_component_mut().unwrap()
+    }
+
+    /// Gets a single instance of a component from this [World].
     /// If the component does not exist then [KecsError::NoMatchingComponent] is returned.
     /// If multple of the same component exist then an arbitrary one is returned.
     pub fn get_single_component_mut<Component: ComponentTrait>(
