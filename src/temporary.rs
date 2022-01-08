@@ -1,11 +1,12 @@
 use crate::*;
 
+/// Despawned during `pre_fixed_update_systems` at the start of the next frame.
 #[derive(Component, Clone)]
 pub struct Temporary;
 
 pub fn temporary_despawn_plugin() -> Plugin {
     Plugin {
-        end_of_frame_systems: vec![despawn_temporaries.system()],
+        pre_fixed_update_systems: vec![despawn_temporaries.system()],
         ..Default::default()
     }
 }
