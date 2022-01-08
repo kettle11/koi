@@ -67,6 +67,7 @@ pub trait RenderPassTrait {
 
     fn draw_triangles(&mut self, count: u32, index_buffer: &IndexBuffer);
     fn draw_triangles_without_buffer(&mut self, count: u32);
+    fn set_depth_mask(&mut self, depth_mask: bool);
 }
 
 pub trait CommandBufferTrait {

@@ -324,7 +324,6 @@ var gl_web_object = {
                     let program = kwasm_get_object(program_index);
 
                     gl.useProgram(program);
-
                     gl.depthFunc(depth_func);
 
                     if (culling === 0) {
@@ -519,6 +518,11 @@ var gl_web_object = {
                     gl.activeTexture(gl.TEXTURE0 + texture_unit);
                     gl.bindTexture(gl.TEXTURE_CUBE_MAP, texture);
                     gl.uniform1i(uniform_location, texture_unit);
+                }
+                case 16: {
+                    // SetDepthMask
+                    let depth_mask = u32_data[u32_offset++];
+                    gl.depthMask(depth_mask);
                 }
             }
         }

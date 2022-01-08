@@ -240,7 +240,7 @@ impl GL {
     pub unsafe fn delete_texture(&self, texture: TextureNative) {
         self.gl.DeleteTextures(1, &texture.0);
     }
- 
+
     pub unsafe fn clear_color(&self, red: f32, green: f32, blue: f32, alpha: f32) {
         self.gl.ClearColor(red, green, blue, alpha);
     }
@@ -258,7 +258,7 @@ impl GL {
         self.gl.GenFramebuffers(1, &mut framebuffer);
         Ok(Framebuffer(framebuffer))
     }
-    
+
     pub unsafe fn framebuffer_texture_2d(
         &self,
         target: GLenum,
@@ -485,5 +485,8 @@ impl GL {
 
     pub unsafe fn draw_arrays(&self, mode: GLenum, first: i32, count: i32) {
         self.gl.DrawArrays(mode, first, count);
+    }
+    pub unsafe fn set_depth_mask(&self, value: bool) {
+        self.gl.DepthMask(if value { 1 } else { 0 })
     }
 }

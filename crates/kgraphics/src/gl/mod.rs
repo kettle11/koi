@@ -950,6 +950,7 @@ impl GraphicsContextTrait for GraphicsContext {
                     DrawTriangleArrays(count) => {
                         self.gl.draw_arrays(GL_TRIANGLES, 0, (count * 3) as i32);
                     }
+                    SetDepthMask(value) => self.gl.set_depth_mask(value),
                     Present => {
                         self.gl_context.swap_buffers();
                     }

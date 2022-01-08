@@ -35,6 +35,7 @@ pub(super) enum CommandBufferAction {
     SetViewport((u32, u32, u32, u32)),
     DrawTriangles(u32),
     DrawTriangleArrays(u32),
+    SetDepthMask(bool),
     Present,
 }
 
@@ -72,6 +73,7 @@ impl CommandBufferTrait for CommandBuffer {
                 r as f32, g as f32, b as f32, a as f32,
             )));
         }
+        self.actions.push(CommandBufferAction::SetDepthMask(true));
         RenderPass {
             command_buffer: self,
         }
@@ -324,6 +326,12 @@ impl<'a> RenderPassTrait for RenderPass<'a> {
         self.command_buffer
             .actions
             .push(CommandBufferAction::DrawTriangleArrays(count))
+    }
+
+    fn set_depth_mask(&mut self, depth_mask: bool) {
+        self.command_buffer
+            .actions
+            .push(CommandBufferAction::SetDepthMask(depth_mask))
     }
 }
 

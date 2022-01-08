@@ -125,6 +125,7 @@ enum Command {
     DrawTriangles = 13,
     // Present = 14,
     SetCubeMapUniform = 15,
+    SetDepthMask = 16,
 }
 
 pub struct CommandBuffer {
@@ -459,6 +460,13 @@ impl RenderPassTrait for RenderPass<'_> {
             .u32_data
             .extend_from_slice(&[count * 3, 0]);
     }
+
+    fn set_depth_mask(&mut self, value: bool) {
+        self.command_buffer.commands.push(Command::SetDepthMask);
+        self.command_buffer
+            .u32_data
+            .extend_from_slice(&[if value { 1 } else { 0 }]);
+    }
 }
 
 impl CommandBuffer {
@@ -493,9 +501,11 @@ impl CommandBufferTrait for CommandBuffer {
             self.f32_data.extend_from_slice(&[r, g, b, a]);
         }
 
-        RenderPass {
+        let mut render_pass = RenderPass {
             command_buffer: self,
-        }
+        };
+        render_pass.set_depth_mask(true);
+        render_pass
     }
 
     /// If the color_texture binds to the DefaultFramebuffer then

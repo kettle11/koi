@@ -17,6 +17,7 @@ use crate::graphics::texture::Texture;
 #[derive(NotCloneComponent)]
 pub struct RendererInfo {
     pub brdf_lookup_table: Handle<Texture>,
+    // pub triple_buffered_framebuffer: NotSendSync<TripleBufferedFramebuffer>,
 }
 
 /// Attach to [Entity]s to ensure they are not culled by Frustum Culling.
@@ -36,13 +37,21 @@ pub fn setup_renderer(world: &mut World) {
     let mut materials = Assets::<Material>::new(default_material, MaterialAssetLoader::new());
     Material::initialize_static_materials(&mut materials);
     world.spawn(materials);
-
     let brdf_lookup_table = brdf_lookup::generate_brdf_lookup.run(world);
     let brdf_lookup_table = world
         .get_single_component_mut::<Assets<Texture>>()
         .unwrap()
         .add(brdf_lookup_table);
-    let renderer_info = RendererInfo { brdf_lookup_table };
+    let renderer_info = RendererInfo {
+        brdf_lookup_table,
+        /*
+        triple_buffered_framebuffer: NotSendSync::new(TripleBufferedFramebuffer::new(
+            world.get_single_component_mut::<Graphics>().unwrap(),
+            2048,
+            2048,
+        )),
+        */
+    };
     world.spawn(renderer_info);
 }
 
@@ -374,10 +383,8 @@ impl<'a, 'b: 'a> Renderer<'a, 'b> {
                                 .get(&reflection_probe.specular_irradiance_map),
                         )
                     } else {
-                        (
-                            self.cube_map_assets.get(&Handle::default()),
-                            self.cube_map_assets.get(&Handle::default()),
-                        )
+                        let default = self.cube_map_assets.get(&Handle::default());
+                        (default, default)
                     };
 
                 self.render_pass.set_cube_map_property(
@@ -393,6 +400,7 @@ impl<'a, 'b: 'a> Renderer<'a, 'b> {
                 );
 
                 // Bind the brdf lookup table.
+
                 self.render_pass.set_texture_property(
                     &pipeline
                         .get_texture_property(&"p_brdf_lookup_table")
@@ -564,6 +572,7 @@ impl<'a, 'b: 'a> Renderer<'a, 'b> {
                         .map_or(true, |b| {
                             frustum.intersects_box(transform.transform_bounding_box(b))
                         });
+
                 if should_render {
                     let is_transparent = self
                         .shader_assets
@@ -585,8 +594,6 @@ impl<'a, 'b: 'a> Renderer<'a, 'b> {
 
                         self.render_mesh(transform, mesh_handle);
                     }
-                } else {
-                    // println!("CULLING!");
                 }
             }
         }
@@ -595,6 +602,10 @@ impl<'a, 'b: 'a> Renderer<'a, 'b> {
             let v1 = (b.position - camera_position).dot(camera_forward);
             v0.partial_cmp(&v1).unwrap_or(std::cmp::Ordering::Equal)
         });
+
+        // Don't write to depth for transparent objects.
+        // This prevents transparent objects from occluding each-other.
+        self.render_pass.set_depth_mask(false);
 
         for renderable in transparent_renderables.iter() {
             let (transform, material_handle, mesh_handle, _render_layer, optional_sprite, color, _) =
@@ -641,6 +652,72 @@ pub fn prepare_shadow_casters(
 ) {
     for shadow_caster in &mut shadow_casters {
         shadow_caster.prepare_shadow_casting(graphics, textures);
+    }
+}
+
+pub struct TripleBufferedFramebuffer {
+    //  textures: [Texture; 3],
+    framebuffers: [Framebuffer; 3],
+    width: u32,
+    height: u32,
+    current: usize,
+}
+
+impl TripleBufferedFramebuffer {
+    pub fn new(graphics: &mut Graphics, width: u32, height: u32) -> Self {
+        fn new_frambuffer(graphics: &mut Graphics, width: u32, height: u32) -> Framebuffer {
+            let color_texture = graphics
+                .new_texture(
+                    None,
+                    width,
+                    height,
+                    PixelFormat::RGBA32F,
+                    TextureSettings {
+                        srgb: false,
+                        generate_mipmaps: false,
+                        ..TextureSettings::default()
+                    },
+                )
+                .unwrap();
+
+            let depth_texture = graphics
+                .new_texture(
+                    None,
+                    width,
+                    height,
+                    PixelFormat::Depth16,
+                    TextureSettings {
+                        srgb: false,
+                        generate_mipmaps: false,
+                        ..TextureSettings::default()
+                    },
+                )
+                .unwrap();
+
+            graphics.context.new_framebuffer(None, None, None)
+        }
+
+        for _ in 0..100000 {
+            // new_frambuffer(graphics, width, height);
+        }
+        Self {
+            framebuffers: [
+                new_frambuffer(graphics, width, height),
+                new_frambuffer(graphics, width, height),
+                new_frambuffer(graphics, width, height),
+            ],
+            width,
+            height,
+            current: 0,
+        }
+    }
+
+    pub fn get_next(&mut self) -> &Framebuffer {
+        self.current += 1;
+        if self.current > 2 {
+            self.current = 0;
+        }
+        &self.framebuffers[self.current]
     }
 }
 
@@ -739,7 +816,6 @@ pub fn render_scene<'a, 'b>(
                     mesh_assets,
                     texture_assets,
                     cube_map_assets,
-                    // &lights,
                     &camera_info,
                     kmath::geometry::BoundingBox::<u32, 2> {
                         min: Vector::ZERO,
@@ -800,15 +876,17 @@ pub fn render_depth_only(
         .get_vertex_attribute::<Vec3>("a_position")
         .unwrap();
 
-    let culling_frustum = Frustum::from_matrix(*projection_matrix * *view_matrix);
+    let _culling_frustum = Frustum::from_matrix(*projection_matrix * *view_matrix);
 
-    for (global_transform, _, mesh, render_layers, _, _, ignore_culling) in renderables {
+    for (global_transform, _, mesh, render_layers, _, _, _ignore_culling) in renderables {
         if render_layers.map_or(true, |r| r.includes_layer(RenderLayers::DEFAULT)) {
             let mesh = meshes.get(mesh);
-            let should_render = ignore_culling.is_some()
-                || mesh
-                    .bounding_box
-                    .map_or(true, |b| culling_frustum.intersects_box(b));
+            /*  let should_render = ignore_culling.is_some()
+            || mesh
+                .bounding_box
+                .map_or(true, |b| culling_frustum.intersects_box(b));
+                */
+            let should_render = true;
             if should_render {
                 if let Some(gpu_mesh) = mesh.gpu_mesh.as_ref() {
                     render_pass
