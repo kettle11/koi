@@ -143,14 +143,14 @@ var gl_web_object = {
         return texture;
     },
     delete_texture(texture) {
-        gl.delete_texture(texture);
+        gl.deleteTexture(texture);
     },
     new_cube_map() {
         let texture = gl.createTexture();
         return texture;
     },
     delete_cube_map(texture) {
-        gl.delete_texture(texture);
+        gl.deleteTexture(texture);
     },
     new_program(vertex_shader, fragment_shader) {
         let program = gl.createProgram();
@@ -518,11 +518,13 @@ var gl_web_object = {
                     gl.activeTexture(gl.TEXTURE0 + texture_unit);
                     gl.bindTexture(gl.TEXTURE_CUBE_MAP, texture);
                     gl.uniform1i(uniform_location, texture_unit);
+                    break;
                 }
                 case 16: {
                     // SetDepthMask
                     let depth_mask = u32_data[u32_offset++];
                     gl.depthMask(depth_mask);
+                    break;
                 }
             }
         }
