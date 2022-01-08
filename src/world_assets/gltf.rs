@@ -1,3 +1,5 @@
+use kgltf::AccessorComponentType;
+
 use crate::*;
 use std::{convert::TryInto, path::Path};
 
@@ -203,20 +205,26 @@ pub(super) async fn load_mesh_primitive_data(
                 let accessor_component_type =
                     gltf.accessors[*accessor_index].component_type.clone();
 
-                match accessor_component_type {
-                    kgltf::AccessorComponentType::Float => {}
-                    _ => unimplemented!(
-                        "GLTF loading does not yet handle the non-Float accessor type: {:?}",
-                        accessor_component_type
-                    ),
-                };
+                fn check_type(accessor_component_type: AccessorComponentType) {
+                    match accessor_component_type {
+                        kgltf::AccessorComponentType::Float => {}
+                        _ => unimplemented!(
+                            "GLTF loading does not yet handle the non-Float accessor type: {:?}",
+                            accessor_component_type
+                        ),
+                    };
+                }
 
+                // Todo: See table here for more accessor types that need to be implemented:
+                // https://www.khronos.org/registry/glTF/specs/2.0/glTF-2.0.html#meshes-overview
                 match attribute.as_str() {
                     "POSITION" => {
                         positions =
                             Some(get_buffer::<Vec3>(gltf, &data, &buffers, *accessor_index).await);
                     }
                     "TEXCOORD_0" => {
+                        //
+                        check_type(accessor_component_type);
                         texture_coordinates =
                             Some(get_buffer::<Vec2>(gltf, &data, &buffers, *accessor_index).await);
                     }
@@ -225,6 +233,8 @@ pub(super) async fn load_mesh_primitive_data(
                             Some(get_buffer::<Vec3>(gltf, &data, &buffers, *accessor_index).await);
                     }
                     "COLOR_0" => {
+                        check_type(accessor_component_type);
+
                         // COLOR_0 can be different accessor types according to the spec.
                         // Here we make them always a `Vec4`
                         match accessor_type {
