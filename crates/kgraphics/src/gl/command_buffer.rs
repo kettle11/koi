@@ -1,4 +1,5 @@
 use super::*;
+
 pub struct CommandBuffer {
     pub(super) actions: Vec<CommandBufferAction>,
     pub(super) uniforms: BumpAllocator,
@@ -68,12 +69,15 @@ impl CommandBufferTrait for CommandBuffer {
     ) -> RenderPass<'a> {
         self.actions
             .push(CommandBufferAction::BindFramebuffer(*framebuffer));
+
+        // This is before Clear otherwise the Clear doesn't clear depth.
+        self.actions.push(CommandBufferAction::SetDepthMask(true));
+
         if let Some((r, g, b, a)) = clear_color {
             self.actions.push(CommandBufferAction::Clear((
                 r as f32, g as f32, b as f32, a as f32,
             )));
         }
-        self.actions.push(CommandBufferAction::SetDepthMask(true));
         RenderPass {
             command_buffer: self,
         }

@@ -808,6 +808,7 @@ impl GraphicsContextTrait for GraphicsContext {
                         // Requiring a clone of the pipeline all over the place is not good.
                         self.gl.use_program(Some(pipeline.program));
 
+                        self.gl.set_depth_mask(true);
                         // GL_ALWAYS will still write to the depth buffer, just the value is ignored.
                         // So depth testing is enabled even for always.
                         self.gl.enable(GL_DEPTH_TEST);
@@ -956,12 +957,6 @@ impl GraphicsContextTrait for GraphicsContext {
                     }
                 }
             }
-            // Delete the framebuffer if we've created one.
-            /*
-            if let Some(temp_framebuffer) = temp_framebuffer {
-                self.gl.delete_framebuffer(temp_framebuffer);
-            }
-            */
 
             command_buffer.clear();
             self.old_command_buffers.push(command_buffer);

@@ -542,6 +542,8 @@ impl<'a, 'b: 'a> Renderer<'a, 'b> {
         lights: &'a Lights,
         reflection_probes: &Query<(&'static GlobalTransform, &'static ReflectionProbe)>,
     ) {
+        self.render_pass.set_depth_mask(true);
+
         let camera_position = camera_transform.position;
         let camera_forward = -camera_transform.forward();
 
@@ -655,6 +657,7 @@ pub fn prepare_shadow_casters(
     }
 }
 
+/*
 pub struct TripleBufferedFramebuffer {
     //  textures: [Texture; 3],
     framebuffers: [Framebuffer; 3],
@@ -720,6 +723,7 @@ impl TripleBufferedFramebuffer {
         &self.framebuffers[self.current]
     }
 }
+*/
 
 pub fn render_scene<'a, 'b>(
     graphics: &mut Graphics,
@@ -851,6 +855,8 @@ pub fn render_depth_only(
     let mut render_pass =
         command_buffer.begin_render_pass_with_framebuffer(framebuffer, Some((0.0, 0.0, 0.0, 0.0)));
     render_pass.set_viewport(0, 0, viewport_size, viewport_size);
+
+    render_pass.set_depth_mask(true);
 
     let depth_shader = shaders.get(&Shader::DEPTH_ONLY);
 

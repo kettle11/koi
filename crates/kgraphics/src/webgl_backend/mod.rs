@@ -496,6 +496,9 @@ impl CommandBufferTrait for CommandBuffer {
             0,
         ]);
 
+        // This is before Clear otherwise the Clear doesn't clear depth.
+        render_pass.set_depth_mask(true);
+
         if let Some((r, g, b, a)) = clear_color {
             self.commands.push(Command::Clear);
             self.f32_data.extend_from_slice(&[r, g, b, a]);
@@ -504,7 +507,6 @@ impl CommandBufferTrait for CommandBuffer {
         let mut render_pass = RenderPass {
             command_buffer: self,
         };
-        render_pass.set_depth_mask(true);
         render_pass
     }
 
