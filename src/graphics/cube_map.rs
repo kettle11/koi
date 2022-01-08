@@ -309,7 +309,7 @@ pub(crate) fn load_cube_maps(
             wrapping_vertical: WrappingMode::ClampToEdge,
             minification_filter: FilterMode::Linear,
             magnification_filter: FilterMode::Linear,
-            generate_mipmaps: true,
+            generate_mipmaps: false,
             ..message.texture_settings
         };
 
@@ -348,6 +348,9 @@ pub(crate) fn load_cube_maps(
             face_size as usize,
         );
         graphics.context.generate_mip_map_for_cube_map(&cube_map);
+
+        // Manually free the texture here.
+        graphics.context.delete_texture(texture.0);
 
         // If we also want to convolute the CubeMap do so here.
         if let Some((diffuse_handle, specular_handle)) =
