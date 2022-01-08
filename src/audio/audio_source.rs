@@ -40,6 +40,17 @@ impl AudioSource {
             teleported: false,
         }
     }
+
+    pub fn with_volume(mut self, volume: f32) -> Self {
+        self.volume = volume;
+        self
+    }
+
+    pub fn playing(mut self, sound: &Handle<Sound>, looped: bool) -> Self {
+        self.play(sound, looped);
+        self
+    }
+
     pub fn play(&mut self, sound: &Handle<Sound>, looped: bool) {
         // Sounds are played at the end of fixed update.
         // This shouldn't cause any major lag because frame calculations should generally be fast.
@@ -77,14 +88,16 @@ impl AudioSource {
 }
 
 pub fn move_sources(
-    mut listener: Query<(&mut Listener, Option<&Transform>)>,
-    mut sources: Query<(&mut AudioSource, &Transform)>,
+    mut listener: Query<(&mut Listener, Option<&GlobalTransform>)>,
+    mut sources: Query<(&mut AudioSource, &GlobalTransform)>,
     sounds: &Assets<Sound>,
     audio: &mut AudioManager,
 ) {
     // For now only one `Listener` is supported.
     if let Some((listener, listener_transform)) = listener.iter_mut().next() {
-        let listener_transform = listener_transform.cloned().unwrap_or_else(Transform::new);
+        let listener_transform: Transform = listener_transform
+            .map(|t| t.deref().clone())
+            .unwrap_or_else(Transform::new);
 
         let q: [f32; 4] = listener_transform.rotation.into();
         let mut spatial_scene_control = audio.scene_handle.control::<oddio::SpatialScene, _>();
