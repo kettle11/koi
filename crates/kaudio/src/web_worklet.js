@@ -3,51 +3,55 @@ var audio_running = false;
 
 function run_on_worklet() {
     class KAudioProcessor extends AudioWorkletProcessor {
-        constructor(...args) {
-            super(...args)
-            this.port.onmessage = (e) => {
-                let imports = {};
-                let memory_assigned = false;
+        constructor(options) {
+            super(options);
 
-                // Fill audio worklet imports with placeholder values.
-                // None of these functions will be called on this worklet thread anyways.
-                WebAssembly.Module.imports(e.data.kwasm_module).forEach(item => {
-                    if (imports[item.module] === undefined) {
-                        imports[item.module] = {};
-                    }
+            let setup_data = options.processorOptions;
 
-                    if (item.kind == "function") {
-                        imports[item.module][item.name] = function () {
-                            console.log(item.name + "is unimplemented in audio worklet");
-                        }
-                    }
-                    if (item.kind == "memory") {
-                        imports[item.module][item.name] = e.data.kwasm_memory;
-                        memory_assigned = true;
-                    }
-                });
-                if (!memory_assigned) {
-                    imports.env = {
-                        memory: e.data.kwasm_memory
-                    };
+            let imports = {};
+            let memory_assigned = false;
+
+            // Fill audio worklet imports with placeholder values.
+            // None of these functions will be called on this worklet thread anyways.
+            WebAssembly.Module.imports(setup_data.kwasm_module).forEach(item => {
+                if (imports[item.module] === undefined) {
+                    imports[item.module] = {};
                 }
-                this.kwasm_memory = e.data.kwasm_memory;
 
-
-                WebAssembly.instantiate(e.data.kwasm_module, imports).then(results => {
-                    let exports = results.exports;
-                    if (exports.__wbindgen_start) {
-                        exports.__wbindgen_start();
-                    } else {
-                        exports.set_stack_pointer(e.data.stack_pointer);
-                        exports.__wasm_init_tls(e.data.thread_local_storage_pointer);
+                if (item.kind == "function") {
+                    imports[item.module][item.name] = function () {
+                        console.log(item.name + "is unimplemented in audio worklet");
                     }
+                }
+                if (item.kind == "memory") {
+                    imports[item.module][item.name] = setup_data.kwasm_memory;
+                    memory_assigned = true;
+                }
+            });
 
-                    exports.kwasm_web_worker_entry_point(e.data.entry_point);
-                    this.kwasm_exports = exports;
-
-                });
+            if (!memory_assigned) {
+                imports.env = {
+                    memory: setup_data.kwasm_memory
+                };
             }
+            this.kwasm_memory = setup_data.kwasm_memory;
+
+            WebAssembly.instantiate(setup_data.kwasm_module, imports).then(results => {
+                this.port.postMessage("INSTANTIATED MODULE");
+
+                let exports = results.exports;
+                if (exports.__wbindgen_start) {
+                    exports.__wbindgen_start();
+                } else {
+                    exports.set_stack_pointer(setup_data.stack_pointer);
+                    exports.__wasm_init_tls(setup_data.thread_local_storage_pointer);
+                }
+
+                exports.kwasm_web_worker_entry_point(setup_data.entry_point);
+                this.kwasm_exports = exports;
+
+            });
+            this.port.postMessage("Successfully initialized Audio Worklet");
         }
 
         process(inputs, outputs, parameters) {
@@ -77,6 +81,7 @@ function setup_worklet(entry_point, stack_pointer, thread_local_storage_pointer)
         }
 
         async function setup_worklet() {
+            console.log("SETTING UP AUDIO WORKLET!");
             const audioContext = new AudioContext({ sampleRate: 44100 });
 
             let blobURL = URL.createObjectURL(new Blob(
@@ -89,23 +94,21 @@ function setup_worklet(entry_point, stack_pointer, thread_local_storage_pointer)
 
             const worklet = new AudioWorkletNode(audioContext, 'kaudio-processor', {
                 outputChannelCount: [2],
+                processorOptions: {
+                    kwasm_memory: self.kwasm_memory,
+                    kwasm_module: self.kwasm_module,
+                    entry_point: entry_point,
+                    stack_pointer: stack_pointer,
+                    thread_local_storage_pointer: thread_local_storage_pointer,
+                }
             });
             worklet.connect(audioContext.destination);
-            // Smuggling these values via document properties
-            // is hack for now, but it requires a specific index.html setup
-            // and should be replaced.
-            let message = {
-                kwasm_memory: self.kwasm_memory,
-                // Inexplicably sending this wasm module causes Chrome to not delivery the message
-                // to the worklet. Why?
-                kwasm_module: self.kwasm_module,
-                entry_point: entry_point,
-                stack_pointer: stack_pointer,
-                thread_local_storage_pointer: thread_local_storage_pointer,
+            worklet.port.onmessage = (e) => {
+                console.log("Worklet message: ", e.data);
             };
 
-            worklet.port.postMessage(message);
             this.kaudio_audio_worklet = worklet;
+            audioContext.resume();
         }
 
     };
