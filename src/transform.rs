@@ -3,7 +3,6 @@ use std::ops::Mul;
 use crate::*;
 
 use kecs::Query;
-use kmath::geometry::BoundingBox;
 
 pub fn transform_plugin() -> Plugin {
     Plugin {
@@ -133,13 +132,6 @@ impl Transform {
     #[inline]
     pub fn back(&self) -> Vec3 {
         self.rotation.rotate_vector3(Vec3::Z)
-    }
-
-    pub fn transform_bounding_box(&self, bounding_box: Box3) -> Box3 {
-        let model = self.model();
-        let min = model.transform_point(bounding_box.min);
-        let max = model.transform_point(bounding_box.max);
-        BoundingBox { min, max }
     }
 
     /*

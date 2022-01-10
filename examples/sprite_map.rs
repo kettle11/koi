@@ -3,9 +3,11 @@ use koi::*;
 fn main() {
     App::new().setup_and_run(|world: &mut World| {
         // Spawn a camera
-        let mut camera = Camera::new_orthographic();
+        let mut camera = Camera::new().orthographic();
         camera.set_orthographic_height(10.0);
-        world.spawn((Transform::new(), camera));
+
+        // Back up the camera so we can see the sprites.
+        world.spawn((Transform::new().with_position(Vec3::Z * 3.0), camera));
 
         let textures = world.get_single_component_mut::<Assets<Texture>>().unwrap();
         let texture = textures.load_with_options(

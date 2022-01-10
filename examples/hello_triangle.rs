@@ -4,13 +4,13 @@ fn main() {
     App::new().setup_and_run(|world: &mut World| {
         // Setup things here.
         world.spawn((
-            Transform::new(),
-            Camera::new_orthographic(),
+            Transform::new().with_position(Vec3::Z),
+            Camera::new().orthographic(),
             CameraControls::new(),
         ));
         world.spawn((Transform::new(), Mesh::TRIANGLE, Material::UNLIT));
 
         // Run the World with this mutable closure.
-        |event: Event, _: &mut World| false
+        |_event: Event, _world: &mut World| false
     });
 }
