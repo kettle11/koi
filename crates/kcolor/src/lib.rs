@@ -126,13 +126,13 @@ impl Color {
     }
 
     /// Sets the lightness in the [OKLCH] [ColorSpace]
-    pub fn set_lightness(&mut self, lightness: f32) {
+    pub fn with_lightness(self, lightness: f32) -> Self {
         let to_space = kolor::ColorConversion::new(kolor::spaces::CIE_XYZ, kolor::spaces::OKLCH);
         let mut in_space = to_space.convert(kolor::Vec3::new(self.x, self.y, self.z));
         in_space.x = lightness;
         let from_space = kolor::ColorConversion::new(kolor::spaces::OKLCH, kolor::spaces::CIE_XYZ);
         let kolor::Vec3 { x, y, z } = from_space.convert(in_space);
-        *self = Self {
+        Self {
             x,
             y,
             z,
@@ -142,13 +142,13 @@ impl Color {
 
     /// Sets the chroma in the [OKLCH] [ColorSpace]
     /// `chroma` should be between 0.0 and 1.0
-    pub fn set_chroma(&mut self, chroma: f32) {
+    pub fn with_chroma(self, chroma: f32) -> Self {
         let to_space = kolor::ColorConversion::new(kolor::spaces::CIE_XYZ, kolor::spaces::OKLCH);
         let mut in_space = to_space.convert(kolor::Vec3::new(self.x, self.y, self.z));
         in_space.y = chroma * 0.5;
         let from_space = kolor::ColorConversion::new(kolor::spaces::OKLCH, kolor::spaces::CIE_XYZ);
         let kolor::Vec3 { x, y, z } = from_space.convert(in_space);
-        *self = Self {
+        Self {
             x,
             y,
             z,
@@ -158,13 +158,13 @@ impl Color {
 
     /// Sets the hue in the [OKLCH] [ColorSpace]
     /// `hue` should be between 0.0 and 1.0
-    pub fn set_hue(&mut self, hue: f32) {
+    pub fn with_hue(self, hue: f32) -> Self {
         let to_space = kolor::ColorConversion::new(kolor::spaces::CIE_XYZ, kolor::spaces::OKLCH);
         let mut in_space = to_space.convert(kolor::Vec3::new(self.x, self.y, self.z));
         in_space.z = hue * std::f32::consts::TAU;
         let from_space = kolor::ColorConversion::new(kolor::spaces::OKLCH, kolor::spaces::CIE_XYZ);
         let kolor::Vec3 { x, y, z } = from_space.convert(in_space);
-        *self = Self {
+        Self {
             x,
             y,
             z,
@@ -172,8 +172,9 @@ impl Color {
         }
     }
 
-    pub fn set_alpha(&mut self, alpha: FType) {
+    pub fn with_alpha(mut self, alpha: FType) -> Self {
         self.alpha = alpha;
+        self
     }
 
     /// White in sRGB
