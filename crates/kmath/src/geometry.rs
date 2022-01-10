@@ -391,40 +391,49 @@ impl Frustum {
         let near = row3 + row2;
         //let far = row3 - row2;
 
-        // I don't understand why `distance_along_normal` is negated here, but it was needed for
-        // a correct frustum to be generated.
         Frustum {
             planes: [
                 Plane3 {
-                    normal: left.xyz(),
-                    distance_along_normal: -left[3],
+                    normal: -left.xyz(),
+                    distance_along_normal: left[3],
                 },
                 Plane3 {
-                    normal: right.xyz(),
-                    distance_along_normal: -right[3],
+                    normal: -right.xyz(),
+                    distance_along_normal: right[3],
                 },
                 Plane3 {
-                    normal: top.xyz(),
-                    distance_along_normal: -top[3],
+                    normal: -top.xyz(),
+                    distance_along_normal: top[3],
                 },
                 Plane3 {
-                    normal: bottom.xyz(),
-                    distance_along_normal: -bottom[3],
+                    normal: -bottom.xyz(),
+                    distance_along_normal: bottom[3],
                 },
                 Plane3 {
-                    normal: near.xyz(),
-                    distance_along_normal: -near[3],
+                    normal: -near.xyz(),
+                    distance_along_normal: near[3],
                 },
             ],
         }
     }
 
-    pub fn intersects_box(&self, box3: Box3) -> bool {
+    pub fn intersects_box(&self, transform: Mat4, box3: Box3) -> bool {
+        let corners = box3.corners();
+        let corners = [
+            transform.transform_point(corners[0]),
+            transform.transform_point(corners[1]),
+            transform.transform_point(corners[2]),
+            transform.transform_point(corners[3]),
+            transform.transform_point(corners[4]),
+            transform.transform_point(corners[5]),
+            transform.transform_point(corners[6]),
+            transform.transform_point(corners[7]),
+        ];
         // For each plane check if all corners of the box are outside the plane
-        for plane in self.planes {
+        for (i, plane) in self.planes.iter().enumerate() {
             let mut corners_outside_plane = 0;
-            for corner in box3.corners() {
-                if plane.distance_to_point(corner) < 0.0 {
+            for corner in corners {
+                if plane.distance_to_point(corner) > 0.0 {
                     corners_outside_plane += 1;
                 }
             }
