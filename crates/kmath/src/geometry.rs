@@ -430,7 +430,7 @@ impl Frustum {
             transform.transform_point(corners[7]),
         ];
         // For each plane check if all corners of the box are outside the plane
-        for (i, plane) in self.planes.iter().enumerate() {
+        for plane in self.planes.iter() {
             let mut corners_outside_plane = 0;
             for corner in corners {
                 if plane.distance_to_point(corner) > 0.0 {

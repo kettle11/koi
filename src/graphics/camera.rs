@@ -65,23 +65,11 @@ impl Camera {
         camera
     }
 
-    pub fn new_orthographic() -> Self {
-        let mut camera = Self {
-            projection_matrix: Mat4::IDENTITY,
-            projection_mode: ProjectionMode::Orthographic,
-            view_width: 100,
-            view_height: 100,
-            enabled: true,
-            clear_color: Some(Color::BLACK),
-            z_near: 0.0,
-            z_far: 500.0,
-            orthographic_height: 2.0,
-            vertical_field_of_view_radians: (60.0_f32).to_radians(),
-            render_layers: RenderLayers::DEFAULT,
-            camera_target: Some(CameraTarget::Primary),
-        };
-        camera.update_projection_matrix();
-        camera
+    pub fn orthographic(mut self) -> Self {
+        self.projection_mode = ProjectionMode::Orthographic;
+        self.orthographic_height = 2.0;
+        self.update_projection_matrix();
+        self
     }
 
     pub fn new_custom_projection_matrix(projection_matrix: Mat4) -> Self {
