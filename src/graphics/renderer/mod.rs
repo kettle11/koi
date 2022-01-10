@@ -571,9 +571,7 @@ impl<'a, 'b: 'a> Renderer<'a, 'b> {
                         .mesh_assets
                         .get(mesh_handle)
                         .bounding_box
-                        .map_or(true, |b| {
-                            frustum.intersects_box(transform.transform_bounding_box(b))
-                        });
+                        .map_or(true, |b| frustum.intersects_box(transform.model(), b));
 
                 if should_render {
                     let is_transparent = self
@@ -616,6 +614,7 @@ impl<'a, 'b: 'a> Renderer<'a, 'b> {
             if let Some(sprite) = optional_sprite {
                 self.prepare_sprite(sprite);
             }
+
             if let Some(color) = color {
                 self.set_color(*color);
             }
@@ -882,17 +881,16 @@ pub fn render_depth_only(
         .get_vertex_attribute::<Vec3>("a_position")
         .unwrap();
 
-    let _culling_frustum = Frustum::from_matrix(*projection_matrix * *view_matrix);
+    let culling_frustum = Frustum::from_matrix(*projection_matrix * *view_matrix);
 
-    for (global_transform, _, mesh, render_layers, _, _, _ignore_culling) in renderables {
+    for (global_transform, _, mesh_handle, render_layers, _, _, ignore_culling) in renderables {
         if render_layers.map_or(true, |r| r.includes_layer(RenderLayers::DEFAULT)) {
-            let mesh = meshes.get(mesh);
-            /*  let should_render = ignore_culling.is_some()
-            || mesh
-                .bounding_box
-                .map_or(true, |b| culling_frustum.intersects_box(b));
-                */
-            let should_render = true;
+            let mesh = meshes.get(mesh_handle);
+            let should_render = ignore_culling.is_some()
+                || meshes.get(mesh_handle).bounding_box.map_or(true, |b| {
+                    culling_frustum.intersects_box(global_transform.model(), b)
+                });
+
             if should_render {
                 if let Some(gpu_mesh) = mesh.gpu_mesh.as_ref() {
                     render_pass
@@ -918,7 +916,7 @@ impl ShadowCaster {
     pub fn new() -> Self {
         Self {
             shadow_cascades: Vec::new(),
-            texture_size: 1024,
+            texture_size: 2048,
             ibl_shadowing: 0.0,
         }
     }
@@ -987,10 +985,11 @@ pub fn render_shadow_pass(
 ) {
     let camera_view_inversed = camera_global_transform.model();
 
-    let splits = [10., 25., 47., 200.];
+    let cascade_depths = [5., 15., 30., 200.];
+
     let mut z_near = camera.get_near_plane();
     let mut camera_clip_space_to_world = [Mat4::ZERO; 4];
-    for (i, z_far) in splits.iter().enumerate() {
+    for (i, z_far) in cascade_depths.iter().enumerate() {
         // The +1.0 to z_far here prevents an issue where lines appear between cascades.
         let projection = camera.projection_matrix_with_z_near_and_z_far(z_near, z_far + 1.0);
         camera_clip_space_to_world[i] = camera_view_inversed * projection.inversed();
