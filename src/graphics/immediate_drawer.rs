@@ -38,7 +38,7 @@ impl ImmediateDrawer {
         self.commands.spawn((
             Temporary,
             transform,
-            Mesh::SPHERE,
+            Mesh::CUBE,
             self.color,
             self.material.clone(),
         ))
