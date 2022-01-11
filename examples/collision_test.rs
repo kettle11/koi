@@ -10,17 +10,27 @@ fn main() {
         // Spawn a light
         world.spawn((
             Light::new(LightMode::Directional, Color::WHITE, 1.0),
-            Transform::new().with_position([0., 8.0, 8.0].into()),
-            Material::UNLIT,
+            Transform::new()
+                .with_position([0., 8.0, 8.0].into())
+                .looking_at(Vec3::ZERO, Vec3::Y),
         ));
 
+        world.spawn((
+            Light::new(LightMode::Directional, Color::WHITE, 1.0),
+            Transform::new()
+                .with_position([0., -8.0, -8.0].into())
+                .looking_at(Vec3::ZERO, Vec3::Y),
+        ));
+
+        let mut camera = Camera::new();
+        camera.clear_color = Some(Color::WHITE);
         // Spawn a camera and make it look towards the origin.
         world.spawn((
             Transform::new()
                 .with_position(Vec3::new(0.0, 4.0, 3.0))
                 .looking_at(Vec3::ZERO, Vec3::Y),
-            Camera::new(),
             CameraControls::new(),
+            camera,
         ));
 
         let collision_marker_a = world.spawn((
@@ -49,19 +59,30 @@ fn main() {
 
         // Spawn a cube that we can control
         let object_a = world.spawn((
-            Transform::new().with_position(Vec3::Y * 0.75 + Vec3::X * 0.9),
+            Transform::new().with_position(Vec3::new(0.600000024, 0.927636206, 0.0)),
+            // Transform::new().with_position(Vec3::Y * 0.75 + Vec3::X * 0.9),
             Mesh::CUBE,
             Controlled,
             Color::WHITE,
-            Material::DEFAULT,
+            Material::PHYSICALLY_BASED_TRANSPARENT,
         ));
         let object_b = world.spawn((
-            Transform::new().with_rotation(Random::new_with_seed(2).quaternion()),
+            Transform::new(),
+            // Transform::new().with_rotation(Random::new_with_seed(2).quaternion()),
+            // .with_rotation(Random::new_with_seed(2).quaternion()),
+            /*
+            .with_rotation(Quat::from_yaw_pitch_roll(
+                0.0,
+                std::f32::consts::TAU * 0.125,
+                std::f32::consts::TAU * 0.125,
+            )), //.with_position(Vec3::Y * 0.8 + Vec3::X * 0.6),
+            */
             Mesh::CUBE,
             Color::WHITE,
-            Material::DEFAULT,
+            Material::PHYSICALLY_BASED_TRANSPARENT,
         ));
 
+        let mut rotation_angle = 0.0;
         move |event: Event, world: &mut World| {
             match event {
                 Event::FixedUpdate => {
@@ -88,6 +109,14 @@ fn main() {
                             if input.key(Key::NumPad8) {
                                 transform.position += Vec3::Y * 0.1;
                             }
+                            if input.key(Key::O) {
+                                rotation_angle -= 0.01;
+                                transform.rotation = Quat::from_angle_axis(rotation_angle, Vec3::Y);
+                            }
+                            if input.key(Key::P) {
+                                rotation_angle += 0.01;
+                                transform.rotation = Quat::from_angle_axis(rotation_angle, Vec3::Y);
+                            }
                         }
                     })
                     .run(world);
@@ -108,36 +137,59 @@ fn main() {
                         // println!("position b: {:?}", transform_b.position);
 
                         let mesh_a = meshes.get(a_mesh);
-                        let mesh_b = meshes.get(a_mesh);
+                        let mesh_b = meshes.get(b_mesh);
 
                         let points_a = &mesh_a.mesh_data.as_ref().unwrap().positions;
                         let points_b = &mesh_b.mesh_data.as_ref().unwrap().positions;
                         let model_a = transform_a.model();
                         let model_b = transform_b.model();
-                        let collision_info = kphysics::gjk(
+                        let collision_info = kphysics::collision::gjk(
                             transform_a.model(),
                             transform_b.model(),
                             points_a,
                             points_b,
                         );
+
+                        println!("COLLISION INFO: {:?}", collision_info);
                         if collision_info.collided {
-                            let contact_points = kphysics::find_planar_contact_points(
-                                collision_info.closest_point_a,
-                                Vec3::Y,
+                            let mesh_data_a = kphysics::create_mesh_data(
                                 &mesh_a.mesh_data.as_ref().unwrap().positions,
+                                &mesh_a.mesh_data.as_ref().unwrap().normals,
                                 &mesh_a.mesh_data.as_ref().unwrap().indices,
-                                &mesh_b.mesh_data.as_ref().unwrap().positions,
-                                &mesh_b.mesh_data.as_ref().unwrap().indices,
-                                model_a.inversed(),
-                                model_b.inversed(),
                             );
-                            println!("POINTS: {:#?}", contact_points);
-                            for (e, p) in contact_markers.iter().zip(contact_points.iter()) {
-                                objects.get_entity_components_mut(*e).unwrap().0.position = *p;
+
+                            let mesh_data_b = kphysics::create_mesh_data(
+                                &mesh_b.mesh_data.as_ref().unwrap().positions,
+                                &mesh_b.mesh_data.as_ref().unwrap().normals,
+                                &mesh_b.mesh_data.as_ref().unwrap().indices,
+                            );
+
+                            let contact_points = kphysics::collision::find_contact_points_on_plane(
+                                Plane {
+                                    normal: -Vec3::Y,
+                                    distance_along_normal: -0.427636206,
+                                },
+                                &mesh_data_a.planes,
+                                &mesh_data_b.planes,
+                                &model_a,
+                                &model_b,
+                            );
+                            println!("CONTACT POINTS: {:?}", contact_points);
+
+                            for (i, e) in contact_markers.iter().enumerate() {
+                                if i < contact_points.len() {
+                                    objects.get_entity_components_mut(*e).unwrap().0.position =
+                                        contact_points[i];
+                                } else {
+                                    objects.get_entity_components_mut(*e).unwrap().0.position =
+                                        Vec3::fill(1000.);
+                                }
                             }
                         }
                         let new_color = if collision_info.collided {
-                            Color::RED
+                            let mut color = Color::RED;
+                            color.alpha = 0.7;
+                            color
                         } else {
                             Color::WHITE
                         };
@@ -149,6 +201,8 @@ fn main() {
                             .unwrap()
                             .0
                             .position = collision_info.closest_point_a;
+
+                        println!("POINT: {:?}", collision_info.closest_point_b);
                         objects
                             .get_entity_components_mut(collision_marker_b)
                             .unwrap()

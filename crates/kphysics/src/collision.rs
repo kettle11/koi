@@ -1,4 +1,3 @@
-use std::cmp::Ordering;
 use std::fmt::Debug;
 
 use kmath::geometry::line_with_plane;
@@ -613,6 +612,7 @@ impl<F: NumericFloat> Simplex<F> {
     }
 }
 
+/*
 fn find_largest_square_within_convex_polygon<F: NumericFloat>(
     polygon_points: &[Vector<F, 3>],
     normal: Vector<F, 3>,
@@ -665,6 +665,7 @@ fn find_largest_square_within_convex_polygon<F: NumericFloat>(
 
     [p0, p1, p2, p3]
 }
+*/
 
 /// Clips the polygon defined by the `input_points` against the clipping planes.
 /// Returns the result in `output_points`
@@ -680,7 +681,7 @@ fn sutherland_hodgman_clipping<F: NumericFloat + Debug, const DIM: usize>(
         if let Some(mut previous_point) = input_points.last().cloned() {
             let mut previous_outside = plane.distance_to_point(previous_point) > F::ZERO;
 
-            //println!("PLANE: {:#?}", plane);
+            println!("PLANE: {:#?}", plane);
             for &current_point in input_points.iter() {
                 let current_outside = plane.distance_to_point(current_point) > F::ZERO;
 
@@ -696,7 +697,10 @@ fn sutherland_hodgman_clipping<F: NumericFloat + Debug, const DIM: usize>(
                     }
                 }
                 if !current_outside {
+                    println!("CULLING POINT");
                     output_points.push(current_point);
+                } else {
+                    println!("CULLING POINT");
                 }
                 previous_point = current_point;
                 previous_outside = current_outside;

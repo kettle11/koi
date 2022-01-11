@@ -2,7 +2,6 @@ pub mod collision;
 
 mod convex_mesh_collider;
 
-use std::convert::TryInto;
 use std::fmt::Debug;
 
 use collision::{GJKEpsilon, VeryLargeNumber};
@@ -33,6 +32,9 @@ pub struct PhysicsWorld<F: NumericFloat> {
     rigid_bodies: Vec<RigidBodyData<F>>,
     colliders: Vec<ColliderData<F>>,
     pub collider_meshes: Vec<MeshData<F>>,
+    /// For debug purposes, a collision occurred in the last frame.
+    pub collision_occurred: bool,
+    pub contact_points: Vec<Vector<F, 3>>,
 }
 
 #[derive(Clone, Debug)]
@@ -99,10 +101,14 @@ impl<F: NumericFloat + PhysicsDefaults + Debug + GJKEpsilon + VeryLargeNumber + 
             rigid_bodies: Vec::new(),
             colliders: Vec::new(),
             collider_meshes: Vec::new(),
+            collision_occurred: false,
+            contact_points: Vec::new(),
         }
     }
 
     pub fn update(&mut self) {
+        //println!("PHYSICS UPDATE----------");
+        self.collision_occurred = false;
         for rigid_body in &mut self.rigid_bodies {
             // Apply movement and gravity only to non-kinematic rigid-bodies
             if rigid_body.mass != F::INFINITY {
@@ -126,11 +132,13 @@ impl<F: NumericFloat + PhysicsDefaults + Debug + GJKEpsilon + VeryLargeNumber + 
                     rigid_body.angular_velocity[2],
                     F::ZERO,
                 );
+
+                // This stack overflow answer explains why a quaternion add is used here:
+                // https://stackoverflow.com/questions/46908345/integrate-angular-velocity-as-quaternion-rotation
                 rigid_body.rotation = rigid_body.rotation
-                    + angular_velocity_quaternion * rigid_body.rotation * self.time_step;
+                    + rigid_body.rotation * angular_velocity_quaternion * F::HALF * self.time_step;
 
                 rigid_body.rotation = rigid_body.rotation.normalized();
-                // println!("ROTATION: {:?}", rigid_body.rotation);
                 rigid_body.velocity =
                     rigid_body.velocity + (acceleration + acceleration) * F::HALF * self.time_step;
             } else {
@@ -177,6 +185,7 @@ impl<F: NumericFloat + PhysicsDefaults + Debug + GJKEpsilon + VeryLargeNumber + 
                                     &mesh_b.positions,
                                 );
                                 if collision_info.collided {
+                                    self.collision_occurred = true;
                                     println!("COLLIDED");
 
                                     let relative_velocity =
@@ -190,9 +199,33 @@ impl<F: NumericFloat + PhysicsDefaults + Debug + GJKEpsilon + VeryLargeNumber + 
                                     let world_to_a = a_to_world.inversed();
                                     let world_to_b = b_to_world.inversed();
 
+                                    // Get the relative velocity at the GJK point.
+                                    let relative_velocity = {
+                                        let velocity_at_point_a = rigid_body_a.velocity
+                                            + rigid_body_a.angular_velocity.cross(
+                                                collision_info.closest_point_a
+                                                    - rigid_body_a.position,
+                                            );
+
+                                        let velocity_at_point_b = rigid_body_b.velocity
+                                            + rigid_body_b.angular_velocity.cross(
+                                                collision_info.closest_point_b
+                                                    - rigid_body_b.position,
+                                            );
+
+                                        println!("VELOCITY AT A: {:?}", velocity_at_point_a);
+                                        println!("VELOCITY AT B: {:?}", velocity_at_point_b);
+
+                                        velocity_at_point_b - velocity_at_point_a
+                                    };
+
                                     let relative_velocity_direction =
                                         relative_velocity.normalized();
 
+                                    println!(
+                                        "RELATIVE VELOCITY DIRECTION: {:?}",
+                                        relative_velocity_direction
+                                    );
                                     // Find the shortest separation direction along the relative velocity direction.
                                     let orientation_along_velocity_to_separate = {
                                         let direction_a = world_to_a
@@ -236,6 +269,8 @@ impl<F: NumericFloat + PhysicsDefaults + Debug + GJKEpsilon + VeryLargeNumber + 
                                         collision_info.closest_point_a,
                                     );
 
+                                    println!("CONTACT PLANE: {:?}", &contact_plane);
+
                                     // They're moving apart, do nothing
                                     if contact_plane.normal.dot(relative_velocity) > F::ZERO {
                                         println!("MOVING APART");
@@ -250,8 +285,6 @@ impl<F: NumericFloat + PhysicsDefaults + Debug + GJKEpsilon + VeryLargeNumber + 
                                         &a_to_world,
                                         &b_to_world,
                                     );
-
-                                    println!("CONTACT POINTS: {:?}", contact_points);
 
                                     // Calculate how much each object should respond based on their relative masses.
                                     let mut response_b =
@@ -284,7 +317,7 @@ impl<F: NumericFloat + PhysicsDefaults + Debug + GJKEpsilon + VeryLargeNumber + 
                                         mesh_a.inertia_tensor_divided_by_mass * rigid_body_a.mass;
 
                                     let tensor_b =
-                                        mesh_a.inertia_tensor_divided_by_mass * rigid_body_b.mass;
+                                        mesh_b.inertia_tensor_divided_by_mass * rigid_body_b.mass;
 
                                     // Todo: Store inversed tensor instead, because usually the inverse is needed.
                                     let inverse_tensor_a: Matrix<F, 3, 3> =
@@ -309,17 +342,20 @@ impl<F: NumericFloat + PhysicsDefaults + Debug + GJKEpsilon + VeryLargeNumber + 
                                     let velocity_b = rigid_body_b.velocity;
                                     let angular_velocity_b = rigid_body_b.angular_velocity;
 
+                                    let mut velocity_change_a = Vector::ZERO;
+                                    let mut velocity_change_b = Vector::ZERO;
+
                                     let mut angular_velocity_change_a = Vector::ZERO;
                                     let mut angular_velocity_change_b = Vector::ZERO;
 
                                     for &point in contact_points.iter() {
                                         let velocity_at_point_a = velocity_a
                                             + angular_velocity_a
-                                                .cross(rigid_body_a.position - point);
+                                                .cross(point - rigid_body_a.position);
 
                                         let velocity_at_point_b = velocity_b
                                             + angular_velocity_b
-                                                .cross(rigid_body_b.position - point);
+                                                .cross(point - rigid_body_b.position);
 
                                         let relative_velocity_at_point =
                                             velocity_at_point_b - velocity_at_point_a;
@@ -350,8 +386,8 @@ impl<F: NumericFloat + PhysicsDefaults + Debug + GJKEpsilon + VeryLargeNumber + 
 
                                         println!("VELOCITY before: {:?}", rigid_body_a.velocity);
 
-                                        rigid_body_a.velocity -= impulse * response_a;
-                                        angular_velocity_change_a += -(inverse_tensor_a
+                                        velocity_change_a = -impulse / rigid_body_a.mass;
+                                        angular_velocity_change_a -= (inverse_tensor_a
                                             * ra_cross_normal)
                                             * impulse_magnitude;
 
@@ -363,12 +399,20 @@ impl<F: NumericFloat + PhysicsDefaults + Debug + GJKEpsilon + VeryLargeNumber + 
                                         println!("VELOCITY CHANGE A: {:#?}", -impulse * response_a);
                                         println!("VELOCITY after: {:?}", rigid_body_a.velocity);
 
-                                        rigid_body_b.velocity += impulse * response_b;
+                                        velocity_change_b = -impulse / rigid_body_b.mass;
                                         angular_velocity_change_b += (inverse_tensor_b
                                             * rb_cross_normal)
                                             * impulse_magnitude;
                                     }
-                                    //rigid_body_a.angular_velocity += angular_velocity_change_a;
+
+                                    println!("CONTACT POINTS: {:?}", contact_points);
+                                    self.contact_points = contact_points;
+
+                                    rigid_body_a.velocity += velocity_change_a;
+                                    println!("VELOCITY CHANGE TOTAL: {:?}", velocity_change_a);
+                                    rigid_body_b.velocity += velocity_change_b;
+
+                                    rigid_body_a.angular_velocity += angular_velocity_change_a;
                                     println!(
                                         "ANGULAR VELOCITY CHANGE TOTAL: {:?}",
                                         angular_velocity_change_a
