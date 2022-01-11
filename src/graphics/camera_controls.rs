@@ -40,8 +40,8 @@ impl CameraControls {
         Self {
             velocity: Vec3::ZERO,
             acceleration: 4000.0,
-            max_speed: 10.2,
-            friction: 0.001,
+            max_speed: 15.2,
+            friction: 0.01,
             rotation_sensitivity: 1.5,
             mode: CameraControlsMode::Fly,
             rotate_button: PointerButton::Secondary,
@@ -146,6 +146,10 @@ pub fn update_camera_controls(
                 transform.position += offset;
             }
         };
+
+        if input.key(Key::Space) {
+            println!("TRANSFORM: {:#?}", transform);
+        }
 
         match &mut controls.mode {
             CameraControlsMode::Fly => {
