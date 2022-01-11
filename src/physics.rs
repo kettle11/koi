@@ -1,5 +1,4 @@
 use crate::*;
-use kphysics::*;
 
 type FloatType = f32;
 
@@ -16,7 +15,10 @@ pub fn physics_plguin() -> Plugin {
 }
 
 pub fn setup_physics(world: &mut World) {
-    world.spawn(PhysicsWorld(kphysics::PhysicsWorld::new()));
+    world.spawn(PhysicsWorld {
+        world: kphysics::PhysicsWorld::new(),
+        paused: false,
+    });
 }
 
 pub struct PhysicsWorldHandle(usize);
@@ -27,7 +29,7 @@ pub struct RigidBody {
     pub bounciness: FloatType,
     pub gravity_multiplier: FloatType,
     pub velocity: Vec3,
-    pub rigid_body_handle: Option<RigidBodyDataHandle>,
+    pub rigid_body_handle: Option<kphysics::RigidBodyDataHandle>,
     /// Linear force that is applied during the physics update
     pub linear_force_to_apply: Vec3,
     /// Angular torque force that is applied during the physics update
@@ -78,7 +80,7 @@ pub struct Collider {
     // /// A handle to the PhysicsWorld this RigidBody is active within.
     // /// This should be the same as the attached RigidBody.
     // pub physics_world_index: PhysicsWorldHandle,
-    collider_handle: Option<ColliderDataHandle>,
+    collider_handle: Option<kphysics::ColliderDataHandle>,
 }
 
 impl Collider {
@@ -91,18 +93,21 @@ impl Collider {
 }
 
 #[derive(Component, Clone)]
-pub struct PhysicsWorld(kphysics::PhysicsWorld<FloatType>);
+pub struct PhysicsWorld {
+    world: kphysics::PhysicsWorld<FloatType>,
+    pub paused: bool,
+}
 
 impl Deref for PhysicsWorld {
     type Target = kphysics::PhysicsWorld<FloatType>;
     fn deref(&self) -> &Self::Target {
-        &self.0
+        &self.world
     }
 }
 
 impl DerefMut for PhysicsWorld {
     fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.0
+        &mut self.world
     }
 }
 
@@ -114,7 +119,7 @@ pub fn update_physics_0(
 ) {
     // Synchronize all `RigidBody` values with the `PhysicsWorld`.
     for (entity, (rigid_body, rigid_body_transform)) in rigid_bodies.entities_and_components_mut() {
-        let associated_entity = AssociatedEntity {
+        let associated_entity = kphysics::AssociatedEntity {
             index: entity.index(),
             generation: entity.generation(),
         };
@@ -127,7 +132,7 @@ pub fn update_physics_0(
             rigid_body_data.velocity = rigid_body.velocity;
             rigid_body_data.associated_entity = associated_entity;
         } else {
-            let new_rigid_body_data = RigidBodyData {
+            let new_rigid_body_data = kphysics::RigidBodyData {
                 mass: rigid_body.mass,
                 bounciness: rigid_body.bounciness,
                 position: rigid_body_transform.position,
@@ -168,7 +173,7 @@ pub fn update_physics_1(
     for (entity, (collider, collider_transform, mesh_handle)) in
         colliders.entities_and_components_mut()
     {
-        let associated_entity = AssociatedEntity {
+        let associated_entity = kphysics::AssociatedEntity {
             index: entity.index(),
             generation: entity.generation(),
         };
@@ -185,12 +190,13 @@ pub fn update_physics_1(
             collider_data.attached_rigid_body = attached_rigid_body;
         } else {
             let mesh_data = meshes.get(mesh_handle);
+
             let mesh_collider_handle = physics_world.add_mesh_data(
                 &mesh_data.mesh_data.as_ref().unwrap().positions,
                 &mesh_data.mesh_data.as_ref().unwrap().normals,
                 &mesh_data.mesh_data.as_ref().unwrap().indices,
             );
-            let collider_data = ColliderData {
+            let collider_data = kphysics::ColliderData {
                 associated_entity,
                 attached_rigid_body,
                 offset_from_rigid_body: Vec3::ZERO, // this will be updated in a follow-up step.
@@ -214,13 +220,15 @@ pub fn update_physics_2(
     mut rigid_bodies: Query<(&mut RigidBody, &mut Transform)>,
     physics_world: &mut PhysicsWorld,
 ) {
-    physics_world.update();
+    if !physics_world.paused {
+        physics_world.update();
 
-    for (rigid_body, rigid_body_transform) in &mut rigid_bodies {
-        let rigid_body_data =
-            physics_world.get_rigid_body_data(rigid_body.rigid_body_handle.unwrap());
-        rigid_body_transform.position = rigid_body_data.position;
-        rigid_body_transform.rotation = rigid_body_data.rotation;
-        rigid_body.velocity = rigid_body_data.velocity;
+        for (rigid_body, rigid_body_transform) in &mut rigid_bodies {
+            let rigid_body_data =
+                physics_world.get_rigid_body_data(rigid_body.rigid_body_handle.unwrap());
+            rigid_body_transform.position = rigid_body_data.position;
+            rigid_body_transform.rotation = rigid_body_data.rotation;
+            rigid_body.velocity = rigid_body_data.velocity;
+        }
     }
 }

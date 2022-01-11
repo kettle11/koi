@@ -34,8 +34,6 @@ pub use input::*;
 mod world_assets;
 pub use world_assets::*;
 
-pub use kphysics;
-
 #[cfg(feature = "graphics")]
 mod graphics;
 #[cfg(feature = "graphics")]
@@ -340,6 +338,7 @@ impl KoiState {
 
         let elapsed = self.start.elapsed();
         let time_elapsed_seconds = elapsed.as_secs_f64();
+        // klog::log!("TIME ELAPSED: {:?}", elapsed.as_millis());
         self.start = Instant::now();
         self.time_acumulator += time_elapsed_seconds;
 
