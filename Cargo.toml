@@ -19,7 +19,7 @@ gltf = ["kgltf"]
 ui = ["kui"]
 hdri = ["hdrldr"]
 physics = ["kphysics"]
-imagine_png = ["imagine", "bytemuck"]
+imagine_png = ["imagine"]
 
 [dependencies]
 kapp = {path = "crates/kapp",  default-features=false}
@@ -43,7 +43,7 @@ hdrldr = {version = "0.1.2", optional = true}
 oddio = {version = "0.4.1", optional = true}
 
 imagine = {git="https://github.com/Lokathor/imagine", optional = true, features = ["png"]}
-bytemuck = {version = "1.7.3", optional = true, features = ["extern_crate_alloc"]}
+bytemuck = {version = "1.7.3", features = ["extern_crate_alloc"]}
 
 [target.'cfg(target_arch="wasm32")'.dependencies]
 kwasm = {path = "crates/kwasm",  version = "0.1.0"}

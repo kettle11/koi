@@ -335,7 +335,7 @@ fn get_texture(
         textures.add(
             graphics
                 .new_texture(
-                    Some(&image_data.data),
+                    Some(image_data.data.as_u8_array()),
                     image_data.width,
                     image_data.height,
                     image_data.pixel_format,

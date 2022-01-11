@@ -316,7 +316,7 @@ pub(crate) fn load_cube_maps(
         // Create a GPU texture to process into the CubeMap
         let texture = graphics
             .new_texture(
-                Some(&message.texture_load_data.data),
+                Some(message.texture_load_data.data.as_u8_array()),
                 message.texture_load_data.width,
                 message.texture_load_data.height,
                 message.texture_load_data.pixel_format,

@@ -1,4 +1,5 @@
 use crate::*;
+use bytemuck::Pod;
 use core::ops::Deref;
 use kgraphics::*;
 
@@ -19,8 +20,19 @@ struct TextureLoadMessage {
     texture_settings: TextureSettings,
 }
 
+/// Used in texture loading to upload data to the GPU.
+pub trait AsU8Array: 'static + Send + Sync {
+    fn as_u8_array(&self) -> &[u8];
+}
+
+impl<T: Pod + Send + Sync + 'static> AsU8Array for Vec<T> {
+    fn as_u8_array(&self) -> &[u8] {
+        bytemuck::cast_slice(self)
+    }
+}
+
 pub struct TextureLoadData {
-    pub data: Vec<u8>,
+    pub data: Box<dyn AsU8Array>,
     pub pixel_format: PixelFormat,
     pub width: u32,
     pub height: u32,
@@ -41,7 +53,7 @@ pub(crate) fn load_textures(textures: &mut Assets<Texture>, graphics: &mut Graph
     for message in messages.into_iter() {
         let texture = graphics
             .new_texture(
-                Some(&message.texture_load_data.data),
+                Some(message.texture_load_data.data.as_u8_array()),
                 message.texture_load_data.width,
                 message.texture_load_data.height,
                 message.texture_load_data.pixel_format,
@@ -80,7 +92,7 @@ pub fn new_texture_from_jpeg_bytes(
     let texture_load_data = jpeg_data_from_bytes(bytes, texture_settings.srgb);
     graphics
         .new_texture(
-            Some(&texture_load_data.data),
+            Some(&texture_load_data.data.as_u8_array()),
             texture_load_data.width,
             texture_load_data.height,
             texture_load_data.pixel_format,
@@ -139,7 +151,7 @@ pub fn png_data_from_bytes(bytes: &[u8], srgb: bool) -> TextureLoadData {
     };
 
     TextureLoadData {
-        data: pixels,
+        data: Box::new(pixels),
         pixel_format,
         width: metadata.width,
         height: metadata.height,
@@ -150,15 +162,8 @@ pub fn png_data_from_bytes(bytes: &[u8], srgb: bool) -> TextureLoadData {
 pub fn png_data_from_bytes(bytes: &[u8], _srgb: bool) -> TextureLoadData {
     let (data, width, height) = imagine_integration::parse_me_a_png_yo(bytes).unwrap();
 
-    let mut final_data = Vec::with_capacity(data.len() * 4);
-    for imagine::RGBA8 { r, g, b, a } in data {
-        final_data.push(r);
-        final_data.push(g);
-        final_data.push(b);
-        final_data.push(a);
-    }
     TextureLoadData {
-        data: final_data,
+        data: Box::new(data),
         pixel_format: PixelFormat::RGBA8Unorm,
         width,
         height,
@@ -199,7 +204,7 @@ pub fn jpeg_data_from_bytes(bytes: &[u8], srgb: bool) -> TextureLoadData {
         } // _ => unimplemented!("Unsupported Jpeg pixel format: {:?}", metadata.pixel_format,),
     };
     TextureLoadData {
-        data: pixels,
+        data: Box::new(pixels),
         pixel_format,
         width: metadata.width as u32,
         height: metadata.height as u32,
@@ -218,21 +223,11 @@ pub fn hdri_data_from_bytes(bytes: &[u8]) -> TextureLoadData {
         texture.push([r, g, b, 0.0]);
     }
 
-    unsafe {
-        // Is this conversion correct? I believe so because [f32; 4] is aligned on u8 boundaries.
-        let data: Vec<u8> = Vec::from_raw_parts(
-            texture.as_mut_ptr() as *mut u8,
-            texture.len() * 4 * std::mem::size_of::<f32>(),
-            texture.capacity() * 4 * std::mem::size_of::<f32>(),
-        );
-        texture.leak();
-
-        TextureLoadData {
-            data,
-            width: image.width as u32,
-            height: image.height as u32,
-            pixel_format: PixelFormat::RGBA32F,
-        }
+    TextureLoadData {
+        data: Box::new(texture),
+        width: image.width as u32,
+        height: image.height as u32,
+        pixel_format: PixelFormat::RGBA32F,
     }
 }
 
