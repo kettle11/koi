@@ -116,7 +116,7 @@ pub fn png_data_from_bytes(bytes: &[u8], srgb: bool) -> TextureLoadData {
         png::ColorType::Rgba => PixelFormat::RGBA8Unorm,
         png::ColorType::Grayscale => {
             // Convert to RGBA sRGB8_ALPHA8 is the only color renderable format
-            // which is required for mipmap generation
+            // which is allowed for mipmap generation
             if srgb {
                 pixels = extend_pixels_1_with_alpha(pixels);
                 PixelFormat::RGBA8Unorm
@@ -143,6 +143,25 @@ pub fn png_data_from_bytes(bytes: &[u8], srgb: bool) -> TextureLoadData {
         pixel_format,
         width: metadata.width,
         height: metadata.height,
+    }
+}
+
+#[cfg(feature = "imagine_png")]
+pub fn png_data_from_bytes(bytes: &[u8], _srgb: bool) -> TextureLoadData {
+    let (data, width, height) = imagine_integration::parse_me_a_png_yo(bytes).unwrap();
+
+    let mut final_data = Vec::with_capacity(data.len() * 4);
+    for imagine::RGBA8 { r, g, b, a } in data {
+        final_data.push(r);
+        final_data.push(g);
+        final_data.push(b);
+        final_data.push(a);
+    }
+    TextureLoadData {
+        data: final_data,
+        pixel_format: PixelFormat::RGBA8Unorm,
+        width,
+        height,
     }
 }
 
@@ -190,7 +209,6 @@ pub fn jpeg_data_from_bytes(bytes: &[u8], srgb: bool) -> TextureLoadData {
 #[cfg(feature = "hdri")]
 pub fn hdri_data_from_bytes(bytes: &[u8]) -> TextureLoadData {
     // This data is always assumed to be linear sRGB
-
     let image = hdrldr::load(bytes).expect("Failed to decode HDRI image data");
 
     // Pad with alpha.
@@ -208,6 +226,7 @@ pub fn hdri_data_from_bytes(bytes: &[u8]) -> TextureLoadData {
             texture.capacity() * 4 * std::mem::size_of::<f32>(),
         );
         texture.leak();
+
         TextureLoadData {
             data,
             width: image.width as u32,
@@ -229,7 +248,7 @@ pub(crate) async fn texture_data_from_path(
         .await
         .unwrap_or_else(|_| panic!("Failed to open file: {}", path));
     match extension {
-        #[cfg(feature = "png")]
+        #[cfg(any(feature = "png", feature = "imagine_png"))]
         Some("png") => png_data_from_bytes(&bytes, options.srgb),
         #[cfg(feature = "jpeg")]
         Some("jpg") | Some("jpeg") => jpeg_data_from_bytes(&bytes, options.srgb),

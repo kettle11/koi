@@ -45,6 +45,9 @@ mod renderer;
 #[cfg(feature = "renderer")]
 pub use renderer::*;
 
+#[cfg(feature = "imagine_png")]
+pub mod imagine_integration;
+
 pub fn graphics_plugin() -> Plugin {
     Plugin {
         setup_systems: vec![setup_graphics.system()],
