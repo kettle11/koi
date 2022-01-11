@@ -2,7 +2,7 @@
 name = "kserde_derive"
 version = "0.1.0"
 authors = ["Ian Kettlewell <ian.kettlewell@gmail.com>"]
-edition = "2018"
+edition = "2021"
 
 [dependencies]
 kreflect_common = {path = "../../kreflect/kreflect_common", features = ["proc_macro"]}

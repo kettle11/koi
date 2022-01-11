@@ -2,7 +2,7 @@
 name = "kgltf"
 version = "0.1.0"
 authors = ["Ian Kettlewell <ian.kettlewell@gmail.com>"]
-edition = "2018"
+edition = "2021"
 exclude = ["tests/*", "examples/*"]
 license = "Zlib OR Apache-2.0 OR MIT"
 keywords = ["gltf", "3d", "mesh", "model", "scene"]

@@ -2,7 +2,7 @@
 name = "kaudio"
 version = "0.1.0"
 authors = ["Ian Kettlewell"]
-edition = "2018"
+edition = "2021"
 
 [features]
 default = ["wav"]
