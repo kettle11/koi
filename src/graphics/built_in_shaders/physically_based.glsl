@@ -206,7 +206,7 @@ float ShadowCalculation(in sampler2D shadowMap, vec4 fragPosLightSpace, vec3 lig
     return shadow;
 }
 
-const float cascade_depths[4] = float[4](10., 25., 47., 200.);
+const float cascade_depths[4] = float[4](5., 15., 30., 200.);
 
 void main()
 {
@@ -257,7 +257,7 @@ void main()
     float ibl_scale = 1.0;
 
         // For loop commented out because Safari performs poorly with it.
-        // for(int i = 0; i < p_light_count; ++i) 
+         //for(int i = 0; i < p_light_count; ++i) 
         if (p_light_count >= 1)
         {
             int i = 0;
@@ -320,6 +320,8 @@ void main()
 
             float shadow = 0.0;
 
+            // Todo: This should *not* be hard-coded.
+            float near_plane_depth = 0.3;
             if (p_lights[i].shadows_enabled == 1) {
                 // Todo: his offset needs to be scaled with cascade otherwise acne is introduced at far distances.
                 vec4 offset_world_position = vec4(WorldPosition + normal * 0.1, 1.0);
@@ -337,7 +339,7 @@ void main()
                     //debug_color = vec3(0.0, 0.0, 1.0);
                 } else {
                     vec4 light_space_position = p_world_to_light_space_0 * offset_world_position;
-                    shadow = ShadowCalculation(p_light_shadow_maps_0, light_space_position, L, cascade_depths[0]);
+                    shadow = ShadowCalculation(p_light_shadow_maps_0, light_space_position, L, cascade_depths[0] - near_plane_depth);
                 }
             }
 
