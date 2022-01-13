@@ -17,12 +17,8 @@ use crate::graphics::texture::Texture;
 #[derive(NotCloneComponent)]
 pub struct RendererInfo {
     pub brdf_lookup_table: Handle<Texture>,
-    // pub triple_buffered_framebuffer: NotSendSync<TripleBufferedFramebuffer>,
+    pub triple_buffered_framebuffer: NotSendSync<TripleBufferedFramebuffer>,
 }
-
-/// Attach to [Entity]s to ensure they are not culled by Frustum Culling.
-#[derive(Clone, Component)]
-pub struct IgnoreCulling;
 
 pub fn renderer_plugin() -> Plugin {
     Plugin {
@@ -42,15 +38,15 @@ pub fn setup_renderer(world: &mut World) {
         .get_single_component_mut::<Assets<Texture>>()
         .unwrap()
         .add(brdf_lookup_table);
+
     let renderer_info = RendererInfo {
         brdf_lookup_table,
-        /*
         triple_buffered_framebuffer: NotSendSync::new(TripleBufferedFramebuffer::new(
             world.get_single_component_mut::<Graphics>().unwrap(),
+            // Default to 2048 x 2048, which is the largest power of 2 that contains 1080p
             2048,
             2048,
         )),
-        */
     };
     world.spawn(renderer_info);
 }
@@ -553,20 +549,13 @@ impl<'a, 'b: 'a> Renderer<'a, 'b> {
             Frustum::from_matrix(camera.projection_matrix() * camera_transform.model().inversed());
 
         for renderable in renderables.iter() {
-            let (
-                transform,
-                material_handle,
-                mesh_handle,
-                render_layer,
-                optional_sprite,
-                color,
-                ignore_culling,
-            ) = renderable;
-            let render_layer = render_layer.cloned().unwrap_or(RenderLayers::DEFAULT);
-            if camera.render_layers.includes_layer(render_layer) {
+            let (transform, material_handle, mesh_handle, render_flags, optional_sprite, color) =
+                renderable;
+            let render_flags = render_flags.cloned().unwrap_or(RenderFlags::DEFAULT);
+            if camera.render_flags.includes_layer(render_flags) {
                 // Frustum cull models
                 // Always render models without bounding boxes.
-                let should_render = ignore_culling.is_some()
+                let should_render = render_flags.includes_layer(RenderFlags::IGNORE_CULLING)
                     || self
                         .mesh_assets
                         .get(mesh_handle)
@@ -608,7 +597,7 @@ impl<'a, 'b: 'a> Renderer<'a, 'b> {
         self.render_pass.set_depth_mask(false);
 
         for renderable in transparent_renderables.iter() {
-            let (transform, material_handle, mesh_handle, _render_layer, optional_sprite, color, _) =
+            let (transform, material_handle, mesh_handle, _render_flags, optional_sprite, color) =
                 *renderable;
             self.change_material(material_handle, lights, reflection_probes);
             if let Some(sprite) = optional_sprite {
@@ -630,10 +619,9 @@ type Renderables<'a> = Query<
         &'static Handle<Material>,
         &'static Handle<Mesh>,
         //Option<&Handle<Texture>>,
-        Option<&'static RenderLayers>,
+        Option<&'static RenderFlags>,
         Option<&'static Sprite>,
         Option<&'static Color>,
-        Option<&'static IgnoreCulling>,
     ),
 >;
 
@@ -655,74 +643,6 @@ pub fn prepare_shadow_casters(
         shadow_caster.prepare_shadow_casting(graphics, textures);
     }
 }
-
-/*
-pub struct TripleBufferedFramebuffer {
-    //  textures: [Texture; 3],
-    framebuffers: [Framebuffer; 3],
-    width: u32,
-    height: u32,
-    current: usize,
-}
-
-impl TripleBufferedFramebuffer {
-    pub fn new(graphics: &mut Graphics, width: u32, height: u32) -> Self {
-        fn new_frambuffer(graphics: &mut Graphics, width: u32, height: u32) -> Framebuffer {
-            let color_texture = graphics
-                .new_texture(
-                    None,
-                    width,
-                    height,
-                    PixelFormat::RGBA32F,
-                    TextureSettings {
-                        srgb: false,
-                        generate_mipmaps: false,
-                        ..TextureSettings::default()
-                    },
-                )
-                .unwrap();
-
-            let depth_texture = graphics
-                .new_texture(
-                    None,
-                    width,
-                    height,
-                    PixelFormat::Depth16,
-                    TextureSettings {
-                        srgb: false,
-                        generate_mipmaps: false,
-                        ..TextureSettings::default()
-                    },
-                )
-                .unwrap();
-
-            graphics.context.new_framebuffer(None, None, None)
-        }
-
-        for _ in 0..100000 {
-            // new_frambuffer(graphics, width, height);
-        }
-        Self {
-            framebuffers: [
-                new_frambuffer(graphics, width, height),
-                new_frambuffer(graphics, width, height),
-                new_frambuffer(graphics, width, height),
-            ],
-            width,
-            height,
-            current: 0,
-        }
-    }
-
-    pub fn get_next(&mut self) -> &Framebuffer {
-        self.current += 1;
-        if self.current > 2 {
-            self.current = 0;
-        }
-        &self.framebuffers[self.current]
-    }
-}
-*/
 
 pub fn render_scene<'a, 'b>(
     graphics: &mut Graphics,
@@ -762,7 +682,7 @@ pub fn render_scene<'a, 'b>(
             if camera_should_render {
                 // If this layer is going to render the default scene, including shadows, rerender shadows
                 // clipped to this camera's view.
-                if camera.render_layers.includes_layer(RenderLayers::DEFAULT) {
+                if camera.render_flags.includes_layer(RenderFlags::DEFAULT) {
                     // Render shadows clipped to this arbitrary camera.
                     render_shadow_pass(
                         shader_assets,
@@ -883,10 +803,13 @@ pub fn render_depth_only(
 
     let culling_frustum = Frustum::from_matrix(*projection_matrix * *view_matrix);
 
-    for (global_transform, _, mesh_handle, render_layers, _, _, ignore_culling) in renderables {
-        if render_layers.map_or(true, |r| r.includes_layer(RenderLayers::DEFAULT)) {
+    for (global_transform, _, mesh_handle, render_flags, _, _) in renderables {
+        let render_flags = render_flags.cloned().unwrap_or(RenderFlags::DEFAULT);
+        if render_flags.includes_layer(RenderFlags::DEFAULT)
+            && !render_flags.includes_layer(RenderFlags::DO_NOT_CAST_SHADOWS)
+        {
             let mesh = meshes.get(mesh_handle);
-            let should_render = ignore_culling.is_some()
+            let should_render = render_flags.includes_layer(RenderFlags::IGNORE_CULLING)
                 || meshes.get(mesh_handle).bounding_box.map_or(true, |b| {
                     culling_frustum.intersects_box(global_transform.model(), b)
                 });
@@ -1068,5 +991,97 @@ pub fn render_shadow_pass(
                 );
             }
         }
+    }
+}
+
+/// A triple buffered framebuffer abstraction to avoid OpenGL stalls
+pub struct TripleBufferedFramebuffer {
+    framebuffers: [(Framebuffer, Texture, Texture); 3],
+    width: u32,
+    height: u32,
+    viewport_size: (u32, u32),
+    current: usize,
+}
+
+impl TripleBufferedFramebuffer {
+    pub fn new(graphics: &mut Graphics, width: u32, height: u32) -> Self {
+        fn new_frambuffer(
+            graphics: &mut Graphics,
+            width: u32,
+            height: u32,
+        ) -> (Framebuffer, Texture, Texture) {
+            let color_texture = graphics
+                .new_texture(
+                    None,
+                    width,
+                    height,
+                    PixelFormat::RGBA32F,
+                    TextureSettings {
+                        srgb: false,
+                        generate_mipmaps: false,
+                        ..TextureSettings::default()
+                    },
+                )
+                .unwrap();
+
+            let depth_texture = graphics
+                .new_texture(
+                    None,
+                    width,
+                    height,
+                    PixelFormat::Depth16,
+                    TextureSettings {
+                        srgb: false,
+                        generate_mipmaps: false,
+                        ..TextureSettings::default()
+                    },
+                )
+                .unwrap();
+
+            (
+                graphics
+                    .context
+                    .new_framebuffer(Some(&color_texture), Some(&depth_texture), None),
+                color_texture,
+                depth_texture,
+            )
+        }
+
+        Self {
+            framebuffers: [
+                new_frambuffer(graphics, width, height),
+                new_frambuffer(graphics, width, height),
+                new_frambuffer(graphics, width, height),
+            ],
+            width,
+            height,
+            viewport_size: (width, height),
+            current: 0,
+        }
+    }
+
+    pub fn resize(&mut self, graphics: &mut Graphics, width: u32, height: u32) {
+        if width > self.width || height > self.height {
+            let mut old_self = Self::new(graphics, width, height);
+            std::mem::swap(self, &mut old_self);
+
+            // This should be done automatically by `kgraphics` instead.
+            for (framebuffer, color_texture, depth_texture) in old_self.framebuffers {
+                graphics.context.delete_framebuffer(framebuffer);
+                graphics.context.delete_texture(color_texture.0);
+                graphics.context.delete_texture(depth_texture.0);
+            }
+            *self = Self::new(graphics, width, height);
+        } else {
+            self.viewport_size = (width, height);
+        }
+    }
+
+    pub fn get_next(&mut self) -> &Framebuffer {
+        self.current += 1;
+        if self.current > 2 {
+            self.current = 0;
+        }
+        &self.framebuffers[self.current].0
     }
 }

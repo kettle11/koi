@@ -14,8 +14,8 @@ pub use camera::*;
 mod camera_controls;
 pub use camera_controls::*;
 
-mod render_layers;
-pub use render_layers::*;
+mod render_flags;
+pub use render_flags::*;
 
 mod texture;
 pub use texture::*;
@@ -168,6 +168,11 @@ fn setup_graphics(world: &mut World) {
     graphics.register_shader_snippet(
         "standard_vertex",
         include_str!("built_in_shaders/standard_vertex_snippet.glsl"),
+    );
+
+    graphics.register_shader_snippet(
+        "fullscreen_vertex",
+        include_str!("built_in_shaders/fullscreen_vertex_snippet.glsl"),
     );
 
     let default_mesh = graphics.new_gpu_mesh(&MeshData::default()).unwrap();
