@@ -21,7 +21,7 @@ pub struct Camera {
     orthographic_height: f32,
     /// Only relevant for perspective projections.
     vertical_field_of_view_radians: f32,
-    pub render_layers: RenderLayers,
+    pub render_flags: RenderFlags,
     pub camera_target: Option<CameraTarget>,
 }
 
@@ -58,7 +58,7 @@ impl Camera {
             z_far: 300.0,
             orthographic_height: 1.0,
             vertical_field_of_view_radians: (72.0_f32).to_radians(),
-            render_layers: RenderLayers::DEFAULT,
+            render_flags: RenderFlags::DEFAULT,
             camera_target: Some(CameraTarget::Primary),
         };
         camera.update_projection_matrix();
@@ -84,7 +84,7 @@ impl Camera {
             z_far: 500.0,
             orthographic_height: 2.0,
             vertical_field_of_view_radians: (60.0_f32).to_radians(),
-            render_layers: RenderLayers::DEFAULT,
+            render_flags: RenderFlags::DEFAULT,
             camera_target: Some(CameraTarget::Primary),
         }
     }
@@ -94,7 +94,7 @@ impl Camera {
         let projection_matrix =
             kmath::projection_matrices::orthographic_gl(-1.0, 1.0, -1.0, 1.0, 0.0, 1.0);
         let mut camera = Self::new_custom_projection_matrix(projection_matrix);
-        camera.render_layers = RenderLayers::USER_INTERFACE;
+        camera.render_flags = RenderFlags::USER_INTERFACE;
         camera.clear_color = None;
         camera.z_near = 0.0;
         camera

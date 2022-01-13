@@ -385,7 +385,7 @@ fn initialize_nodes(
             gltf_world.spawn((
                 mesh.clone(),
                 material_handle,
-                RenderLayers::DEFAULT,
+                RenderFlags::DEFAULT,
                 transform,
             ))
         } else {
@@ -396,7 +396,7 @@ fn initialize_nodes(
                 let primitive_entity = gltf_world.spawn((
                     mesh.clone(),
                     material_handle,
-                    RenderLayers::DEFAULT,
+                    RenderFlags::DEFAULT,
                     Transform::new(),
                 ));
                 HierarchyNode::set_parent(gltf_world, Some(entity_root), primitive_entity).unwrap();

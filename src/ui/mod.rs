@@ -19,7 +19,7 @@ impl<Style: GetStandardStyleTrait> UI<Style> {
             Material::UI,
             Transform::new(),
             Sprite::new(Handle::default(), Box2::ZERO),
-            RenderLayers::USER_INTERFACE,
+            RenderFlags::USER_INTERFACE,
         ));
 
         Self {
