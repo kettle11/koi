@@ -71,9 +71,11 @@ pub use kwasm;
 
 pub use klog;
 
+#[cfg(feature = "tracing_allocator")]
 pub use ktracing_allocator::*;
 
 // Setup our own allocator to track total memory usage.
+#[cfg(feature = "tracing_allocator")]
 #[global_allocator]
 static GLOBAL_ALLOCATOR: ktracing_allocator::TracingAllocator<std::alloc::System> =
     ktracing_allocator::TracingAllocator(std::alloc::System);
@@ -202,6 +204,7 @@ impl App {
         mut self,
         setup_and_run_function: impl Fn(&mut World) -> S,
     ) {
+        #[cfg(feature = "tracing_allocator")]
         ktracing_allocator::set_alloc_error_hook();
 
         // Todo: Base this on number of cores

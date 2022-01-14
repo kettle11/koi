@@ -20,15 +20,16 @@ ui = ["kui"]
 hdri = ["hdrldr"]
 physics = ["kphysics"]
 imagine_png = ["imagine"]
+tracing_allocator = ["ktracing_allocator"]
 
 [dependencies]
-kapp = {path = "crates/kapp",  default-features=false}
+kapp = {path = "crates/kapp", default-features=false}
 kecs = {path = "crates/kecs"}
 ktasks = {path = "crates/ktasks"}
 kmath = {path = "crates/kmath"}
 klog = {path = "crates/klog"}
 kcolor = {path = "crates/kcolor"}
-ktracing_allocator = {path = "crates/ktracing_allocator"}
+ktracing_allocator = {path = "crates/ktracing_allocator", optional = true}
 
 kphysics = {path = "crates/kphysics",  optional = true}
 kgraphics = {path = "crates/kgraphics",  optional = true}
