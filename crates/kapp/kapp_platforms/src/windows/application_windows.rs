@@ -330,11 +330,10 @@ impl PlatformApplicationTrait for PlatformApplication {
     }
 
     fn raw_window_handle(&self, window_id: WindowId) -> RawWindowHandle {
-        raw_window_handle::RawWindowHandle::Windows(raw_window_handle::windows::WindowsHandle {
-            hwnd: unsafe { window_id.raw() },
-            hinstance: self.h_instance as *mut std::ffi::c_void,
-            ..raw_window_handle::windows::WindowsHandle::empty()
-        })
+        let mut handle = raw_window_handle::Win32Handle::empty();
+        handle.hwnd = unsafe { window_id.raw() };
+        handle.hinstance = self.h_instance as *mut std::ffi::c_void;
+        raw_window_handle::RawWindowHandle::Win32(handle)
     }
 
     fn start_text_input(&mut self) {

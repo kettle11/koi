@@ -23,7 +23,7 @@ imagine_png = ["imagine"]
 tracing_allocator = ["ktracing_allocator"]
 
 [dependencies]
-kapp = {path = "crates/kapp", default-features=false}
+kapp = {path = "crates/kapp", default-features=false, features=["SDL"]}
 kecs = {path = "crates/kecs"}
 ktasks = {path = "crates/ktasks"}
 kmath = {path = "crates/kmath"}

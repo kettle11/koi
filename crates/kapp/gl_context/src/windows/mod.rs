@@ -53,7 +53,7 @@ impl GLContextTrait for GLContext {
         unsafe {
             let window_handle = window
                 .map(|w| match w.raw_window_handle() {
-                    RawWindowHandle::Windows(handle) => handle.hwnd as HWND,
+                    RawWindowHandle::Win32Handle(handle) => handle.hwnd as HWND,
                     _ => unreachable!(),
                 })
                 .unwrap();

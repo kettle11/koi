@@ -91,7 +91,7 @@ impl PlatformApplicationTrait for PlatformApplication {
     }
 
     fn raw_window_handle(&self, _window_id: WindowId) -> RawWindowHandle {
-        RawWindowHandle::Web(raw_window_handle::web::WebHandle::empty())
+        RawWindowHandle::Web(raw_window_handle::WebHandle::empty())
     }
 
     fn start_text_input(&mut self) {}
