@@ -7,7 +7,8 @@ license = "Zlib OR Apache-2.0 OR MIT"
 
 [dependencies]
 kapp_platform_common = { path = "../kapp_platform_common" }
-raw-window-handle = "0.3.3"
+raw-window-handle = "0.4.2"
+fermium = {version = "20016.1.1", optional = true}
 
 [dev-dependencies]
 glow = {version = "0.4.0"}
@@ -37,4 +38,5 @@ features = [
 
 [features]
 default = []
+SDL = ["fermium"]
 wasm_bindgen_support = ["web-sys", "wasm-bindgen"]

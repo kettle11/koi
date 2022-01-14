@@ -505,7 +505,10 @@ impl CommandBufferTrait for CommandBuffer {
 
         if let Some((r, g, b, a)) = clear_color {
             render_pass.command_buffer.commands.push(Command::Clear);
-            render_pass.command_buffer.f32_data.extend_from_slice(&[r, g, b, a]);
+            render_pass
+                .command_buffer
+                .f32_data
+                .extend_from_slice(&[r, g, b, a]);
         }
 
         render_pass
@@ -684,21 +687,21 @@ impl GraphicsContextTrait for GraphicsContext {
     fn resize(&mut self, _window: &impl HasRawWindowHandle, width: u32, height: u32) {
         self.js.resize.call_raw(&[width, height]);
     }
-    fn new_vertex_function(&self, source: &str) -> Result<VertexFunction, String> {
+    fn new_vertex_function(&mut self, source: &str) -> Result<VertexFunction, String> {
         let source = "#version 300 es\n".to_owned() + source;
         let source = JSString::new(&source);
         let js_object = self.js.new_vertex_function.call_1_arg(&source).unwrap();
         Ok(VertexFunction { js_object })
     }
 
-    fn new_fragment_function(&self, source: &str) -> Result<FragmentFunction, String> {
+    fn new_fragment_function(&mut self, source: &str) -> Result<FragmentFunction, String> {
         let source = "#version 300 es\nprecision mediump float;\n".to_owned() + source;
         let source = JSString::new(&source);
         let js_object = self.js.new_fragment_function.call_1_arg(&source).unwrap();
         Ok(FragmentFunction { js_object })
     }
 
-    fn new_data_buffer<T>(&self, data: &[T]) -> Result<DataBuffer<T>, ()> {
+    fn new_data_buffer<T>(&mut self, data: &[T]) -> Result<DataBuffer<T>, ()> {
         let js_object = self
             .js
             .new_data_buffer
@@ -714,11 +717,11 @@ impl GraphicsContextTrait for GraphicsContext {
         })
     }
 
-    fn delete_data_buffer<T>(&self, data_buffer: DataBuffer<T>) {
+    fn delete_data_buffer<T>(&mut self, data_buffer: DataBuffer<T>) {
         self.js.delete_buffer.call_1_arg(&data_buffer.js_object);
     }
 
-    fn new_index_buffer(&self, data: &[u32]) -> Result<IndexBuffer, ()> {
+    fn new_index_buffer(&mut self, data: &[u32]) -> Result<IndexBuffer, ()> {
         let js_object = self
             .js
             .new_index_buffer
@@ -726,12 +729,12 @@ impl GraphicsContextTrait for GraphicsContext {
             .unwrap();
         Ok(IndexBuffer(js_object))
     }
-    fn delete_index_buffer(&self, index_buffer: IndexBuffer) {
+    fn delete_index_buffer(&mut self, index_buffer: IndexBuffer) {
         self.js.delete_buffer.call_1_arg(&index_buffer.0);
     }
 
     fn new_texture(
-        &self,
+        &mut self,
         width: u32,
         height: u32,
         data: Option<&[u8]>,
@@ -756,7 +759,7 @@ impl GraphicsContextTrait for GraphicsContext {
     }
 
     fn update_texture(
-        &self,
+        &mut self,
         texture: &Texture,
         width: u32,
         height: u32,
@@ -819,7 +822,7 @@ impl GraphicsContextTrait for GraphicsContext {
         }
     }
 
-    fn delete_texture(&self, texture: Texture) {
+    fn delete_texture(&mut self, texture: Texture) {
         match texture.texture_type {
             TextureType::Texture(js_object) => {
                 self.js.delete_texture.call_1_arg(&js_object);
@@ -872,7 +875,7 @@ impl GraphicsContextTrait for GraphicsContext {
     }
 
     fn new_cube_map(
-        &self,
+        &mut self,
         width: u32,
         height: u32,
         data: Option<[&[u8]; 6]>,
@@ -894,7 +897,7 @@ impl GraphicsContextTrait for GraphicsContext {
     }
 
     fn update_cube_map(
-        &self,
+        &mut self,
         cube_map: &CubeMap,
         width: u32,
         height: u32,
@@ -950,11 +953,11 @@ impl GraphicsContextTrait for GraphicsContext {
         }
     }
 
-    fn delete_cube_map(&self, cube_map: CubeMap) {
+    fn delete_cube_map(&mut self, cube_map: CubeMap) {
         self.js.delete_texture.call_1_arg(&cube_map.texture);
     }
 
-    fn generate_mip_map_for_texture(&self, texture: &Texture) {
+    fn generate_mip_map_for_texture(&mut self, texture: &Texture) {
         let (target, texture) = match &texture.texture_type {
             TextureType::Texture(t) => (TEXTURE_2D, t.index()),
             TextureType::CubeMap {
@@ -969,7 +972,7 @@ impl GraphicsContextTrait for GraphicsContext {
         self.js.generate_mip_map.call_raw(&[texture, target]);
     }
 
-    fn generate_mip_map_for_cube_map(&self, texture: &CubeMap) {
+    fn generate_mip_map_for_cube_map(&mut self, texture: &CubeMap) {
         self.js
             .generate_mip_map
             .call_raw(&[texture.texture.index(), TEXTURE_CUBE_MAP]);

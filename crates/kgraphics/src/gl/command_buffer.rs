@@ -37,6 +37,17 @@ pub(super) enum CommandBufferAction {
     DrawTriangles(u32),
     DrawTriangleArrays(u32),
     SetDepthMask(bool),
+    BlitFramebuffer {
+        target: Framebuffer,
+        dest_x: u32,
+        dest_y: u32,
+        dest_width: u32,
+        dest_height: u32,
+        source_x: u32,
+        source_y: u32,
+        source_width: u32,
+        source_height: u32,
+    },
     Present,
 }
 
@@ -274,6 +285,11 @@ impl<'a> RenderPassTrait for RenderPass<'a> {
     ) {
         let texture = texture.map(|t| match t.texture_type {
             TextureType::Texture(t) => t,
+            TextureType::RenderBuffer(..) => {
+                panic!(
+                    "Cannot bind a texture with MSAA samples as a property. Resolve it to another texture first."
+                )
+            }
             TextureType::DefaultFramebuffer => panic!("Cannot update default framebuffer"),
             TextureType::CubeMap { .. } => todo!(),
         });
@@ -336,6 +352,32 @@ impl<'a> RenderPassTrait for RenderPass<'a> {
         self.command_buffer
             .actions
             .push(CommandBufferAction::SetDepthMask(depth_mask))
+    }
+    fn blit_framebuffer(
+        self,
+        target: Framebuffer,
+        source_x: u32,
+        source_y: u32,
+        source_width: u32,
+        source_height: u32,
+        dest_x: u32,
+        dest_y: u32,
+        dest_width: u32,
+        dest_height: u32,
+    ) {
+        self.command_buffer
+            .actions
+            .push(CommandBufferAction::BlitFramebuffer {
+                target,
+                source_x,
+                source_y,
+                source_width,
+                source_height,
+                dest_x,
+                dest_y,
+                dest_width,
+                dest_height,
+            })
     }
 }
 

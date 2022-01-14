@@ -114,6 +114,7 @@ pub struct TextureSettings {
     pub wrapping_horizontal: WrappingMode,
     pub wrapping_vertical: WrappingMode,
     pub border_color: (f32, f32, f32, f32),
+    pub msaa_samples: u8,
 }
 
 impl Default for TextureSettings {
@@ -127,6 +128,7 @@ impl Default for TextureSettings {
             wrapping_horizontal: WrappingMode::Repeat,
             wrapping_vertical: WrappingMode::Repeat,
             border_color: (0., 0., 0., 1.),
+            msaa_samples: 0,
         }
     }
 }

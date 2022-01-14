@@ -68,6 +68,18 @@ pub trait RenderPassTrait {
     fn draw_triangles(&mut self, count: u32, index_buffer: &IndexBuffer);
     fn draw_triangles_without_buffer(&mut self, count: u32);
     fn set_depth_mask(&mut self, depth_mask: bool);
+    fn blit_framebuffer(
+        self,
+        target: Framebuffer,
+        source_x: u32,
+        source_y: u32,
+        source_width: u32,
+        source_height: u32,
+        dest_x: u32,
+        dest_y: u32,
+        dest_width: u32,
+        dest_height: u32,
+    );
 }
 
 pub trait CommandBufferTrait {
@@ -103,18 +115,27 @@ pub trait GraphicsContextTrait: Sized {
         _height: u32,
     ) -> Result<RenderTarget, ()>;
 
+    // A hack to accomodate passing an SDL window around
+    #[cfg(feature = "SDL")]
+    unsafe fn get_render_target_for_window_sdl(
+        &mut self,
+        window: kapp::WindowId,
+        _width: u32,
+        _height: u32,
+    ) -> Result<RenderTarget, ()>;
+
     fn resize(&mut self, window: &impl HasRawWindowHandle, width: u32, height: u32);
-    fn new_fragment_function(&self, source: &str) -> Result<FragmentFunction, String>;
-    fn new_vertex_function(&self, source: &str) -> Result<VertexFunction, String>;
+    fn new_fragment_function(&mut self, source: &str) -> Result<FragmentFunction, String>;
+    fn new_vertex_function(&mut self, source: &str) -> Result<VertexFunction, String>;
 
-    fn new_data_buffer<T>(&self, data: &[T]) -> Result<DataBuffer<T>, ()>;
-    fn delete_data_buffer<T>(&self, data_buffer: DataBuffer<T>);
+    fn new_data_buffer<T>(&mut self, data: &[T]) -> Result<DataBuffer<T>, ()>;
+    fn delete_data_buffer<T>(&mut self, data_buffer: DataBuffer<T>);
 
-    fn new_index_buffer(&self, data: &[u32]) -> Result<IndexBuffer, ()>;
-    fn delete_index_buffer(&self, index_buffer: IndexBuffer);
+    fn new_index_buffer(&mut self, data: &[u32]) -> Result<IndexBuffer, ()>;
+    fn delete_index_buffer(&mut self, index_buffer: IndexBuffer);
 
     fn new_texture(
-        &self,
+        &mut self,
         width: u32,
         height: u32,
         data: Option<&[u8]>,
@@ -123,7 +144,7 @@ pub trait GraphicsContextTrait: Sized {
     ) -> Result<Texture, ()>;
 
     fn update_texture(
-        &self,
+        &mut self,
         texture: &Texture,
         width: u32,
         height: u32,
@@ -132,12 +153,12 @@ pub trait GraphicsContextTrait: Sized {
         texture_settings: TextureSettings,
     );
 
-    fn delete_texture(&self, texture: Texture);
+    fn delete_texture(&mut self, texture: Texture);
 
-    fn generate_mip_map_for_texture(&self, texture: &Texture);
+    fn generate_mip_map_for_texture(&mut self, texture: &Texture);
 
     fn new_cube_map(
-        &self,
+        &mut self,
         width: u32,
         height: u32,
         data: Option<[&[u8]; 6]>,
@@ -146,7 +167,7 @@ pub trait GraphicsContextTrait: Sized {
     ) -> Result<CubeMap, ()>;
 
     fn update_cube_map(
-        &self,
+        &mut self,
         cube_map: &CubeMap,
         width: u32,
         height: u32,
@@ -155,9 +176,9 @@ pub trait GraphicsContextTrait: Sized {
         texture_settings: TextureSettings,
     );
 
-    fn delete_cube_map(&self, cube_map: CubeMap);
+    fn delete_cube_map(&mut self, cube_map: CubeMap);
 
-    fn generate_mip_map_for_cube_map(&self, cube_map: &CubeMap);
+    fn generate_mip_map_for_cube_map(&mut self, cube_map: &CubeMap);
 
     fn new_pipeline(
         &mut self,

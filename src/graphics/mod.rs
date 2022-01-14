@@ -144,9 +144,17 @@ fn setup_graphics(world: &mut World) {
     let (window_width, window_height) = main_window.size();
     context.resize(main_window, window_width, window_height);
 
+    #[cfg(not(feature = "SDL"))]
     let render_target = unsafe {
         context
             .get_render_target_for_window(main_window, window_width, window_height)
+            .unwrap()
+    };
+
+    #[cfg(feature = "SDL")]
+    let render_target = unsafe {
+        context
+            .get_render_target_for_window_sdl(main_window.id, window_width, window_height)
             .unwrap()
     };
 

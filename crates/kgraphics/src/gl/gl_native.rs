@@ -17,6 +17,10 @@ pub struct Buffer(GLInt);
 #[derive(Clone, PartialEq, Debug, Copy)]
 
 pub struct TextureNative(GLInt);
+
+#[derive(Clone, PartialEq, Debug, Copy)]
+pub struct RenderBufferNative(GLInt);
+
 #[derive(Clone, PartialEq, Debug, Copy)]
 
 pub struct UniformLocation(GLInt);
@@ -26,7 +30,7 @@ pub struct UniformLocation(GLInt);
 pub struct VertexArray(GLInt);
 
 #[derive(Clone, PartialEq, Debug, Copy, Default)]
-pub struct Framebuffer(GLInt);
+pub struct Framebuffer(pub(crate) GLInt);
 
 pub struct GL {
     pub(crate) gl: gl33::GlFns,
@@ -227,6 +231,24 @@ impl GL {
         );
     }
 
+    #[allow(clippy::too_many_arguments)]
+    pub unsafe fn renderbuffer_storage_multisample(
+        &self,
+        target: GLenum,
+        samples: i32,
+        internal_format: i32,
+        width: i32,
+        height: i32,
+    ) {
+        self.gl.RenderbufferStorageMultisample(
+            target,
+            samples,
+            GLenum(internal_format as u32),
+            width,
+            height,
+        );
+    }
+
     pub unsafe fn generate_mipmap(&self, target: GLenum) {
         self.gl.GenerateMipmap(target);
     }
@@ -237,8 +259,18 @@ impl GL {
         Ok(TextureNative(name))
     }
 
+    pub unsafe fn create_renderbuffer(&self) -> RenderBufferNative {
+        let mut name = 0;
+        self.gl.GenRenderbuffers(1, &mut name);
+        RenderBufferNative(name)
+    }
+
     pub unsafe fn delete_texture(&self, texture: TextureNative) {
         self.gl.DeleteTextures(1, &texture.0);
+    }
+
+    pub unsafe fn delete_renderbuffer(&self, renderbuffer: RenderBufferNative) {
+        self.gl.DeleteRenderbuffers(1, &renderbuffer.0);
     }
 
     pub unsafe fn clear_color(&self, red: f32, green: f32, blue: f32, alpha: f32) {
@@ -251,6 +283,31 @@ impl GL {
 
     pub unsafe fn bind_framebuffer(&self, target: GLenum, framebuffer: Framebuffer) {
         self.gl.BindFramebuffer(target, framebuffer.0);
+    }
+
+    pub unsafe fn blit_framebuffer(
+        &self,
+        source_x: u32,
+        source_y: u32,
+        source_width: u32,
+        source_height: u32,
+        dest_x: u32,
+        dest_y: u32,
+        dest_width: u32,
+        dest_height: u32,
+    ) {
+        self.gl.BlitFramebuffer(
+            source_x as i32,
+            source_y as i32,
+            source_width as i32,
+            source_height as i32,
+            dest_x as i32,
+            dest_y as i32,
+            dest_width as i32,
+            dest_height as i32,
+            GL_COLOR_BUFFER_BIT,
+            GL_LINEAR,
+        );
     }
 
     pub unsafe fn create_framebuffer(&self) -> Result<Framebuffer, String> {
@@ -274,6 +331,17 @@ impl GL {
             texture.map_or(0, |v| v.0),
             level,
         );
+    }
+
+    pub unsafe fn framebuffer_renderbuffer(
+        &self,
+        target: GLenum,
+        attachment: GLenum,
+        texture_target: GLenum,
+        renderbuffer: RenderBufferNative,
+    ) {
+        self.gl
+            .FramebufferRenderbuffer(target, attachment, texture_target, renderbuffer.0);
     }
 
     pub unsafe fn delete_framebuffer(&self, framebuffer: Framebuffer) {

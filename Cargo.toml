@@ -8,7 +8,7 @@ license = "Zlib OR Apache-2.0 OR MIT"
 members = ["crates/*"]
 
 [features]
-default = ["audio", "graphics", "renderer", "drawer2d", "imagine_png", "jpeg", "gltf", "ui", "hdri", "physics"]
+default = ["audio", "graphics", "renderer", "drawer2d", "imagine_png", "jpeg", "gltf", "ui", "hdri", "physics", "SDL"]
 graphics = ["kgraphics"]
 audio = ["oddio", "kaudio"]
 renderer = []
@@ -21,9 +21,10 @@ hdri = ["hdrldr"]
 physics = ["kphysics"]
 imagine_png = ["imagine"]
 tracing_allocator = ["ktracing_allocator"]
+SDL = ["kapp/SDL", "kgraphics/SDL"]
 
 [dependencies]
-kapp = {path = "crates/kapp", default-features=false, features=["SDL"]}
+kapp = {path = "crates/kapp", default-features=false}
 kecs = {path = "crates/kecs"}
 ktasks = {path = "crates/ktasks"}
 kmath = {path = "crates/kmath"}

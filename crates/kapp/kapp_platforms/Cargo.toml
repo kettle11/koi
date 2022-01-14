@@ -8,10 +8,10 @@ license = "Zlib OR Apache-2.0 OR MIT"
 [lib]
 
 [dependencies]
-raw-window-handle = "0.3.3"
+raw-window-handle = "0.4.2"
 kapp_platform_common = { path = "../kapp_platform_common" }
 klog = {path = "../../klog"}
-fermium = {version = "20014.2.0", optional = true}
+fermium = {version = "20016.1.1", optional = true}
 
 [features]
 default = []

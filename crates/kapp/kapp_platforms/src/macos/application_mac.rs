@@ -410,11 +410,10 @@ impl PlatformApplicationTrait for PlatformApplication {
         unsafe {
             let ns_window = window_id.raw();
             let ns_view: *mut c_void = msg(window_id.raw() as *mut Object, Sels::contentView, ());
-            raw_window_handle::RawWindowHandle::MacOS(raw_window_handle::macos::MacOSHandle {
-                ns_window,
-                ns_view,
-                ..raw_window_handle::macos::MacOSHandle::empty()
-            })
+            let mut handle = raw_window_handle::AppKitHandle::empty();
+            handle.ns_window = ns_window;
+            handle.ns_view = ns_view;
+            raw_window_handle::RawWindowHandle::AppKit(handle)
         }
     }
 

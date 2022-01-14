@@ -25,7 +25,3 @@ impl WindowId {
 // or carefully used on the UI thread if the platform requires it.
 unsafe impl Send for WindowId {}
 unsafe impl Sync for WindowId {}
-
-pub trait RawWindowHandleTrait {
-    fn raw_window_handle(&self) -> raw_window_handle::RawWindowHandle;
-}

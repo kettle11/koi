@@ -218,18 +218,17 @@ impl PlatformApplicationTrait for PlatformApplication {
                 match subsystem {
                     #[cfg(target_os = "macos")]
                     SDL_SYSWM_COCOA => {
-                        use raw_window_handle::macos::MacOSHandle;
-                        RawWindowHandle::MacOS(MacOSHandle {
-                            ns_window: info.cocoa.window as *mut c_void,
-                            ns_view: 0 as *mut c_void, // SDL does not provide this.
-                            ..MacOSHandle::empty()
-                        })
+                        let mut handle = raw_window_handle::AppKitHandle::empty();
+                        handle.ns_window = info.cocoa.window as *mut c_void;
+                        raw_window_handle::RawWindowHandle::AppKit(handle)
                     }
                     #[cfg(target_os = "windows")]
-                    SDL_SYSWM_WINDOWS => RawWindowHandle::Windows(WindowsHandle {
-                        hwnd: info.cocoa.window as *mut c_void,
-                        ..WindowsHandle::empty()
-                    }),
+                    SDL_SYSWM_WINDOWS => {
+                        let mut handle = raw_window_handle::Win32Handle::empty();
+                        handle.hwnd = info.win.window;
+                        handle.hinstance = info.win.hinstance;
+                        raw_window_handle::RawWindowHandle::Win32(handle)
+                    }
                     #[cfg(any(
                         target_os = "linux",
                         target_os = "dragonfly",
@@ -238,12 +237,10 @@ impl PlatformApplicationTrait for PlatformApplication {
                         target_os = "openbsd",
                     ))]
                     SDL_SYSWM_X11 => {
-                        use self::raw_window_handle::unix::XlibHandle;
-                        RawWindowHandle::Xlib(XlibHandle {
-                            window: info.x11.window,
-                            display: info.x11.display as *mut c_void,
-                            ..XlibHandle::empty()
-                        })
+                        let mut handle = raw_window_handle::XlibHandle::empty();
+                        handle.window = info.x11.window;
+                        handle.display = info.x11.display;
+                        raw_window_handle::RawWindowHandle::Xlib(handle)
                     }
                     #[cfg(any(
                         target_os = "linux",
@@ -253,29 +250,22 @@ impl PlatformApplicationTrait for PlatformApplication {
                         target_os = "openbsd",
                     ))]
                     SDL_SYSWM_WAYLAND => {
-                        use self::raw_window_handle::unix::WaylandHandle;
-                        RawWindowHandle::Wayland(WaylandHandle {
-                            surface: info.wl.surface as *mut c_void,
-                            display: info.wl.display as *mut c_void,
-                            ..WaylandHandle::empty()
-                        })
+                        let mut handle = raw_window_handle::WaylandHandle::empty();
+                        handle.surface = info.wl.surface;
+                        handle.display = info.wl.display;
+                        raw_window_handle::RawWindowHandle::Wayland(handle)
                     }
                     #[cfg(any(target_os = "ios"))]
                     SDL_SYSWM_UIKIT => {
-                        use self::raw_window_handle::ios::IOSHandle;
-                        RawWindowHandle::IOS(IOSHandle {
-                            ui_window: info.uikit.window as *mut c_void,
-                            ui_view: 0 as *mut c_void, // SDL does not provide this.
-                            ..IOSHandle::empty()
-                        })
+                        let mut handle = raw_window_handle::UiKitHandle::empty();
+                        handle.ui_window = info.uikit.window;
+                        raw_window_handle::RawWindowHandle::UiKit(handle)
                     }
                     #[cfg(any(target_os = "android"))]
                     SDL_SYSWM_ANDROID => {
-                        use self::raw_window_handle::android::AndroidHandle;
-                        RawWindowHandle::Android(AndroidHandle {
-                            a_native_window: info.android.window as *mut c_void,
-                            ..AndroidHandle::empty()
-                        })
+                        let mut handle = raw_window_handle::AndroidNdkHandle::empty();
+                        handle.a_native_window = info.android.window;
+                        raw_window_handle::RawWindowHandle::AndroidNdk(handle)
                     }
                     _ => unimplemented!(),
                 }
@@ -585,7 +575,7 @@ impl PlatformUserEventSenderTrait for PlatformUserEventSender {
             },
         };
         unsafe {
-            let result = SDL_PushEvent(&mut user_event as *mut _);
+            let _result = SDL_PushEvent(&mut user_event as *mut _);
         }
     }
 }

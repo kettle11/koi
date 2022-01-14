@@ -1,5 +1,4 @@
 use koi::*;
-use ktasks::spawn;
 
 fn main() {
     App::new().setup_and_run(|world: &mut World| {
@@ -29,7 +28,7 @@ fn main() {
             Transform::new()
                 .with_position(Vec3::new(0., -50.0, 0.))
                 .with_scale(Vec3::fill(100.)),
-            Mesh::CUBE,
+            Mesh::SPHERE,
             Material::PHYSICALLY_BASED,
         ));
 
@@ -77,29 +76,9 @@ fn main() {
         .run(world);
         // commands.apply(world);
 
-        |event, world| {
+        |event, _world| {
             match event {
-                Event::Draw => {
-                    if world
-                        .get_single_component_mut::<Input>()
-                        .unwrap()
-                        .key_down(Key::T)
-                    {
-                        klog::log!(
-                            "MEMORY USED HERE: {:?}",
-                            ktracing_allocator::get_memory_used()
-                        );
-                        klog::log!(
-                            "PEAK MEMORY USED: {:?}",
-                            ktracing_allocator::get_peak_memory_usage()
-                        );
-
-                        spawn(async {
-                            log!("ON ANOTHER THREAD!");
-                        })
-                        .run();
-                    }
-                }
+                Event::Draw => {}
                 _ => {}
             }
             false

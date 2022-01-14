@@ -78,6 +78,7 @@ pub struct IndexBuffer {
 #[derive(Debug, Clone)]
 enum TextureType {
     Texture(gl_native::TextureNative),
+    RenderBuffer(RenderBufferNative),
     CubeMap {
         face: u8,
         texture_native: gl_native::TextureNative,
@@ -421,6 +422,7 @@ impl GraphicsContextTrait for GraphicsContext {
             // A random comment on the internet indicates that it may be faster to not use VAOs
             // if most meshes share the exact same layout. There are fewer calls of overhead.
             let vertex_array_object = gl.create_vertex_array().unwrap();
+
             gl.bind_vertex_array(Some(vertex_array_object));
 
             gl.enable(GL_TEXTURE_CUBE_MAP_SEAMLESS);
@@ -448,9 +450,24 @@ impl GraphicsContextTrait for GraphicsContext {
         _height: u32,
     ) -> Result<RenderTarget, ()> {
         self.gl_context.set_window(Some(window)).unwrap();
+
         // This is obviously incorrect. This should be fixed.
         let pixel_format = PixelFormat::RGBA8Unorm;
 
+        Ok(RenderTarget { pixel_format })
+    }
+
+    #[cfg(feature = "SDL")]
+    /// This must only be called once per window.
+    unsafe fn get_render_target_for_window_sdl(
+        &mut self,
+        window: kapp::WindowId,
+        _width: u32,
+        _height: u32,
+    ) -> Result<RenderTarget, ()> {
+        self.gl_context.set_window_with_window_id(window).unwrap();
+        // This is obviously incorrect. This should be fixed.
+        let pixel_format = PixelFormat::RGBA8Unorm;
         Ok(RenderTarget { pixel_format })
     }
 
@@ -462,19 +479,19 @@ impl GraphicsContextTrait for GraphicsContext {
         }
     }
 
-    fn new_fragment_function(&self, source: &str) -> Result<FragmentFunction, String> {
+    fn new_fragment_function(&mut self, source: &str) -> Result<FragmentFunction, String> {
         Ok(FragmentFunction {
             shader: self.compile_shader(GL_FRAGMENT_SHADER, source)?,
         })
     }
 
-    fn new_vertex_function(&self, source: &str) -> Result<VertexFunction, String> {
+    fn new_vertex_function(&mut self, source: &str) -> Result<VertexFunction, String> {
         Ok(VertexFunction {
             shader: self.compile_shader(GL_VERTEX_SHADER, source)?,
         })
     }
 
-    fn new_data_buffer<T>(&self, data: &[T]) -> Result<DataBuffer<T>, ()> {
+    fn new_data_buffer<T>(&mut self, data: &[T]) -> Result<DataBuffer<T>, ()> {
         unsafe {
             let buffer = self.gl.create_buffer().unwrap();
             self.gl.bind_buffer(GL_ARRAY_BUFFER, Some(buffer));
@@ -487,11 +504,11 @@ impl GraphicsContextTrait for GraphicsContext {
         }
     }
 
-    fn delete_data_buffer<T>(&self, data_buffer: DataBuffer<T>) {
+    fn delete_data_buffer<T>(&mut self, data_buffer: DataBuffer<T>) {
         unsafe { self.gl.delete_buffer(data_buffer.buffer) }
     }
 
-    fn new_index_buffer(&self, data: &[u32]) -> Result<IndexBuffer, ()> {
+    fn new_index_buffer(&mut self, data: &[u32]) -> Result<IndexBuffer, ()> {
         unsafe {
             let buffer = self.gl.create_buffer().unwrap();
             self.gl.bind_buffer(GL_ELEMENT_ARRAY_BUFFER, Some(buffer));
@@ -504,12 +521,12 @@ impl GraphicsContextTrait for GraphicsContext {
         }
     }
 
-    fn delete_index_buffer(&self, index_buffer: IndexBuffer) {
+    fn delete_index_buffer(&mut self, index_buffer: IndexBuffer) {
         unsafe { self.gl.delete_buffer(index_buffer.buffer) }
     }
 
     fn new_texture(
-        &self,
+        &mut self,
         width: u32,
         height: u32,
         data: Option<&[u8]>,
@@ -517,25 +534,47 @@ impl GraphicsContextTrait for GraphicsContext {
         texture_settings: TextureSettings,
     ) -> Result<Texture, ()> {
         unsafe {
-            let texture = self.gl.create_texture().unwrap();
-            let texture = Texture {
-                texture_type: TextureType::Texture(texture),
-                mip: 0,
-            };
-            self.update_texture(
-                &texture,
-                width,
-                height,
-                data,
-                pixel_format,
-                texture_settings,
-            );
-            Ok(texture)
+            if texture_settings.msaa_samples == 0 {
+                let texture = self.gl.create_texture().unwrap();
+                let texture = Texture {
+                    texture_type: TextureType::Texture(texture),
+                    mip: 0,
+                };
+                self.update_texture(
+                    &texture,
+                    width,
+                    height,
+                    data,
+                    pixel_format,
+                    texture_settings,
+                );
+                Ok(texture)
+            } else {
+                let renderbuffer = self.gl.create_renderbuffer();
+
+                let (_pixel_format, inner_pixel_format, _type_) =
+                    crate::gl_shared::pixel_format_to_gl_format_and_inner_format_and_type(
+                        pixel_format,
+                        texture_settings.srgb,
+                    );
+                self.gl.renderbuffer_storage_multisample(
+                    GL_RENDERBUFFER,
+                    texture_settings.msaa_samples as i32,
+                    inner_pixel_format as i32,
+                    width as i32,
+                    height as i32,
+                );
+
+                Ok(Texture {
+                    texture_type: TextureType::RenderBuffer(renderbuffer),
+                    mip: 0,
+                })
+            }
         }
     }
 
     fn update_texture(
-        &self,
+        &mut self,
         texture: &Texture,
         width: u32,
         height: u32,
@@ -552,6 +591,9 @@ impl GraphicsContextTrait for GraphicsContext {
                 GLenum(GL_TEXTURE_CUBE_MAP_POSITIVE_X.0 + face as u32),
                 texture_native,
             ),
+            TextureType::RenderBuffer { .. } => {
+                panic!("For now textures with MSAA cannot be updated by a call to `update_texture`")
+            }
             TextureType::DefaultFramebuffer => panic!("Cannot update default framebuffer"),
         };
         unsafe {
@@ -611,16 +653,20 @@ impl GraphicsContextTrait for GraphicsContext {
         }
     }
 
-    fn delete_texture(&self, texture: Texture) {
-        let texture = match texture.texture_type {
-            TextureType::Texture(t) => t,
-            TextureType::CubeMap { .. } => return,
-            TextureType::DefaultFramebuffer => panic!("Cannot delete default framebuffer"),
-        };
-        unsafe { self.gl.delete_texture(texture) }
+    fn delete_texture(&mut self, texture: Texture) {
+        unsafe {
+            match texture.texture_type {
+                TextureType::Texture(t) => self.gl.delete_texture(t),
+                TextureType::CubeMap { .. } => return,
+                TextureType::RenderBuffer(renderbuffer) => {
+                    self.gl.delete_renderbuffer(renderbuffer);
+                }
+                TextureType::DefaultFramebuffer => panic!("Cannot delete default framebuffer"),
+            };
+        }
     }
 
-    fn generate_mip_map_for_texture(&self, texture: &Texture) {
+    fn generate_mip_map_for_texture(&mut self, texture: &Texture) {
         let (target, texture) = match texture.texture_type {
             TextureType::Texture(t) => (GL_TEXTURE_2D, t),
             TextureType::CubeMap {
@@ -630,7 +676,12 @@ impl GraphicsContextTrait for GraphicsContext {
                 GLenum(GL_TEXTURE_CUBE_MAP_POSITIVE_X.0 + face as u32),
                 texture_native,
             ),
-            TextureType::DefaultFramebuffer => panic!("Cannot update default framebuffer"),
+            TextureType::RenderBuffer { .. } => {
+                panic!("Cannot generate mipmaps for textures with MSAA samples")
+            }
+            TextureType::DefaultFramebuffer => {
+                panic!("Cannot default mipmaps for default framebuffer")
+            }
         };
         unsafe {
             self.gl.bind_texture(target, Some(texture));
@@ -639,7 +690,7 @@ impl GraphicsContextTrait for GraphicsContext {
     }
 
     fn new_cube_map(
-        &self,
+        &mut self,
         width: u32,
         height: u32,
         data: Option<[&[u8]; 6]>,
@@ -662,7 +713,7 @@ impl GraphicsContextTrait for GraphicsContext {
     }
 
     fn update_cube_map(
-        &self,
+        &mut self,
         cube_map: &CubeMap,
         width: u32,
         height: u32,
@@ -731,11 +782,11 @@ impl GraphicsContextTrait for GraphicsContext {
         }
     }
 
-    fn delete_cube_map(&self, cube_map: CubeMap) {
+    fn delete_cube_map(&mut self, cube_map: CubeMap) {
         unsafe { self.gl.delete_texture(cube_map.texture) }
     }
 
-    fn generate_mip_map_for_cube_map(&self, texture: &CubeMap) {
+    fn generate_mip_map_for_cube_map(&mut self, texture: &CubeMap) {
         unsafe {
             self.gl
                 .bind_texture(GL_TEXTURE_CUBE_MAP, Some(texture.texture));
@@ -762,48 +813,6 @@ impl GraphicsContextTrait for GraphicsContext {
                     BindFramebuffer(framebuffer) => {
                         self.gl.bind_framebuffer(GL_FRAMEBUFFER, framebuffer);
                     }
-                    /*
-                    BindFramebuffer(None) => {
-                        self.gl.bind_framebuffer(GL_FRAMEBUFFER, None);
-                    }
-                    BindFramebuffer(Some(FrameBufferBinding {
-                        color,
-                        depth,
-                        stencil,
-                    })) => {
-                        // I wonder if this causes slow-down on some platforms?
-                        let framebuffer = self.gl.create_framebuffer().unwrap();
-
-                        self.gl.bind_framebuffer(GL_FRAMEBUFFER, Some(framebuffer));
-                        self.gl.framebuffer_texture_2d(
-                            GL_FRAMEBUFFER,
-                            GL_COLOR_ATTACHMENT0,
-                            GL_TEXTURE_2D,
-                            color,
-                            0,
-                        );
-                        self.gl.framebuffer_texture_2d(
-                            GL_FRAMEBUFFER,
-                            GL_DEPTH_ATTACHMENT,
-                            GL_TEXTURE_2D,
-                            depth,
-                            0,
-                        );
-                        self.gl.framebuffer_texture_2d(
-                            GL_FRAMEBUFFER,
-                            GL_STENCIL_ATTACHMENT,
-                            GL_TEXTURE_2D,
-                            stencil,
-                            0,
-                        );
-                        if let Some(temp_framebuffer) = temp_framebuffer {
-                            self.gl.delete_framebuffer(temp_framebuffer);
-                        }
-
-                        temp_framebuffer = Some(framebuffer);
-
-                    }
-                    */
                     ChangePipeline(pipeline) => {
                         // Requiring a clone of the pipeline all over the place is not good.
                         self.gl.use_program(Some(pipeline.program));
@@ -951,6 +960,29 @@ impl GraphicsContextTrait for GraphicsContext {
                         self.gl.draw_arrays(GL_TRIANGLES, 0, (count * 3) as i32);
                     }
                     SetDepthMask(value) => self.gl.set_depth_mask(value),
+                    BlitFramebuffer {
+                        target,
+                        source_x,
+                        source_y,
+                        source_width,
+                        source_height,
+                        dest_x,
+                        dest_y,
+                        dest_width,
+                        dest_height,
+                    } => {
+                        self.gl.bind_framebuffer(GL_DRAW_FRAMEBUFFER, target);
+                        self.gl.blit_framebuffer(
+                            source_x,
+                            source_y,
+                            source_width,
+                            source_height,
+                            dest_x,
+                            dest_y,
+                            dest_width,
+                            dest_height,
+                        )
+                    }
                     Present => {
                         self.gl_context.swap_buffers();
                     }
@@ -981,25 +1013,49 @@ impl GraphicsContextTrait for GraphicsContext {
         depth_texture: Option<&Texture>,
         stencil_texture: Option<&Texture>,
     ) -> Framebuffer {
-        fn get_target_and_native_texture(
+        fn bind_target_and_native_texture(
+            gl: &mut gl_native::GL,
+            attachment: GLenum,
             texture: Option<&Texture>,
-        ) -> (GLenum, Option<TextureNative>, i32) {
+        ) {
             let texture_type = texture.map(|t| &t.texture_type);
             let level = texture.map_or(0, |t| t.mip as i32);
-            match texture_type {
-                Some(TextureType::Texture(t)) => (GL_TEXTURE_2D, Some(*t), level),
-                Some(TextureType::CubeMap {
-                    face,
-                    texture_native,
-                }) => (
-                    GLenum(GL_TEXTURE_CUBE_MAP_POSITIVE_X.0 + *face as u32),
-                    Some(*texture_native),
-                    level,
-                ),
-                Some(TextureType::DefaultFramebuffer) => {
-                    panic!("Cannot update default framebuffer")
+            unsafe {
+                match texture_type {
+                    Some(TextureType::Texture(t)) => gl.framebuffer_texture_2d(
+                        GL_FRAMEBUFFER,
+                        attachment,
+                        GL_TEXTURE_2D,
+                        Some(*t),
+                        level,
+                    ),
+                    Some(TextureType::CubeMap {
+                        face,
+                        texture_native,
+                    }) => gl.framebuffer_texture_2d(
+                        GL_FRAMEBUFFER,
+                        attachment,
+                        GLenum(GL_TEXTURE_CUBE_MAP_POSITIVE_X.0 + *face as u32),
+                        Some(*texture_native),
+                        level,
+                    ),
+                    Some(TextureType::RenderBuffer(renderbuffer)) => gl.framebuffer_renderbuffer(
+                        GL_FRAMEBUFFER,
+                        attachment,
+                        GL_RENDERBUFFER,
+                        *renderbuffer,
+                    ),
+                    Some(TextureType::DefaultFramebuffer) => {
+                        panic!("Cannot update default framebuffer")
+                    }
+                    None => gl.framebuffer_texture_2d(
+                        GL_FRAMEBUFFER,
+                        attachment,
+                        GL_TEXTURE_2D,
+                        None,
+                        0,
+                    ),
                 }
-                None => (GL_TEXTURE_2D, None, 0),
             }
         }
         unsafe {
@@ -1007,30 +1063,9 @@ impl GraphicsContextTrait for GraphicsContext {
 
             self.gl.bind_framebuffer(GL_FRAMEBUFFER, framebuffer);
 
-            let (target, texture, level) = get_target_and_native_texture(color_texture);
-            self.gl.framebuffer_texture_2d(
-                GL_FRAMEBUFFER,
-                GL_COLOR_ATTACHMENT0,
-                target,
-                texture,
-                level,
-            );
-            let (target, texture, level) = get_target_and_native_texture(depth_texture);
-            self.gl.framebuffer_texture_2d(
-                GL_FRAMEBUFFER,
-                GL_DEPTH_ATTACHMENT,
-                target,
-                texture,
-                level,
-            );
-            let (target, texture, level) = get_target_and_native_texture(stencil_texture);
-            self.gl.framebuffer_texture_2d(
-                GL_FRAMEBUFFER,
-                GL_STENCIL_ATTACHMENT,
-                target,
-                texture,
-                level,
-            );
+            bind_target_and_native_texture(&mut self.gl, GL_COLOR_ATTACHMENT0, color_texture);
+            bind_target_and_native_texture(&mut self.gl, GL_DEPTH_ATTACHMENT, depth_texture);
+            bind_target_and_native_texture(&mut self.gl, GL_STENCIL_ATTACHMENT, stencil_texture);
 
             // For some reason on macOS if the default framebuffer is not rebind here Mac OpenGL driver code segfaults.
             self.gl

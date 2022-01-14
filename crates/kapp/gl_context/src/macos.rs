@@ -99,7 +99,7 @@ impl GLContextTrait for GLContext {
         use raw_window_handle::*;
 
         let window_and_view = window.map(|w| match w.raw_window_handle() {
-            RawWindowHandle::MacOS(handle) => (
+            RawWindowHandle::AppKit(handle) => (
                 handle.ns_window as *mut Object,
                 handle.ns_view as *mut Object,
             ),

@@ -8,7 +8,7 @@ license = "Zlib OR Apache-2.0 OR MIT"
 [features]
 default = ["gl_context", "wasm_bindgen_support"]
 gl_context = ["kapp_gl_context"]
-SDL = ["kapp_platforms/SDL"]
+SDL = ["kapp_platforms/SDL", "kapp_gl_context/SDL"]
 wasm_bindgen_support = ["kapp_platforms/wasm_bindgen_support"]
 
 [dependencies]

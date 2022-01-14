@@ -24,5 +24,5 @@ pub use platform_traits::{
 pub use raw_window_handle;
 pub use raw_window_handle::{HasRawWindowHandle, RawWindowHandle};
 pub use screen_id::ScreenId;
-pub use window_id::{RawWindowHandleTrait, WindowId};
+pub use window_id::WindowId;
 pub use window_parameters::WindowParameters;
