@@ -3,7 +3,7 @@ mod event_loop_windows;
 mod keys_windows;
 mod utils_windows;
 
-#[allow(non_upper_case_globals, non_snake_case, non_camel_case_types)]
+#[allow(non_upper_case_globals, non_snake_case, non_camel_case_types, unused)]
 mod external_windows;
 
 pub mod prelude {

@@ -452,7 +452,7 @@ pub fn begin_audio_thread(
         let format = WAVEFORMATEX {
             wFormatTag,
             nChannels,
-            nSamplesPerSec: nSamplesPerSec as u32,
+            nSamplesPerSec,
             nAvgBytesPerSec: nAvgBytesPerSec as u32,
             nBlockAlign: nBlockAlign as u16,
             wBitsPerSample,
@@ -512,6 +512,7 @@ pub fn begin_audio_thread(
 
         // Run forever requesting audio
         std::thread::spawn(move || loop {
+            let thread_data = thread_data;
             loop {
                 let _result = WaitForSingleObject(thread_data.event, INFINITE);
 
