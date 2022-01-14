@@ -3,6 +3,7 @@ use kapp_platform_common::WindowId;
 use crate::common::*;
 
 pub struct GLContext {
+    set_to_hidden_window: bool,
     current_window: *mut fermium::video::SDL_Window,
     sdl_gl_context: fermium::video::SDL_GLContext,
 }
@@ -89,6 +90,7 @@ impl GLContextBuilder {
             let sdl_gl_context = fermium::video::SDL_GL_CreateContext(current_window);
 
             Ok(GLContext {
+                set_to_hidden_window: true,
                 current_window,
                 sdl_gl_context,
             })
@@ -163,6 +165,10 @@ impl GLContext {
             let window = window_id.raw() as *mut fermium::video::SDL_Window;
             let result = fermium::video::SDL_GL_MakeCurrent(window, self.sdl_gl_context);
             if result == 0 {
+                if self.set_to_hidden_window {
+                    self.set_to_hidden_window = false;
+                    fermium::video::SDL_DestroyWindow(self.current_window);
+                }
                 self.current_window = window;
                 Ok(())
             } else {
