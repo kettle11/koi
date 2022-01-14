@@ -35,20 +35,23 @@ fn setup_and_run(world: &mut World) -> impl FnMut(Event, &mut koi::World) {
     // Spawn a cube
     world.spawn((Transform::new(), Mesh::CUBE, Material::UNLIT, Color::RED));
 
-    |event: Event, world: &mut World| match event {
-        Event::Draw => {
-            (|input: &Input, xr: &mut XR, camera: &mut Camera| {
-                if input.pointer_just_pressed(PointerButton::Primary) {
-                    xr.start();
-                }
+    |event: Event, world: &mut World| {
+        match event {
+            Event::Draw => {
+                (|input: &Input, xr: &mut XR, camera: &mut Camera| {
+                    if input.pointer_just_pressed(PointerButton::Primary) {
+                        xr.start();
+                    }
 
-                if xr.running() {
-                    camera.clear_color = Some(Color::RED);
-                }
-            })
-            .run(world)
-            .unwrap();
+                    if xr.running() {
+                        camera.clear_color = Some(Color::RED);
+                    }
+                })
+                .run(world)
+                .unwrap();
+            }
+            _ => {}
         }
-        _ => {}
+        false
     }
 }

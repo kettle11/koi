@@ -37,6 +37,6 @@ fn main() {
         }
 
         // Run the World with this mutable closure.
-        |event: Event, _: &mut World| false
+        |_: Event, _: &mut World| false
     });
 }

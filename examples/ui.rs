@@ -44,18 +44,6 @@ fn main() {
                 return true;
             }
 
-            match event {
-                Event::Draw => {
-                    if world
-                        .get_single_component_mut::<Input>()
-                        .unwrap()
-                        .key_down(Key::T)
-                    {
-                        klog::log!("MEMORY USED: {:?}", ktracing_allocator::get_memory_used());
-                    }
-                }
-                _ => {}
-            }
             false
         }
     });

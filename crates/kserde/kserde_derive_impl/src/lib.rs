@@ -166,7 +166,7 @@ pub fn kserde_deserialize_impl(value: &Value) -> String {
 fn field_contains_attribute(field: &Field, attribute: &str) -> bool {
     field.attributes.iter().any(|a| {
         a.path.segments.iter().any(|s| match &s.path_segment_type {
-            PathSegmentType::Named(attribute) => true,
+            PathSegmentType::Named(a) => attribute == a,
             _ => false,
         })
     })

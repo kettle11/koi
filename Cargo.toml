@@ -52,3 +52,7 @@ kwasm = {path = "crates/kwasm",  version = "0.1.0"}
 
 [profile.dev.package.fontdue]
 opt-level = 3
+
+[[example]]
+name = "xr"
+required-features = ["xr"]
