@@ -1,6 +1,6 @@
 use std::ffi::c_void;
 
-use crate::StreamInfo;
+use crate::*;
 #[link(name = "AudioToolbox", kind = "framework")]
 extern "C" {}
 
@@ -282,7 +282,7 @@ unsafe extern "C" fn callback(
     let channels = (*io_data).mBuffers[0].mNumberChannels;
     let stream_info = StreamInfo {
         channels,
-        sample_rate: SAMPLE_RATE,
+        sample_rate: SAMPLE_RATE as _,
     };
 
     // Call user callback.

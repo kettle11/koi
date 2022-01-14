@@ -200,20 +200,7 @@ impl GLContextTrait for GLContext {
     fn swap_buffers(&mut self) {
         unsafe {
             // Simulate VSync by sleeping for 16ms (60 fps) if a window is occluded and VSync is enabled.
-            match self.vsync {
-                VSync::On | VSync::Adaptive => {
-                    if let Some(ns_window) = self.ns_window {
-                        let occlusion_state: u64 = msg_send![ns_window, occlusionState];
-                        if occlusion_state
-                            & NSWindowOcclusionState::NSWindowOcclusionStateVisible as u64
-                            == 0
-                        {
-                            std::thread::sleep(std::time::Duration::from_millis(16));
-                        }
-                    }
-                }
-                _ => {}
-            }
+            crate::occluded_window_vsync_hack(self.vsync, self.ns_window);
             let () = msg_send![self.gl_context, flushBuffer];
         }
     }
@@ -240,11 +227,6 @@ impl Drop for GLContext {
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum NSOpenGLContextParameter {
     NSOpenGLCPSwapInterval = 222,
-}
-
-#[repr(u64)]
-pub enum NSWindowOcclusionState {
-    NSWindowOcclusionStateVisible = 1 << 1,
 }
 
 use NSOpenGLContextParameter::*;

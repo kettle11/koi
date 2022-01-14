@@ -153,6 +153,15 @@ impl GLContextTrait for GLContext {
     }
 
     fn swap_buffers(&mut self) {
+        #[cfg(target_os = "macos")]
+        {
+            let mut info = fermium::syswm::SDL_SysWMinfo::default();
+            unsafe { fermium::syswm::SDL_GetWindowWMInfo(self.current_window, &mut info) };
+            crate::occluded_window_vsync_hack(
+                self.get_vsync(),
+                Some(unsafe { info.info.cocoa.window as *mut _ }),
+            );
+        }
         unsafe { fermium::video::SDL_GL_SwapWindow(self.current_window) }
     }
 }

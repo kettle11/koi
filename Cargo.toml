@@ -8,7 +8,7 @@ license = "Zlib OR Apache-2.0 OR MIT"
 members = ["crates/*"]
 
 [features]
-default = ["audio", "graphics", "renderer", "drawer2d", "imagine_png", "jpeg", "gltf", "ui", "hdri", "physics", "SDL"]
+default = ["audio", "graphics", "renderer", "drawer2d", "imagine_png", "jpeg", "gltf", "ui", "hdri", "physics"]
 SDL = ["kapp/SDL", "kaudio/SDL", "kgraphics/SDL"]
 graphics = ["kgraphics"]
 audio = ["oddio", "kaudio"]
