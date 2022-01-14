@@ -374,7 +374,6 @@ const IID_IAudioRenderClient: GUID = GUID(
     static const CLSID _saudio_CLSID_IMMDeviceEnumerator = { 0xbcde0395, 0xe52f, 0x467c, { 0x8e, 0x3d, 0xc4, 0x57, 0x92, 0x91, 0x69, 0x2e } };
 */
 
-const SAMPLE_RATE: u32 = 44100;
 pub trait AudioSource {
     fn provide_samples(&mut self, samples: &mut [f32]);
     fn handle_event() {}
@@ -441,7 +440,7 @@ pub fn begin_audio_thread(
         // Setup the streaming format for the audio.
         let wFormatTag = WAVE_FORMAT_IEEE_FLOAT;
         let nChannels = 2;
-        let nSamplesPerSec = SAMPLE_RATE;
+        let nSamplesPerSec = SAMPLE_RATE as _;
         let wBitsPerSample = 32;
 
         let nBlockAlign = (nChannels as u32 * wBitsPerSample as u32) / 8; // Size of a sample. Required equation. See below link
@@ -461,7 +460,7 @@ pub fn begin_audio_thread(
         };
 
         // https://docs.microsoft.com/en-us/windows/win32/api/audioclient/nf-audioclient-iaudioclient-initialize
-        let buffer_frames = 2048; // Number of frames in streaming buffer
+        let buffer_frames = 2048; // Number of frames in streaming buffer. Introduces 46 ms of latency.
 
         let duration = (buffer_frames as f64) / (SAMPLE_RATE as f64 * (1.0 / 10000000.0));
 
@@ -534,7 +533,7 @@ pub fn begin_audio_thread(
 
                 let stream_info = StreamInfo {
                     channels: 2,
-                    sample_rate: SAMPLE_RATE,
+                    sample_rate: SAMPLE_RATE as _,
                 };
 
                 (audio_callback)(samples_slice, stream_info);

@@ -5,9 +5,16 @@ authors = ["Ian Kettlewell <ian.kettlewell@gmail.com>"]
 edition = "2021"
 license = "Zlib OR Apache-2.0 OR MIT"
 
+[features]
+default = []
+SDL = ["fermium"]
+wasm_bindgen_support = ["web-sys", "wasm-bindgen"]
+
 [dependencies]
 kapp_platform_common = { path = "../kapp_platform_common" }
 raw-window-handle = "0.4.2"
+
+[target.'cfg(not(target_arch="wasm32"))'.dependencies]
 fermium = {version = "20016.1.1", optional = true}
 
 [dev-dependencies]
@@ -35,8 +42,3 @@ features = [
     "WebGl2RenderingContext",
     "Window"
 ]
-
-[features]
-default = []
-SDL = ["fermium"]
-wasm_bindgen_support = ["web-sys", "wasm-bindgen"]

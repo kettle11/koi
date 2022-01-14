@@ -11,6 +11,8 @@ license = "Zlib OR Apache-2.0 OR MIT"
 raw-window-handle = "0.4.2"
 kapp_platform_common = { path = "../kapp_platform_common" }
 klog = {path = "../../klog"}
+
+[target.'cfg(not(target_arch="wasm32"))'.dependencies]
 fermium = {version = "20016.1.1", optional = true}
 
 [features]

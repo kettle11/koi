@@ -143,7 +143,6 @@ struct AudioStreamBasicDescription {
 }
 
 type AudioOutputFormat = f32;
-const SAMPLE_RATE: u32 = 44100;
 pub fn begin_audio_thread(
     audio_callback: impl FnMut(&mut [AudioOutputFormat], StreamInfo) + Send + 'static,
 ) {
