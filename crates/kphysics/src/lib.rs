@@ -139,8 +139,7 @@ impl<F: NumericFloat + PhysicsDefaults + Debug + GJKEpsilon + VeryLargeNumber + 
                     + rigid_body.rotation * angular_velocity_quaternion * F::HALF * self.time_step;
 
                 rigid_body.rotation = rigid_body.rotation.normalized();
-                rigid_body.velocity =
-                    rigid_body.velocity + (acceleration + acceleration) * F::HALF * self.time_step;
+                rigid_body.velocity += (acceleration + acceleration) * F::HALF * self.time_step;
             } else {
                 rigid_body.velocity = Vector::<F, 3>::ZERO;
             }

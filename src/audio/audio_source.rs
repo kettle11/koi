@@ -96,7 +96,7 @@ pub fn move_sources(
     // For now only one `Listener` is supported.
     if let Some((listener, listener_transform)) = listener.iter_mut().next() {
         let listener_transform: Transform = listener_transform
-            .map(|t| t.deref().clone())
+            .map(|t| *t.deref())
             .unwrap_or_else(Transform::new);
 
         let q: [f32; 4] = listener_transform.rotation.into();

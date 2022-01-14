@@ -444,6 +444,6 @@ impl Frustum {
 
         // Some corners are not outside the plane
         // Todo: Additional cases should be checked for here: https://www.iquilezles.org/www/articles/frustumcorrect/frustumcorrect.htm
-        return true;
+        true
     }
 }

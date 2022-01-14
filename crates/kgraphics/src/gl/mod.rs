@@ -657,7 +657,7 @@ impl GraphicsContextTrait for GraphicsContext {
         unsafe {
             match texture.texture_type {
                 TextureType::Texture(t) => self.gl.delete_texture(t),
-                TextureType::CubeMap { .. } => return,
+                TextureType::CubeMap { .. } => {}
                 TextureType::RenderBuffer(renderbuffer) => {
                     self.gl.delete_renderbuffer(renderbuffer);
                 }

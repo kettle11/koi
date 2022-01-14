@@ -46,7 +46,7 @@ mod renderer;
 pub use renderer::*;
 
 #[cfg(feature = "imagine_png")]
-pub mod imagine_integration;
+pub(crate) mod imagine_integration;
 
 pub fn graphics_plugin() -> Plugin {
     Plugin {
@@ -355,9 +355,8 @@ impl GraphicsInner {
         pixel_format: PixelFormat,
         texture_settings: kgraphics::TextureSettings,
     ) -> Result<CubeMap, ()> {
-        Ok(self
-            .context
-            .new_cube_map(width, height, data, pixel_format, texture_settings)?)
+        self.context
+            .new_cube_map(width, height, data, pixel_format, texture_settings)
     }
 
     pub fn new_gpu_mesh(&mut self, mesh_data: &MeshData) -> Result<GPUMesh, ()> {

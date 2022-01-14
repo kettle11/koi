@@ -384,13 +384,13 @@ impl<'a, 'b: 'a> Renderer<'a, 'b> {
                     };
 
                 self.render_pass.set_cube_map_property(
-                    &pipeline.get_cube_map_property(&"p_irradiance_map").unwrap(),
+                    &pipeline.get_cube_map_property("p_irradiance_map").unwrap(),
                     Some(reflection_probe_diffuse),
                     max_texture_unit + 1,
                 );
 
                 self.render_pass.set_cube_map_property(
-                    &pipeline.get_cube_map_property(&"p_prefilter_map").unwrap(),
+                    &pipeline.get_cube_map_property("p_prefilter_map").unwrap(),
                     Some(reflection_probe_specular),
                     max_texture_unit + 2,
                 );
@@ -399,7 +399,7 @@ impl<'a, 'b: 'a> Renderer<'a, 'b> {
 
                 self.render_pass.set_texture_property(
                     &pipeline
-                        .get_texture_property(&"p_brdf_lookup_table")
+                        .get_texture_property("p_brdf_lookup_table")
                         .unwrap(),
                     Some(self.brdf_lookup_texture),
                     max_texture_unit + 3,

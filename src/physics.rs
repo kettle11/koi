@@ -179,7 +179,7 @@ pub fn update_physics_1(
         };
 
         // Default to checking self for the `RigidBody` if the `rigid_body_entity` is `None`
-        let target_entity = collider.rigid_body_entity.as_ref().unwrap_or(&entity);
+        let target_entity = collider.rigid_body_entity.as_ref().unwrap_or(entity);
         let attached_rigid_body = rigid_bodies
             .get_entity_components(*target_entity)
             .map(|c| c.rigid_body_handle.unwrap());

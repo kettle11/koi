@@ -146,13 +146,13 @@ impl GLContextTrait for GLContext {
         let result = match vsync {
             VSync::On => {
                 let () = unsafe {
-                    msg_send![self.gl_context, setValues:&(1 as i32) forParameter:NSOpenGLCPSwapInterval]
+                    msg_send![self.gl_context, setValues:&(1_i32) forParameter:NSOpenGLCPSwapInterval]
                 };
                 Ok(())
             }
             VSync::Off => {
                 let () = unsafe {
-                    msg_send![self.gl_context, setValues:&(0 as i32) forParameter:NSOpenGLCPSwapInterval]
+                    msg_send![self.gl_context, setValues:&(0_i32) forParameter:NSOpenGLCPSwapInterval]
                 };
                 Ok(())
             }
