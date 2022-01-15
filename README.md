@@ -23,6 +23,15 @@ For Web:
 * run `./run.sh hello`
 * Navigate your browser to `localhost:8080`
 
+## What works / doesn't work?
+Everything is subject to massive change, but some parts are more functional than others.
+
+Presently the core loop, user input, windowing, ECS, audio, and rendering are quite usable. Rendering will continue to change substantially but it already works for many purposes.
+
+The user-interface (UI) code is *nearly* in an interesting and useful state but not it's quite there yet.
+
+The "physics" code doesn't work at all. It's very work in progress.
+
 # Crates
 
 ## Stand-alone:
