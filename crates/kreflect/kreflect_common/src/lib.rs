@@ -765,6 +765,7 @@ impl<'a> Parser<'a> {
                                 _type,
                                 visibility,
                             });
+                            self.check_for_token(Token::Comma);
                         }
                     }
                 }

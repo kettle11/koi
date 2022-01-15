@@ -775,7 +775,7 @@ impl<'a> RustGenerator {
                                     .unwrap();
                                     write!(
                                         output,
-                                        "           serializer.property(\"{}\", &self.{});\n",
+                                        "           serializer.property(\"{}\");\n           serializer.value(&{});\n",
                                         property.json_name, property.name
                                     )
                                     .unwrap();
@@ -794,7 +794,7 @@ impl<'a> RustGenerator {
                                             .unwrap();
                                             write!(
                                                 output,
-                                                "           serializer.property(\"{}\", &self.{});\n",
+                                                "           serializer.property(\"{}\");\n           serializer.value(&{});\n",
                                                 property.json_name, property.name
                                             )
                                             .unwrap();
@@ -809,7 +809,7 @@ impl<'a> RustGenerator {
                                             .unwrap();
                                             write!(
                                                 output,
-                                                "           serializer.property(\"{}\", &self.{});\n",
+                                                "           serializer.property(\"{}\");\n           serializer.value(&{});\n",
                                                 property.json_name, property.name
                                             )
                                             .unwrap();
@@ -824,7 +824,7 @@ impl<'a> RustGenerator {
                                             .unwrap();
                                             write!(
                                                 output,
-                                                "           serializer.property(\"{}\", v);\n",
+                                                "           serializer.property(\"{}\");\n           serializer.value(&v);\n",
                                                 property.json_name
                                             )
                                             .unwrap();
@@ -839,7 +839,7 @@ impl<'a> RustGenerator {
                         } else {
                             write!(
                                 output,
-                                "        serializer.property(\"{}\", &self.{});\n",
+                                "           serializer.property(\"{}\");\n           serializer.value(&self.{});\n",
                                 property.json_name, property.name
                             )
                             .unwrap();

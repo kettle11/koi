@@ -143,7 +143,8 @@ impl<'a, S: Serializer> Serialize<S> for Thing<'a> {
                 let mut properties: Vec<_> = o.iter().collect();
                 properties.sort_by_key(|(_, i)| i.index);
                 for (key, value) in o.iter() {
-                    serializer.property(key, &value.item);
+                    serializer.property(key);
+                    serializer.value(&value.item);
                 }
                 serializer.end_object();
             }
@@ -173,7 +174,8 @@ impl<'a, S: Serializer> Serialize<S> for ThingOwned {
                 let mut properties: Vec<_> = o.iter().collect();
                 properties.sort_by_key(|(_, i)| i.index);
                 for (key, value) in o.iter() {
-                    serializer.property(key, &value.item);
+                    serializer.property(key);
+                    serializer.value(&value.item);
                 }
                 serializer.end_object();
             }

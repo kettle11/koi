@@ -196,7 +196,6 @@ async fn load_world(path: &str) -> Option<PrefabLoadMessageData> {
         #[cfg(feature = "gltf")]
         "gltf" => {
             //  klog::log!("ABOUT TO DECODE GLTF");
-            use kgltf::FromJson;
             let s = std::str::from_utf8(&bytes).ok()?;
             //   klog::log!("ABOUT TO DECODE GLTF0: {}", s);
 

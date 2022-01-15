@@ -3,6 +3,7 @@ use std::ops::{Deref, DerefMut};
 pub use kcolor::*;
 pub use kecs::hierarchy::HierarchyNode;
 pub use kecs::*;
+pub use kserde::*;
 
 pub use klog::*;
 pub use kmath::*;

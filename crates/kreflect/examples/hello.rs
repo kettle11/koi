@@ -1,6 +1,6 @@
 //use std::any::Any;
 
-use std::{collections::HashMap, sync::mpsc};
+use std::collections::HashMap;
 
 use kreflect::*;
 
@@ -11,6 +11,11 @@ trait LoadableAssetTrait {
 #[derive(Reflect)]
 struct Assets {
     path_to_handle: HashMap<String, bool>,
+}
+
+#[derive(Reflect)]
+enum TestEnum {
+    Thing(f32, f32, f32),
 }
 
 fn main() {}

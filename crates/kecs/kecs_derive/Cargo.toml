@@ -5,6 +5,7 @@ authors = ["Ian Kettlewell <ian.kettlewell@gmail.com>"]
 edition = "2021"
 
 [dependencies]
+kserde_derive_impl = {path = "../../kserde/kserde_derive_impl"}
 kecs_derive_impl = {path = "kecs_derive_impl"}
 kreflect_common = {path = "../../kreflect/kreflect_common", features = ["proc_macro"]}
 

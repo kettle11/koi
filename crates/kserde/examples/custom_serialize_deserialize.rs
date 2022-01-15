@@ -5,13 +5,13 @@ struct Person {
     age: i64,
 }
 
-trait TestTrait {}
-
 impl<S: Serializer> Serialize<S> for Person {
     fn serialize(&self, serializer: &mut S) {
         serializer.begin_object();
-        serializer.property("name", &self.name);
-        serializer.property("age", &self.age);
+        serializer.property("name");
+        serializer.value(&self.name);
+        serializer.property("age");
+        serializer.value(&self.age);
         serializer.end_object();
     }
 }

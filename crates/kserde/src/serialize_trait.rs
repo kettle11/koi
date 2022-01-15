@@ -24,7 +24,8 @@ pub trait Serializer: Sized {
     fn begin_object(&mut self);
     fn end_object(&mut self);
     /// Only call this in-between [begin_object] and [end_object] calls
-    fn property<V: Serialize<Self>>(&mut self, name: &str, value: &V);
+    /// Assigns a property label to something but `value` must be separately called.
+    fn property(&mut self, name: &str);
 
     fn begin_array(&mut self);
     fn end_array(&mut self);
@@ -128,7 +129,8 @@ impl<S: Serializer, STRING: std::ops::Deref<Target = str>, V: Serialize<S>> Seri
     fn serialize(&self, serializer: &mut S) {
         serializer.begin_object();
         for (key, value) in self.iter() {
-            serializer.property(key, value);
+            serializer.property(key);
+            serializer.value(value);
         }
         serializer.end_object();
     }
@@ -142,5 +144,45 @@ impl<S: Serializer, SERIALIZE: Serialize<S>> Serialize<S> for Option<SERIALIZE> 
         } else {
             serializer.null()
         }
+    }
+}
+
+/*
+// Todo: Implement more tuples using a macro
+impl<S: Serializer, A: Serialize<S>> Serialize<S> for (A,) {
+    #[inline]
+    fn serialize(&self, serializer: &mut S) {
+        serializer.begin_object();
+        serializer.property("i");
+        serializer.value(&self.0);
+        serializer.end_object();
+    }
+}
+
+impl<S: Serializer, A: Serialize<S>, B: Serialize<S>> Serialize<S> for (A, B) {
+    #[inline]
+    fn serialize(&self, serializer: &mut S) {
+        serializer.begin_object();
+        serializer.property("i0");
+        serializer.property("i1");
+        serializer.end_object();
+    }
+}
+
+impl<S: Serializer, A: Serialize<S>, B: Serialize<S>, C: Serialize<S>> Serialize<S> for (A, B, C) {
+    #[inline]
+    fn serialize(&self, serializer: &mut S) {
+        serializer.begin_object();
+        serializer.property("i0", &self.0);
+        serializer.property("i2", &self.1);
+        serializer.property("i2", &self.1);
+        serializer.end_object();
+    }
+}
+*/
+
+impl<S: Serializer, A: Serialize<S>> Serialize<S> for &A {
+    fn serialize(&self, serializer: &mut S) {
+        A::serialize(&self, serializer)
     }
 }

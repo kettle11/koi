@@ -30,6 +30,8 @@ ktasks = {path = "crates/ktasks"}
 kmath = {path = "crates/kmath"}
 klog = {path = "crates/klog"}
 kcolor = {path = "crates/kcolor"}
+kserde = {path = "crates/kserde"}
+
 ktracing_allocator = {path = "crates/ktracing_allocator", optional = true}
 
 kphysics = {path = "crates/kphysics",  optional = true}

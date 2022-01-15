@@ -9,5 +9,8 @@ keywords = ["serialization", "deserialization", "serde", "json"]
 categories = ["encoding"]
 description = "A tiny serialization / deserialization crate"
 
+[features]
+default = ["kserde_derive"]
+
 [dependencies]
 kserde_derive = {path = "kserde_derive", optional = true}

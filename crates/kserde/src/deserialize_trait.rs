@@ -147,6 +147,82 @@ impl<'a, D: Deserializer<'a>> Deserialize<'a, D> for () {
     }
 }
 
+// Todo: These tuple implementations should be implemented with a macro and for more of them.
+impl<'a, D: Deserializer<'a>, A: Deserialize<'a, D>> Deserialize<'a, D> for (A,) {
+    fn deserialize(deserializer: &mut D) -> Option<Self> {
+        let a;
+        deserializer.begin_object();
+
+        if deserializer.has_property().map_or(false, |p| p == "a") {
+            a = A::deserialize(deserializer)?;
+        } else {
+            return None;
+        }
+
+        Some((a,))
+    }
+}
+
+impl<'a, D: Deserializer<'a>, A: Deserialize<'a, D>, B: Deserialize<'a, D>> Deserialize<'a, D>
+    for (A, B)
+{
+    fn deserialize(deserializer: &mut D) -> Option<Self> {
+        let a;
+        let b;
+        deserializer.begin_object();
+
+        if deserializer.has_property().map_or(false, |p| p == "a") {
+            a = A::deserialize(deserializer)?;
+        } else {
+            return None;
+        }
+
+        if deserializer.has_property().map_or(false, |p| p == "b") {
+            b = B::deserialize(deserializer)?;
+        } else {
+            return None;
+        }
+
+        Some((a, b))
+    }
+}
+
+impl<
+        'a,
+        D: Deserializer<'a>,
+        A: Deserialize<'a, D>,
+        B: Deserialize<'a, D>,
+        C: Deserialize<'a, D>,
+    > Deserialize<'a, D> for (A, B, C)
+{
+    fn deserialize(deserializer: &mut D) -> Option<Self> {
+        let a;
+        let b;
+        let c;
+        deserializer.begin_object();
+
+        if deserializer.has_property().map_or(false, |p| p == "a") {
+            a = A::deserialize(deserializer)?;
+        } else {
+            return None;
+        }
+
+        if deserializer.has_property().map_or(false, |p| p == "b") {
+            b = B::deserialize(deserializer)?;
+        } else {
+            return None;
+        }
+
+        if deserializer.has_property().map_or(false, |p| p == "c") {
+            c = C::deserialize(deserializer)?;
+        } else {
+            return None;
+        }
+
+        Some((a, b, c))
+    }
+}
+
 // Probably should have some sort of slice deserialization here,
 
 pub enum AnyValue<'a> {

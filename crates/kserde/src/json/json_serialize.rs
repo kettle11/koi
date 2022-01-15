@@ -4,7 +4,7 @@ use std::iter::Iterator;
 pub struct JSONSerializer<CONTEXT> {
     s: String,
     indentation: u16,
-    just_began_object_or_array: bool,
+    added_comma: bool,
     context: CONTEXT,
 }
 
@@ -25,7 +25,7 @@ impl<CONTEXT> JSONSerializer<CONTEXT> {
         JSONSerializer {
             s: String::new(),
             indentation: 0,
-            just_began_object_or_array: false,
+            added_comma: false,
             context,
         }
     }
@@ -71,43 +71,45 @@ impl<CONTEXT> Serializer for JSONSerializer<CONTEXT> {
 
     fn begin_array(&mut self) {
         self.s.push('[');
-        self.just_began_object_or_array = true;
     }
 
     fn begin_object(&mut self) {
         self.s.push('{');
         self.indentation += 4;
-        self.just_began_object_or_array = true;
     }
 
-    fn property<V: Serialize<Self>>(&mut self, name: &str, value: &V) {
-        if !self.just_began_object_or_array {
-            self.s.push(',');
-        }
-        self.just_began_object_or_array = false;
+    fn property(&mut self, name: &str) {
         self.s.push('\n');
         self.indent();
         name.serialize(self);
         self.s.push_str(": ");
-        value.serialize(self);
     }
 
     fn end_object(&mut self) {
         self.indentation -= 4;
+
+        if self.added_comma {
+            self.s.pop();
+            self.s.pop();
+            self.added_comma = false;
+        }
         self.s.push('\n');
         self.indent();
         self.s.push('}');
     }
 
     fn value<V: Serialize<Self>>(&mut self, value: &V) {
-        if !self.just_began_object_or_array {
-            self.s += ", "
-        }
-        self.just_began_object_or_array = false;
         value.serialize(self);
+        self.s += ", ";
+        self.added_comma = true;
     }
 
     fn end_array(&mut self) {
+        if self.added_comma {
+            self.s.pop();
+            self.s.pop();
+            self.added_comma = false;
+        }
         self.s.push(']');
     }
 

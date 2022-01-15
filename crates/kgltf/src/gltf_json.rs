@@ -48,25 +48,44 @@ pub struct GlTf {
 impl<S: Serializer> Serialize<S> for GlTf {
     fn serialize(&self, serializer: &mut S) {
         serializer.begin_object();
-        serializer.property("extensionsUsed", &self.extensions_used);
-        serializer.property("extensionsRequired", &self.extensions_required);
-        serializer.property("accessors", &self.accessors);
-        serializer.property("animations", &self.animations);
-        serializer.property("asset", &self.asset);
-        serializer.property("buffers", &self.buffers);
-        serializer.property("bufferViews", &self.buffer_views);
-        serializer.property("cameras", &self.cameras);
-        serializer.property("images", &self.images);
-        serializer.property("materials", &self.materials);
-        serializer.property("meshes", &self.meshes);
-        serializer.property("nodes", &self.nodes);
-        serializer.property("samplers", &self.samplers);
-        serializer.property("scene", &self.scene);
-        serializer.property("scenes", &self.scenes);
-        serializer.property("skins", &self.skins);
-        serializer.property("textures", &self.textures);
-        serializer.property("extensions", &self.extensions);
-        serializer.property("extras", &self.extras);
+        serializer.property("extensionsUsed");
+        serializer.value(&self.extensions_used);
+        serializer.property("extensionsRequired");
+        serializer.value(&self.extensions_required);
+        serializer.property("accessors");
+        serializer.value(&self.accessors);
+        serializer.property("animations");
+        serializer.value(&self.animations);
+        serializer.property("asset");
+        serializer.value(&self.asset);
+        serializer.property("buffers");
+        serializer.value(&self.buffers);
+        serializer.property("bufferViews");
+        serializer.value(&self.buffer_views);
+        serializer.property("cameras");
+        serializer.value(&self.cameras);
+        serializer.property("images");
+        serializer.value(&self.images);
+        serializer.property("materials");
+        serializer.value(&self.materials);
+        serializer.property("meshes");
+        serializer.value(&self.meshes);
+        serializer.property("nodes");
+        serializer.value(&self.nodes);
+        serializer.property("samplers");
+        serializer.value(&self.samplers);
+        serializer.property("scene");
+        serializer.value(&self.scene);
+        serializer.property("scenes");
+        serializer.value(&self.scenes);
+        serializer.property("skins");
+        serializer.value(&self.skins);
+        serializer.property("textures");
+        serializer.value(&self.textures);
+        serializer.property("extensions");
+        serializer.value(&self.extensions);
+        serializer.property("extras");
+        serializer.value(&self.extras);
         serializer.end_object();
     }
 }
@@ -166,11 +185,16 @@ pub struct Texture {
 impl<S: Serializer> Serialize<S> for Texture {
     fn serialize(&self, serializer: &mut S) {
         serializer.begin_object();
-        serializer.property("sampler", &self.sampler);
-        serializer.property("source", &self.source);
-        serializer.property("name", &self.name);
-        serializer.property("extensions", &self.extensions);
-        serializer.property("extras", &self.extras);
+        serializer.property("sampler");
+        serializer.value(&self.sampler);
+        serializer.property("source");
+        serializer.value(&self.source);
+        serializer.property("name");
+        serializer.value(&self.name);
+        serializer.property("extensions");
+        serializer.value(&self.extensions);
+        serializer.property("extras");
+        serializer.value(&self.extras);
         serializer.end_object();
     }
 }
@@ -226,12 +250,18 @@ pub struct Skin {
 impl<S: Serializer> Serialize<S> for Skin {
     fn serialize(&self, serializer: &mut S) {
         serializer.begin_object();
-        serializer.property("inverseBindMatrices", &self.inverse_bind_matrices);
-        serializer.property("skeleton", &self.skeleton);
-        serializer.property("joints", &self.joints);
-        serializer.property("name", &self.name);
-        serializer.property("extensions", &self.extensions);
-        serializer.property("extras", &self.extras);
+        serializer.property("inverseBindMatrices");
+        serializer.value(&self.inverse_bind_matrices);
+        serializer.property("skeleton");
+        serializer.value(&self.skeleton);
+        serializer.property("joints");
+        serializer.value(&self.joints);
+        serializer.property("name");
+        serializer.value(&self.name);
+        serializer.property("extensions");
+        serializer.value(&self.extensions);
+        serializer.property("extras");
+        serializer.value(&self.extras);
         serializer.end_object();
     }
 }
@@ -288,10 +318,14 @@ pub struct Scene {
 impl<S: Serializer> Serialize<S> for Scene {
     fn serialize(&self, serializer: &mut S) {
         serializer.begin_object();
-        serializer.property("nodes", &self.nodes);
-        serializer.property("name", &self.name);
-        serializer.property("extensions", &self.extensions);
-        serializer.property("extras", &self.extras);
+        serializer.property("nodes");
+        serializer.value(&self.nodes);
+        serializer.property("name");
+        serializer.value(&self.name);
+        serializer.property("extensions");
+        serializer.value(&self.extensions);
+        serializer.property("extras");
+        serializer.value(&self.extras);
         serializer.end_object();
     }
 }
@@ -346,13 +380,20 @@ pub struct Sampler {
 impl<S: Serializer> Serialize<S> for Sampler {
     fn serialize(&self, serializer: &mut S) {
         serializer.begin_object();
-        serializer.property("magFilter", &self.mag_filter);
-        serializer.property("minFilter", &self.min_filter);
-        serializer.property("wrapS", &self.wrap_s);
-        serializer.property("wrapT", &self.wrap_t);
-        serializer.property("name", &self.name);
-        serializer.property("extensions", &self.extensions);
-        serializer.property("extras", &self.extras);
+        serializer.property("magFilter");
+        serializer.value(&self.mag_filter);
+        serializer.property("minFilter");
+        serializer.value(&self.min_filter);
+        serializer.property("wrapS");
+        serializer.value(&self.wrap_s);
+        serializer.property("wrapT");
+        serializer.value(&self.wrap_t);
+        serializer.property("name");
+        serializer.value(&self.name);
+        serializer.property("extensions");
+        serializer.value(&self.extensions);
+        serializer.property("extras");
+        serializer.value(&self.extras);
         serializer.end_object();
     }
 }
@@ -548,18 +589,30 @@ pub struct Node {
 impl<S: Serializer> Serialize<S> for Node {
     fn serialize(&self, serializer: &mut S) {
         serializer.begin_object();
-        serializer.property("camera", &self.camera);
-        serializer.property("children", &self.children);
-        serializer.property("skin", &self.skin);
-        serializer.property("matrix", &self.matrix);
-        serializer.property("mesh", &self.mesh);
-        serializer.property("rotation", &self.rotation);
-        serializer.property("scale", &self.scale);
-        serializer.property("translation", &self.translation);
-        serializer.property("weights", &self.weights);
-        serializer.property("name", &self.name);
-        serializer.property("extensions", &self.extensions);
-        serializer.property("extras", &self.extras);
+        serializer.property("camera");
+        serializer.value(&self.camera);
+        serializer.property("children");
+        serializer.value(&self.children);
+        serializer.property("skin");
+        serializer.value(&self.skin);
+        serializer.property("matrix");
+        serializer.value(&self.matrix);
+        serializer.property("mesh");
+        serializer.value(&self.mesh);
+        serializer.property("rotation");
+        serializer.value(&self.rotation);
+        serializer.property("scale");
+        serializer.value(&self.scale);
+        serializer.property("translation");
+        serializer.value(&self.translation);
+        serializer.property("weights");
+        serializer.value(&self.weights);
+        serializer.property("name");
+        serializer.value(&self.name);
+        serializer.property("extensions");
+        serializer.value(&self.extensions);
+        serializer.property("extras");
+        serializer.value(&self.extras);
         serializer.end_object();
     }
 }
@@ -658,11 +711,16 @@ pub struct Mesh {
 impl<S: Serializer> Serialize<S> for Mesh {
     fn serialize(&self, serializer: &mut S) {
         serializer.begin_object();
-        serializer.property("primitives", &self.primitives);
-        serializer.property("weights", &self.weights);
-        serializer.property("name", &self.name);
-        serializer.property("extensions", &self.extensions);
-        serializer.property("extras", &self.extras);
+        serializer.property("primitives");
+        serializer.value(&self.primitives);
+        serializer.property("weights");
+        serializer.value(&self.weights);
+        serializer.property("name");
+        serializer.value(&self.name);
+        serializer.property("extensions");
+        serializer.value(&self.extensions);
+        serializer.property("extras");
+        serializer.value(&self.extras);
         serializer.end_object();
     }
 }
@@ -720,13 +778,20 @@ pub struct MeshPrimitive {
 impl<S: Serializer> Serialize<S> for MeshPrimitive {
     fn serialize(&self, serializer: &mut S) {
         serializer.begin_object();
-        serializer.property("attributes", &self.attributes);
-        serializer.property("indices", &self.indices);
-        serializer.property("material", &self.material);
-        serializer.property("mode", &self.mode);
-        serializer.property("targets", &self.targets);
-        serializer.property("extensions", &self.extensions);
-        serializer.property("extras", &self.extras);
+        serializer.property("attributes");
+        serializer.value(&self.attributes);
+        serializer.property("indices");
+        serializer.value(&self.indices);
+        serializer.property("material");
+        serializer.value(&self.material);
+        serializer.property("mode");
+        serializer.value(&self.mode);
+        serializer.property("targets");
+        serializer.value(&self.targets);
+        serializer.property("extensions");
+        serializer.value(&self.extensions);
+        serializer.property("extras");
+        serializer.value(&self.extras);
         serializer.end_object();
     }
 }
@@ -843,17 +908,28 @@ pub struct Material {
 impl<S: Serializer> Serialize<S> for Material {
     fn serialize(&self, serializer: &mut S) {
         serializer.begin_object();
-        serializer.property("name", &self.name);
-        serializer.property("extensions", &self.extensions);
-        serializer.property("extras", &self.extras);
-        serializer.property("pbrMetallicRoughness", &self.pbr_metallic_roughness);
-        serializer.property("normalTexture", &self.normal_texture);
-        serializer.property("occlusionTexture", &self.occlusion_texture);
-        serializer.property("emissiveTexture", &self.emissive_texture);
-        serializer.property("emissiveFactor", &self.emissive_factor);
-        serializer.property("alphaMode", &self.alpha_mode);
-        serializer.property("alphaCutoff", &self.alpha_cutoff);
-        serializer.property("doubleSided", &self.double_sided);
+        serializer.property("name");
+        serializer.value(&self.name);
+        serializer.property("extensions");
+        serializer.value(&self.extensions);
+        serializer.property("extras");
+        serializer.value(&self.extras);
+        serializer.property("pbrMetallicRoughness");
+        serializer.value(&self.pbr_metallic_roughness);
+        serializer.property("normalTexture");
+        serializer.value(&self.normal_texture);
+        serializer.property("occlusionTexture");
+        serializer.value(&self.occlusion_texture);
+        serializer.property("emissiveTexture");
+        serializer.value(&self.emissive_texture);
+        serializer.property("emissiveFactor");
+        serializer.value(&self.emissive_factor);
+        serializer.property("alphaMode");
+        serializer.value(&self.alpha_mode);
+        serializer.property("alphaCutoff");
+        serializer.value(&self.alpha_cutoff);
+        serializer.property("doubleSided");
+        serializer.value(&self.double_sided);
         serializer.end_object();
     }
 }
@@ -967,11 +1043,16 @@ pub struct MaterialOcclusionTextureInfo {
 impl<S: Serializer> Serialize<S> for MaterialOcclusionTextureInfo {
     fn serialize(&self, serializer: &mut S) {
         serializer.begin_object();
-        serializer.property("index", &self.index);
-        serializer.property("texCoord", &self.tex_coord);
-        serializer.property("strength", &self.strength);
-        serializer.property("extensions", &self.extensions);
-        serializer.property("extras", &self.extras);
+        serializer.property("index");
+        serializer.value(&self.index);
+        serializer.property("texCoord");
+        serializer.value(&self.tex_coord);
+        serializer.property("strength");
+        serializer.value(&self.strength);
+        serializer.property("extensions");
+        serializer.value(&self.extensions);
+        serializer.property("extras");
+        serializer.value(&self.extras);
         serializer.end_object();
     }
 }
@@ -1025,11 +1106,16 @@ pub struct MaterialNormalTextureInfo {
 impl<S: Serializer> Serialize<S> for MaterialNormalTextureInfo {
     fn serialize(&self, serializer: &mut S) {
         serializer.begin_object();
-        serializer.property("index", &self.index);
-        serializer.property("texCoord", &self.tex_coord);
-        serializer.property("scale", &self.scale);
-        serializer.property("extensions", &self.extensions);
-        serializer.property("extras", &self.extras);
+        serializer.property("index");
+        serializer.value(&self.index);
+        serializer.property("texCoord");
+        serializer.value(&self.tex_coord);
+        serializer.property("scale");
+        serializer.value(&self.scale);
+        serializer.property("extensions");
+        serializer.value(&self.extensions);
+        serializer.property("extras");
+        serializer.value(&self.extras);
         serializer.end_object();
     }
 }
@@ -1087,13 +1173,20 @@ pub struct MaterialPbrMetallicRoughness {
 impl<S: Serializer> Serialize<S> for MaterialPbrMetallicRoughness {
     fn serialize(&self, serializer: &mut S) {
         serializer.begin_object();
-        serializer.property("baseColorFactor", &self.base_color_factor);
-        serializer.property("baseColorTexture", &self.base_color_texture);
-        serializer.property("metallicFactor", &self.metallic_factor);
-        serializer.property("roughnessFactor", &self.roughness_factor);
-        serializer.property("metallicRoughnessTexture", &self.metallic_roughness_texture);
-        serializer.property("extensions", &self.extensions);
-        serializer.property("extras", &self.extras);
+        serializer.property("baseColorFactor");
+        serializer.value(&self.base_color_factor);
+        serializer.property("baseColorTexture");
+        serializer.value(&self.base_color_texture);
+        serializer.property("metallicFactor");
+        serializer.value(&self.metallic_factor);
+        serializer.property("roughnessFactor");
+        serializer.value(&self.roughness_factor);
+        serializer.property("metallicRoughnessTexture");
+        serializer.value(&self.metallic_roughness_texture);
+        serializer.property("extensions");
+        serializer.value(&self.extensions);
+        serializer.property("extras");
+        serializer.value(&self.extras);
         serializer.end_object();
     }
 }
@@ -1157,10 +1250,14 @@ pub struct TextureInfo {
 impl<S: Serializer> Serialize<S> for TextureInfo {
     fn serialize(&self, serializer: &mut S) {
         serializer.begin_object();
-        serializer.property("index", &self.index);
-        serializer.property("texCoord", &self.tex_coord);
-        serializer.property("extensions", &self.extensions);
-        serializer.property("extras", &self.extras);
+        serializer.property("index");
+        serializer.value(&self.index);
+        serializer.property("texCoord");
+        serializer.value(&self.tex_coord);
+        serializer.property("extensions");
+        serializer.value(&self.extensions);
+        serializer.property("extras");
+        serializer.value(&self.extras);
         serializer.end_object();
     }
 }
@@ -1213,12 +1310,18 @@ pub struct Image {
 impl<S: Serializer> Serialize<S> for Image {
     fn serialize(&self, serializer: &mut S) {
         serializer.begin_object();
-        serializer.property("uri", &self.uri);
-        serializer.property("mimeType", &self.mime_type);
-        serializer.property("bufferView", &self.buffer_view);
-        serializer.property("name", &self.name);
-        serializer.property("extensions", &self.extensions);
-        serializer.property("extras", &self.extras);
+        serializer.property("uri");
+        serializer.value(&self.uri);
+        serializer.property("mimeType");
+        serializer.value(&self.mime_type);
+        serializer.property("bufferView");
+        serializer.value(&self.buffer_view);
+        serializer.property("name");
+        serializer.value(&self.name);
+        serializer.property("extensions");
+        serializer.value(&self.extensions);
+        serializer.property("extras");
+        serializer.value(&self.extras);
         serializer.end_object();
     }
 }
@@ -1304,15 +1407,21 @@ impl<S: Serializer> Serialize<S> for Camera {
     fn serialize(&self, serializer: &mut S) {
         serializer.begin_object();
         if let Some(v) = self.orthographic.as_ref() {
-            serializer.property("orthographic", v);
+            serializer.property("orthographic");
+            serializer.value(&v);
         }
         if let Some(v) = self.perspective.as_ref() {
-            serializer.property("perspective", v);
+            serializer.property("perspective");
+            serializer.value(&v);
         }
-        serializer.property("type", &self.type_);
-        serializer.property("name", &self.name);
-        serializer.property("extensions", &self.extensions);
-        serializer.property("extras", &self.extras);
+        serializer.property("type");
+        serializer.value(&self.type_);
+        serializer.property("name");
+        serializer.value(&self.name);
+        serializer.property("extensions");
+        serializer.value(&self.extensions);
+        serializer.property("extras");
+        serializer.value(&self.extras);
         serializer.end_object();
     }
 }
@@ -1409,12 +1518,18 @@ pub struct CameraPerspective {
 impl<S: Serializer> Serialize<S> for CameraPerspective {
     fn serialize(&self, serializer: &mut S) {
         serializer.begin_object();
-        serializer.property("aspectRatio", &self.aspect_ratio);
-        serializer.property("yfov", &self.yfov);
-        serializer.property("zfar", &self.zfar);
-        serializer.property("znear", &self.znear);
-        serializer.property("extensions", &self.extensions);
-        serializer.property("extras", &self.extras);
+        serializer.property("aspectRatio");
+        serializer.value(&self.aspect_ratio);
+        serializer.property("yfov");
+        serializer.value(&self.yfov);
+        serializer.property("zfar");
+        serializer.value(&self.zfar);
+        serializer.property("znear");
+        serializer.value(&self.znear);
+        serializer.property("extensions");
+        serializer.value(&self.extensions);
+        serializer.property("extras");
+        serializer.value(&self.extras);
         serializer.end_object();
     }
 }
@@ -1473,12 +1588,18 @@ pub struct CameraOrthographic {
 impl<S: Serializer> Serialize<S> for CameraOrthographic {
     fn serialize(&self, serializer: &mut S) {
         serializer.begin_object();
-        serializer.property("xmag", &self.xmag);
-        serializer.property("ymag", &self.ymag);
-        serializer.property("zfar", &self.zfar);
-        serializer.property("znear", &self.znear);
-        serializer.property("extensions", &self.extensions);
-        serializer.property("extras", &self.extras);
+        serializer.property("xmag");
+        serializer.value(&self.xmag);
+        serializer.property("ymag");
+        serializer.value(&self.ymag);
+        serializer.property("zfar");
+        serializer.value(&self.zfar);
+        serializer.property("znear");
+        serializer.value(&self.znear);
+        serializer.property("extensions");
+        serializer.value(&self.extensions);
+        serializer.property("extras");
+        serializer.value(&self.extras);
         serializer.end_object();
     }
 }
@@ -1541,14 +1662,22 @@ pub struct BufferView {
 impl<S: Serializer> Serialize<S> for BufferView {
     fn serialize(&self, serializer: &mut S) {
         serializer.begin_object();
-        serializer.property("buffer", &self.buffer);
-        serializer.property("byteOffset", &self.byte_offset);
-        serializer.property("byteLength", &self.byte_length);
-        serializer.property("byteStride", &self.byte_stride);
-        serializer.property("target", &self.target);
-        serializer.property("name", &self.name);
-        serializer.property("extensions", &self.extensions);
-        serializer.property("extras", &self.extras);
+        serializer.property("buffer");
+        serializer.value(&self.buffer);
+        serializer.property("byteOffset");
+        serializer.value(&self.byte_offset);
+        serializer.property("byteLength");
+        serializer.value(&self.byte_length);
+        serializer.property("byteStride");
+        serializer.value(&self.byte_stride);
+        serializer.property("target");
+        serializer.value(&self.target);
+        serializer.property("name");
+        serializer.value(&self.name);
+        serializer.property("extensions");
+        serializer.value(&self.extensions);
+        serializer.property("extras");
+        serializer.value(&self.extras);
         serializer.end_object();
     }
 }
@@ -1637,11 +1766,16 @@ pub struct Buffer {
 impl<S: Serializer> Serialize<S> for Buffer {
     fn serialize(&self, serializer: &mut S) {
         serializer.begin_object();
-        serializer.property("uri", &self.uri);
-        serializer.property("byteLength", &self.byte_length);
-        serializer.property("name", &self.name);
-        serializer.property("extensions", &self.extensions);
-        serializer.property("extras", &self.extras);
+        serializer.property("uri");
+        serializer.value(&self.uri);
+        serializer.property("byteLength");
+        serializer.value(&self.byte_length);
+        serializer.property("name");
+        serializer.value(&self.name);
+        serializer.property("extensions");
+        serializer.value(&self.extensions);
+        serializer.property("extras");
+        serializer.value(&self.extras);
         serializer.end_object();
     }
 }
@@ -1697,12 +1831,18 @@ pub struct Asset {
 impl<S: Serializer> Serialize<S> for Asset {
     fn serialize(&self, serializer: &mut S) {
         serializer.begin_object();
-        serializer.property("copyright", &self.copyright);
-        serializer.property("generator", &self.generator);
-        serializer.property("version", &self.version);
-        serializer.property("minVersion", &self.min_version);
-        serializer.property("extensions", &self.extensions);
-        serializer.property("extras", &self.extras);
+        serializer.property("copyright");
+        serializer.value(&self.copyright);
+        serializer.property("generator");
+        serializer.value(&self.generator);
+        serializer.property("version");
+        serializer.value(&self.version);
+        serializer.property("minVersion");
+        serializer.value(&self.min_version);
+        serializer.property("extensions");
+        serializer.value(&self.extensions);
+        serializer.property("extras");
+        serializer.value(&self.extras);
         serializer.end_object();
     }
 }
@@ -1759,11 +1899,16 @@ pub struct Animation {
 impl<S: Serializer> Serialize<S> for Animation {
     fn serialize(&self, serializer: &mut S) {
         serializer.begin_object();
-        serializer.property("channels", &self.channels);
-        serializer.property("samplers", &self.samplers);
-        serializer.property("name", &self.name);
-        serializer.property("extensions", &self.extensions);
-        serializer.property("extras", &self.extras);
+        serializer.property("channels");
+        serializer.value(&self.channels);
+        serializer.property("samplers");
+        serializer.value(&self.samplers);
+        serializer.property("name");
+        serializer.value(&self.name);
+        serializer.property("extensions");
+        serializer.value(&self.extensions);
+        serializer.property("extras");
+        serializer.value(&self.extras);
         serializer.end_object();
     }
 }
@@ -1817,11 +1962,16 @@ pub struct AnimationSampler {
 impl<S: Serializer> Serialize<S> for AnimationSampler {
     fn serialize(&self, serializer: &mut S) {
         serializer.begin_object();
-        serializer.property("input", &self.input);
-        serializer.property("interpolation", &self.interpolation);
-        serializer.property("output", &self.output);
-        serializer.property("extensions", &self.extensions);
-        serializer.property("extras", &self.extras);
+        serializer.property("input");
+        serializer.value(&self.input);
+        serializer.property("interpolation");
+        serializer.value(&self.interpolation);
+        serializer.property("output");
+        serializer.value(&self.output);
+        serializer.property("extensions");
+        serializer.value(&self.extensions);
+        serializer.property("extras");
+        serializer.value(&self.extras);
         serializer.end_object();
     }
 }
@@ -1909,10 +2059,14 @@ pub struct AnimationChannel {
 impl<S: Serializer> Serialize<S> for AnimationChannel {
     fn serialize(&self, serializer: &mut S) {
         serializer.begin_object();
-        serializer.property("sampler", &self.sampler);
-        serializer.property("target", &self.target);
-        serializer.property("extensions", &self.extensions);
-        serializer.property("extras", &self.extras);
+        serializer.property("sampler");
+        serializer.value(&self.sampler);
+        serializer.property("target");
+        serializer.value(&self.target);
+        serializer.property("extensions");
+        serializer.value(&self.extensions);
+        serializer.property("extras");
+        serializer.value(&self.extras);
         serializer.end_object();
     }
 }
@@ -1961,10 +2115,14 @@ pub struct AnimationChannelTarget {
 impl<S: Serializer> Serialize<S> for AnimationChannelTarget {
     fn serialize(&self, serializer: &mut S) {
         serializer.begin_object();
-        serializer.property("node", &self.node);
-        serializer.property("path", &self.path);
-        serializer.property("extensions", &self.extensions);
-        serializer.property("extras", &self.extras);
+        serializer.property("node");
+        serializer.value(&self.node);
+        serializer.property("path");
+        serializer.value(&self.path);
+        serializer.property("extensions");
+        serializer.value(&self.extensions);
+        serializer.property("extras");
+        serializer.value(&self.extras);
         serializer.end_object();
     }
 }
@@ -2061,18 +2219,30 @@ pub struct Accessor {
 impl<S: Serializer> Serialize<S> for Accessor {
     fn serialize(&self, serializer: &mut S) {
         serializer.begin_object();
-        serializer.property("bufferView", &self.buffer_view);
-        serializer.property("byteOffset", &self.byte_offset);
-        serializer.property("componentType", &self.component_type);
-        serializer.property("normalized", &self.normalized);
-        serializer.property("count", &self.count);
-        serializer.property("type", &self.type_);
-        serializer.property("max", &self.max);
-        serializer.property("min", &self.min);
-        serializer.property("sparse", &self.sparse);
-        serializer.property("name", &self.name);
-        serializer.property("extensions", &self.extensions);
-        serializer.property("extras", &self.extras);
+        serializer.property("bufferView");
+        serializer.value(&self.buffer_view);
+        serializer.property("byteOffset");
+        serializer.value(&self.byte_offset);
+        serializer.property("componentType");
+        serializer.value(&self.component_type);
+        serializer.property("normalized");
+        serializer.value(&self.normalized);
+        serializer.property("count");
+        serializer.value(&self.count);
+        serializer.property("type");
+        serializer.value(&self.type_);
+        serializer.property("max");
+        serializer.value(&self.max);
+        serializer.property("min");
+        serializer.value(&self.min);
+        serializer.property("sparse");
+        serializer.value(&self.sparse);
+        serializer.property("name");
+        serializer.value(&self.name);
+        serializer.property("extensions");
+        serializer.value(&self.extensions);
+        serializer.property("extras");
+        serializer.value(&self.extras);
         serializer.end_object();
     }
 }
@@ -2149,11 +2319,16 @@ pub struct AccessorSparse {
 impl<S: Serializer> Serialize<S> for AccessorSparse {
     fn serialize(&self, serializer: &mut S) {
         serializer.begin_object();
-        serializer.property("count", &self.count);
-        serializer.property("indices", &self.indices);
-        serializer.property("values", &self.values);
-        serializer.property("extensions", &self.extensions);
-        serializer.property("extras", &self.extras);
+        serializer.property("count");
+        serializer.value(&self.count);
+        serializer.property("indices");
+        serializer.value(&self.indices);
+        serializer.property("values");
+        serializer.value(&self.values);
+        serializer.property("extensions");
+        serializer.value(&self.extensions);
+        serializer.property("extras");
+        serializer.value(&self.extras);
         serializer.end_object();
     }
 }
@@ -2205,10 +2380,14 @@ pub struct AccessorSparseValues {
 impl<S: Serializer> Serialize<S> for AccessorSparseValues {
     fn serialize(&self, serializer: &mut S) {
         serializer.begin_object();
-        serializer.property("bufferView", &self.buffer_view);
-        serializer.property("byteOffset", &self.byte_offset);
-        serializer.property("extensions", &self.extensions);
-        serializer.property("extras", &self.extras);
+        serializer.property("bufferView");
+        serializer.value(&self.buffer_view);
+        serializer.property("byteOffset");
+        serializer.value(&self.byte_offset);
+        serializer.property("extensions");
+        serializer.value(&self.extensions);
+        serializer.property("extras");
+        serializer.value(&self.extras);
         serializer.end_object();
     }
 }
@@ -2259,11 +2438,16 @@ pub struct AccessorSparseIndices {
 impl<S: Serializer> Serialize<S> for AccessorSparseIndices {
     fn serialize(&self, serializer: &mut S) {
         serializer.begin_object();
-        serializer.property("bufferView", &self.buffer_view);
-        serializer.property("byteOffset", &self.byte_offset);
-        serializer.property("componentType", &self.component_type);
-        serializer.property("extensions", &self.extensions);
-        serializer.property("extras", &self.extras);
+        serializer.property("bufferView");
+        serializer.value(&self.buffer_view);
+        serializer.property("byteOffset");
+        serializer.value(&self.byte_offset);
+        serializer.property("componentType");
+        serializer.value(&self.component_type);
+        serializer.property("extensions");
+        serializer.value(&self.extensions);
+        serializer.property("extras");
+        serializer.value(&self.extras);
         serializer.end_object();
     }
 }
