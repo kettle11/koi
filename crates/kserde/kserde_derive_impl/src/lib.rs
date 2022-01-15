@@ -88,10 +88,12 @@ pub fn kserde_serialize_impl(value: &Value) -> String {
                 match &variant.fields {
                     Fields::Tuple(fields) => {
                         variant_match.push('(');
-                        for (i, _field) in fields.iter().enumerate() {
-                            variant_match.push('i');
-                            variant_match += &i.to_string();
-                            variant_match.push(',')
+                        for (i, field) in fields.iter().enumerate() {
+                            if !field_contains_attribute(field, "skip") {
+                                variant_match.push('i');
+                                variant_match += &i.to_string();
+                                variant_match.push(',')
+                            }
                         }
                         // Serialize the variant's name
                         variant_match += &format!(
@@ -105,8 +107,10 @@ pub fn kserde_serialize_impl(value: &Value) -> String {
                     Fields::Struct(fields) => {
                         variant_match.push('{');
                         for field in fields.iter() {
-                            variant_match += field.name.as_ref().unwrap();
-                            variant_match.push(',')
+                            if !field_contains_attribute(field, "skip") {
+                                variant_match += field.name.as_ref().unwrap();
+                                variant_match.push(',')
+                            }
                         }
                         variant_match += &format!(
                             "}} => {{\n    serializer.property(\"{}\");\n    serializer.begin_object();\n",
@@ -119,7 +123,7 @@ pub fn kserde_serialize_impl(value: &Value) -> String {
                     }
                     Fields::Unit => {
                         variant_match += &format!(
-                            " => {{\n    serializer.property(\"{}\");\n    serializer.begin_object();\n    serializer.end_object();\n;}},\n",
+                            " => {{\n    serializer.property(\"{}\");\n    serializer.begin_object();\n    serializer.end_object();\n}},\n",
                             variant.name
                         )
                     }
@@ -224,6 +228,7 @@ pub fn kserde_deserialize_impl(value: &Value) -> String {
             );
             body = format!(
                 r#"
+            {properties_declaration}
             while let Some(p) = deserializer.has_property() {{
                 match &*p {{
                     {deserialize_match}
@@ -255,7 +260,7 @@ pub fn kserde_deserialize_impl(value: &Value) -> String {
                 );
 
                 let variant_name = &variant.name;
-                match variant.fields {
+                match &variant.fields {
                     Fields::Struct(_) => {
                         enum_body_inner += &format!(
                             r#"
@@ -272,7 +277,13 @@ pub fn kserde_deserialize_impl(value: &Value) -> String {
                         "#
                         );
                     }
-                    Fields::Tuple(_) => {
+                    Fields::Tuple(f) => {
+                        let mut property_assignment = String::new();
+                        for (i, field) in f.iter().enumerate() {
+                            if !field_contains_attribute(field, "skip") {
+                                property_assignment += &format!("f_{}?,", i);
+                            }
+                        }
                         enum_body_inner += &format!(
                             r#"
                             "{variant_name}" => {{
@@ -289,7 +300,7 @@ pub fn kserde_deserialize_impl(value: &Value) -> String {
                         );
                     }
                     Fields::Unit => {
-                        enum_body_inner += &format!("\"{variant_name}\" => {name}::{variant_name}")
+                        enum_body_inner += &format!("\"{variant_name}\" => {name}::{variant_name},")
                     }
                 }
             }

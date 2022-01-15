@@ -19,6 +19,7 @@ fermium = {version = "20016.1.1", optional = true}
 default = []
 SDL = ["fermium"]
 wasm_bindgen_support = ["kwasm/wasm_bindgen_support"]
+kserde = ["kapp_platform_common/kserde"]
 
 [target.'cfg(target_os="macos")'.dependencies]
 objc = "0.2.7"

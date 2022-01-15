@@ -8,6 +8,7 @@ edition = "2021"
 [dependencies]
 kecs = {path = "../kecs"}
 kmath = {path = "../kmath"}
+kserde = {path = "../kserde"}
 
 # This is copied / modified locally because it can't build presently with `glam` disabled.
 kolor = {version = "0.1.8", default-features=false, features=["f32", "std"]}

@@ -41,27 +41,57 @@ impl<'a, D: Deserializer<'a>> Deserialize<'a, D> for Cow<'a, str> {
     }
 }
 
-impl<'a, D: Deserializer<'a>> Deserialize<'a, D> for i32 {
+impl<'a, D: Deserializer<'a>> Deserialize<'a, D> for u8 {
     fn deserialize(deserializer: &mut D) -> Option<Self> {
-        deserializer.i64().map(|v| v as i32)
+        deserializer.i64().map(|v| v as _)
     }
 }
 
-impl<'a, D: Deserializer<'a>> Deserialize<'a, D> for i64 {
+impl<'a, D: Deserializer<'a>> Deserialize<'a, D> for u16 {
     fn deserialize(deserializer: &mut D) -> Option<Self> {
-        deserializer.i64()
+        deserializer.i64().map(|v| v as _)
+    }
+}
+
+impl<'a, D: Deserializer<'a>> Deserialize<'a, D> for u32 {
+    fn deserialize(deserializer: &mut D) -> Option<Self> {
+        deserializer.i64().map(|v| v as _)
+    }
+}
+
+impl<'a, D: Deserializer<'a>> Deserialize<'a, D> for u64 {
+    fn deserialize(deserializer: &mut D) -> Option<Self> {
+        deserializer.i64().map(|v| v as _)
+    }
+}
+
+impl<'a, D: Deserializer<'a>> Deserialize<'a, D> for i8 {
+    fn deserialize(deserializer: &mut D) -> Option<Self> {
+        deserializer.i64().map(|v| v as _)
+    }
+}
+
+impl<'a, D: Deserializer<'a>> Deserialize<'a, D> for i16 {
+    fn deserialize(deserializer: &mut D) -> Option<Self> {
+        deserializer.i64().map(|v| v as _)
+    }
+}
+
+impl<'a, D: Deserializer<'a>> Deserialize<'a, D> for i32 {
+    fn deserialize(deserializer: &mut D) -> Option<Self> {
+        deserializer.i64().map(|v| v as _)
     }
 }
 
 impl<'a, D: Deserializer<'a>> Deserialize<'a, D> for usize {
     fn deserialize(deserializer: &mut D) -> Option<Self> {
-        deserializer.i64().map(|i| i as usize)
+        deserializer.i64().map(|i| i as _)
     }
 }
 
 impl<'a, D: Deserializer<'a>> Deserialize<'a, D> for f32 {
     fn deserialize(deserializer: &mut D) -> Option<Self> {
-        deserializer.f64().map(|f| f as f32)
+        deserializer.f64().map(|f| f as _)
     }
 }
 

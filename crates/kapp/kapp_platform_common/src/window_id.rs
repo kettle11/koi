@@ -1,14 +1,19 @@
 /// A unique ID associated with a Window.
 #[derive(Debug, Hash, Eq, PartialEq, Clone, Copy)]
+#[cfg(feature = "kserde")]
+#[derive(kserde::SerializeDeserialize)]
 pub struct WindowId {
-    raw_id: *mut std::ffi::c_void,
+    #[skip]
+    raw_id: usize,
 }
 
 impl WindowId {
     /// Constructs a new WindowId
     /// There should never be a reason to call this directly.
     pub fn new(raw_id: *mut std::ffi::c_void) -> Self {
-        Self { raw_id }
+        Self {
+            raw_id: raw_id as usize,
+        }
     }
 
     /// # Safety
@@ -17,7 +22,7 @@ impl WindowId {
     /// On MacOS this is a pointer to the NSWindow object.
     /// On Web this is just '0'
     pub unsafe fn raw(self) -> *mut std::ffi::c_void {
-        self.raw_id
+        self.raw_id as _
     }
 }
 

@@ -18,6 +18,11 @@ enum TestEnum {
     Thing(f32, f32, f32),
 }
 
+#[derive(Reflect)]
+struct Thingy {
+    f: *mut std::ffi::c_void,
+}
+
 fn main() {}
 /*
 #[derive(Reflect)]

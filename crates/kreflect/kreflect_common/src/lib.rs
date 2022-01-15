@@ -18,6 +18,7 @@ pub enum Token<'a> {
     TimesEqual,
     Colon,
     Plus,
+    Star,
     // ::
     Colon2,
     Comma,
@@ -67,6 +68,7 @@ fn char_to_token<'a>(c: char) -> Token<'a> {
         '!' => Token::Not,
         '=' => Token::Equal,
         '+' => Token::Plus,
+        '*' => Token::Star,
         _ => unimplemented!("Unimplemented punctuation: {}", c),
     }
 }
@@ -263,6 +265,10 @@ pub enum Type<'a> {
         _type: Box<Type<'a>>,
     },
     TraitObject(TypeParamBounds<'a>),
+    RawPointer {
+        mutability: Mutability,
+        _type: Box<Type<'a>>,
+    },
 }
 
 impl<'a> Type<'a> {
@@ -286,6 +292,15 @@ impl<'a> Type<'a> {
                 string.push(';');
                 string += &size.as_string();
                 string.push(']');
+            }
+            Type::RawPointer { mutability, _type } => {
+                string.push('*');
+                string.push('\'');
+                match mutability {
+                    Mutability::Immutable => string += " const ",
+                    Mutability::Mutable => string += " mut ",
+                }
+                string += &_type.as_string()
             }
             Type::Reference {
                 lifetime,
@@ -652,6 +667,26 @@ impl<'a> Parser<'a> {
                 let _type = self._type()?;
                 Type::Reference {
                     lifetime,
+                    mutability,
+                    _type: Box::new(_type),
+                }
+            }
+            Token::Star => {
+                // A raw pointer
+
+                self.advance();
+
+                let mutability = if self.check_for_token(Token::Mut).is_some() {
+                    Mutability::Mutable
+                } else {
+                    if self.check_for_token(Token::Const).is_some() {
+                        Mutability::Immutable
+                    } else {
+                        None?
+                    }
+                };
+                let _type = self._type()?;
+                Type::RawPointer {
                     mutability,
                     _type: Box::new(_type),
                 }

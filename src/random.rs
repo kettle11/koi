@@ -4,9 +4,31 @@ use std::usize;
 
 use crate::*;
 
-#[derive(Component, Clone)]
+#[derive(ManualSerdeComponent, Clone)]
 pub struct Random {
     random_number_generator: oorandom::Rand32,
+}
+
+impl<S: Serializer> kserde::Serialize<S> for Random {
+    fn serialize(&self, serializer: &mut S) {
+        let state = self.random_number_generator.state();
+        serializer.begin_object();
+        serializer.serialize(&state.0);
+        serializer.serialize(&state.1);
+        serializer.end_object();
+    }
+}
+
+impl<'a, D: Deserializer<'a>> kserde::Deserialize<'a, D> for Random {
+    fn deserialize(deserializer: &mut D) -> Option<Self> {
+        deserializer.begin_object().then(|| {})?;
+        // This may not deserialize correctly because `kserde` stores u64s as f64s.
+        let i0 = u64::deserialize(deserializer)?;
+        let i1 = u64::deserialize(deserializer)?;
+        Some(Self {
+            random_number_generator: oorandom::Rand32::from_state((i0, i1)),
+        })
+    }
 }
 
 impl Default for Random {

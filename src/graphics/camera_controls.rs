@@ -10,7 +10,7 @@ pub fn camera_controls_plugin() -> Plugin {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, SerializeDeserialize)]
 pub enum CameraControlsMode {
     Fly,
     Orbit { target: Vec3 },

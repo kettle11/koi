@@ -10,6 +10,7 @@ default = ["gl_context", "wasm_bindgen_support"]
 gl_context = ["kapp_gl_context"]
 SDL = ["kapp_platforms/SDL", "kapp_gl_context/SDL"]
 wasm_bindgen_support = ["kapp_platforms/wasm_bindgen_support"]
+kserde = ["kapp_platforms/kserde"]
 
 [dependencies]
 kapp_gl_context = { path = "./gl_context", optional = true }

@@ -4,6 +4,7 @@ use super::*;
 pub struct AudioSource {
     // Remove this Mutex if the inner type becomes `Sync`.
     pub(super) to_play: Vec<(Handle<Sound>, bool)>,
+    #[skip]
     pub(super) playing: Vec<Box<dyn SpatialHandle>>,
     pub(super) last_position: Option<Vec3>,
     pub(super) volume: f32,

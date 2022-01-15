@@ -7,3 +7,4 @@ license = "Zlib OR Apache-2.0 OR MIT"
 
 [dependencies]
 raw-window-handle = "0.4.2"
+kserde = {path = "../../kserde", optional = true}

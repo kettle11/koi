@@ -48,6 +48,20 @@ impl<S: Serializer> Serialize<S> for String {
     }
 }
 
+impl<S: Serializer> Serialize<S> for i8 {
+    #[inline]
+    fn serialize(&self, serializer: &mut S) {
+        serializer.i64(*self as i64)
+    }
+}
+
+impl<S: Serializer> Serialize<S> for i16 {
+    #[inline]
+    fn serialize(&self, serializer: &mut S) {
+        serializer.i64(*self as i64)
+    }
+}
+
 impl<S: Serializer> Serialize<S> for i32 {
     #[inline]
     fn serialize(&self, serializer: &mut S) {
@@ -55,14 +69,35 @@ impl<S: Serializer> Serialize<S> for i32 {
     }
 }
 
-impl<S: Serializer> Serialize<S> for i64 {
+impl<S: Serializer> Serialize<S> for usize {
     #[inline]
     fn serialize(&self, serializer: &mut S) {
-        serializer.i64(*self)
+        serializer.i64(*self as i64)
     }
 }
 
-impl<S: Serializer> Serialize<S> for usize {
+impl<S: Serializer> Serialize<S> for u8 {
+    #[inline]
+    fn serialize(&self, serializer: &mut S) {
+        serializer.i64(*self as i64)
+    }
+}
+
+impl<S: Serializer> Serialize<S> for u16 {
+    #[inline]
+    fn serialize(&self, serializer: &mut S) {
+        serializer.i64(*self as i64)
+    }
+}
+
+impl<S: Serializer> Serialize<S> for u32 {
+    #[inline]
+    fn serialize(&self, serializer: &mut S) {
+        serializer.i64(*self as i64)
+    }
+}
+
+impl<S: Serializer> Serialize<S> for u64 {
     #[inline]
     fn serialize(&self, serializer: &mut S) {
         serializer.i64(*self as i64)

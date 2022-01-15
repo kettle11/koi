@@ -22,6 +22,7 @@ pub struct Camera {
     /// Only relevant for perspective projections.
     vertical_field_of_view_radians: f32,
     pub render_flags: RenderFlags,
+    #[skip]
     pub camera_target: Option<CameraTarget>,
 }
 
@@ -32,7 +33,7 @@ pub enum CameraTarget {
     XRDevice(usize),
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, SerializeDeserialize)]
 pub enum ProjectionMode {
     Perspective,
     Orthographic,

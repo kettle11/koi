@@ -1,12 +1,13 @@
 pub use kolor::spaces as color_spaces;
 pub use kolor::ColorSpace;
+use kserde::SerializeDeserialize;
 // For now we're just using an f32, but maybe in the future there'd be a reason to change this.
 type FType = f32;
 
 // Color conversions in this file are computed every time a conversion occurs.
 // It may be faster to precalculate the conversions and store them in a matrix.
 
-#[derive(Clone, Copy, Debug, PartialEq, PartialOrd)]
+#[derive(Clone, Copy, Debug, PartialEq, PartialOrd, SerializeDeserialize)]
 pub struct Color {
     x: FType,
     y: FType,
