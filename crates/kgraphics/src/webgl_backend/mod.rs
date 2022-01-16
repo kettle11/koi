@@ -467,6 +467,21 @@ impl RenderPassTrait for RenderPass<'_> {
             .u32_data
             .extend_from_slice(&[if value { 1 } else { 0 }]);
     }
+
+    fn blit_framebuffer(
+        self,
+        target: Framebuffer,
+        source_x: u32,
+        source_y: u32,
+        source_width: u32,
+        source_height: u32,
+        dest_x: u32,
+        dest_y: u32,
+        dest_width: u32,
+        dest_height: u32,
+    ) {
+        todo!()
+    }
 }
 
 impl CommandBuffer {
