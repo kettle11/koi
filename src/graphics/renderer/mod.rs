@@ -14,6 +14,8 @@ mod brdf_lookup;
 
 use crate::graphics::texture::Texture;
 
+use super::render_flags;
+
 #[derive(NotCloneComponent)]
 pub struct RendererInfo {
     pub brdf_lookup_table: Handle<Texture>,
@@ -662,14 +664,42 @@ pub fn render_scene<'a, 'b>(
     let is_primary_camera_target =
         graphics.current_camera_target == Some(graphics.primary_camera_target);
 
-    if let Some((_, camera)) = cameras.iter().next() {
-        let clear_color = camera.clear_color.map(|c| {
-            // Presently the output needs to be in non-linear sRGB.
-            // However that means that blending with the clear-color will be incorrect.
-            // A post-processing pass is needed to convert into the appropriate output space.
-            let c = c.to_rgb_color(color_spaces::ENCODED_SRGB);
-            c.into()
-        });
+    let mut clear_color = None;
+
+    // For now only render shadows from the primary camera's perspective.
+    // This would make splitscreen shadows really messed up.
+    for (camera_global_transform, camera) in &cameras {
+        let render_shadows_for_this_camera = ((graphics.current_camera_target.is_some()
+            && graphics.current_camera_target == camera.camera_target)
+            || (is_primary_camera_target && camera.camera_target == Some(CameraTarget::Primary)))
+            && camera.render_flags.includes_layer(RenderFlags::DEFAULT);
+
+        if render_shadows_for_this_camera {
+            render_shadow_pass(
+                shader_assets,
+                mesh_assets,
+                &mut command_buffer,
+                camera,
+                camera_global_transform,
+                &mut lights,
+                &renderables,
+            );
+            clear_color = camera.clear_color;
+            break;
+        }
+    }
+
+    let clear_color = clear_color.map(|c| {
+        // Presently the output needs to be in non-linear sRGB.
+        // However that means that blending with the clear-color will be incorrect.
+        // A post-processing pass is needed to convert into the appropriate output space.
+        let c = c.to_rgb_color(color_spaces::ENCODED_SRGB);
+        c.into()
+    });
+
+    {
+        let mut render_pass = command_buffer
+            .begin_render_pass_with_framebuffer(&graphics.current_target_framebuffer, clear_color);
 
         for (camera_global_transform, camera) in &cameras {
             // Check that the camera is setup to render to the current CameraTarget.
@@ -680,27 +710,8 @@ pub fn render_scene<'a, 'b>(
 
             // Check that this camera targets the target currently being rendered.
             if camera_should_render {
-                // If this layer is going to render the default scene, including shadows, rerender shadows
-                // clipped to this camera's view.
-                if camera.render_flags.includes_layer(RenderFlags::DEFAULT) {
-                    // Render shadows clipped to this arbitrary camera.
-                    render_shadow_pass(
-                        shader_assets,
-                        mesh_assets,
-                        &mut command_buffer,
-                        camera,
-                        camera_global_transform,
-                        &mut lights,
-                        &renderables,
-                    );
-                }
-
                 // Start a new render pass per camera. This may be heavy and isn't critical, but it made
                 // organization easier with shadow-passes.
-                let mut render_pass = command_buffer.begin_render_pass_with_framebuffer(
-                    &graphics.current_target_framebuffer,
-                    clear_color,
-                );
 
                 let mut camera_info = Vec::new();
                 if graphics.override_views.is_empty() {
