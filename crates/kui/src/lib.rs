@@ -102,23 +102,24 @@ pub trait GetConstraintsIter<'a, Constraints: 'a> {
     fn constraints_iter(&'a self) -> Self::ConstraintsIter;
 }
 
-pub fn column<State, Constraints, Drawer, Children: WidgetChildren<State, Constraints, Drawer>>(
-    children: Children,
-) -> Consecutive<State, Constraints, Drawer, Children> {
+pub fn column<State, Constraints, Drawer, I: IntoWidgetChildren<State, Constraints, Drawer>>(
+    children: I,
+) -> Consecutive<State, Constraints, Drawer, I::WidgetChildren> {
     Consecutive {
+        // This should be reversed for right-to-left.
         direction: Vec2::Y,
-        children,
+        children: children.into_widget_children(),
         phantom: std::marker::PhantomData,
     }
 }
 
-pub fn row<State, Constraints, Drawer, Children: WidgetChildren<State, Constraints, Drawer>>(
-    children: Children,
-) -> Consecutive<State, Constraints, Drawer, Children> {
+pub fn row<State, Constraints, Drawer, I: IntoWidgetChildren<State, Constraints, Drawer>>(
+    children: I,
+) -> Consecutive<State, Constraints, Drawer, I::WidgetChildren> {
     Consecutive {
         // This should be reversed for right-to-left.
         direction: Vec2::X,
-        children,
+        children: children.into_widget_children(),
         phantom: std::marker::PhantomData,
     }
 }
@@ -174,6 +175,26 @@ impl<
             offset += constraints.standard().bounds.size().dot(self.direction) * self.direction;
             child_constraints
         })
+    }
+}
+
+pub trait IntoWidgetChildren<State, Constraints, Drawer> {
+    type WidgetChildren: WidgetChildren<State, Constraints, Drawer>;
+    fn into_widget_children(self) -> Self::WidgetChildren;
+}
+
+impl<
+        State,
+        Constraints: 'static + Default,
+        Drawer,
+        ChildState,
+        Child: Widget<ChildState, Constraints, Drawer>,
+    > IntoWidgetChildren<State, Constraints, Drawer>
+    for ChildForEach<State, Constraints, Drawer, ChildState, Child>
+{
+    type WidgetChildren = Self;
+    fn into_widget_children(self) -> Self::WidgetChildren {
+        self
     }
 }
 
@@ -272,86 +293,81 @@ impl<
         self.constraints.iter()
     }
 }
-/*
-struct TupleChildren<Constraints, A, B> {
-    child_a: (A, Constraints),
-    child_b: (B, Constraints),
+
+pub struct TupleChildren<Constraints, T, const CHILD_COUNT: usize> {
+    constraints: [Constraints; CHILD_COUNT],
+    children: T,
 }
 
-struct WidgetForEach<
-    State,
-    I: Iterator<Item = ChildState>,
-    I_MUT: Iterator<Item = ChildState>,
-    ChildState,
-    Constraints,
-    Drawer,
-    Child: Widget<ChildState, Constraints, Drawer>,
-> {
-    get_iterator: fn(&State) -> I,
-    get_iterator_mut: fn(&mut State) -> I,
-    constraints: Vec<Constraints>,
-    children: Vec<Child>,
-    phantom: std::marker::PhantomData<fn() -> (ChildState, Constraints, Drawer)>,
-}
-
-fn for_each<
-    State,
-    I: Iterator<Item = ChildState>,
-    ChildState,
-    Constraints,
-    Drawer,
-    Child: Widget<ChildState, Constraints, Drawer>,
->(
-    get_iterator: fn(&mut State) -> I,
-) -> WidgetForEach<State, I, ChildState, Constraints, Drawer, Child> {
-    WidgetForEach {
-        get_iterator,
-        constraints: Vec::new(),
-        children: Vec::new(),
-        phantom: std::marker::PhantomData,
-    }
-}
-
-impl<
-        State,
-        I: Iterator<Item = ChildState>,
-        ChildState,
-        Constraints: 'static,
-        Drawer,
-        Child: Widget<ChildState, Constraints, Drawer>,
-    > WidgetChildren<State, Constraints>
-    for WidgetForEach<State, I, ChildState, Constraints, Drawer, Child>
-{
-    fn layout(&mut self, state: &State) {
-        let iter = (self.get_iterator)(state);
-        for data in
-        todo!();
-    }
-    fn draw<F: FnMut() -> Constraints>(&mut self) {
-        todo!()
-    }
-}
-
-impl<
-        'a,
-        State,
-        I: Iterator<Item = ChildState>,
-        ChildState,
-        Constraints: 'a,
-        Drawer,
-        Child: Widget<ChildState, Constraints, Drawer>,
-    > GetConstraintsIter<'a, Constraints>
-    for WidgetForEach<State, I, ChildState, Constraints, Drawer, Child>
+impl<'a, Constraints: 'a, T, const CHILD_COUNT: usize> GetConstraintsIter<'a, Constraints>
+    for TupleChildren<Constraints, T, CHILD_COUNT>
 {
     type ConstraintsIter = std::slice::Iter<'a, Constraints>;
     fn constraints_iter(&'a self) -> Self::ConstraintsIter {
         self.constraints.iter()
     }
 }
-*/
 
-// There could be a trait that's effectively "IntoWidgetChildren" that could accept
-// different types of items.
+// This macro is used to generate child impls for a bunch of tuples.
+// This lets code like `column((widget_a, widget_b, widget_c))` work.
+macro_rules! tuple_impls {
+    ( $count: tt, $( ($index: tt, $tuple:ident) ),* ) => {
+            impl<
+                State,
+                Constraints: Default + 'static + Copy,
+                Drawer,
+                $( $tuple: Widget<State, Constraints, Drawer>,)*
+            > IntoWidgetChildren<State, Constraints, Drawer> for ($( $tuple,)*)
+        {
+            type WidgetChildren = TupleChildren<Constraints, ($( $tuple,)*), $count>;
+            fn into_widget_children(self) -> Self::WidgetChildren {
+                TupleChildren {
+                    constraints: [Constraints::default(); $count],
+                    children: self,
+                }
+            }
+        }
 
-// It could be implemented for tuples, and a "foreach" variant that creates children for
-// each item in an iterator.
+        impl<
+            State,
+            Constraints: 'static,
+            Drawer,
+            $( $tuple: Widget<State, Constraints, Drawer>,)*
+         > WidgetChildren<State, Constraints, Drawer>
+            for TupleChildren<Constraints, ($( $tuple,)*), $count>
+        {
+            #[allow(unused)]
+            fn update(&mut self, state: &mut State) {
+                $(self.children.$index.update(state);)*
+            }
+
+            #[allow(unused)]
+            fn create_children_and_layout(&mut self, state: &mut State) {
+                $(self.constraints[$index] = self.children.$index.layout(state);)*
+            }
+
+            #[allow(unused)]
+            fn draw<FUNCTION: FnMut(&Constraints) -> Constraints>(
+                &mut self,
+                state: &mut State,
+                drawer: &mut Drawer,
+                mut f: FUNCTION,
+            ) {
+                $(self.children.$index.draw(state, drawer, f(&self.constraints[$index]));)*
+            }
+        }
+    }
+}
+
+tuple_impls! {0,}
+tuple_impls! { 1, (0, A) }
+tuple_impls! { 2, (0, A), (1, B) }
+tuple_impls! { 3, (0, A), (1, B), (2, C) }
+tuple_impls! { 4, (0, A), (1, B), (2, C), (3, D)}
+tuple_impls! { 5, (0, A), (1, B), (2, C), (3, D), (4, E)}
+tuple_impls! { 6, (0, A), (1, B), (2, C), (3, D), (4, E), (5, F)}
+tuple_impls! { 7, (0, A), (1, B), (2, C), (3, D), (4, E), (5, F), (6, G)}
+tuple_impls! { 8, (0, A), (1, B), (2, C), (3, D), (4, E), (5, F), (6, G), (7, H)}
+tuple_impls! { 9, (0, A), (1, B), (2, C), (3, D), (4, E), (5, F), (6, G), (7, H), (8, I)}
+tuple_impls! { 10, (0, A), (1, B), (2, C), (3, D), (4, E), (5, F), (6, G), (7, H), (8, I), (9, J)}
+tuple_impls! { 11, (0, A), (1, B), (2, C), (3, D), (4, E), (5, F), (6, G), (7, H), (8, I), (9, J), (10, K)}
