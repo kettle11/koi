@@ -660,13 +660,25 @@ impl World {
     }
 
     /// Get a [Query] from the [World] without running a system
-    pub fn query<'a, PARAMS: QueryParametersTrait>(
+    pub fn try_query<'a, PARAMS: QueryParametersTrait>(
         &'a self,
     ) -> Result<<Query<'_, PARAMS> as systems::SystemParameterFetchTrait<'_>>::FetchResult, KecsError>
     where
         Query<'a, PARAMS>: SystemParameterTrait,
     {
+        println!("HERE0");
         let meta_data = <Query<PARAMS> as SystemParameterTrait>::get_meta_data(self)?;
+        println!("HERE1");
+
         <Query<PARAMS> as SystemParameterFetchTrait>::fetch(self, &meta_data)
+    }
+    /// Get a [Query] from the [World] without running a system
+    pub fn query<'a, PARAMS: QueryParametersTrait>(
+        &'a self,
+    ) -> <Query<'_, PARAMS> as systems::SystemParameterFetchTrait<'_>>::FetchResult
+    where
+        Query<'a, PARAMS>: SystemParameterTrait,
+    {
+        self.try_query().unwrap()
     }
 }

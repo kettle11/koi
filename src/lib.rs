@@ -190,8 +190,8 @@ impl App {
         let app = app.add_plugin(camera_plugin());
         #[cfg(feature = "graphics")]
         let app = app.add_plugin(camera_controls_plugin());
-        #[cfg(feature = "ui")]
-        let app = app.add_plugin(ui_plugin());
+        // #[cfg(feature = "ui")]
+        // let app = app.add_plugin(ui_plugin());
         #[cfg(feature = "physics")]
         let app = app.add_plugin(physics_plguin());
 
