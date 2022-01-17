@@ -35,13 +35,13 @@ impl<'a, CONTEXT> Deserializer<'a> for JSONDeserializer<'a, CONTEXT> {
         self.skip_whitespace();
         Some(match self.iter.next()?.1 {
             't' => {
-                for _ in 0..4 {
+                for _ in 0..3 {
                     self.iter.next()?;
                 }
                 true
             }
             'f' => {
-                for _ in 0..5 {
+                for _ in 0..4 {
                     self.iter.next()?;
                 }
                 false
