@@ -14,8 +14,6 @@ mod brdf_lookup;
 
 use crate::graphics::texture::Texture;
 
-use super::render_flags;
-
 #[derive(NotCloneComponent)]
 pub struct RendererInfo {
     pub brdf_lookup_table: Handle<Texture>,
@@ -522,6 +520,7 @@ impl<'a, 'b: 'a> Renderer<'a, 'b> {
                             size.y as u32,
                         );
                         self.bind_view(camera_info, 0);
+
                         // Render the mesh
                         self.render_pass
                             .draw_triangles(gpu_mesh.triangle_count, &gpu_mesh.index_buffer);

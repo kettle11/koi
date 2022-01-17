@@ -375,7 +375,7 @@ void main()
 
         vec3 ambient = (kD * diffuse + specular) * ambient_amount * ibl_scale; 
 
-        color = ambient + Lo;
+        color = ambient + Lo + ambient_light;
     
     
     // This should be applied before the shader instead.

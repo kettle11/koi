@@ -1,5 +1,7 @@
 use crate::*;
 
+/// [Sprite]s draw as a subset of a [Texture].
+/// Perfect for sprite-sheets, tilemaps, animated images.
 #[derive(Component, Clone, Debug)]
 pub struct Sprite {
     pub texture_handle: Handle<Texture>,
@@ -17,6 +19,7 @@ impl Sprite {
     }
 }
 
+/// A [SpriteMap] is a helper structure designed to make it slightly easier to get [Sprite]s from a spritesheet image.
 #[derive(Clone, Debug)]
 pub struct SpriteMap {
     texture_handle: Handle<Texture>,
