@@ -255,7 +255,7 @@ pub fn ray_with_plane<F: NumericFloat, const DIM: usize>(
                  // However for now we're just saying it doesn't intersect.
         } else {
             let distance = top / bottom;
-            Some(distance)
+            Some(-distance)
         }
     }
 }

@@ -1,10 +1,5 @@
 use crate::*;
 
-pub trait GetStandardStyleTrait {
-    fn standard(&self) -> &StandardStyle;
-    fn standard_mut(&mut self) -> &mut StandardStyle;
-}
-
 pub struct StandardStyle {
     fonts: Vec<fontdue::Font>,
     pub primary_text_color: Color,
@@ -24,16 +19,6 @@ pub struct StandardStyle {
     pub ui_scale: f32,
     pub column_spacing: f32,
     pub row_spacing: f32,
-}
-
-impl GetStandardStyleTrait for StandardStyle {
-    fn standard(&self) -> &StandardStyle {
-        self
-    }
-
-    fn standard_mut(&mut self) -> &mut StandardStyle {
-        self
-    }
 }
 
 impl Default for StandardStyle {

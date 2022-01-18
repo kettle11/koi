@@ -1,33 +1,47 @@
-use kui::GetStandardConstraints;
+use kui::{GetStandardConstraints, GetStandardStyle, StandardStyle};
 
 use crate::*;
 
-pub struct UI<
-    State,
-    Constraints: GetStandardConstraints + Clone,
-    W: kui::Widget<State, Constraints, kui::Drawer>,
-> {
+pub struct StandardState<'a, State> {
+    pub user_state: &'a mut State,
+    standard_style: &'a mut StandardStyle,
+}
+
+impl<'a, State> StandardState<'a, State> {
+    pub fn new(user_state: &'a mut State, standard_style: &'a mut StandardStyle) -> Self {
+        Self {
+            user_state,
+            standard_style,
+        }
+    }
+}
+
+impl<'a, State> GetStandardStyle for StandardState<'a, State> {
+    fn standard_style(&self) -> &StandardStyle {
+        &self.standard_style
+    }
+    fn standard_style_mut(&mut self) -> &mut StandardStyle {
+        &mut self.standard_style
+    }
+}
+
+pub struct UI<State, Constraints: GetStandardConstraints + Clone> {
     pub entity: Entity,
     pub drawer: kui::Drawer,
-    pub root_widget: W,
     pub initial_constraints: Constraints,
+    pub standard_style: StandardStyle,
     phantom: std::marker::PhantomData<fn() -> (State, Constraints)>,
 }
 
-impl<
-        State,
-        Constraints: GetStandardConstraints + Clone,
-        W: kui::Widget<State, Constraints, kui::Drawer>,
-    > UI<State, Constraints, W>
-{
-    pub fn new(world: &mut World, initial_constraints: Constraints, root_widget: W) -> Self {
+impl<State, Constraints: GetStandardConstraints + Clone> UI<State, Constraints> {
+    pub fn new(world: &mut World, initial_constraints: Constraints) -> Self {
         let entity = world.spawn((Transform::new(), Material::UI, RenderFlags::USER_INTERFACE));
         let drawer = kui::Drawer::new();
         let mut s = Self {
             entity,
             drawer,
-            root_widget,
             initial_constraints,
+            standard_style: StandardStyle::default(),
             phantom: std::marker::PhantomData,
         };
         s.update_initial_size(world);
@@ -46,12 +60,12 @@ impl<
             Box2::new_with_min_corner_and_size(Vec2::ZERO, Vec2::new(width, height));
     }
 
-    pub fn update(&mut self, state: &mut State) {
-        self.root_widget.update_layout_draw(
-            state,
-            &mut self.drawer,
-            self.initial_constraints.clone(),
-        );
+    pub fn update(
+        &mut self,
+        state: &mut State,
+        root_widget: &mut impl kui::Widget<State, Constraints, kui::Drawer>,
+    ) {
+        root_widget.update_layout_draw(state, &mut self.drawer, self.initial_constraints.clone());
     }
 
     pub fn draw(&mut self, world: &mut World) {
