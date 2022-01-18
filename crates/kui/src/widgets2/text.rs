@@ -18,7 +18,7 @@ pub fn heading<State, Context: GetStandardStyle>(
         text,
         |context: &Context| context.standard_style().heading_font,
         |context: &Context| context.standard_style().primary_text_color,
-        |context: &Context| context.standard_style().primary_text_size,
+        |context: &Context| context.standard_style().heading_text_size,
     )
 }
 

@@ -29,7 +29,6 @@ pub struct UIManager<Constraints: GetStandardConstraints + Clone> {
     pub entity: Entity,
     pub drawer: kui::Drawer,
     pub initial_constraints: Constraints,
-    pub standard_style: StandardStyle,
 }
 
 impl<Constraints: GetStandardConstraints + Clone> UIManager<Constraints> {
@@ -40,13 +39,12 @@ impl<Constraints: GetStandardConstraints + Clone> UIManager<Constraints> {
             entity,
             drawer,
             initial_constraints,
-            standard_style: StandardStyle::default(),
         };
         s.update_initial_size(world);
         s
     }
 
-    fn update_initial_size(&mut self, world: &mut World) {
+    pub fn update_initial_size(&mut self, world: &mut World) {
         let ((window_width, window_height), ui_scale) =
             (|window: &NotSendSync<kapp::Window>| (window.size(), window.scale())).run(world);
         let (window_width, window_height, ui_scale) =
@@ -54,6 +52,7 @@ impl<Constraints: GetStandardConstraints + Clone> UIManager<Constraints> {
 
         let width = window_width / ui_scale;
         let height = window_height / ui_scale;
+
         self.initial_constraints.standard_mut().bounds =
             Box2::new_with_min_corner_and_size(Vec2::ZERO, Vec2::new(width, height));
     }
@@ -64,6 +63,9 @@ impl<Constraints: GetStandardConstraints + Clone> UIManager<Constraints> {
         context: &mut Context,
         root_widget: &mut dyn kui::Widget<State, Context, Constraints, kui::Drawer>,
     ) {
+        let (width, height) = self.initial_constraints.standard().bounds.size().into();
+        self.drawer.set_view_width_height(width, height);
+
         root_widget.update_layout_draw(
             user_state,
             context,
@@ -74,8 +76,6 @@ impl<Constraints: GetStandardConstraints + Clone> UIManager<Constraints> {
 
     pub fn draw(&mut self, world: &mut World) {
         self.update_initial_size(world);
-        let (width, height) = self.initial_constraints.standard().bounds.size().into();
-        self.drawer.set_view_width_height(width, height);
         render_ui(world, self.entity, &mut self.drawer);
     }
 }

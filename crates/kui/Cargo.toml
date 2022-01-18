@@ -3,14 +3,16 @@ name = "kui"
 version = "0.1.0"
 edition = "2021"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
 [dependencies]
-fontdue = "0.5.2"
+fontdue = "0.6.2"
 rect_packer = "0.2.1"
 kmath = {path = "../kmath"}
 kapp_platform_common = {path = "../kapp/kapp_platform_common"}
 kcolor = {path = "../kcolor"}
 
+[target.'cfg(not(target_arch="wasm32"))'.dependencies]
+fontdb = "0.7.0"
+
 [profile.dev.package."*"]
 opt-level = 3
+
