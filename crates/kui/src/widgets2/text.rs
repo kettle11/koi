@@ -24,6 +24,7 @@ pub fn heading<State, Context: GetStandardStyle>(
 
 pub enum TextSource<State> {
     Data(Box<dyn Fn(&State) -> String + Send + 'static>),
+    DataDyn(fn(&State) -> &str),
     String(&'static str),
 }
 
@@ -33,7 +34,20 @@ impl<Data> From<&'static str> for TextSource<Data> {
     }
 }
 
-impl<Data, F: Fn(&Data) -> String + 'static + Send + 'static> From<F> for TextSource<Data> {
+pub struct StrSource<Data>(pub fn(&Data) -> &str);
+
+impl<Data> From<fn(&Data) -> &str> for TextSource<Data> {
+    fn from(f: fn(&Data) -> &str) -> Self {
+        Self::DataDyn(f)
+    }
+}
+
+impl<Data> From<StrSource<Data>> for TextSource<Data> {
+    fn from(f: StrSource<Data>) -> Self {
+        Self::DataDyn(f.0)
+    }
+}
+impl<Data, F: Fn(&Data) -> String + Send + 'static> From<F> for TextSource<Data> {
     fn from(f: F) -> Self {
         Self::Data(Box::new(f))
     }
@@ -107,6 +121,13 @@ impl<
 
         match &self.text_source {
             TextSource::String(s) => {
+                layout.append(
+                    fonts,
+                    &fontdue::layout::TextStyle::new(s, text_size, font_index),
+                );
+            }
+            TextSource::DataDyn(d) => {
+                let s = (d)(state);
                 layout.append(
                     fonts,
                     &fontdue::layout::TextStyle::new(s, text_size, font_index),
