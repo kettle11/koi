@@ -65,7 +65,7 @@ impl<State, Context: GetStandardStyle> Text<State, Context> {
 
     pub fn draw_text_with_color(
         &mut self,
-        state: &mut State,
+        _state: &mut State,
         context: &mut Context,
         drawer: &mut Drawer,
         rectangle: Box2,

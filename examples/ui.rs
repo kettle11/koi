@@ -9,41 +9,28 @@ fn main() {
         world.spawn((Transform::new(), Camera::new(), CameraControls::new()));
         world.spawn((Transform::new(), Camera::new_for_user_interface()));
 
-        world.spawn((
-            Transform::new().with_position(Vec3::Z * -2.0),
-            Mesh::CUBE,
-            Material::UNLIT,
-            Color::WHITE,
-        ));
-
-        let mut style = StandardStyle::new();
+        let mut style = kui::StandardStyle::default();
 
         // Load a default font.
         style
             .new_font(include_bytes!("../Inter-Regular.otf"))
             .unwrap();
 
-        let root = scroll_view(column(|world, mut child_creator| {
-            (|q: Query<Option<&Transform>>| {
-                for (e, transform) in q.entities_and_components() {
-                    if let Some(_transform) = transform {
-                        let mut e = *e;
-                        child_creator.child(&mut e, || {
-                            button(|data: &mut _| format!("{:?}", data), |_| {})
-                        });
-                    }
+        let mut root_widget = kui::column((
+            kui::heading(|_d: &_| "Hello".to_string()),
+            kui::heading(|_d: &_| "Hi there!".to_string()),
+        ));
+
+        let mut ui_manager = UIManager::new(world, kui::StandardConstraints::default());
+
+        move |event: Event, world| {
+            match event {
+                Event::Draw => {
+                    ui_manager.draw(world);
+                    ui_manager.update(world, &mut style, &mut root_widget);
                 }
-            })
-            .run(world);
-        }));
-
-        let mut ui = UI::new(world, root);
-
-        move |event: Event, world: &mut World| {
-            if ui.handle_event(world, &mut style, &event) {
-                return true;
+                _ => {}
             }
-
             false
         }
     });

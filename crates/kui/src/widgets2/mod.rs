@@ -48,7 +48,7 @@ pub fn rectangle(size: Vec2, color: Color) -> Rectangle {
 impl<State, Context, Constraints: Default + GetStandardConstraints, Drawer: GetStandardDrawer>
     Widget<State, Context, Constraints, Drawer> for Rectangle
 {
-    fn layout(&mut self, _state: &mut State, context: &mut Context) -> Constraints {
+    fn layout(&mut self, _state: &mut State, _context: &mut Context) -> Constraints {
         let mut constraints = Constraints::default();
         constraints.standard_mut().set_size(self.size);
         constraints
