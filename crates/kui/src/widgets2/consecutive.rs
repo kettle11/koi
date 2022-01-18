@@ -2,9 +2,15 @@ use std::marker::PhantomData;
 
 use crate::*;
 
-pub fn column<State, Constraints, Drawer, I: IntoWidgetChildren<State, Constraints, Drawer>>(
+pub fn column<
+    State,
+    Context,
+    Constraints,
+    Drawer,
+    I: IntoWidgetChildren<State, Context, Constraints, Drawer>,
+>(
     children: I,
-) -> Consecutive<State, Constraints, Drawer, I::WidgetChildren> {
+) -> Consecutive<State, Context, Constraints, Drawer, I::WidgetChildren> {
     Consecutive {
         // This should be reversed for right-to-left.
         direction: Vec2::Y,
@@ -13,9 +19,15 @@ pub fn column<State, Constraints, Drawer, I: IntoWidgetChildren<State, Constrain
     }
 }
 
-pub fn row<State, Constraints, Drawer, I: IntoWidgetChildren<State, Constraints, Drawer>>(
+pub fn row<
+    State,
+    Context,
+    Constraints,
+    Drawer,
+    I: IntoWidgetChildren<State, Context, Constraints, Drawer>,
+>(
     children: I,
-) -> Consecutive<State, Constraints, Drawer, I::WidgetChildren> {
+) -> Consecutive<State, Context, Constraints, Drawer, I::WidgetChildren> {
     Consecutive {
         // This should be reversed for right-to-left.
         direction: Vec2::X,
@@ -26,32 +38,35 @@ pub fn row<State, Constraints, Drawer, I: IntoWidgetChildren<State, Constraints,
 
 pub struct Consecutive<
     State,
+    Context,
     Constraints,
     Drawer,
-    Children: WidgetChildren<State, Constraints, Drawer>,
+    Children: WidgetChildren<State, Context, Constraints, Drawer>,
 > {
     direction: Vec2,
     children: Children,
-    phantom: std::marker::PhantomData<(State, Constraints, Drawer)>,
+    phantom: std::marker::PhantomData<(State, Context, Constraints, Drawer)>,
 }
 
 // This is written a bit more verbosely and less efficiently than necessary to accomodate rows, columns,
 // and maybe eventually Z-axis stacks with the same code.
 impl<
         State,
+        Context,
         Constraints: GetStandardConstraints + Default,
         Drawer,
-        Children: WidgetChildren<State, Constraints, Drawer>,
-    > Widget<State, Constraints, Drawer> for Consecutive<State, Constraints, Drawer, Children>
+        Children: WidgetChildren<State, Context, Constraints, Drawer>,
+    > Widget<State, Context, Constraints, Drawer>
+    for Consecutive<State, Context, Constraints, Drawer, Children>
 {
-    fn update(&mut self, state: &mut State) {
-        self.children.update(state)
+    fn update(&mut self, state: &mut State, context: &mut Context) {
+        self.children.update(state, context)
     }
 
-    fn layout(&mut self, state: &mut State) -> Constraints {
+    fn layout(&mut self, state: &mut State, context: &mut Context) -> Constraints {
         let mut offset_in_direction = 0.;
         let mut other_dimension_size = Vec2::ZERO;
-        self.children.create_children_and_layout(state);
+        self.children.create_children_and_layout(state, context);
         for child_constraints in self.children.constraints_iter() {
             let child_size = child_constraints.standard().bounds.size();
             let amount_in_directon = child_size.dot(self.direction);
@@ -66,33 +81,20 @@ impl<
         constraints
     }
 
-    fn draw(&mut self, state: &mut State, drawer: &mut Drawer, constraints: Constraints) {
+    fn draw(
+        &mut self,
+        state: &mut State,
+        context: &mut Context,
+        drawer: &mut Drawer,
+        constraints: Constraints,
+    ) {
         let mut offset = constraints.standard().bounds.min;
-        self.children.draw(state, drawer, |constraints| {
+        self.children.draw(state, context, drawer, |constraints| {
             let mut child_constraints = Constraints::default();
             child_constraints.standard_mut().bounds =
                 Box2::new(offset, offset + constraints.standard().bounds.size());
             offset += constraints.standard().bounds.size().dot(self.direction) * self.direction;
             child_constraints
         })
-    }
-}
-
-pub struct Thingy<State> {
-    f: PhantomData<State>,
-}
-
-impl<State> Thingy<State> {
-    pub fn new() -> Self {
-        Self {
-            f: std::marker::PhantomData,
-        }
-    }
-}
-impl<State, Constraints: GetStandardConstraints + Default, Drawer>
-    Widget<State, Constraints, Drawer> for Thingy<State>
-{
-    fn layout(&mut self, state: &mut State) -> Constraints {
-        todo!()
     }
 }

@@ -58,3 +58,12 @@ impl StandardStyle {
         &self.fonts
     }
 }
+
+impl GetStandardStyle for StandardStyle {
+    fn standard_style(&self) -> &StandardStyle {
+        self
+    }
+    fn standard_style_mut(&mut self) -> &mut StandardStyle {
+        self
+    }
+}

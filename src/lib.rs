@@ -201,10 +201,10 @@ impl App {
         app
     }
 
-    pub fn setup_and_run<S: FnMut(Event, &mut World) -> bool + 'static>(
+    pub fn setup_and_run<S: for<'a> FnMut(Event, &'a mut World) -> bool>(
         mut self,
         setup_and_run_function: impl Fn(&mut World) -> S,
-    ) {
+    ) -> ! {
         #[cfg(feature = "tracing_allocator")]
         ktracing_allocator::set_alloc_error_hook();
 
@@ -255,7 +255,7 @@ impl App {
             fixed_time_step,
         });
 
-        let run_system = Box::new(setup_and_run_function(&mut world));
+        let mut run_system = Box::new(setup_and_run_function(&mut world));
 
         let mut koi_state = KoiState {
             world,
@@ -263,12 +263,12 @@ impl App {
             start,
             time_acumulator,
             fixed_time_step,
-            run_system,
+            run_system: &mut run_system,
             input_entity,
             window_entity,
             kapp_events_entity,
         };
-        kapp_event_loop.run(move |event| {
+        kapp_event_loop.run(&mut move |event| {
             koi_state.handle_event(event.clone());
             match event {
                 KappEvent::WindowCloseRequested { .. } => kapp_app.quit(),
@@ -279,19 +279,19 @@ impl App {
     }
 }
 
-pub struct KoiState {
+pub struct KoiState<'a> {
     pub world: World,
     pub systems: Plugin,
     pub start: Instant,
     pub time_acumulator: f64,
     pub fixed_time_step: f64,
-    pub run_system: Box<dyn FnMut(Event, &mut World) -> bool>,
+    pub run_system: &'a mut dyn FnMut(Event, &mut World) -> bool,
     pub input_entity: Entity,
     pub window_entity: Entity,
     pub kapp_events_entity: Entity,
 }
 
-impl KoiState {
+impl<'a> KoiState<'a> {
     fn handle_event(&mut self, event: KappEvent) {
         ktasks::run_only_local_tasks();
 

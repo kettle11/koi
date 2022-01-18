@@ -18,23 +18,31 @@ pub use widgets2::*;
 #[derive(Copy, Clone, Debug, Default)]
 pub struct Font(usize);
 
-pub trait Widget<State, Constraints, Drawer> {
-    fn update(&mut self, _state: &mut State) {}
+pub trait Widget<State, Context, Constraints, Drawer> {
+    fn update(&mut self, _state: &mut State, context: &mut Context) {}
     /// Perform any layout work required and let the parent widget know the Constraints this child requires.
     /// Note that while 'state' is mutable it should not be edited during `layout`.
-    fn layout(&mut self, state: &mut State) -> Constraints;
+    fn layout(&mut self, state: &mut State, context: &mut Context) -> Constraints;
 
     /// Note that while 'state' is mutable it should not be edited during `draw`.
-    fn draw(&mut self, _state: &mut State, _drawer: &mut Drawer, _constraints: Constraints) {}
+    fn draw(
+        &mut self,
+        _state: &mut State,
+        context: &mut Context,
+        _drawer: &mut Drawer,
+        _constraints: Constraints,
+    ) {
+    }
     fn update_layout_draw(
         &mut self,
         state: &mut State,
+        context: &mut Context,
         drawer: &mut Drawer,
         initial_constraints: Constraints,
     ) {
-        self.update(state);
-        self.layout(state);
-        self.draw(state, drawer, initial_constraints);
+        self.update(state, context);
+        self.layout(state, context);
+        self.draw(state, context, drawer, initial_constraints);
     }
 }
 

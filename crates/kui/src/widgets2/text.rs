@@ -1,25 +1,29 @@
 use crate::*;
 
-pub fn text<State: GetStandardStyle>(text: impl Into<TextSource<State>>) -> Text<State> {
+pub fn text<State, Context: GetStandardStyle>(
+    text: impl Into<TextSource<State>>,
+) -> Text<State, Context> {
     Text::new(
         text,
-        |state: &State| state.standard_style().primary_font,
-        |state: &State| state.standard_style().primary_text_color,
-        |state: &State| state.standard_style().primary_text_size,
+        |context: &Context| context.standard_style().primary_font,
+        |context: &Context| context.standard_style().primary_text_color,
+        |context: &Context| context.standard_style().primary_text_size,
     )
 }
 
-pub fn heading<State: GetStandardStyle>(text: impl Into<TextSource<State>>) -> Text<State> {
+pub fn heading<State, Context: GetStandardStyle>(
+    text: impl Into<TextSource<State>>,
+) -> Text<State, Context> {
     Text::new(
         text,
-        |state: &State| state.standard_style().heading_font,
-        |state: &State| state.standard_style().primary_text_color,
-        |state: &State| state.standard_style().primary_text_size,
+        |context: &Context| context.standard_style().heading_font,
+        |context: &Context| context.standard_style().primary_text_color,
+        |context: &Context| context.standard_style().primary_text_size,
     )
 }
 
 pub enum TextSource<State> {
-    Data(Box<dyn Fn(&State) -> String + Send>),
+    Data(Box<dyn Fn(&State) -> String + Send + 'static>),
     String(&'static str),
 }
 
@@ -29,26 +33,26 @@ impl<Data> From<&'static str> for TextSource<Data> {
     }
 }
 
-impl<Data, F: Fn(&Data) -> String + 'static + Send> From<F> for TextSource<Data> {
+impl<Data, F: Fn(&Data) -> String + 'static + Send + 'static> From<F> for TextSource<Data> {
     fn from(f: F) -> Self {
         Self::Data(Box::new(f))
     }
 }
 
-pub struct Text<State: GetStandardStyle> {
+pub struct Text<State, Context: GetStandardStyle> {
     text_source: TextSource<State>,
-    get_font: fn(&State) -> Font,
-    get_color: fn(&State) -> Color,
-    get_size: fn(&State) -> f32,
+    get_font: fn(&Context) -> Font,
+    get_color: fn(&Context) -> Color,
+    get_size: fn(&Context) -> f32,
     layout: fontdue::layout::Layout,
 }
 
-impl<State: GetStandardStyle> Text<State> {
+impl<State, Context: GetStandardStyle> Text<State, Context> {
     pub fn new(
         text: impl Into<TextSource<State>>,
-        get_font: fn(&State) -> Font,
-        get_color: fn(&State) -> Color,
-        get_size: fn(&State) -> f32,
+        get_font: fn(&Context) -> Font,
+        get_color: fn(&Context) -> Color,
+        get_size: fn(&Context) -> f32,
     ) -> Self {
         Self {
             text_source: text.into(),
@@ -62,42 +66,44 @@ impl<State: GetStandardStyle> Text<State> {
     pub fn draw_text_with_color(
         &mut self,
         state: &mut State,
+        context: &mut Context,
         drawer: &mut Drawer,
         rectangle: Box2,
         color: Color,
     ) {
         let layout = &mut self.layout;
 
-        let font_index = (self.get_font)(state).0;
-        let font = &state.standard_style().fonts()[font_index];
+        let font_index = (self.get_font)(context).0;
+        let font = &context.standard_style().fonts()[font_index];
         drawer.text(
             font,
             layout,
             rectangle.min,
             color,
-            state.standard_style().ui_scale,
+            context.standard_style().ui_scale,
         )
     }
 }
 
 impl<
-        State: GetStandardStyle,
+        State,
+        Context: GetStandardStyle,
         Constraints: GetStandardConstraints + Default,
         Drawer: GetStandardDrawer,
-    > Widget<State, Constraints, Drawer> for Text<State>
+    > Widget<State, Context, Constraints, Drawer> for Text<State, Context>
 {
-    fn layout(&mut self, state: &mut State) -> Constraints {
+    fn layout(&mut self, state: &mut State, context: &mut Context) -> Constraints {
         // This layout should instead be stored in standard state.
         let layout = &mut self.layout;
 
         // Various alignments could be introduced here.
         layout.reset(&Default::default());
 
-        let font_index = (self.get_font)(state).0;
-        let fonts = state.standard_style().fonts();
+        let font_index = (self.get_font)(context).0;
+        let fonts = context.standard_style().fonts();
 
-        let ui_scale = state.standard_style().ui_scale;
-        let text_size = (self.get_size)(state) * ui_scale;
+        let ui_scale = context.standard_style().ui_scale;
+        let text_size = (self.get_size)(context) * ui_scale;
 
         match &self.text_source {
             TextSource::String(s) => {
@@ -129,10 +135,17 @@ impl<
         constraints
     }
 
-    fn draw(&mut self, state: &mut State, drawer: &mut Drawer, constraints: Constraints) {
-        let color = (self.get_color)(state);
+    fn draw(
+        &mut self,
+        state: &mut State,
+        context: &mut Context,
+        drawer: &mut Drawer,
+        constraints: Constraints,
+    ) {
+        let color = (self.get_color)(context);
         self.draw_text_with_color(
             state,
+            context,
             drawer.standard(),
             constraints.standard().bounds,
             color,

@@ -1,14 +1,15 @@
 use crate::*;
 
 /// A trait used to define things that produce children for widgets that can accept multiple children.
-pub trait WidgetChildren<State, Constraints, Drawer>:
+pub trait WidgetChildren<State, Context, Constraints, Drawer>:
     for<'a> GetConstraintsIter<'a, Constraints>
 {
-    fn update(&mut self, state: &mut State);
-    fn create_children_and_layout(&mut self, state: &mut State);
+    fn update(&mut self, state: &mut State, context: &mut Context);
+    fn create_children_and_layout(&mut self, state: &mut State, context: &mut Context);
     fn draw<F: FnMut(&Constraints) -> Constraints>(
         &mut self,
         state: &mut State,
+        context: &mut Context,
         drawer: &mut Drawer,
         f: F,
     );
@@ -19,19 +20,20 @@ pub trait GetConstraintsIter<'a, Constraints: 'a> {
     fn constraints_iter(&'a self) -> Self::ConstraintsIter;
 }
 
-pub trait IntoWidgetChildren<State, Constraints, Drawer> {
-    type WidgetChildren: WidgetChildren<State, Constraints, Drawer>;
+pub trait IntoWidgetChildren<State, Context, Constraints, Drawer> {
+    type WidgetChildren: WidgetChildren<State, Context, Constraints, Drawer>;
     fn into_widget_children(self) -> Self::WidgetChildren;
 }
 
 impl<
         State,
+        Context,
         Constraints: 'static + Default,
         Drawer,
         ChildState,
-        Child: Widget<ChildState, Constraints, Drawer>,
-    > IntoWidgetChildren<State, Constraints, Drawer>
-    for ChildForEach<State, Constraints, Drawer, ChildState, Child>
+        Child: Widget<ChildState, Context, Constraints, Drawer>,
+    > IntoWidgetChildren<State, Context, Constraints, Drawer>
+    for ChildForEach<State, Context, Constraints, Drawer, ChildState, Child>
 {
     type WidgetChildren = Self;
     fn into_widget_children(self) -> Self::WidgetChildren {
@@ -41,28 +43,30 @@ impl<
 
 pub struct ChildForEach<
     State,
+    Context,
     Constraints: 'static,
     Drawer,
     ChildState,
-    Child: Widget<ChildState, Constraints, Drawer>,
+    Child: Widget<ChildState, Context, Constraints, Drawer>,
 > {
     constraints: Vec<Constraints>,
     children: Vec<Child>,
     call_per_child: fn(&mut State, &mut dyn FnMut(&mut ChildState)),
     create_child: fn() -> Child,
-    phantom: std::marker::PhantomData<fn() -> Drawer>,
+    phantom: std::marker::PhantomData<fn() -> (Context, Drawer)>,
 }
 
 pub fn for_each<
     State,
+    Context,
     Constraints: 'static,
     Drawer,
     ChildState,
-    Child: Widget<ChildState, Constraints, Drawer>,
+    Child: Widget<ChildState, Context, Constraints, Drawer>,
 >(
     call_per_child: fn(&mut State, &mut dyn FnMut(&mut ChildState)),
     create_child: fn() -> Child,
-) -> ChildForEach<State, Constraints, Drawer, ChildState, Child> {
+) -> ChildForEach<State, Context, Constraints, Drawer, ChildState, Child> {
     ChildForEach {
         constraints: Vec::new(),
         children: Vec::new(),
@@ -74,31 +78,32 @@ pub fn for_each<
 
 impl<
         State,
+        Context,
         Constraints: Default,
         Drawer,
         ChildState,
-        Child: Widget<ChildState, Constraints, Drawer>,
-    > WidgetChildren<State, Constraints, Drawer>
-    for ChildForEach<State, Constraints, Drawer, ChildState, Child>
+        Child: Widget<ChildState, Context, Constraints, Drawer>,
+    > WidgetChildren<State, Context, Constraints, Drawer>
+    for ChildForEach<State, Context, Constraints, Drawer, ChildState, Child>
 {
-    fn update(&mut self, state: &mut State) {
+    fn update(&mut self, state: &mut State, context: &mut Context) {
         let mut i = 0;
         (self.call_per_child)(state, &mut |child_state| {
             if let Some(child) = self.children.get_mut(i) {
-                child.update(child_state);
+                child.update(child_state, context);
             }
             i += 1;
         });
     }
 
-    fn create_children_and_layout(&mut self, state: &mut State) {
+    fn create_children_and_layout(&mut self, state: &mut State, context: &mut Context) {
         let mut i = 0;
         (self.call_per_child)(state, &mut |child_state| {
             if i >= self.children.len() {
                 self.children.push((self.create_child)());
                 self.constraints.push(Constraints::default())
             }
-            self.constraints[i] = (self.children[i]).layout(child_state);
+            self.constraints[i] = (self.children[i]).layout(child_state, context);
             i += 1;
         });
     }
@@ -106,6 +111,7 @@ impl<
     fn draw<F: FnMut(&Constraints) -> Constraints>(
         &mut self,
         state: &mut State,
+        context: &mut Context,
         drawer: &mut Drawer,
         mut f: F,
     ) {
@@ -113,7 +119,7 @@ impl<
         (self.call_per_child)(state, &mut |child_state| {
             // Pass in already calculated child constraints to get final draw constraints.
             let child_constraints = f(&self.constraints[i]);
-            self.children[i].draw(child_state, drawer, child_constraints);
+            self.children[i].draw(child_state, context, drawer, child_constraints);
             i += 1;
         });
     }
@@ -122,12 +128,13 @@ impl<
 impl<
         'a,
         State,
+        Context,
         Constraints: 'a,
         Drawer,
         ChildState,
-        Child: Widget<ChildState, Constraints, Drawer>,
+        Child: Widget<ChildState, Context, Constraints, Drawer>,
     > GetConstraintsIter<'a, Constraints>
-    for ChildForEach<State, Constraints, Drawer, ChildState, Child>
+    for ChildForEach<State, Context, Constraints, Drawer, ChildState, Child>
 {
     type ConstraintsIter = std::slice::Iter<'a, Constraints>;
     fn constraints_iter(&'a self) -> Self::ConstraintsIter {
@@ -155,10 +162,11 @@ macro_rules! tuple_impls {
     ( $count: tt, $( ($index: tt, $tuple:ident) ),* ) => {
             impl<
                 State,
+                Context,
                 Constraints: Default + 'static + Copy,
                 Drawer,
-                $( $tuple: Widget<State, Constraints, Drawer>,)*
-            > IntoWidgetChildren<State, Constraints, Drawer> for ($( $tuple,)*)
+                $( $tuple: Widget<State, Context, Constraints, Drawer>,)*
+            > IntoWidgetChildren<State, Context, Constraints, Drawer> for ($( $tuple,)*)
         {
             type WidgetChildren = TupleChildren<Constraints, ($( $tuple,)*), $count>;
             fn into_widget_children(self) -> Self::WidgetChildren {
@@ -171,30 +179,32 @@ macro_rules! tuple_impls {
 
         impl<
             State,
+            Context,
             Constraints: 'static,
             Drawer,
-            $( $tuple: Widget<State, Constraints, Drawer>,)*
-         > WidgetChildren<State, Constraints, Drawer>
+            $( $tuple: Widget<State, Context, Constraints, Drawer>,)*
+         > WidgetChildren<State, Context, Constraints, Drawer>
             for TupleChildren<Constraints, ($( $tuple,)*), $count>
         {
             #[allow(unused)]
-            fn update(&mut self, state: &mut State) {
-                $(self.children.$index.update(state);)*
+            fn update(&mut self, state: &mut State, context: &mut Context) {
+                $(self.children.$index.update(state, context);)*
             }
 
             #[allow(unused)]
-            fn create_children_and_layout(&mut self, state: &mut State) {
-                $(self.constraints[$index] = self.children.$index.layout(state);)*
+            fn create_children_and_layout(&mut self, state: &mut State, context: &mut Context) {
+                $(self.constraints[$index] = self.children.$index.layout(state, context);)*
             }
 
             #[allow(unused)]
             fn draw<FUNCTION: FnMut(&Constraints) -> Constraints>(
                 &mut self,
                 state: &mut State,
+                context: &mut Context,
                 drawer: &mut Drawer,
                 mut f: FUNCTION,
             ) {
-                $(self.children.$index.draw(state, drawer, f(&self.constraints[$index]));)*
+                $(self.children.$index.draw(state, context, drawer, f(&self.constraints[$index]));)*
             }
         }
     }
