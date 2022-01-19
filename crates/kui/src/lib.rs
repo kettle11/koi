@@ -27,12 +27,11 @@ pub trait Widget<State, Context, Constraints, Drawer> {
     /// Note that while 'state' is mutable it should not be edited during `draw`.
     fn draw(
         &mut self,
-        _state: &mut State,
-        _context: &mut Context,
-        _drawer: &mut Drawer,
-        _constraints: Constraints,
-    ) {
-    }
+        state: &mut State,
+        context: &mut Context,
+        drawer: &mut Drawer,
+        constraints: Constraints,
+    );
     fn update_layout_draw(
         &mut self,
         state: &mut State,
@@ -72,21 +71,73 @@ impl GetStandardConstraints for StandardConstraints {
 
 #[derive(Clone, Copy)]
 pub struct StandardConstraints {
-    pub bounds: Box2,
+    pub bounds: Box3,
 }
 
 impl StandardConstraints {
-    pub fn set_size(&mut self, size: Vec2) {
+    pub fn set_size(&mut self, size: Vec3) {
         self.bounds.max = self.bounds.min + size;
     }
 }
 impl Default for StandardConstraints {
     fn default() -> Self {
-        Self { bounds: Box2::ZERO }
+        Self { bounds: Box3::ZERO }
     }
 }
 
 pub trait GetStandardStyle {
     fn standard_style(&self) -> &StandardStyle;
     fn standard_style_mut(&mut self) -> &mut StandardStyle;
+}
+
+pub trait GetStandardInput {
+    fn standard_input(&self) -> &StandardInput;
+    fn standard_input_mut(&mut self) -> &mut StandardInput;
+}
+
+pub struct StandardInput {
+    pub pointer_position: Vec2,
+    pub pointer_down: bool,
+}
+
+impl Default for StandardInput {
+    fn default() -> Self {
+        Self {
+            pointer_position: Vec2::ZERO,
+            pointer_down: false,
+        }
+    }
+}
+
+impl GetStandardInput for StandardInput {
+    fn standard_input(&self) -> &StandardInput {
+        self
+    }
+    fn standard_input_mut(&mut self) -> &mut StandardInput {
+        self
+    }
+}
+
+pub struct StandardContext<Style, Input> {
+    pub style: Style,
+    pub input: Input,
+}
+
+impl<Style: GetStandardStyle, Input> GetStandardStyle for StandardContext<Style, Input> {
+    fn standard_style(&self) -> &StandardStyle {
+        self.style.standard_style()
+    }
+
+    fn standard_style_mut(&mut self) -> &mut StandardStyle {
+        self.style.standard_style_mut()
+    }
+}
+impl<Style, Input: GetStandardInput> GetStandardInput for StandardContext<Style, Input> {
+    fn standard_input(&self) -> &StandardInput {
+        self.input.standard_input()
+    }
+
+    fn standard_input_mut(&mut self) -> &mut StandardInput {
+        self.input.standard_input_mut()
+    }
 }

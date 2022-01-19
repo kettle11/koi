@@ -6,8 +6,14 @@ pub use widget_children::*;
 mod text;
 pub use text::*;
 
+mod button;
+pub use button::*;
+
 mod consecutive;
 pub use consecutive::*;
+
+mod padding;
+pub use padding::*;
 
 pub const fn fill(color: Color) -> Fill {
     Fill { color }
@@ -37,12 +43,15 @@ impl<State, Context, Constraints: Default + GetStandardConstraints, Drawer: GetS
 
 /// Just a colored rectangle for debug purposes
 pub struct Rectangle {
-    pub size: Vec2,
+    pub size: Vec3,
     pub color: Color,
 }
 
 pub fn rectangle(size: Vec2, color: Color) -> Rectangle {
-    Rectangle { size, color }
+    Rectangle {
+        size: size.extend(0.1),
+        color,
+    }
 }
 
 impl<State, Context, Constraints: Default + GetStandardConstraints, Drawer: GetStandardDrawer>
@@ -61,7 +70,7 @@ impl<State, Context, Constraints: Default + GetStandardConstraints, Drawer: GetS
         constraints: Constraints,
     ) {
         let size = constraints.standard().bounds.size().min(self.size);
-        let bounds = Box2::new_with_min_corner_and_size(constraints.standard().bounds.min, size);
+        let bounds = Box3::new_with_min_corner_and_size(constraints.standard().bounds.min, size);
         drawer.standard().rectangle(bounds, self.color);
     }
 }

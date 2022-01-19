@@ -82,7 +82,7 @@ impl<State, Context: GetStandardStyle> Text<State, Context> {
         _state: &mut State,
         context: &mut Context,
         drawer: &mut Drawer,
-        rectangle: Box2,
+        rectangle: Box3,
         color: Color,
     ) {
         let layout = &mut self.layout;
@@ -152,7 +152,7 @@ impl<
             })
             .size();
         let mut constraints = Constraints::default();
-        constraints.standard_mut().set_size(size);
+        constraints.standard_mut().set_size(size.extend(0.1));
         constraints
     }
 

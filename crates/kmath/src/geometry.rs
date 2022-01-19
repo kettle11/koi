@@ -117,6 +117,15 @@ impl<T: Numeric + PartialOrd + 'static, const DIMENSIONS: usize> BoundingBox<T, 
         }
     }
 
+    /// Returns a new bounding box inflated by `amounnt` on each side.
+    pub fn inflated(self, amount: T) -> Self {
+        let v = Vector::<T, DIMENSIONS>::fill(amount);
+        Self {
+            min: self.min - v,
+            max: self.max + v,
+        }
+    }
+
     pub fn size(self) -> Vector<T, DIMENSIONS> {
         self.max - self.min
     }

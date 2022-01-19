@@ -1,34 +1,12 @@
-use kui::{GetStandardConstraints, GetStandardStyle, StandardStyle};
+use kui::{GetStandardConstraints, StandardInput};
 
 use crate::*;
-
-pub struct StandardState<'a, 'b, State> {
-    pub user_state: &'b mut State,
-    standard_style: &'a mut StandardStyle,
-}
-
-impl<'a, 'b, State> StandardState<'a, 'b, State> {
-    pub fn new(user_state: &'b mut State, standard_style: &'a mut StandardStyle) -> Self {
-        Self {
-            user_state,
-            standard_style,
-        }
-    }
-}
-
-impl<'a, 'b, State> GetStandardStyle for StandardState<'a, 'b, State> {
-    fn standard_style(&self) -> &StandardStyle {
-        &self.standard_style
-    }
-    fn standard_style_mut(&mut self) -> &mut StandardStyle {
-        &mut self.standard_style
-    }
-}
 
 pub struct UIManager<Constraints: GetStandardConstraints + Clone> {
     pub entity: Entity,
     pub drawer: kui::Drawer,
     pub initial_constraints: Constraints,
+    pub ui_scale: f32,
 }
 
 impl<Constraints: GetStandardConstraints + Clone> UIManager<Constraints> {
@@ -39,12 +17,13 @@ impl<Constraints: GetStandardConstraints + Clone> UIManager<Constraints> {
             entity,
             drawer,
             initial_constraints,
+            ui_scale: 1.0,
         };
-        s.update_initial_size(world);
+        s.update_size(world);
         s
     }
 
-    pub fn update_initial_size(&mut self, world: &mut World) {
+    pub fn update_size(&mut self, world: &mut World) {
         let ((window_width, window_height), ui_scale) =
             (|window: &NotSendSync<kapp::Window>| (window.size(), window.scale())).run(world);
         let (window_width, window_height, ui_scale) =
@@ -52,9 +31,19 @@ impl<Constraints: GetStandardConstraints + Clone> UIManager<Constraints> {
 
         let width = window_width / ui_scale;
         let height = window_height / ui_scale;
+        self.ui_scale = ui_scale;
 
         self.initial_constraints.standard_mut().bounds =
-            Box2::new_with_min_corner_and_size(Vec2::ZERO, Vec2::new(width, height));
+            Box3::new_with_min_corner_and_size(Vec3::ZERO, Vec3::new(width, height, f32::MAX));
+    }
+
+    pub fn update_input(&mut self, world: &mut World, standard_input: &mut StandardInput) {
+        let input = world.get_singleton::<Input>();
+        standard_input.pointer_down = input.pointer_button_down(PointerButton::Primary);
+        standard_input.pointer_position = {
+            let (x, y) = input.pointer_position();
+            Vec2::new(x as f32, y as f32) / self.ui_scale
+        };
     }
 
     pub fn update<State, Context>(
@@ -63,7 +52,7 @@ impl<Constraints: GetStandardConstraints + Clone> UIManager<Constraints> {
         context: &mut Context,
         root_widget: &mut dyn kui::Widget<State, Context, Constraints, kui::Drawer>,
     ) {
-        let (width, height) = self.initial_constraints.standard().bounds.size().into();
+        let (width, height, _) = self.initial_constraints.standard().bounds.size().into();
         self.drawer.set_view_width_height(width, height);
 
         root_widget.update_layout_draw(
@@ -75,7 +64,7 @@ impl<Constraints: GetStandardConstraints + Clone> UIManager<Constraints> {
     }
 
     pub fn draw(&mut self, world: &mut World) {
-        self.update_initial_size(world);
+        self.update_size(world);
         render_ui(world, self.entity, &mut self.drawer);
     }
 }

@@ -51,7 +51,7 @@ impl Drawer {
         &mut self,
         fontdue_font: &fontdue::Font,
         layout: &mut fontdue::layout::Layout,
-        offset: Vec2,
+        offset: Vec3,
         color: Color,
         scale: f32,
     ) {
@@ -107,7 +107,12 @@ impl Drawer {
     }
 
     /// Returns the rectangle that will actually be displayed.
-    pub fn rectangle(&mut self, rectangle: Box2, color: Color) -> Box2 {
+    pub fn rectangle(&mut self, rectangle: Box3, color: Color) -> Box2 {
+        let z = rectangle.max.z;
+        let rectangle = Box2 {
+            min: rectangle.min.xy(),
+            max: rectangle.max.xy(),
+        };
         let rectangle = self.clip_rectangle(rectangle);
         if rectangle.area() != 0.0 {
             let color = color.to_linear_srgb();
@@ -197,17 +202,21 @@ impl Drawer {
     /// Returns the rectangle that will actually be displayed.
     pub fn rounded_rectangle(
         &mut self,
-        rectangle: Box2,
+        rectangle: Box3,
         corner_radius: Vec4,
         color: Color,
     ) -> Box2 {
+        if corner_radius == Vec4::fill(0.0) {
+            return self.rectangle(rectangle, color);
+        }
+        let z = rectangle.max.z;
+        let rectangle = Box2 {
+            min: rectangle.min.xy(),
+            max: rectangle.max.xy(),
+        };
+
         let clipped_rectangle = self.clip_rectangle(rectangle);
         if clipped_rectangle.area() != 0.0 {
-            if corner_radius == Vec4::fill(0.0) {
-                self.rectangle(rectangle, color);
-                return clipped_rectangle;
-            }
-
             let color = color.to_linear_srgb();
 
             let (width, height) = rectangle.size().into();
