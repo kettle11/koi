@@ -108,7 +108,7 @@ impl Drawer {
 
     /// Returns the rectangle that will actually be displayed.
     pub fn rectangle(&mut self, rectangle: Box3, color: Color) -> Box2 {
-        let z = rectangle.max.z;
+        let _z = rectangle.max.z;
         let rectangle = Box2 {
             min: rectangle.min.xy(),
             max: rectangle.max.xy(),
@@ -209,7 +209,7 @@ impl Drawer {
         if corner_radius == Vec4::fill(0.0) {
             return self.rectangle(rectangle, color);
         }
-        let z = rectangle.max.z;
+        let _z = rectangle.max.z;
         let rectangle = Box2 {
             min: rectangle.min.xy(),
             max: rectangle.max.xy(),

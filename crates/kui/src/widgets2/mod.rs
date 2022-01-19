@@ -15,15 +15,46 @@ pub use consecutive::*;
 mod padding;
 pub use padding::*;
 
-pub const fn fill(color: Color) -> Fill {
-    Fill { color }
+mod fit;
+pub use fit::*;
+
+pub fn fill<Context>(color: fn(&Context) -> Color) -> Fill<Context> {
+    Fill {
+        color,
+        rounding: |_| 0.0,
+    }
 }
-pub struct Fill {
-    pub color: Color,
+
+pub fn rounded_fill<Context>(
+    color: fn(&Context) -> Color,
+    rounding: fn(&Context) -> f32,
+) -> Fill<Context> {
+    Fill { color, rounding }
+}
+
+pub fn outlined_rounded_fill<
+    State,
+    Context,
+    Constraints: Default + Copy + GetStandardConstraints + 'static,
+    Drawer: GetStandardDrawer,
+>(
+    outline_color: fn(&Context) -> Color,
+    inner_color: fn(&Context) -> Color,
+    rounding: fn(&Context) -> f32,
+) -> impl Widget<State, Context, Constraints, Drawer> {
+    stack((
+        rounded_fill(outline_color, rounding),
+        padding(|_| 2.0, rounded_fill(inner_color, |_| 7.0)),
+    ))
+}
+
+pub struct Fill<Context> {
+    pub color: fn(&Context) -> Color,
+    pub rounding: fn(&Context) -> f32,
 }
 
 impl<State, Context, Constraints: Default + GetStandardConstraints, Drawer: GetStandardDrawer>
-    Widget<State, Context, Constraints, Drawer> for Fill
+    Widget<State, Context, Constraints, Drawer> for Fill<Context>
 {
     fn layout(&mut self, _state: &mut State, _context: &mut Context) -> Constraints {
         Constraints::default()
@@ -31,13 +62,15 @@ impl<State, Context, Constraints: Default + GetStandardConstraints, Drawer: GetS
     fn draw(
         &mut self,
         _state: &mut State,
-        _context: &mut Context,
+        context: &mut Context,
         drawer: &mut Drawer,
         constraints: Constraints,
     ) {
-        drawer
-            .standard()
-            .rectangle(constraints.standard().bounds, self.color);
+        drawer.standard().rounded_rectangle(
+            constraints.standard().bounds,
+            Vec4::fill((self.rounding)(context)),
+            (self.color)(context),
+        );
     }
 }
 

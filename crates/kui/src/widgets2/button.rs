@@ -2,7 +2,7 @@ use crate::*;
 
 pub fn button<
     State,
-    Context: GetStandardInput,
+    Context: GetStandardInput + GetStandardStyle,
     Constraints: GetStandardConstraints + Default + Copy + 'static,
     Drawer: GetStandardDrawer,
 >(
@@ -10,7 +10,14 @@ pub fn button<
     child_widget: impl Widget<State, Context, Constraints, Drawer>,
 ) -> impl Widget<State, Context, Constraints, Drawer> {
     ButtonBase {
-        child_widget: padding(100., stack((fill(Color::RED), child_widget))),
+        child_widget: fit(stack((
+            outlined_rounded_fill(
+                |c: &Context| c.standard_style().primary_color,
+                |c: &Context| c.standard_style().primary_variant_color,
+                |c| c.standard_style().rounding,
+            ),
+            padding(|c| c.standard_style().padding, child_widget),
+        ))),
         bounding_rect: Box2::ZERO,
         on_click,
         phantom: std::marker::PhantomData,

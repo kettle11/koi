@@ -1,4 +1,4 @@
-use kui::{GetStandardConstraints, StandardInput};
+use kui::{GetStandardConstraints, GetStandardStyle, StandardContext, StandardInput};
 
 use crate::*;
 
@@ -13,17 +13,19 @@ impl<Constraints: GetStandardConstraints + Clone> UIManager<Constraints> {
     pub fn new(world: &mut World, initial_constraints: Constraints) -> Self {
         let entity = world.spawn((Transform::new(), Material::UI, RenderFlags::USER_INTERFACE));
         let drawer = kui::Drawer::new();
-        let mut s = Self {
+        Self {
             entity,
             drawer,
             initial_constraints,
             ui_scale: 1.0,
-        };
-        s.update_size(world);
-        s
+        }
     }
 
-    pub fn update_size(&mut self, world: &mut World) {
+    pub fn update_size<Style: GetStandardStyle, Input>(
+        &mut self,
+        world: &mut World,
+        standard_context: &mut StandardContext<Style, Input>,
+    ) {
         let ((window_width, window_height), ui_scale) =
             (|window: &NotSendSync<kapp::Window>| (window.size(), window.scale())).run(world);
         let (window_width, window_height, ui_scale) =
@@ -32,6 +34,7 @@ impl<Constraints: GetStandardConstraints + Clone> UIManager<Constraints> {
         let width = window_width / ui_scale;
         let height = window_height / ui_scale;
         self.ui_scale = ui_scale;
+        standard_context.style.standard_style_mut().ui_scale = ui_scale;
 
         self.initial_constraints.standard_mut().bounds =
             Box3::new_with_min_corner_and_size(Vec3::ZERO, Vec3::new(width, height, f32::MAX));
@@ -64,7 +67,6 @@ impl<Constraints: GetStandardConstraints + Clone> UIManager<Constraints> {
     }
 
     pub fn draw(&mut self, world: &mut World) {
-        self.update_size(world);
         render_ui(world, self.entity, &mut self.drawer);
     }
 }
