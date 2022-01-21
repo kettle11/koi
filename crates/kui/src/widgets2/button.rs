@@ -1,14 +1,9 @@
 use crate::*;
 
-pub fn button<
-    State,
-    Context: GetStandardInput + GetStandardStyle,
-    Constraints: GetStandardConstraints + Default + Copy + 'static,
-    Drawer: GetStandardDrawer,
->(
+pub fn button<State, Context: GetStandardInput + GetStandardStyle>(
     on_click: fn(&mut State),
-    child_widget: impl Widget<State, Context, Constraints, Drawer>,
-) -> impl Widget<State, Context, Constraints, Drawer> {
+    child_widget: impl Widget<State, Context>,
+) -> impl Widget<State, Context> {
     ButtonBase {
         child_widget: fit(stack((
             outlined_rounded_fill(
@@ -24,15 +19,10 @@ pub fn button<
     }
 }
 
-pub fn button_base<
-    State,
-    Context: GetStandardInput,
-    Constraints: GetStandardConstraints,
-    Drawer,
->(
+pub fn button_base<State, Context: GetStandardInput>(
     on_click: fn(&mut State),
-    child_widget: impl Widget<State, Context, Constraints, Drawer>,
-) -> impl Widget<State, Context, Constraints, Drawer> {
+    child_widget: impl Widget<State, Context>,
+) -> impl Widget<State, Context> {
     ButtonBase {
         child_widget,
         bounding_rect: Box2::ZERO,
@@ -40,27 +30,15 @@ pub fn button_base<
         phantom: std::marker::PhantomData,
     }
 }
-pub struct ButtonBase<
-    State,
-    Context,
-    Constraints: GetStandardConstraints,
-    Drawer,
-    Child: Widget<State, Context, Constraints, Drawer>,
-> {
+pub struct ButtonBase<State, Context, Child: Widget<State, Context>> {
     child_widget: Child,
     bounding_rect: Box2,
     on_click: fn(&mut State),
-    phantom: std::marker::PhantomData<fn() -> (Context, Constraints, Drawer)>,
+    phantom: std::marker::PhantomData<fn() -> Context>,
 }
 
-impl<
-        State,
-        Context: GetStandardInput,
-        Constraints: GetStandardConstraints,
-        Drawer,
-        Child: Widget<State, Context, Constraints, Drawer>,
-    > Widget<State, Context, Constraints, Drawer>
-    for ButtonBase<State, Context, Constraints, Drawer, Child>
+impl<State, Context: GetStandardInput, Child: Widget<State, Context>> Widget<State, Context>
+    for ButtonBase<State, Context, Child>
 {
     fn update(&mut self, state: &mut State, context: &mut Context) {
         // Todo: Check for input here and handle click event.
@@ -75,29 +53,23 @@ impl<
             (self.on_click)(state)
         }
     }
-    fn layout(&mut self, state: &mut State, context: &mut Context) -> Constraints {
-        let child_constraints = self.child_widget.layout(state, context);
-        let bounds = child_constraints.standard().bounds;
+    fn layout(&mut self, state: &mut State, context: &mut Context) -> Vec3 {
+        let child_size = self.child_widget.layout(state, context);
         self.bounding_rect = Box2 {
-            min: bounds.min.xy(),
-            max: bounds.max.xy(),
+            min: Vec2::ZERO,
+            max: child_size.xy(),
         };
-        child_constraints
+        child_size
     }
     fn draw(
         &mut self,
         state: &mut State,
         context: &mut Context,
         drawer: &mut Drawer,
-        constraints: Constraints,
+        constraints: Box3,
     ) {
-        let size = self
-            .bounding_rect
-            .size()
-            .min(constraints.standard().bounds.size().xy());
-
-        self.bounding_rect =
-            Box2::new_with_min_corner_and_size(constraints.standard().bounds.min.xy(), size);
+        let size = self.bounding_rect.size().min(constraints.size().xy());
+        self.bounding_rect = Box2::new_with_min_corner_and_size(constraints.min.xy(), size);
         self.child_widget.draw(state, context, drawer, constraints);
     }
 }

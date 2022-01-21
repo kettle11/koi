@@ -99,14 +99,8 @@ impl<State, Context: GetStandardStyle> Text<State, Context> {
     }
 }
 
-impl<
-        State,
-        Context: GetStandardStyle,
-        Constraints: GetStandardConstraints + Default,
-        Drawer: GetStandardDrawer,
-    > Widget<State, Context, Constraints, Drawer> for Text<State, Context>
-{
-    fn layout(&mut self, state: &mut State, context: &mut Context) -> Constraints {
+impl<State, Context: GetStandardStyle> Widget<State, Context> for Text<State, Context> {
+    fn layout(&mut self, state: &mut State, context: &mut Context) -> Vec3 {
         // This layout should instead be stored in standard state.
         let layout = &mut self.layout;
 
@@ -151,9 +145,7 @@ impl<
                 ))
             })
             .size();
-        let mut constraints = Constraints::default();
-        constraints.standard_mut().set_size(size.extend(0.1));
-        constraints
+        size.extend(0.1)
     }
 
     fn draw(
@@ -161,15 +153,9 @@ impl<
         state: &mut State,
         context: &mut Context,
         drawer: &mut Drawer,
-        constraints: Constraints,
+        bounds: Box3,
     ) {
         let color = (self.get_color)(context);
-        self.draw_text_with_color(
-            state,
-            context,
-            drawer.standard(),
-            constraints.standard().bounds,
-            color,
-        )
+        self.draw_text_with_color(state, context, drawer.standard(), bounds, color)
     }
 }

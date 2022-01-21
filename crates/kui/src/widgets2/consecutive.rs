@@ -1,14 +1,8 @@
 use crate::*;
 
-pub fn stack<
-    State,
-    Context,
-    Constraints,
-    Drawer,
-    I: IntoWidgetChildren<State, Context, Constraints, Drawer>,
->(
+pub fn stack<State, Context, I: IntoWidgetChildren<State, Context>>(
     children: I,
-) -> Consecutive<State, Context, Constraints, Drawer, I::WidgetChildren> {
+) -> Consecutive<State, Context, I::WidgetChildren> {
     Consecutive {
         // This should be reversed for right-to-left.
         direction: Vec3::Z,
@@ -17,15 +11,9 @@ pub fn stack<
     }
 }
 
-pub fn column<
-    State,
-    Context,
-    Constraints,
-    Drawer,
-    I: IntoWidgetChildren<State, Context, Constraints, Drawer>,
->(
+pub fn column<State, Context, I: IntoWidgetChildren<State, Context>>(
     children: I,
-) -> Consecutive<State, Context, Constraints, Drawer, I::WidgetChildren> {
+) -> Consecutive<State, Context, I::WidgetChildren> {
     Consecutive {
         // This should be reversed for right-to-left.
         direction: Vec3::Y,
@@ -34,15 +22,9 @@ pub fn column<
     }
 }
 
-pub fn row<
-    State,
-    Context,
-    Constraints,
-    Drawer,
-    I: IntoWidgetChildren<State, Context, Constraints, Drawer>,
->(
+pub fn row<State, Context, I: IntoWidgetChildren<State, Context>>(
     children: I,
-) -> Consecutive<State, Context, Constraints, Drawer, I::WidgetChildren> {
+) -> Consecutive<State, Context, I::WidgetChildren> {
     Consecutive {
         // This should be reversed for right-to-left.
         direction: Vec3::X,
@@ -51,72 +33,47 @@ pub fn row<
     }
 }
 
-pub struct Consecutive<
-    State,
-    Context,
-    Constraints,
-    Drawer,
-    Children: WidgetChildren<State, Context, Constraints, Drawer>,
-> {
+pub struct Consecutive<State, Context, Children: WidgetChildren<State, Context>> {
     direction: Vec3,
     children: Children,
-    phantom: std::marker::PhantomData<(State, Context, Constraints, Drawer)>,
+    phantom: std::marker::PhantomData<(State, Context)>,
 }
 
 // This is written a bit more verbosely and less efficiently than necessary to accomodate rows, columns,
 // and maybe eventually Z-axis stacks with the same code.
-impl<
-        State,
-        Context,
-        Constraints: GetStandardConstraints + Default,
-        Drawer,
-        Children: WidgetChildren<State, Context, Constraints, Drawer>,
-    > Widget<State, Context, Constraints, Drawer>
-    for Consecutive<State, Context, Constraints, Drawer, Children>
+impl<State, Context, Children: WidgetChildren<State, Context>> Widget<State, Context>
+    for Consecutive<State, Context, Children>
 {
-    fn update(&mut self, state: &mut State, context: &mut Context) {
-        self.children.update(state, context)
+    fn update(&mut self, data: &mut State, context: &mut Context) {
+        self.children.update(data, context)
     }
 
-    fn layout(&mut self, state: &mut State, context: &mut Context) -> Constraints {
+    fn layout(&mut self, data: &mut State, context: &mut Context) -> Vec3 {
         let mut offset_in_direction = 0.;
         let mut other_dimension_size = Vec3::ZERO;
-        self.children.create_children_and_layout(state, context);
-        for child_constraints in self.children.constraints_iter() {
-            let child_size = child_constraints.standard().bounds.size();
+        self.children.create_children_and_layout(data, context);
+        for &child_size in self.children.constraints_iter() {
             let amount_in_directon = child_size.dot(self.direction);
             let non_direction_size = child_size - (amount_in_directon * self.direction);
             other_dimension_size = other_dimension_size.max(non_direction_size);
             offset_in_direction += amount_in_directon;
         }
-        let mut constraints = Constraints::default();
-        constraints
-            .standard_mut()
-            .set_size(other_dimension_size + self.direction * offset_in_direction);
-        constraints
+        other_dimension_size + self.direction * offset_in_direction
     }
 
-    fn draw(
-        &mut self,
-        state: &mut State,
-        context: &mut Context,
-        drawer: &mut Drawer,
-        constraints: Constraints,
-    ) {
-        let constraint_bounds = constraints.standard().bounds;
-        let constraint_size = constraint_bounds.size();
-        let mut offset = constraint_bounds.min;
+    fn draw(&mut self, data: &mut State, context: &mut Context, drawer: &mut Drawer, bounds: Box3) {
+        let constraint_size = bounds.size();
+        let mut offset = bounds.min;
         let size_not_along_direction =
             constraint_size - (constraint_size.dot(self.direction) * self.direction);
-        self.children.draw(state, context, drawer, |constraints| {
+        self.children.draw(data, context, drawer, |constraints| {
             let child_size_along_direction = constraint_size.dot(self.direction) * self.direction;
 
-            let mut child_constraints = Constraints::default();
-            child_constraints.standard_mut().bounds = Box3::new(
+            let child_constraints = Box3::new(
                 offset,
                 offset + child_size_along_direction + size_not_along_direction,
             );
-            offset += constraints.standard().bounds.size().dot(self.direction) * self.direction;
+            offset += constraints.dot(self.direction) * self.direction;
             child_constraints
         })
     }

@@ -32,42 +32,18 @@ pub fn rounded_fill<Context>(
     Fill { color, rounding }
 }
 
-pub fn outlined_rounded_fill<
-    State,
-    Context,
-    Constraints: Default + Copy + GetStandardConstraints + 'static,
-    Drawer: GetStandardDrawer,
->(
-    outline_color: fn(&Context) -> Color,
-    inner_color: fn(&Context) -> Color,
-    rounding: fn(&Context) -> f32,
-) -> impl Widget<State, Context, Constraints, Drawer> {
-    stack((
-        rounded_fill(outline_color, rounding),
-        padding(|_| 2.0, rounded_fill(inner_color, |_| 7.0)),
-    ))
-}
-
 pub struct Fill<Context> {
     pub color: fn(&Context) -> Color,
     pub rounding: fn(&Context) -> f32,
 }
 
-impl<State, Context, Constraints: Default + GetStandardConstraints, Drawer: GetStandardDrawer>
-    Widget<State, Context, Constraints, Drawer> for Fill<Context>
-{
-    fn layout(&mut self, _state: &mut State, _context: &mut Context) -> Constraints {
-        Constraints::default()
+impl<Data, Context> Widget<Data, Context> for Fill<Context> {
+    fn layout(&mut self, _data: &mut Data, _context: &mut Context) -> Vec3 {
+        Vec3::ZERO
     }
-    fn draw(
-        &mut self,
-        _state: &mut State,
-        context: &mut Context,
-        drawer: &mut Drawer,
-        constraints: Constraints,
-    ) {
+    fn draw(&mut self, _data: &mut Data, context: &mut Context, drawer: &mut Drawer, bounds: Box3) {
         drawer.standard().rounded_rectangle(
-            constraints.standard().bounds,
+            bounds,
             Vec4::fill((self.rounding)(context)),
             (self.color)(context),
         );
@@ -87,23 +63,30 @@ pub fn rectangle(size: Vec2, color: Color) -> Rectangle {
     }
 }
 
-impl<State, Context, Constraints: Default + GetStandardConstraints, Drawer: GetStandardDrawer>
-    Widget<State, Context, Constraints, Drawer> for Rectangle
-{
-    fn layout(&mut self, _state: &mut State, _context: &mut Context) -> Constraints {
-        let mut constraints = Constraints::default();
-        constraints.standard_mut().set_size(self.size);
-        constraints
+impl<Data, Context> Widget<Data, Context> for Rectangle {
+    fn layout(&mut self, _state: &mut Data, _context: &mut Context) -> Vec3 {
+        self.size
     }
     fn draw(
         &mut self,
-        _state: &mut State,
+        _state: &mut Data,
         _context: &mut Context,
         drawer: &mut Drawer,
-        constraints: Constraints,
+        bounds: Box3,
     ) {
-        let size = constraints.standard().bounds.size().min(self.size);
-        let bounds = Box3::new_with_min_corner_and_size(constraints.standard().bounds.min, size);
+        let size = bounds.size().min(self.size);
+        let bounds = Box3::new_with_min_corner_and_size(bounds.min, size);
         drawer.standard().rectangle(bounds, self.color);
     }
+}
+
+pub fn outlined_rounded_fill<State, Context>(
+    outline_color: fn(&Context) -> Color,
+    inner_color: fn(&Context) -> Color,
+    rounding: fn(&Context) -> f32,
+) -> impl Widget<State, Context> {
+    stack((
+        rounded_fill(outline_color, rounding),
+        padding(|_| 2.0, rounded_fill(inner_color, |_| 7.0)),
+    ))
 }

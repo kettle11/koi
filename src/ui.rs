@@ -1,22 +1,22 @@
-use kui::{GetStandardConstraints, GetStandardStyle, StandardContext, StandardInput};
+use kui::{GetStandardStyle, StandardContext, StandardInput};
 
 use crate::*;
 
-pub struct UIManager<Constraints: GetStandardConstraints + Clone> {
+pub struct UIManager {
     pub entity: Entity,
     pub drawer: kui::Drawer,
-    pub initial_constraints: Constraints,
+    pub initial_constraints: Box3,
     pub ui_scale: f32,
 }
 
-impl<Constraints: GetStandardConstraints + Clone> UIManager<Constraints> {
-    pub fn new(world: &mut World, initial_constraints: Constraints) -> Self {
+impl UIManager {
+    pub fn new(world: &mut World) -> Self {
         let entity = world.spawn((Transform::new(), Material::UI, RenderFlags::USER_INTERFACE));
         let drawer = kui::Drawer::new();
         Self {
             entity,
             drawer,
-            initial_constraints,
+            initial_constraints: Box3::ZERO,
             ui_scale: 1.0,
         }
     }
@@ -36,7 +36,7 @@ impl<Constraints: GetStandardConstraints + Clone> UIManager<Constraints> {
         self.ui_scale = ui_scale;
         standard_context.style.standard_style_mut().ui_scale = ui_scale;
 
-        self.initial_constraints.standard_mut().bounds =
+        self.initial_constraints =
             Box3::new_with_min_corner_and_size(Vec3::ZERO, Vec3::new(width, height, f32::MAX));
     }
 
@@ -49,21 +49,18 @@ impl<Constraints: GetStandardConstraints + Clone> UIManager<Constraints> {
         };
     }
 
-    pub fn update<State, Context>(
+    pub fn update<Data, Context>(
         &mut self,
-        user_state: &mut State,
+        data: &mut Data,
         context: &mut Context,
-        root_widget: &mut dyn kui::Widget<State, Context, Constraints, kui::Drawer>,
+        root_widget: &mut impl kui::Widget<Data, Context>,
     ) {
-        let (width, height, _) = self.initial_constraints.standard().bounds.size().into();
+        let (width, height, _) = self.initial_constraints.size().into();
         self.drawer.set_view_width_height(width, height);
 
-        root_widget.update_layout_draw(
-            user_state,
-            context,
-            &mut self.drawer,
-            self.initial_constraints.clone(),
-        );
+        root_widget.update(data, context);
+        root_widget.layout(data, context);
+        root_widget.draw(data, context, &mut self.drawer, self.initial_constraints);
     }
 
     pub fn draw(&mut self, world: &mut World) {

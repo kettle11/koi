@@ -15,31 +15,20 @@ pub use widgets2::*;
 #[derive(Copy, Clone, Debug, Default)]
 pub struct Font(usize);
 
-pub trait Widget<State, Context, Constraints, Drawer> {
-    fn update(&mut self, _state: &mut State, _context: &mut Context) {}
-    /// Perform any layout work required and let the parent widget know the Constraints this child requires.
-    /// Note that while 'state' is mutable it should not be edited during `layout`.
-    fn layout(&mut self, state: &mut State, context: &mut Context) -> Constraints;
+pub struct MinAndMaxSize {
+    pub min: Vec3,
+    pub max: Vec3,
+}
 
-    /// Note that while 'state' is mutable it should not be edited during `draw`.
-    fn draw(
-        &mut self,
-        state: &mut State,
-        context: &mut Context,
-        drawer: &mut Drawer,
-        constraints: Constraints,
-    );
-    fn update_layout_draw(
-        &mut self,
-        state: &mut State,
-        context: &mut Context,
-        drawer: &mut Drawer,
-        initial_constraints: Constraints,
-    ) {
-        self.update(state, context);
-        self.layout(state, context);
-        self.draw(state, context, drawer, initial_constraints);
-    }
+pub trait Widget<Data, Context> {
+    #[allow(unused)]
+    fn update(&mut self, data: &mut Data, context: &mut Context) {}
+    /// Perform any layout work required and let the parent widget know the Constraints this child requires.
+    /// Note that while 'data' is mutable it should not be edited during `layout`.
+    fn layout(&mut self, data: &mut Data, context: &mut Context) -> Vec3;
+
+    /// Note that while 'data' is mutable it should not be edited during `draw`.
+    fn draw(&mut self, data: &mut Data, context: &mut Context, drawer: &mut Drawer, bounds: Box3);
 }
 
 pub trait GetStandardDrawer {
@@ -136,44 +125,5 @@ impl<Style, Input: GetStandardInput> GetStandardInput for StandardContext<Style,
 
     fn standard_input_mut(&mut self) -> &mut StandardInput {
         self.input.standard_input_mut()
-    }
-}
-
-pub struct NarrowContext<
-    Data,
-    OuterContext,
-    InnerContext,
-    Constraints,
-    Drawer,
-    Child: Widget<Data, InnerContext, Constraints, Drawer>,
-> {
-    narrow_context: fn(&mut OuterContext) -> &mut InnerContext,
-    child: Child,
-    phantom: std::marker::PhantomData<(Data, Constraints, Drawer)>,
-}
-
-impl<
-        Data,
-        OuterContext,
-        InnerContext,
-        Constraints,
-        Drawer,
-        Child: Widget<Data, InnerContext, Constraints, Drawer>,
-    > Widget<Data, OuterContext, Constraints, Drawer>
-    for NarrowContext<Data, OuterContext, InnerContext, Constraints, Drawer, Child>
-{
-    fn layout(&mut self, state: &mut Data, context: &mut OuterContext) -> Constraints {
-        let context = (self.narrow_context)(context);
-        self.child.layout(state, context)
-    }
-    fn draw(
-        &mut self,
-        state: &mut Data,
-        context: &mut OuterContext,
-        drawer: &mut Drawer,
-        constraints: Constraints,
-    ) {
-        let context = (self.narrow_context)(context);
-        self.child.draw(state, context, drawer, constraints)
     }
 }

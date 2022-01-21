@@ -1,9 +1,7 @@
 use crate::*;
 
 /// Provide child widgets only the space they request.
-pub fn fit<State, Context, Constraints: GetStandardConstraints, Drawer>(
-    child: impl Widget<State, Context, Constraints, Drawer>,
-) -> impl Widget<State, Context, Constraints, Drawer> {
+pub fn fit<Data, Context>(child: impl Widget<Data, Context>) -> impl Widget<Data, Context> {
     Fit {
         child,
         child_size: Vec3::ZERO,
@@ -11,47 +9,31 @@ pub fn fit<State, Context, Constraints: GetStandardConstraints, Drawer>(
     }
 }
 
-pub struct Fit<
-    State,
-    Context,
-    Constraints,
-    Drawer,
-    Child: Widget<State, Context, Constraints, Drawer>,
-> {
+pub struct Fit<Data, Context, Child: Widget<Data, Context>> {
     child: Child,
     child_size: Vec3,
-    phantom: std::marker::PhantomData<fn() -> (State, Context, Constraints, Drawer)>,
+    phantom: std::marker::PhantomData<fn() -> (Data, Context)>,
 }
 
-impl<
-        State,
-        Context,
-        Constraints: GetStandardConstraints,
-        Drawer,
-        Child: Widget<State, Context, Constraints, Drawer>,
-    > Widget<State, Context, Constraints, Drawer>
-    for Fit<State, Context, Constraints, Drawer, Child>
+impl<Data, Context, Child: Widget<Data, Context>> Widget<Data, Context>
+    for Fit<Data, Context, Child>
 {
-    fn layout(&mut self, state: &mut State, context: &mut Context) -> Constraints {
-        let child_constraints = self.child.layout(state, context);
-        self.child_size = child_constraints.standard().bounds.size();
-        child_constraints
+    fn layout(&mut self, state: &mut Data, context: &mut Context) -> Vec3 {
+        let child_size = self.child.layout(state, context);
+        self.child_size = child_size;
+        child_size
     }
     fn draw(
         &mut self,
-        state: &mut State,
+        state: &mut Data,
         context: &mut Context,
         drawer: &mut Drawer,
-        mut constraints: Constraints,
+        mut constraints: Box3,
     ) {
-        let min = constraints.standard().bounds.min;
-        constraints.standard_mut().bounds = Box3 {
-            min: min,
-            max: min + self.child_size,
-        };
+        constraints.max = constraints.min + self.child_size;
         self.child.draw(state, context, drawer, constraints)
     }
-    fn update(&mut self, state: &mut State, context: &mut Context) {
+    fn update(&mut self, state: &mut Data, context: &mut Context) {
         self.child.update(state, context)
     }
 }

@@ -15,16 +15,9 @@ fn main() {
             input: kui::StandardInput::default(),
         };
         use kui::*;
+        let mut root_widget = button(|_| println!("CLICKED!"), text("BUTTON"));
 
-        let mut root_widget = stack((
-            fill(|_| Color::WHITE),
-            row((
-                button(|_| println!("CLICKED 1"), text("Button 1")),
-                button(|_| println!("CLICKED 2"), text("Button 2")),
-            )),
-        ));
-
-        let mut ui_manager = UIManager::new(world, kui::StandardConstraints::default());
+        let mut ui_manager = UIManager::new(world);
 
         move |event: Event, world| {
             match event {
