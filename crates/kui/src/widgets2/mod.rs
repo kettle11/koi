@@ -18,6 +18,9 @@ pub use padding::*;
 mod fit;
 pub use fit::*;
 
+mod toggle;
+pub use toggle::*;
+
 pub fn fill<Context>(color: fn(&Context) -> Color) -> Fill<Context> {
     Fill {
         color,
