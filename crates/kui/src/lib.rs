@@ -1,9 +1,6 @@
 use kcolor::*;
 use kmath::*;
 
-//mod widgets;
-//pub use widgets::*;
-
 mod drawer;
 pub use drawer::Drawer;
 
@@ -139,5 +136,44 @@ impl<Style, Input: GetStandardInput> GetStandardInput for StandardContext<Style,
 
     fn standard_input_mut(&mut self) -> &mut StandardInput {
         self.input.standard_input_mut()
+    }
+}
+
+pub struct NarrowContext<
+    Data,
+    OuterContext,
+    InnerContext,
+    Constraints,
+    Drawer,
+    Child: Widget<Data, InnerContext, Constraints, Drawer>,
+> {
+    narrow_context: fn(&mut OuterContext) -> &mut InnerContext,
+    child: Child,
+    phantom: std::marker::PhantomData<(Data, Constraints, Drawer)>,
+}
+
+impl<
+        Data,
+        OuterContext,
+        InnerContext,
+        Constraints,
+        Drawer,
+        Child: Widget<Data, InnerContext, Constraints, Drawer>,
+    > Widget<Data, OuterContext, Constraints, Drawer>
+    for NarrowContext<Data, OuterContext, InnerContext, Constraints, Drawer, Child>
+{
+    fn layout(&mut self, state: &mut Data, context: &mut OuterContext) -> Constraints {
+        let context = (self.narrow_context)(context);
+        self.child.layout(state, context)
+    }
+    fn draw(
+        &mut self,
+        state: &mut Data,
+        context: &mut OuterContext,
+        drawer: &mut Drawer,
+        constraints: Constraints,
+    ) {
+        let context = (self.narrow_context)(context);
+        self.child.draw(state, context, drawer, constraints)
     }
 }
