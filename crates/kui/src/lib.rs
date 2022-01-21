@@ -105,8 +105,26 @@ impl GetStandardInput for StandardInput {
 }
 
 pub struct StandardContext<Style, Input> {
-    pub style: Style,
-    pub input: Input,
+    pub style: std::rc::Rc<Style>,
+    pub input: std::rc::Rc<Input>,
+}
+
+impl<Style, Input> Clone for StandardContext<Style, Input> {
+    fn clone(&self) -> Self {
+        Self {
+            style: self.style.clone(),
+            input: self.input.clone(),
+        }
+    }
+}
+
+impl<Style, Input> StandardContext<Style, Input> {
+    pub fn new(style: Style, input: Input) -> Self {
+        Self {
+            style: std::rc::Rc::new(style),
+            input: std::rc::Rc::new(input),
+        }
+    }
 }
 
 impl<Style: GetStandardStyle, Input> GetStandardStyle for StandardContext<Style, Input> {
@@ -115,7 +133,9 @@ impl<Style: GetStandardStyle, Input> GetStandardStyle for StandardContext<Style,
     }
 
     fn standard_style_mut(&mut self) -> &mut StandardStyle {
-        self.style.standard_style_mut()
+        std::rc::Rc::get_mut(&mut self.style)
+            .unwrap()
+            .standard_style_mut()
     }
 }
 impl<Style, Input: GetStandardInput> GetStandardInput for StandardContext<Style, Input> {
@@ -124,6 +144,8 @@ impl<Style, Input: GetStandardInput> GetStandardInput for StandardContext<Style,
     }
 
     fn standard_input_mut(&mut self) -> &mut StandardInput {
-        self.input.standard_input_mut()
+        std::rc::Rc::get_mut(&mut self.input)
+            .unwrap()
+            .standard_input_mut()
     }
 }

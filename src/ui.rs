@@ -34,7 +34,7 @@ impl UIManager {
         let width = window_width / ui_scale;
         let height = window_height / ui_scale;
         self.ui_scale = ui_scale;
-        standard_context.style.standard_style_mut().ui_scale = ui_scale;
+        standard_context.standard_style_mut().ui_scale = ui_scale;
 
         self.initial_constraints =
             Box3::new_with_min_corner_and_size(Vec3::ZERO, Vec3::new(width, height, f32::MAX));
