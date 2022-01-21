@@ -46,12 +46,12 @@ pub fn button<State, Context: GetStandardInput + GetStandardStyle + Clone>(
     ButtonBase {
         child_widget: fit(stack((
             outlined_rounded_fill(
-                |c: &ButtonContext<Context>| c.context.standard_style().primary_color,
+                |c: &ButtonContext<Context>| c.context.standard_style().primary_variant_color,
                 |c| {
                     if c.clicked {
                         c.context.standard_style().disabled_color
                     } else {
-                        c.context.standard_style().primary_variant_color
+                        c.context.standard_style().primary_color
                     }
                 },
                 |c| c.context.standard_style().rounding,
@@ -105,12 +105,16 @@ impl<State, Context: GetStandardInput + Clone, Child: Widget<State, ButtonContex
         // Todo: Check for input here and handle click event.
         self.child_widget.update(state, &mut context);
 
-        self.clicked = standard_input.pointer_down
+        let start_clicked = standard_input.pointer_down
             && self
                 .bounding_rect
                 .contains_point(standard_input.pointer_position);
-        if self.clicked {
+        if start_clicked && !self.clicked {
+            self.clicked = true;
             (self.on_click)(state)
+        }
+        if !standard_input.pointer_down {
+            self.clicked = false
         }
     }
     fn layout(&mut self, state: &mut State, context: &mut Context) -> Vec3 {

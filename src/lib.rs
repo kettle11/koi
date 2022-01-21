@@ -203,7 +203,7 @@ impl App {
 
     pub fn setup_and_run<S: FnMut(Event, &mut World) -> bool + 'static>(
         mut self,
-        setup_and_run_function: impl Fn(&mut World) -> S,
+        setup_and_run_function: impl FnOnce(&mut World) -> S,
     ) {
         #[cfg(feature = "tracing_allocator")]
         ktracing_allocator::set_alloc_error_hook();

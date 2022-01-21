@@ -1,6 +1,6 @@
 use crate::*;
 
-pub fn text<State, Context: GetStandardStyle>(
+pub fn text<State, Context: GetStandardStyle + GetFonts>(
     text: impl Into<TextSource<State>>,
 ) -> Text<State, Context> {
     Text::new(
@@ -11,7 +11,7 @@ pub fn text<State, Context: GetStandardStyle>(
     )
 }
 
-pub fn heading<State, Context: GetStandardStyle>(
+pub fn heading<State, Context: GetStandardStyle + GetFonts>(
     text: impl Into<TextSource<State>>,
 ) -> Text<State, Context> {
     Text::new(
@@ -53,7 +53,7 @@ impl<Data, F: Fn(&Data) -> String + Send + 'static> From<F> for TextSource<Data>
     }
 }
 
-pub struct Text<State, Context: GetStandardStyle> {
+pub struct Text<State, Context: GetStandardStyle + GetFonts> {
     text_source: TextSource<State>,
     get_font: fn(&Context) -> Font,
     get_color: fn(&Context) -> Color,
@@ -61,7 +61,7 @@ pub struct Text<State, Context: GetStandardStyle> {
     layout: fontdue::layout::Layout,
 }
 
-impl<State, Context: GetStandardStyle> Text<State, Context> {
+impl<State, Context: GetStandardStyle + GetFonts> Text<State, Context> {
     pub fn new(
         text: impl Into<TextSource<State>>,
         get_font: fn(&Context) -> Font,
@@ -85,22 +85,21 @@ impl<State, Context: GetStandardStyle> Text<State, Context> {
         rectangle: Box3,
         color: Color,
     ) {
+        let ui_scale = context.standard_style().ui_scale;
         let layout = &mut self.layout;
 
         let font_index = (self.get_font)(context).0;
-        let font = &context.standard_style().fonts()[font_index];
-        drawer.text(
-            font,
-            layout,
-            rectangle.min,
-            color,
-            context.standard_style().ui_scale,
-        )
+        let fonts = context.get_fonts().fonts();
+
+        let font = &fonts[font_index];
+        drawer.text(font, layout, rectangle.min, color, ui_scale)
     }
 }
 
-impl<State, Context: GetStandardStyle> Widget<State, Context> for Text<State, Context> {
+impl<State, Context: GetStandardStyle + GetFonts> Widget<State, Context> for Text<State, Context> {
     fn layout(&mut self, state: &mut State, context: &mut Context) -> Vec3 {
+        let ui_scale = context.standard_style().ui_scale;
+
         // This layout should instead be stored in standard state.
         let layout = &mut self.layout;
 
@@ -108,9 +107,8 @@ impl<State, Context: GetStandardStyle> Widget<State, Context> for Text<State, Co
         layout.reset(&Default::default());
 
         let font_index = (self.get_font)(context).0;
-        let fonts = context.standard_style().fonts();
+        let fonts = context.get_fonts().fonts();
 
-        let ui_scale = context.standard_style().ui_scale;
         let text_size = (self.get_size)(context) * ui_scale;
 
         match &self.text_source {

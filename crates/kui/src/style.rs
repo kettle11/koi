@@ -1,7 +1,6 @@
 use crate::*;
 
 pub struct StandardStyle {
-    fonts: Vec<fontdue::Font>,
     pub primary_text_color: Color,
     pub primary_text_size: f32,
     pub heading_text_size: f32,
@@ -20,6 +19,7 @@ pub struct StandardStyle {
     pub ui_scale: f32,
     pub column_spacing: f32,
     pub row_spacing: f32,
+    pub background_color: Color,
 }
 
 impl Default for StandardStyle {
@@ -30,9 +30,8 @@ impl Default for StandardStyle {
 
 impl StandardStyle {
     pub fn new() -> Self {
-        let mut s = Self {
-            fonts: Vec::new(),
-            primary_text_color: Color::from_srgb_hex(0x414141, 1.0),
+        Self {
+            primary_text_color: Color::new_from_bytes(40, 40, 40, 255),
             primary_text_size: 16.,
             heading_text_size: 32.,
             primary_font: Font::default(),
@@ -45,57 +44,8 @@ impl StandardStyle {
             column_spacing: 30.,
             row_spacing: 30.,
             disabled_color: Color::from_srgb_hex(0x9B9B9B, 1.0),
-        };
-
-        #[cfg(not(target_arch = "wasm32"))]
-        {
-            let mut db = fontdb::Database::new();
-            db.load_system_fonts();
-
-            /*
-            for face in db.faces() {
-                println!("FONT FACE: {:?}", face.family)
-            }
-            */
-
-            let query = fontdb::Query {
-                // Default to Helvetica, otherwise fallback on an available system font.
-                // This should be changed later.
-                families: &[fontdb::Family::Name("Helvetica"), fontdb::Family::SansSerif],
-                weight: fontdb::Weight::NORMAL,
-                style: fontdb::Style::Normal,
-                stretch: fontdb::Stretch::Normal,
-            };
-
-            match db.query(&query) {
-                Some(id) => {
-                    let (src, _) = db.face_source(id).unwrap();
-                    if let fontdb::Source::File(ref path) = &src {
-                        println!("Selected font: {:?}", path);
-                        let bytes = std::fs::read(path)
-                            .unwrap_or_else(|_| panic!("No such path: {:?}", path));
-                        s.new_font(&bytes).unwrap();
-                    }
-                }
-                None => {
-                    println!("Could not find default system font");
-                }
-            }
+            background_color: Color::WHITE,
         }
-
-        s
-    }
-
-    pub fn new_font(&mut self, data: &[u8]) -> Result<Font, &'static str> {
-        self.fonts.push(fontdue::Font::from_bytes(
-            data,
-            fontdue::FontSettings::default(),
-        )?);
-        Ok(Font(self.fonts.len() - 1))
-    }
-
-    pub fn fonts(&self) -> &[fontdue::Font] {
-        &self.fonts
     }
 }
 

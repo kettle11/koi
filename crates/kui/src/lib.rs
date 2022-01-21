@@ -1,3 +1,5 @@
+use std::borrow::Borrow;
+
 use kcolor::*;
 use kmath::*;
 
@@ -12,8 +14,8 @@ mod texture_atlas;
 mod widgets2;
 pub use widgets2::*;
 
-#[derive(Copy, Clone, Debug, Default)]
-pub struct Font(usize);
+mod fonts;
+pub use fonts::*;
 
 pub struct MinAndMaxSize {
     pub min: Vec3,
@@ -107,6 +109,7 @@ impl GetStandardInput for StandardInput {
 pub struct StandardContext<Style, Input> {
     pub style: std::rc::Rc<Style>,
     pub input: std::rc::Rc<Input>,
+    pub fonts: std::rc::Rc<Fonts>,
 }
 
 impl<Style, Input> Clone for StandardContext<Style, Input> {
@@ -114,15 +117,17 @@ impl<Style, Input> Clone for StandardContext<Style, Input> {
         Self {
             style: self.style.clone(),
             input: self.input.clone(),
+            fonts: self.fonts.clone(),
         }
     }
 }
 
 impl<Style, Input> StandardContext<Style, Input> {
-    pub fn new(style: Style, input: Input) -> Self {
+    pub fn new(style: Style, input: Input, fonts: Fonts) -> Self {
         Self {
             style: std::rc::Rc::new(style),
             input: std::rc::Rc::new(input),
+            fonts: std::rc::Rc::new(fonts),
         }
     }
 }
@@ -147,5 +152,14 @@ impl<Style, Input: GetStandardInput> GetStandardInput for StandardContext<Style,
         std::rc::Rc::get_mut(&mut self.input)
             .unwrap()
             .standard_input_mut()
+    }
+}
+
+impl<Style, Input: GetStandardInput> GetFonts for StandardContext<Style, Input> {
+    fn get_fonts(&self) -> &Fonts {
+        self.fonts.borrow()
+    }
+    fn get_fonts_mut(&mut self) -> &Fonts {
+        std::rc::Rc::get_mut(&mut self.fonts).unwrap()
     }
 }

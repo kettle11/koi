@@ -1,4 +1,4 @@
-use kui::{GetStandardStyle, StandardContext, StandardInput};
+use kui::{GetStandardInput, GetStandardStyle, StandardContext, StandardInput, StandardStyle};
 
 use crate::*;
 
@@ -21,7 +21,7 @@ impl UIManager {
         }
     }
 
-    pub fn update_size<Style: GetStandardStyle, Input>(
+    fn update_size<Style: GetStandardStyle, Input>(
         &mut self,
         world: &mut World,
         standard_context: &mut StandardContext<Style, Input>,
@@ -40,16 +40,25 @@ impl UIManager {
             Box3::new_with_min_corner_and_size(Vec3::ZERO, Vec3::new(width, height, f32::MAX));
     }
 
-    pub fn update_input(&mut self, world: &mut World, standard_input: &mut StandardInput) {
+    fn update_input(&mut self, world: &mut World, standard_input: &mut StandardInput) {
         let input = world.get_singleton::<Input>();
-        standard_input.pointer_down = input.pointer_button_down(PointerButton::Primary);
+        standard_input.pointer_down = input.pointer_button(PointerButton::Primary);
         standard_input.pointer_position = {
             let (x, y) = input.pointer_position();
             Vec2::new(x as f32, y as f32) / self.ui_scale
         };
     }
 
-    pub fn update<Data, Context>(
+    pub fn prepare<Style: GetStandardStyle>(
+        &mut self,
+        world: &mut World,
+        standard_context: &mut StandardContext<Style, StandardInput>,
+    ) {
+        self.update_size(world, standard_context);
+        self.update_input(world, standard_context.standard_input_mut())
+    }
+
+    pub fn update_layout_draw<Data, Context>(
         &mut self,
         data: &mut Data,
         context: &mut Context,
@@ -106,4 +115,34 @@ pub fn render_ui(world: &mut World, ui_entity: Entity, drawer: &mut kui::Drawer)
     .run(world);
     commands.apply(world);
     drawer.reset();
+}
+
+pub fn run_simple_ui<Data: 'static>(
+    data: Data,
+    style: StandardStyle,
+    fonts: kui::Fonts,
+    root: impl kui::Widget<Data, StandardContext<kui::StandardStyle, kui::StandardInput>> + 'static,
+) {
+    App::new().setup_and_run(|world| {
+        world.spawn((Transform::new(), Camera::new_for_user_interface()));
+
+        let mut data = data;
+        let mut root = root;
+
+        let mut standard_context =
+            kui::StandardContext::new(style, kui::StandardInput::default(), fonts);
+        let mut ui_manager = UIManager::new(world);
+
+        move |event, world| {
+            match event {
+                Event::Draw => {
+                    ui_manager.prepare(world, &mut standard_context);
+                    ui_manager.update_layout_draw(&mut data, &mut standard_context, &mut root);
+                    ui_manager.draw(world);
+                }
+                _ => {}
+            }
+            false
+        }
+    })
 }
