@@ -93,3 +93,23 @@ pub fn outlined_rounded_fill<State, Context>(
         padding(|_| 2.0, rounded_fill(inner_color, |_| 7.0)),
     ))
 }
+
+pub struct Empty;
+pub fn empty() -> Empty {
+    Empty
+}
+
+impl<Data, Context> Widget<Data, Context> for Empty {
+    fn update(&mut self, _data: &mut Data, _context: &mut Context) {}
+    fn layout(&mut self, _data: &mut Data, _context: &mut Context) -> Vec3 {
+        Vec3::ZERO
+    }
+    fn draw(
+        &mut self,
+        _data: &mut Data,
+        _context: &mut Context,
+        _drawer: &mut Drawer,
+        _bounds: Box3,
+    ) {
+    }
+}
