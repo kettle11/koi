@@ -36,6 +36,7 @@ impl<Data, OuterContext, InnerContext, Child: Widget<Data, InnerContext>> Widget
 }
 pub struct ButtonContext<Context> {
     context: Context,
+    clicked: bool,
 }
 
 pub fn button<State, Context: GetStandardInput + GetStandardStyle + Clone>(
@@ -46,7 +47,13 @@ pub fn button<State, Context: GetStandardInput + GetStandardStyle + Clone>(
         child_widget: fit(stack((
             outlined_rounded_fill(
                 |c: &ButtonContext<Context>| c.context.standard_style().primary_color,
-                |c| c.context.standard_style().primary_variant_color,
+                |c| {
+                    if c.clicked {
+                        c.context.standard_style().disabled_color
+                    } else {
+                        c.context.standard_style().primary_variant_color
+                    }
+                },
                 |c| c.context.standard_style().rounding,
             ),
             padding(
@@ -59,6 +66,7 @@ pub fn button<State, Context: GetStandardInput + GetStandardStyle + Clone>(
         ))),
         bounding_rect: Box2::ZERO,
         on_click,
+        clicked: false,
         phantom: std::marker::PhantomData,
     }
 }
@@ -80,6 +88,7 @@ pub struct ButtonBase<State, Context, Child: Widget<State, ButtonContext<Context
     child_widget: Child,
     bounding_rect: Box2,
     on_click: fn(&mut State),
+    clicked: bool,
     phantom: std::marker::PhantomData<fn() -> Context>,
 }
 
@@ -91,21 +100,23 @@ impl<State, Context: GetStandardInput + Clone, Child: Widget<State, ButtonContex
 
         let mut context = ButtonContext {
             context: context.clone(),
+            clicked: self.clicked,
         };
         // Todo: Check for input here and handle click event.
         self.child_widget.update(state, &mut context);
 
-        let clicked = standard_input.pointer_down
+        self.clicked = standard_input.pointer_down
             && self
                 .bounding_rect
                 .contains_point(standard_input.pointer_position);
-        if clicked {
+        if self.clicked {
             (self.on_click)(state)
         }
     }
     fn layout(&mut self, state: &mut State, context: &mut Context) -> Vec3 {
         let mut context = ButtonContext {
             context: context.clone(),
+            clicked: self.clicked,
         };
         let child_size = self.child_widget.layout(state, &mut context);
         self.bounding_rect = Box2 {
@@ -123,6 +134,7 @@ impl<State, Context: GetStandardInput + Clone, Child: Widget<State, ButtonContex
     ) {
         let mut context = ButtonContext {
             context: context.clone(),
+            clicked: self.clicked,
         };
         let size = self.bounding_rect.size().min(constraints.size().xy());
         self.bounding_rect = Box2::new_with_min_corner_and_size(constraints.min.xy(), size);

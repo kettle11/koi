@@ -14,7 +14,10 @@ fn main() {
         let mut standard_context =
             kui::StandardContext::new(kui::StandardStyle::default(), kui::StandardInput::default());
 
-        let mut root_widget = button(|_| println!("CLICKED!"), text("BUTTON"));
+        let mut root_widget = stack((
+            fill(|_| Color::WHITE),
+            padding(|_| 50., button(|_| println!("CLICKED!"), text("BUTTON"))),
+        ));
 
         let mut ui_manager = UIManager::new(world);
 
