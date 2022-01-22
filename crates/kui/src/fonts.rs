@@ -24,6 +24,7 @@ impl Default for Fonts {
     }
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 pub use fontdb::Family;
 
 impl Fonts {
@@ -69,6 +70,7 @@ impl Fonts {
         }
     }
 
+    #[cfg(not(target_arch = "wasm32"))]
     pub fn load_system_font(&mut self, families: &[fontdb::Family]) -> Result<Font, &'static str> {
         #[cfg(not(target_arch = "wasm32"))]
         {
