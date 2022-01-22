@@ -48,8 +48,12 @@ impl<Data, Context: GetStandardStyle + GetFonts + GetStandardInput> Widget<Data,
             .next();
         for &char in context.standard_input().characters_input.iter() {
             if let Some((cursor_position, _)) = cursor_position {
+                self.cursor_on = true;
+                self.cursor_animation = 0.0;
                 string.insert(cursor_position, char)
             } else {
+                self.cursor_on = true;
+                self.cursor_animation = 0.0;
                 string.push(char);
             }
         }
@@ -58,16 +62,24 @@ impl<Data, Context: GetStandardStyle + GetFonts + GetStandardInput> Widget<Data,
                 kapp_platform_common::Key::Backspace => {
                     if let Some((cursor_position, _)) = cursor_position {
                         if cursor_position != 0 {
+                            self.cursor_on = true;
+                            self.cursor_animation = 0.0;
                             string.remove(cursor_position - 1);
                         }
                     } else {
+                        self.cursor_on = true;
+                        self.cursor_animation = 0.0;
                         string.pop();
                     }
                 }
                 kapp_platform_common::Key::Left => {
+                    self.cursor_on = true;
+                    self.cursor_animation = 0.0;
                     self.cursor_offset_from_end += 1;
                 }
                 kapp_platform_common::Key::Right => {
+                    self.cursor_on = true;
+                    self.cursor_animation = 0.0;
                     if self.cursor_offset_from_end > 0 {
                         self.cursor_offset_from_end -= 1;
                     }
@@ -97,6 +109,7 @@ impl<Data, Context: GetStandardStyle + GetFonts + GetStandardInput> Widget<Data,
             let glyph_count = self.child_text.get_character_count();
 
             let cursor_left = if (glyph_count - self.cursor_offset_from_end) != 0 {
+                // If this isn't before the first character.
                 self.child_text
                     .get_character_bounds(
                         context,
@@ -106,7 +119,9 @@ impl<Data, Context: GetStandardStyle + GetFonts + GetStandardInput> Widget<Data,
                     .max
                     .x
             } else {
+                // If this is before the first character
                 if glyph_count != 0 {
+                    // If there is a next character.
                     self.child_text
                         .get_character_bounds(
                             context,
