@@ -377,6 +377,32 @@ fn disoint_queries() {
     .is_ok());
 }
 
+#[test]
+fn empty_query() {
+    let mut world = World::new();
+    world.spawn(A);
+    world.spawn(A);
+
+    (|query: Query<()>| {
+        assert!(query.iter().count() == 2);
+    })
+    .run(&world);
+}
+
+#[test]
+fn optional_query() {
+    let mut world = World::new();
+    world.spawn(A);
+    world.spawn(A);
+
+    (|query: Query<Option<&A>>| {
+        for _ in query.iter() {
+            println!("HERE");
+        }
+        assert!(query.iter().count() == 2);
+    })
+    .run(&world);
+}
 /*
 #[test]
 fn componentless_query() {
