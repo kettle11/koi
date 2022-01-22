@@ -21,15 +21,31 @@ pub fn text_box<Data, Context: GetStandardStyle + GetFonts + GetStandardInput>(
         child_text: text(get_text),
         cursor_animation: 0.0,
         cursor_on: false,
+        selected_area: None,
     }
 }
 pub struct TextBox<Data, Context: GetStandardStyle + GetFonts> {
     get_text: fn(&mut Data) -> &mut String,
-    /// The offset from the end of the string in numbers of characters
+    /// The offset from the end of the string in numbers of characters.
+    /// This points to a character. The cursor should go *before* the character.
     cursor_offset_from_end: usize,
     child_text: Text<Data, Context>,
     cursor_animation: f32,
     cursor_on: bool,
+    selected_area: Option<(usize, usize)>,
+}
+impl<Data, Context: GetStandardStyle + GetFonts + GetStandardInput> TextBox<Data, Context> {
+    pub fn select_all(&mut self) {
+        let character_count = self.child_text.get_character_count();
+        self.reset_cursor_animation();
+        self.cursor_offset_from_end = 0;
+        self.selected_area = Some((0, character_count))
+    }
+
+    pub fn reset_cursor_animation(&mut self) {
+        self.cursor_on = true;
+        self.cursor_animation = 0.0;
+    }
 }
 
 impl<Data, Context: GetStandardStyle + GetFonts + GetStandardInput> Widget<Data, Context>
@@ -38,51 +54,46 @@ impl<Data, Context: GetStandardStyle + GetFonts + GetStandardInput> Widget<Data,
     fn update(&mut self, data: &mut Data, context: &mut Context) {
         context.standard_input_mut().text_input_rect = Some(Box2::ZERO);
         let string = (self.get_text)(data);
-        let character_count = self.child_text.get_character_count();
+        let mut character_count = self.child_text.get_character_count();
 
         // This isn't very efficient for large strings.
-        // This also isn't implemented correctly if the size of the String changes.
-        let cursor_position = string
+
+        let mut char_indices_iter = string
             .char_indices()
-            .skip(character_count - self.cursor_offset_from_end)
-            .next();
+            .skip((character_count - self.cursor_offset_from_end).saturating_sub(1));
+        let (remove_index, remove_range) = char_indices_iter
+            .next()
+            .map_or((0, 0), |(i, c)| (i, c.len_utf8()));
+        let mut edit_index = char_indices_iter.next().map_or(character_count, |(i, _)| i);
+
+        let at_start = character_count - self.cursor_offset_from_end == 0;
         for &char in context.standard_input().characters_input.iter() {
-            if let Some((cursor_position, _)) = cursor_position {
-                self.cursor_on = true;
-                self.cursor_animation = 0.0;
-                string.insert(cursor_position, char)
-            } else {
-                self.cursor_on = true;
-                self.cursor_animation = 0.0;
-                string.push(char);
-            }
+            self.reset_cursor_animation();
+            string.insert(edit_index, char);
+            edit_index += char.len_utf8();
         }
         for &key in context.standard_input().keys_pressed.iter() {
             match key {
                 kapp_platform_common::Key::Backspace => {
-                    if let Some((cursor_position, _)) = cursor_position {
-                        if cursor_position != 0 {
-                            self.cursor_on = true;
-                            self.cursor_animation = 0.0;
-                            string.remove(cursor_position - 1);
-                        }
-                    } else {
+                    if !at_start {
                         self.cursor_on = true;
                         self.cursor_animation = 0.0;
-                        string.pop();
+                        string.replace_range(remove_index..remove_index + remove_range, &"");
+                        character_count = character_count.saturating_sub(1);
                     }
                 }
                 kapp_platform_common::Key::Left => {
-                    self.cursor_on = true;
-                    self.cursor_animation = 0.0;
+                    self.selected_area = None;
+                    self.reset_cursor_animation();
                     self.cursor_offset_from_end += 1;
                 }
                 kapp_platform_common::Key::Right => {
-                    self.cursor_on = true;
-                    self.cursor_animation = 0.0;
-                    if self.cursor_offset_from_end > 0 {
-                        self.cursor_offset_from_end -= 1;
-                    }
+                    self.selected_area = None;
+                    self.reset_cursor_animation();
+                    self.cursor_offset_from_end = self.cursor_offset_from_end.saturating_sub(1);
+                }
+                kapp_platform_common::Key::Meta => {
+                    self.select_all();
                 }
                 _ => {}
             }
@@ -90,6 +101,14 @@ impl<Data, Context: GetStandardStyle + GetFonts + GetStandardInput> Widget<Data,
 
         if self.cursor_offset_from_end > character_count {
             self.cursor_offset_from_end = character_count;
+        }
+
+        if let Some((start, end)) = &mut self.selected_area {
+            *start = (*start).min(character_count);
+            *end = (*end).min(character_count);
+        }
+        if character_count == 0 {
+            self.selected_area = None;
         }
     }
     fn layout(
@@ -101,6 +120,28 @@ impl<Data, Context: GetStandardStyle + GetFonts + GetStandardInput> Widget<Data,
         self.child_text.layout(data, context, min_and_max_size)
     }
     fn draw(&mut self, data: &mut Data, context: &mut Context, drawer: &mut Drawer, bounds: Box3) {
+        let line_height = self.child_text.get_line_height(context);
+
+        // Draw selected area highlight. Notably it's drawn before the child to ensure it's drawn underneath.
+        if let Some((start, end)) = self.selected_area {
+            let start_bounds = self
+                .child_text
+                .get_character_bounds(context, bounds.min, start)
+                .min
+                .x;
+            let end_bounds = bounds.min.x
+                + self
+                    .child_text
+                    .get_glyph_advance_width_position(context, end - 1);
+            drawer.rectangle(
+                Box3 {
+                    min: Vec3::new(start_bounds, bounds.min.y, bounds.min.z),
+                    max: Vec3::new(end_bounds, bounds.min.y + line_height, bounds.min.z),
+                },
+                context.standard_style().disabled_color,
+            );
+        }
+
         self.child_text.draw(data, context, drawer, bounds);
 
         self.cursor_animation += context.standard_input().delta_time;
@@ -137,8 +178,6 @@ impl<Data, Context: GetStandardStyle + GetFonts + GetStandardInput> Widget<Data,
                     bounds.min.x
                 }
             };
-
-            let line_height = self.child_text.get_line_height(context);
 
             drawer.rectangle(
                 Box3 {
