@@ -47,6 +47,21 @@ impl UIManager {
             let (x, y) = input.pointer_position();
             Vec2::new(x as f32, y as f32) / self.ui_scale
         };
+        standard_input.keys_pressed.clear();
+        standard_input.characters_input.clear();
+
+        for event in input.all_events_since_last_frame().iter() {
+            match event {
+                kapp::Event::CharacterReceived { character } => {
+                    standard_input.characters_input.push(*character);
+                }
+                kapp::Event::KeyDown { key, .. } | kapp::Event::KeyRepeat { key, .. } => {
+                    standard_input.keys_pressed.push(*key);
+                }
+                _ => {}
+            }
+        }
+        standard_input.delta_time = world.get_singleton::<Time>().delta_seconds_f64 as f32;
     }
 
     pub fn prepare<Style: GetStandardStyle>(
@@ -54,6 +69,16 @@ impl UIManager {
         world: &mut World,
         standard_context: &mut StandardContext<Style, StandardInput>,
     ) {
+        if standard_context.input.text_input_rect.is_some() {
+            world
+                .get_singleton::<NotSendSync<kapp::Application>>()
+                .start_text_input();
+        } else {
+            world
+                .get_singleton::<NotSendSync<kapp::Application>>()
+                .end_text_input();
+        }
+
         self.update_size(world, standard_context);
         self.update_input(world, standard_context.standard_input_mut())
     }

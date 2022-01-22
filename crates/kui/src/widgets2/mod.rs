@@ -21,6 +21,9 @@ pub use fit::*;
 mod toggle;
 pub use toggle::*;
 
+mod text_box;
+pub use text_box::*;
+
 pub fn fill<Context>(color: fn(&Context) -> Color) -> Fill<Context> {
     Fill {
         color,
@@ -90,7 +93,7 @@ pub fn outlined_rounded_fill<State, Context>(
 ) -> impl Widget<State, Context> {
     stack((
         rounded_fill(outline_color, rounding),
-        padding(|_| 2.0, rounded_fill(inner_color, |_| 7.0)),
+        padding(|_| 2.0, rounded_fill(inner_color, |_| 0.0)),
     ))
 }
 

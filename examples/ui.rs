@@ -11,7 +11,7 @@ fn main() {
         world.spawn((Transform::new(), Camera::new_for_user_interface()));
         use kui::*;
 
-        let mut fonts = Fonts::new();
+        let mut fonts = Fonts::empty();
         fonts.load_default_fonts();
 
         let mut standard_context = kui::StandardContext::new(

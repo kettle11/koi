@@ -47,6 +47,17 @@ impl Drawer {
         self.clipping_mask = Box2::new(-Vec2::MAX, Vec2::MAX);
     }
 
+    pub fn glyph_position(offset: Vec3, scale: f32, c: &fontdue::layout::GlyphPosition) -> Box2 {
+        let x = c.x / scale + offset.x;
+        let y = c.y / scale + offset.y;
+
+        let width = c.width as f32 / scale;
+        let height = c.height as f32 / scale;
+        Box2 {
+            min: Vec2::new(x, y),
+            max: Vec2::new(x + width, y + height),
+        }
+    }
     pub fn text(
         &mut self,
         fontdue_font: &fontdue::Font,
@@ -72,18 +83,16 @@ impl Drawer {
                 ),
             );
 
-            let x = c.x / scale + offset.x;
-            let y = c.y / scale + offset.y;
-
-            let width = c.width as f32 / scale;
-            let height = c.height as f32 / scale;
+            let glyph_position = Self::glyph_position(offset, scale, c);
 
             let offset = self.positions.len() as u32;
+
+            let corners = glyph_position.corners();
             self.positions.extend_from_slice(&[
-                self.position_to_gl(Vec2::new(x, y).extend(0.0)),
-                self.position_to_gl(Vec2::new(x + width, y).extend(0.0)),
-                self.position_to_gl(Vec2::new(x + width, y + height).extend(0.0)),
-                self.position_to_gl(Vec2::new(x, y + height).extend(0.0)),
+                self.position_to_gl(corners[0].extend(0.0)),
+                self.position_to_gl(corners[1].extend(0.0)),
+                self.position_to_gl(corners[2].extend(0.0)),
+                self.position_to_gl(corners[3].extend(0.0)),
             ]);
 
             self.texture_coordinates.extend_from_slice(&[

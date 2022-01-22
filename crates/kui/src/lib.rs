@@ -86,6 +86,10 @@ pub trait GetStandardInput {
 pub struct StandardInput {
     pub pointer_position: Vec2,
     pub pointer_down: bool,
+    pub characters_input: Vec<char>,
+    pub keys_pressed: Vec<kapp_platform_common::Key>,
+    pub text_input_rect: Option<Box2>,
+    pub delta_time: f32,
 }
 
 impl Default for StandardInput {
@@ -93,6 +97,10 @@ impl Default for StandardInput {
         Self {
             pointer_position: Vec2::ZERO,
             pointer_down: false,
+            characters_input: Vec::new(),
+            keys_pressed: Vec::new(),
+            text_input_rect: None,
+            delta_time: 0.0,
         }
     }
 }

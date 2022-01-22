@@ -24,6 +24,7 @@ pub fn heading<State, Context: GetStandardStyle + GetFonts>(
 
 pub enum TextSource<State> {
     Data(Box<dyn Fn(&State) -> String + Send + 'static>),
+    MutString(fn(&mut State) -> &mut String),
     DataDyn(fn(&State) -> &str),
     String(&'static str),
 }
@@ -39,6 +40,12 @@ pub struct StrSource<Data>(pub fn(&Data) -> &str);
 impl<Data> From<fn(&Data) -> &str> for TextSource<Data> {
     fn from(f: fn(&Data) -> &str) -> Self {
         Self::DataDyn(f)
+    }
+}
+
+impl<Data> From<fn(&mut Data) -> &mut String> for TextSource<Data> {
+    fn from(f: fn(&mut Data) -> &mut String) -> Self {
+        Self::MutString(f)
     }
 }
 
@@ -94,6 +101,32 @@ impl<State, Context: GetStandardStyle + GetFonts> Text<State, Context> {
         let font = &fonts[font_index];
         drawer.text(font, layout, rectangle.min, color, ui_scale)
     }
+
+    pub fn get_character_bounds(
+        &mut self,
+        context: &mut Context,
+        offset: Vec3,
+        index: usize,
+    ) -> Box2 {
+        let ui_scale = context.standard_style().ui_scale;
+        let glyph = self.layout.glyphs()[index];
+        Drawer::glyph_position(offset, ui_scale, &glyph)
+    }
+
+    pub fn get_character_count(&mut self) -> usize {
+        self.layout.glyphs().len()
+    }
+
+    pub fn get_line_height(&mut self, context: &mut Context) -> f32 {
+        let ui_scale = context.standard_style().ui_scale;
+        let text_size = (self.get_size)(context) * ui_scale;
+
+        let font_index = (self.get_font)(context).0;
+        let fonts = context.get_fonts().fonts();
+        let font = &fonts[font_index];
+        let metrics = font.horizontal_line_metrics(text_size).unwrap();
+        metrics.new_line_size / ui_scale
+    }
 }
 
 impl<State, Context: GetStandardStyle + GetFonts> Widget<State, Context> for Text<State, Context> {
@@ -119,6 +152,13 @@ impl<State, Context: GetStandardStyle + GetFonts> Widget<State, Context> for Tex
                 );
             }
             TextSource::DataDyn(d) => {
+                let s = (d)(state);
+                layout.append(
+                    fonts,
+                    &fontdue::layout::TextStyle::new(s, text_size, font_index),
+                );
+            }
+            TextSource::MutString(d) => {
                 let s = (d)(state);
                 layout.append(
                     fonts,
