@@ -44,7 +44,12 @@ pub struct Fill<Context> {
 }
 
 impl<Data, Context> Widget<Data, Context> for Fill<Context> {
-    fn layout(&mut self, _data: &mut Data, _context: &mut Context) -> Vec3 {
+    fn layout(
+        &mut self,
+        _data: &mut Data,
+        _context: &mut Context,
+        _min_and_max_size: MinAndMaxSize,
+    ) -> Vec3 {
         Vec3::ZERO
     }
     fn draw(&mut self, _data: &mut Data, context: &mut Context, drawer: &mut Drawer, bounds: Box3) {
@@ -70,7 +75,12 @@ pub fn rectangle(size: Vec2, color: Color) -> Rectangle {
 }
 
 impl<Data, Context> Widget<Data, Context> for Rectangle {
-    fn layout(&mut self, _state: &mut Data, _context: &mut Context) -> Vec3 {
+    fn layout(
+        &mut self,
+        _state: &mut Data,
+        _context: &mut Context,
+        _min_and_max_size: MinAndMaxSize,
+    ) -> Vec3 {
         self.size
     }
     fn draw(
@@ -104,7 +114,12 @@ pub fn empty() -> Empty {
 
 impl<Data, Context> Widget<Data, Context> for Empty {
     fn update(&mut self, _data: &mut Data, _context: &mut Context) {}
-    fn layout(&mut self, _data: &mut Data, _context: &mut Context) -> Vec3 {
+    fn layout(
+        &mut self,
+        _data: &mut Data,
+        _context: &mut Context,
+        _min_and_max_size: MinAndMaxSize,
+    ) -> Vec3 {
         Vec3::ZERO
     }
     fn draw(

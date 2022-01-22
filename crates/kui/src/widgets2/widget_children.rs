@@ -3,7 +3,12 @@ use crate::*;
 /// A trait used to define things that produce children for widgets that can accept multiple children.
 pub trait WidgetChildren<Data, Context>: for<'a> GetConstraintsIter<'a> {
     fn update(&mut self, state: &mut Data, context: &mut Context);
-    fn create_children_and_layout(&mut self, state: &mut Data, context: &mut Context);
+    fn create_children_and_layout(
+        &mut self,
+        state: &mut Data,
+        context: &mut Context,
+        min_and_max_size: MinAndMaxSize,
+    );
     fn draw<F: FnMut(&Vec3) -> Box3>(
         &mut self,
         state: &mut Data,
@@ -66,14 +71,19 @@ impl<Data, Context, ChildData, Child: Widget<ChildData, Context>> WidgetChildren
         });
     }
 
-    fn create_children_and_layout(&mut self, state: &mut Data, context: &mut Context) {
+    fn create_children_and_layout(
+        &mut self,
+        state: &mut Data,
+        context: &mut Context,
+        min_and_max_size: MinAndMaxSize,
+    ) {
         let mut i = 0;
         (self.call_per_child)(state, &mut |child_state| {
             if i >= self.children.len() {
                 self.children.push((self.create_child)());
                 self.constraints.push(Vec3::ZERO)
             }
-            self.constraints[i] = (self.children[i]).layout(child_state, context);
+            self.constraints[i] = (self.children[i]).layout(child_state, context, min_and_max_size);
             i += 1;
         });
     }
@@ -148,8 +158,8 @@ macro_rules! tuple_impls {
             }
 
             #[allow(unused)]
-            fn create_children_and_layout(&mut self, state: &mut Data, context: &mut Context) {
-                $(self.constraints[$index] = self.children.$index.layout(state, context);)*
+            fn create_children_and_layout(&mut self, state: &mut Data, context: &mut Context, min_and_max_size: MinAndMaxSize) {
+                $(self.constraints[$index] = self.children.$index.layout(state, context, min_and_max_size);)*
             }
 
             #[allow(unused)]

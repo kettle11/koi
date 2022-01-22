@@ -1,4 +1,7 @@
-use kui::{GetStandardInput, GetStandardStyle, StandardContext, StandardInput, StandardStyle};
+use kui::{
+    GetStandardInput, GetStandardStyle, MinAndMaxSize, StandardContext, StandardInput,
+    StandardStyle,
+};
 
 use crate::*;
 
@@ -93,7 +96,14 @@ impl UIManager {
         self.drawer.set_view_width_height(width, height);
 
         root_widget.update(data, context);
-        root_widget.layout(data, context);
+        root_widget.layout(
+            data,
+            context,
+            MinAndMaxSize {
+                min: Vec3::ZERO,
+                max: Vec3::MAX,
+            },
+        );
         root_widget.draw(data, context, &mut self.drawer, self.initial_constraints);
     }
 

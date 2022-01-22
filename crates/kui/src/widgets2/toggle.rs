@@ -33,12 +33,17 @@ impl<Data, Context, ChildA: Widget<Data, Context>, ChildB: Widget<Data, Context>
         }
     }
 
-    fn layout(&mut self, data: &mut Data, context: &mut Context) -> Vec3 {
+    fn layout(
+        &mut self,
+        data: &mut Data,
+        context: &mut Context,
+        min_and_max_size: MinAndMaxSize,
+    ) -> Vec3 {
         let select = (self.select)(data);
         if select {
-            self.child_a.layout(data, context)
+            self.child_a.layout(data, context, min_and_max_size)
         } else {
-            self.child_b.layout(data, context)
+            self.child_b.layout(data, context, min_and_max_size)
         }
     }
     fn draw(&mut self, data: &mut Data, context: &mut Context, drawer: &mut Drawer, bounds: Box3) {

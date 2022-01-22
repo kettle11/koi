@@ -19,9 +19,14 @@ pub struct NarrowContext<Data, OuterContext, InnerContext, Child: Widget<Data, I
 impl<Data, OuterContext, InnerContext, Child: Widget<Data, InnerContext>> Widget<Data, OuterContext>
     for NarrowContext<Data, OuterContext, InnerContext, Child>
 {
-    fn layout(&mut self, state: &mut Data, context: &mut OuterContext) -> Vec3 {
+    fn layout(
+        &mut self,
+        state: &mut Data,
+        context: &mut OuterContext,
+        min_and_max_size: MinAndMaxSize,
+    ) -> Vec3 {
         let context = (self.narrow_context)(context);
-        self.child.layout(state, context)
+        self.child.layout(state, context, min_and_max_size)
     }
     fn draw(
         &mut self,
@@ -117,12 +122,19 @@ impl<State, Context: GetStandardInput + Clone, Child: Widget<State, ButtonContex
             self.clicked = false
         }
     }
-    fn layout(&mut self, state: &mut State, context: &mut Context) -> Vec3 {
+    fn layout(
+        &mut self,
+        state: &mut State,
+        context: &mut Context,
+        min_and_max_size: MinAndMaxSize,
+    ) -> Vec3 {
         let mut context = ButtonContext {
             context: context.clone(),
             clicked: self.clicked,
         };
-        let child_size = self.child_widget.layout(state, &mut context);
+        let child_size = self
+            .child_widget
+            .layout(state, &mut context, min_and_max_size);
         self.bounding_rect = Box2 {
             min: Vec2::ZERO,
             max: child_size.xy(),

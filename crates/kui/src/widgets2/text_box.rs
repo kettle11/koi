@@ -92,8 +92,13 @@ impl<Data, Context: GetStandardStyle + GetFonts + GetStandardInput> Widget<Data,
             self.cursor_offset_from_end = character_count;
         }
     }
-    fn layout(&mut self, data: &mut Data, context: &mut Context) -> Vec3 {
-        self.child_text.layout(data, context)
+    fn layout(
+        &mut self,
+        data: &mut Data,
+        context: &mut Context,
+        min_and_max_size: MinAndMaxSize,
+    ) -> Vec3 {
+        self.child_text.layout(data, context, min_and_max_size)
     }
     fn draw(&mut self, data: &mut Data, context: &mut Context, drawer: &mut Drawer, bounds: Box3) {
         self.child_text.draw(data, context, drawer, bounds);

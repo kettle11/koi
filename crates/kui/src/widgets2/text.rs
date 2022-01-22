@@ -146,7 +146,12 @@ impl<State, Context: GetStandardStyle + GetFonts> Text<State, Context> {
 }
 
 impl<State, Context: GetStandardStyle + GetFonts> Widget<State, Context> for Text<State, Context> {
-    fn layout(&mut self, state: &mut State, context: &mut Context) -> Vec3 {
+    fn layout(
+        &mut self,
+        state: &mut State,
+        context: &mut Context,
+        _min_and_max_size: MinAndMaxSize,
+    ) -> Vec3 {
         let ui_scale = context.standard_style().ui_scale;
 
         // This layout should instead be stored in standard state.

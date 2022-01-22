@@ -17,6 +17,7 @@ pub use widgets2::*;
 mod fonts;
 pub use fonts::*;
 
+#[derive(Clone, Copy)]
 pub struct MinAndMaxSize {
     pub min: Vec3,
     pub max: Vec3,
@@ -27,7 +28,12 @@ pub trait Widget<Data, Context> {
     fn update(&mut self, data: &mut Data, context: &mut Context) {}
     /// Perform any layout work required and let the parent widget know the Constraints this child requires.
     /// Note that while 'data' is mutable it should not be edited during `layout`.
-    fn layout(&mut self, data: &mut Data, context: &mut Context) -> Vec3;
+    fn layout(
+        &mut self,
+        data: &mut Data,
+        context: &mut Context,
+        min_and_max_size: MinAndMaxSize,
+    ) -> Vec3;
 
     /// Note that while 'data' is mutable it should not be edited during `draw`.
     fn draw(&mut self, data: &mut Data, context: &mut Context, drawer: &mut Drawer, bounds: Box3);

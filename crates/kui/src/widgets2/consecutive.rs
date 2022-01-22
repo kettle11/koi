@@ -48,10 +48,16 @@ impl<State, Context, Children: WidgetChildren<State, Context>> Widget<State, Con
         self.children.update(data, context)
     }
 
-    fn layout(&mut self, data: &mut State, context: &mut Context) -> Vec3 {
+    fn layout(
+        &mut self,
+        data: &mut State,
+        context: &mut Context,
+        min_and_max_size: MinAndMaxSize,
+    ) -> Vec3 {
         let mut offset_in_direction = 0.;
         let mut other_dimension_size = Vec3::ZERO;
-        self.children.create_children_and_layout(data, context);
+        self.children
+            .create_children_and_layout(data, context, min_and_max_size);
         for &child_size in self.children.constraints_iter() {
             let amount_in_directon = child_size.dot(self.direction);
             let non_direction_size = child_size - (amount_in_directon * self.direction);
