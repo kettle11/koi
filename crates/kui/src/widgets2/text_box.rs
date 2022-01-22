@@ -110,14 +110,11 @@ impl<Data, Context: GetStandardStyle + GetFonts + GetStandardInput> Widget<Data,
 
             let cursor_left = if (glyph_count - self.cursor_offset_from_end) != 0 {
                 // If this isn't before the first character.
-                self.child_text
-                    .get_character_bounds(
+                bounds.min.x
+                    + self.child_text.get_glyph_advance_width_position(
                         context,
-                        bounds.min,
                         glyph_count - self.cursor_offset_from_end - 1,
                     )
-                    .max
-                    .x
             } else {
                 // If this is before the first character
                 if glyph_count != 0 {

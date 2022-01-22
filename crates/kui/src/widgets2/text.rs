@@ -113,6 +113,22 @@ impl<State, Context: GetStandardStyle + GetFonts> Text<State, Context> {
         Drawer::glyph_position(offset, ui_scale, &glyph)
     }
 
+    pub fn get_glyph_advance_width_position(&mut self, context: &mut Context, index: usize) -> f32 {
+        let glyph_position = self.layout.glyphs()[index];
+
+        let font_index = (self.get_font)(context).0;
+        let fonts = context.get_fonts().fonts();
+        let font = &fonts[font_index];
+
+        let ui_scale = context.standard_style().ui_scale;
+        let text_size = (self.get_size)(context) * ui_scale;
+        (font
+            .metrics_indexed(glyph_position.key.glyph_index, text_size)
+            .advance_width as f32
+            + glyph_position.x)
+            / ui_scale
+    }
+
     pub fn get_character_count(&mut self) -> usize {
         self.layout.glyphs().len()
     }
