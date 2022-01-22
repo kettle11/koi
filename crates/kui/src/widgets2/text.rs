@@ -173,7 +173,7 @@ impl<State, Context: GetStandardStyle + GetFonts> Widget<State, Context> for Tex
                 );
             }
         };
-        let size = layout
+        let mut size = layout
             .glyphs()
             .iter()
             .fold(Box2::ZERO, |total_bounds, glyph| {
@@ -183,6 +183,9 @@ impl<State, Context: GetStandardStyle + GetFonts> Widget<State, Context> for Tex
                 ))
             })
             .size();
+
+        // Prevent text from shrinking its requested size when there's no text.
+        size.y = size.y.max(self.get_line_height(context));
         size.extend(0.1)
     }
 

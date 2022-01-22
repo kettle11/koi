@@ -1,5 +1,17 @@
 use crate::*;
 
+pub fn text_field<Data, Context: GetStandardStyle + GetFonts + GetStandardInput>(
+    get_text: fn(&mut Data) -> &mut String,
+) -> impl Widget<Data, Context> {
+    fit(stack((
+        outlined_rounded_fill(
+            |c: &Context| c.standard_style().primary_variant_color,
+            |c| c.standard_style().primary_color,
+            |c| c.standard_style().rounding,
+        ),
+        padding(|c: &Context| c.standard_style().padding, text_box(get_text)),
+    )))
+}
 pub fn text_box<Data, Context: GetStandardStyle + GetFonts + GetStandardInput>(
     get_text: fn(&mut Data) -> &mut String,
 ) -> impl Widget<Data, Context> {
