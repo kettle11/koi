@@ -44,8 +44,8 @@ pub fn setup_audio(world: &mut World) {
     kaudio::begin_audio_thread(move |samples, _info| {
         audio_thread.provide_samples(samples);
     });
-    world.spawn(sound_assets);
-    world.spawn(AudioManager { scene_handle });
+    world.spawn((Name("Assets<Sound>"), sound_assets));
+    world.spawn((Name("AudioManager"), AudioManager { scene_handle }));
 }
 
 struct AudioThread {

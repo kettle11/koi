@@ -531,6 +531,7 @@ pub fn spawn_skybox(world: &mut World, path: &str) {
         .run(world);
 
     world.spawn((
+        Name("Sky box"),
         Transform::new(),
         Mesh::CUBE_MAP_CUBE,
         Color::WHITE,

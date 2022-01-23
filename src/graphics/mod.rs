@@ -251,11 +251,11 @@ fn setup_graphics(world: &mut World) {
         NotSendSync::new(CubeMapAssetLoader::new(&mut graphics)),
     );
 
-    world.spawn(graphics);
-    world.spawn(mesh_assets);
-    world.spawn(texture_assets);
-    world.spawn(shader_assets);
-    world.spawn(cube_map_assets);
+    world.spawn((Name("Graphics"), graphics));
+    world.spawn((Name("Assets<Mesh>"), mesh_assets));
+    world.spawn((Name("Assets<Texture>"), texture_assets));
+    world.spawn((Name("Assets<Shader>"), shader_assets));
+    world.spawn((Name("Assets<CubeMap>"), cube_map_assets));
 }
 
 fn assign_current_camera_target(graphics: &mut Graphics, events: &KappEvents) {

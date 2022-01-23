@@ -14,7 +14,12 @@ pub struct UIManager {
 
 impl UIManager {
     pub fn new(world: &mut World) -> Self {
-        let entity = world.spawn((Transform::new(), Material::UI, RenderFlags::USER_INTERFACE));
+        let entity = world.spawn((
+            Name("User Interface Visuals"),
+            Transform::new(),
+            Material::UI,
+            RenderFlags::USER_INTERFACE,
+        ));
         let drawer = kui::Drawer::new();
         Self {
             entity,

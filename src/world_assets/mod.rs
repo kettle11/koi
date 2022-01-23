@@ -16,7 +16,7 @@ pub fn world_assets_plugin() -> Plugin {
 
 fn setup_prefabs(world: &mut World) {
     let assets = Assets::<World>::new(World::new(), WorldLoader::new());
-    world.spawn(assets);
+    world.spawn((Name("Assets<World>"), assets));
 }
 
 fn load_prefabs_system(

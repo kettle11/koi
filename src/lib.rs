@@ -35,6 +35,9 @@ pub use input::*;
 mod world_assets;
 pub use world_assets::*;
 
+mod ecs_components;
+pub use ecs_components::*;
+
 #[cfg(feature = "graphics")]
 mod graphics;
 #[cfg(feature = "graphics")]
@@ -212,16 +215,16 @@ impl App {
         ktasks::create_workers(4);
 
         let mut world = World::new();
-        world.spawn(Commands::new());
+        world.spawn((Name("Commands"), Commands::new()));
         // Setup input
-        let input_entity = world.spawn(Input::new());
+        let input_entity = world.spawn((Name("Input"), Input::new()));
 
-        let kapp_events_entity = world.spawn(KappEvents(Vec::new()));
+        let kapp_events_entity = world.spawn((Name("KappEvents"), KappEvents(Vec::new())));
 
         // For now `kapp` is integrated directly into `koi`
         let (kapp_app, kapp_event_loop) = kapp::initialize();
 
-        world.spawn(NotSendSync::new(kapp_app.clone()));
+        world.spawn((Name("Kapp Application"), NotSendSync::new(kapp_app.clone())));
 
         let window_width = 1600;
         let window_height = 1200;
@@ -236,7 +239,7 @@ impl App {
 
         window.request_redraw();
 
-        let window_entity = world.spawn(NotSendSync::new(window));
+        let window_entity = world.spawn((Name("Window"), NotSendSync::new(window)));
 
         for setup_system in &mut self.systems.setup_systems {
             setup_system.run(&mut world)
@@ -249,11 +252,14 @@ impl App {
         // Hard-coded to 60 fixed updates per second for now.
         let fixed_time_step = 1.0 / 60.0;
 
-        world.spawn(Time {
-            // Set the delta_time to fixed_time_delta so that a fixed update runs for the first frame.
-            delta_seconds_f64: fixed_time_step,
-            fixed_time_step,
-        });
+        world.spawn((
+            Name("Time"),
+            Time {
+                // Set the delta_time to fixed_time_delta so that a fixed update runs for the first frame.
+                delta_seconds_f64: fixed_time_step,
+                fixed_time_step,
+            },
+        ));
 
         let run_system = Box::new(setup_and_run_function(&mut world));
 

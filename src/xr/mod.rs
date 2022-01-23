@@ -36,7 +36,7 @@ fn setup_xr(world: &mut World) {
         s.replace(Some(application.get_user_event_sender()));
     });
     if let Ok(xr) = InnerXR::initialize() {
-        world.spawn(NotSendSync::new(xr));
+        world.spawn((Name("XR"), NotSendSync::new(xr)));
     } else {
         log!("XR IS UNSUPPORTED");
     }

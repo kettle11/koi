@@ -15,10 +15,13 @@ pub fn physics_plguin() -> Plugin {
 }
 
 pub fn setup_physics(world: &mut World) {
-    world.spawn(PhysicsWorld {
-        world: kphysics::PhysicsWorld::new(),
-        paused: false,
-    });
+    world.spawn((
+        Name("PhysicsWorld"),
+        PhysicsWorld {
+            world: kphysics::PhysicsWorld::new(),
+            paused: false,
+        },
+    ));
 }
 
 pub struct PhysicsWorldHandle(usize);
