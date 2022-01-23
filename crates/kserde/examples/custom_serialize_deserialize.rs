@@ -2,7 +2,7 @@ use kserde::*;
 
 struct Person {
     name: String,
-    age: i64,
+    age: i32,
 }
 
 impl<S: Serializer> Serialize<S> for Person {
@@ -26,7 +26,7 @@ impl<'a, D: Deserializer<'a>> Deserialize<'a, D> for Person {
         while let Some(p) = deserializer.has_property() {
             match &*p {
                 "name" => name = Some(String::deserialize(deserializer)?),
-                "age" => age = Some(i64::deserialize(deserializer)?),
+                "age" => age = Some(i32::deserialize(deserializer)?),
                 _ => {}
             }
         }
