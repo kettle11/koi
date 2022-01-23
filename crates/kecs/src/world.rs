@@ -666,10 +666,7 @@ impl World {
     where
         Query<'a, PARAMS>: SystemParameterTrait,
     {
-        println!("HERE0");
         let meta_data = <Query<PARAMS> as SystemParameterTrait>::get_meta_data(self)?;
-        println!("HERE1");
-
         <Query<PARAMS> as SystemParameterFetchTrait>::fetch(self, &meta_data)
     }
     /// Get a [Query] from the [World] without running a system
