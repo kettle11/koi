@@ -177,13 +177,17 @@ fn update_root_global_transforms(
 
 pub fn update_global_transforms(
     commands: &mut Commands,
-    mut query: Query<(&HierarchyNode, Option<&Transform>)>,
+    mut query: Query<(
+        &HierarchyNode,
+        Option<&Transform>,
+        Option<&mut GlobalTransform>,
+    )>,
 ) {
     // It'd be nice to find a way to avoid this allocation
     let mut parents = Vec::new();
 
     // This is a bit inefficient in that all hierarchies are updated, regardless of if they changed.
-    for (node, local_transform) in &query {
+    for (node, local_transform, _global_transform) in &query {
         if let Some(last_child) = node.last_child() {
             if node.parent().is_none() {
                 if let Some(local_transform) = local_transform {
@@ -204,11 +208,17 @@ pub fn update_global_transforms(
 
 fn update_descendent_transforms(
     commands: &mut Commands,
-    query: &mut Query<(&HierarchyNode, Option<&Transform>)>,
+    query: &mut Query<(
+        &HierarchyNode,
+        Option<&Transform>,
+        Option<&mut GlobalTransform>,
+    )>,
     child_entity: Entity,
     parent_matrix: &Mat4,
 ) {
-    if let Some((hierarchy_node, local_transform)) = query.get_entity_components_mut(child_entity) {
+    if let Some((hierarchy_node, local_transform, global_transform)) =
+        query.get_entity_components_mut(child_entity)
+    {
         let last_child = *hierarchy_node.last_child();
         let previous_sibling = *hierarchy_node.previous_sibling();
 
@@ -218,10 +228,15 @@ fn update_descendent_transforms(
             *parent_matrix
         };
 
-        commands.add_component(
-            child_entity,
-            GlobalTransform(Transform::from_mat4(my_global_matrix)),
-        );
+        // It would be simpler to just always add a GlobalTransform here component here, as adding a component replaces an existing component.
+        // But adding a component involves a bit of complex lookup logic in the ECS. Profiling a massive scene revealed that the calls
+        // to `add_component` were significant.
+        let new_global_transform = GlobalTransform(Transform::from_mat4(my_global_matrix));
+        if let Some(global_transform) = global_transform {
+            *global_transform = new_global_transform;
+        } else {
+            commands.add_component(child_entity, new_global_transform);
+        }
 
         // Iterate through descendent transforms
         if let Some(child) = last_child {
