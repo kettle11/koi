@@ -41,12 +41,22 @@ pub trait IntoSystemTrait<PARAMETERS> {
 pub trait RunSystemTrait<'return_lifetime, PARAMETERS, RETURN: 'return_lifetime> {
     fn try_run(self, world: &'return_lifetime World) -> Result<RETURN, KecsError>;
     // fn run(self, world: &'return_lifetime World) -> RETURN;
+
+    #[track_caller]
     fn run(self, world: &'return_lifetime World) -> RETURN
     where
         Self: Sized,
     {
-        <Self as RunSystemTrait<'return_lifetime, PARAMETERS, RETURN>>::try_run(self, world)
-            .unwrap()
+        match <Self as RunSystemTrait<'return_lifetime, PARAMETERS, RETURN>>::try_run(self, world) {
+            Ok(r) => r,
+            Err(e) => {
+                panic!(
+                    "System run error: {:?}. \nCould not run system called from: {:?}",
+                    e,
+                    std::panic::Location::caller()
+                )
+            }
+        }
     }
 }
 
