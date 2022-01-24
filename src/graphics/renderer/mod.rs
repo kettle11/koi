@@ -80,7 +80,6 @@ pub type RendererQuery<'a> = (
 );
 
 struct Renderer<'a, 'b: 'a> {
-    renderer_info: &'a RendererInfo,
     render_pass: &'a mut RenderPass<'b>,
     camera_info: &'a [ViewInfo],
     shader_assets: &'a Assets<Shader>,
@@ -121,7 +120,6 @@ impl<'a, 'b: 'a> Renderer<'a, 'b> {
 
         let brdf_lookup_texture = texture_assets.get(&renderer_info.brdf_lookup_table);
         Self {
-            renderer_info,
             render_pass,
             // camera_info,
             shader_assets,
@@ -557,7 +555,7 @@ impl<'a, 'b: 'a> Renderer<'a, 'b> {
         let mut non_transparent_renderables = Vec::new();
 
         for renderable in renderables.iter() {
-            let (transform, material_handle, mesh_handle, render_flags, optional_sprite, color) =
+            let (transform, material_handle, mesh_handle, render_flags, _optional_sprite, _color) =
                 renderable;
             let render_flags = render_flags.cloned().unwrap_or(RenderFlags::DEFAULT);
 
@@ -599,7 +597,7 @@ impl<'a, 'b: 'a> Renderer<'a, 'b> {
         );
 
         for renderable in non_transparent_renderables {
-            let (transform, material_handle, mesh_handle, render_flags, optional_sprite, color) =
+            let (transform, material_handle, mesh_handle, _render_flags, optional_sprite, color) =
                 renderable;
 
             self.change_material(material_handle, lights, reflection_probes);

@@ -187,7 +187,7 @@ pub fn update_global_transforms(
     let mut parents = Vec::new();
 
     // This is a bit inefficient in that all hierarchies are updated, regardless of if they changed.
-    for (e, (node, local_transform, _global_transform)) in query.entities_and_components() {
+    for (e, (node, _local_transform, _global_transform)) in query.entities_and_components() {
         if node.parent().is_none() {
             parents.push(*e)
         }

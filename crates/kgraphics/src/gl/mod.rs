@@ -801,9 +801,10 @@ impl GraphicsContextTrait for GraphicsContext {
     }
 
     fn commit_command_buffer(&mut self, mut command_buffer: CommandBuffer) {
-        // let mut temp_framebuffer = None;
         unsafe {
             use CommandBufferAction::*;
+
+            // This `.cloned` potentially adds some overhead.
             for command in command_buffer.actions.iter().cloned() {
                 match command {
                     Clear((r, g, b, a)) => {
