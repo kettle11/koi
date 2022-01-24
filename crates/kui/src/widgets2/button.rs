@@ -76,19 +76,6 @@ pub fn button<State, Context: GetStandardInput + GetStandardStyle + Clone>(
     }
 }
 
-/*
-pub fn button_base<State, Context: GetStandardInput>(
-    on_click: fn(&mut State),
-    child_widget: impl Widget<State, Context>,
-) -> impl Widget<State, Context> {
-    ButtonBase {
-        child_widget,
-        bounding_rect: Box2::ZERO,
-        on_click,
-        phantom: std::marker::PhantomData,
-    }
-}
-*/
 pub struct ButtonBase<State, Context, Child: Widget<State, ButtonContext<Context>>> {
     child_widget: Child,
     bounding_rect: Box2,

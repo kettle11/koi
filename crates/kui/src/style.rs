@@ -32,7 +32,7 @@ impl StandardStyle {
     pub fn new() -> Self {
         Self {
             primary_text_color: Color::new_from_bytes(40, 40, 40, 255),
-            primary_text_size: 16.,
+            primary_text_size: 18.,
             heading_text_size: 32.,
             primary_font: Font::default(),
             heading_font: Font::default(),

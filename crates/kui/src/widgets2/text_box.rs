@@ -111,6 +111,7 @@ impl<Data, Context: GetStandardStyle + GetFonts + GetStandardInput> Widget<Data,
             self.selected_area = None;
         }
     }
+
     fn layout(
         &mut self,
         data: &mut Data,
