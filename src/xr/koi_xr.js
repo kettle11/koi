@@ -161,18 +161,20 @@ let kxr = {
         console.log("START XR CALLED!");
         if (navigator.xr) {
             if (!xr_session) {
-                console.log("HERE0!");
 
-                navigator.xr.isSessionSupported('immersive-vr').then((supported) => {
-                    console.log("STARTING SESSION!");
-                    if (supported) {
-                        navigator.xr.requestSession('immersive-vr', {
-                            requiredFeatures: ['local-floor'],
-                        }).then(on_session_started);
-                    } else {
-                        navigator.xr.requestSession('inline').then(on_session_started);
-                    }
-                })
+                // Set up a click handler to start XR when the page is clicked.
+                document.onclick = function () {
+                    navigator.xr.isSessionSupported('immersive-vr').then((supported) => {
+                        console.log("STARTING SESSION!");
+                        if (supported) {
+                            navigator.xr.requestSession('immersive-vr', {
+                                requiredFeatures: ['local-floor'],
+                            }).then(on_session_started);
+                        } else {
+                            navigator.xr.requestSession('inline').then(on_session_started);
+                        }
+                    })
+                };
             }
         }
     },

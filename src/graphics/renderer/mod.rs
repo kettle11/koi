@@ -157,7 +157,7 @@ impl<'a, 'b: 'a> Renderer<'a, 'b> {
         // Is this `offset *` correct?
         let camera_position = offset.transform_point(camera_global_transform.position);
         // let projection_matrix = camera.projection_matrix();
-        let view_matrix = (offset * camera_global_transform.model()).inversed();
+        let view_matrix = (camera_global_transform.model() * offset).inversed();
 
         ViewInfo {
             projection_matrix,
@@ -741,9 +741,6 @@ pub fn render_scene<'a, 'b>(
 
             // Check that this camera targets the target currently being rendered.
             if camera_should_render {
-                // Start a new render pass per camera. This may be heavy and isn't critical, but it made
-                // organization easier with shadow-passes.
-
                 let mut camera_info = Vec::new();
                 if graphics.override_views.is_empty() {
                     camera_info.push(Renderer::get_view_info(

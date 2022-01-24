@@ -147,6 +147,10 @@ function kwasm_stuff() {
     // Load and setup the WebAssembly library.
     // This is called when using `kwasm` without wasm-bindgen.
     function initialize(wasm_library_path) {
+        if (self.kwasm_module) {
+            console.log("Old kwasm module is still around after refresh");
+            self.kwasm_module = null;
+        }
         let imports = {
             env: {}
         };
@@ -163,12 +167,14 @@ function kwasm_stuff() {
             // Start with a large amount of memory to avoid issues in Safari / Firefox with grow.
             // It seems grow fails if called from another thread, so this solution isn't exceptionally robust.
             // 5 is arbitrary here
-            let starting_mem = Math.max(12800, (bytes.byteLength / 65536) + 5);
+            let starting_mem = Math.max(12800 / 2, (bytes.byteLength / 65536) + 5);
 
-            if (shared_memory_supported) {
-                self.kwasm_memory = new WebAssembly.Memory({ initial: starting_mem, maximum: 16384 * 4, shared: true });
-            } else {
-                self.kwasm_memory = new WebAssembly.Memory({ initial: starting_mem, maximum: 16384 * 4 });
+            if (!self.kwasm_module) {
+                if (shared_memory_supported) {
+                    self.kwasm_memory = new WebAssembly.Memory({ initial: starting_mem, maximum: 16384 * 2, shared: true });
+                } else {
+                    self.kwasm_memory = new WebAssembly.Memory({ initial: starting_mem, maximum: 16384 * 2 });
+                }
             }
             imports.env.memory = self.kwasm_memory;
             return WebAssembly.instantiate(bytes, imports)

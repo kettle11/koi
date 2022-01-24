@@ -295,7 +295,7 @@ pub(super) fn xr_control_flow(koi_state: &mut KoiState, event: KappEvent) -> boo
             .run(&mut koi_state.world);
 
             (|xr: &XR, mut xr_controllers: Query<(&mut Transform, &XRController)>| {
-                // Update the location of the head.
+                // Update the location of the controller.
                 for (transform, controller) in &mut xr_controllers {
                     let controller_matrix = xr.get_controller_matrix(controller.id);
                     let scale = transform.scale;

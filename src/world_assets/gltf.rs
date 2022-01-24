@@ -168,6 +168,7 @@ pub(super) fn load_gltf_as_world(
     // This updates all transform hierarchies, sets local transforms to `GlobalTransforms, and then removes `HierarchyNodes`
     // Doing this makes sense for static geometry like level objects, but doesn't make sense for GlTfs which would have
     // individual animated components.
+    /*
     let commands_entity = gltf_world.spawn(Commands::new());
     crate::transform::update_global_transforms.run(&gltf_world);
     let mut commands = gltf_world
@@ -191,6 +192,7 @@ pub(super) fn load_gltf_as_world(
     })
     .run(&gltf_world);
     commands.apply(&mut gltf_world);
+    */
 
     Some(gltf_world)
 }

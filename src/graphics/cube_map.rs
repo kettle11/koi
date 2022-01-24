@@ -543,3 +543,32 @@ pub fn spawn_skybox(world: &mut World, path: &str) {
     ));
     world.spawn((Transform::new(), reflection_probe));
 }
+
+pub fn spawn_skybox_without_image_based_lighting(world: &mut World, path: &str) {
+    let skybox_material = (|cube_maps: &mut Assets<CubeMap>, materials: &mut Assets<Material>| {
+        let skybox_cube_map = cube_maps.load_with_options(
+            path,
+            CubeMapOptions {
+                diffuse_and_specular_irradiance_cubemaps: None,
+                ..Default::default()
+            },
+        );
+
+        let mut material = Material::new(Shader::SKY_BOX);
+        material.set_cube_map("p_environment_map", skybox_cube_map);
+        materials.add(material)
+    })
+    .run(world);
+
+    world.spawn((
+        Name("Sky box"),
+        Transform::new(),
+        Mesh::CUBE_MAP_CUBE,
+        Color::WHITE,
+        crate::Texture::WHITE,
+        skybox_material,
+        RenderFlags::DO_NOT_CAST_SHADOWS
+            .with_layer(RenderFlags::IGNORE_CULLING)
+            .with_layer(RenderFlags::DEFAULT),
+    ));
+}
