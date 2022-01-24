@@ -174,22 +174,23 @@ pub trait SystemParameterFetchTrait<'a> {
 // Get an arbitrary instance of T from the [World].
 impl<T: ComponentTrait> SystemParameterTrait for &T {
     fn get_meta_data(world: &World) -> Result<SystemParameterMetaData, KecsError> {
-        let mut matching_archetypes = world.storage_lookup.matching_archetype_iterator::<1>(&[(
+        let mut archetypes = Vec::new();
+        let mut channels = Vec::new();
+
+        for matching_archetype in world.storage_lookup.matching_archetype_iterator::<1>(&[(
             Some(0),
             Filter {
                 component_id: get_component_id::<T>(),
                 filter_type: FilterType::With,
             },
-        )]);
-        let ArchetypeMatch {
-            archetype_index,
-            channels,
-        } = matching_archetypes
-            .next()
-            .ok_or_else(KecsError::no_matching_component::<T>)?;
+        )]) {
+            archetypes.push(matching_archetype.archetype_index);
+            channels.push(matching_archetype.channels[0].map(|c| (c, false)));
+        }
+
         Ok(SystemParameterMetaData {
-            archetypes: vec![archetype_index],
-            channels: vec![(channels[0].map(|c| (c, false)))],
+            archetypes,
+            channels,
         })
     }
 }
@@ -201,20 +202,18 @@ impl<'a, T: ComponentTrait> SystemParameterFetchTrait<'a> for &T {
         world: &'a World,
         meta_data: &SystemParameterMetaData,
     ) -> Result<Self::FetchResult, KecsError> {
-        let (archetype_index, channel_index) = (
-            meta_data
-                .archetypes
-                .get(0)
-                .ok_or_else(KecsError::no_matching_component::<T>)?,
-            meta_data.channels[0].unwrap().0,
-        );
-
-        let channel = world.archetypes[*archetype_index].get_read_channel::<T>(channel_index)?;
-        if channel.len() == 0 {
-            Err(KecsError::no_matching_component::<T>())
-        } else {
-            Ok(channel)
+        for (&archetype_index, channel_index) in
+            meta_data.archetypes.iter().zip(meta_data.channels.iter())
+        {
+            if let Some((channel_index, _)) = channel_index {
+                let channel =
+                    world.archetypes[archetype_index].get_read_channel::<T>(*channel_index)?;
+                if !channel.is_empty() {
+                    return Ok(channel);
+                }
+            }
         }
+        Err(KecsError::no_matching_component::<T>())
     }
 }
 
@@ -227,22 +226,23 @@ impl<'b, T: ComponentTrait> AsSystemArg<'b> for RwLockReadGuard<'_, Vec<T>> {
 
 impl<T: ComponentTrait> SystemParameterTrait for &mut T {
     fn get_meta_data(world: &World) -> Result<SystemParameterMetaData, KecsError> {
-        let mut matching_archetypes = world.storage_lookup.matching_archetype_iterator::<1>(&[(
+        let mut archetypes = Vec::new();
+        let mut channels = Vec::new();
+
+        for matching_archetype in world.storage_lookup.matching_archetype_iterator::<1>(&[(
             Some(0),
             Filter {
                 component_id: get_component_id::<T>(),
                 filter_type: FilterType::With,
             },
-        )]);
-        let ArchetypeMatch {
-            archetype_index,
-            channels,
-        } = matching_archetypes
-            .next()
-            .ok_or_else(KecsError::no_matching_component::<T>)?;
+        )]) {
+            archetypes.push(matching_archetype.archetype_index);
+            channels.push(matching_archetype.channels[0].map(|c| (c, true)));
+        }
+
         Ok(SystemParameterMetaData {
-            archetypes: vec![archetype_index],
-            channels: vec![(channels[0].map(|c| (c, true)))],
+            archetypes,
+            channels,
         })
     }
 }
@@ -254,14 +254,18 @@ impl<'a, T: ComponentTrait> SystemParameterFetchTrait<'a> for &mut T {
         world: &'a World,
         meta_data: &SystemParameterMetaData,
     ) -> Result<Self::FetchResult, KecsError> {
-        let (archetype_index, channel_index) =
-            (meta_data.archetypes[0], meta_data.channels[0].unwrap().0);
-        let channel = world.archetypes[archetype_index].get_write_channel::<T>(channel_index)?;
-        if channel.len() == 0 {
-            Err(KecsError::no_matching_component::<T>())
-        } else {
-            Ok(channel)
+        for (&archetype_index, channel_index) in
+            meta_data.archetypes.iter().zip(meta_data.channels.iter())
+        {
+            if let Some((channel_index, _)) = channel_index {
+                let channel =
+                    world.archetypes[archetype_index].get_write_channel::<T>(*channel_index)?;
+                if !channel.is_empty() {
+                    return Ok(channel);
+                }
+            }
         }
+        Err(KecsError::no_matching_component::<T>())
     }
 }
 
