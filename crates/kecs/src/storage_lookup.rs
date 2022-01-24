@@ -144,7 +144,7 @@ impl<'a, const CHANNEL_COUNT: usize> Iterator for MatchingArchetypeIterator<'a, 
             // This will almost always be the case chosen, but the other cases are handled just-in-case.
             FilterType::With => {
                 let archetypes = first_filter_info.archetypes?;
-                for (channel, archetype_index) in archetypes.data()[self.offset..]
+                for (channel, &archetype_index) in archetypes.data()[self.offset..]
                     .iter()
                     .zip(archetypes.data_index_to_item_index()[self.offset..].iter())
                 {
@@ -156,9 +156,9 @@ impl<'a, const CHANNEL_COUNT: usize> Iterator for MatchingArchetypeIterator<'a, 
                         channels[output_index] = Some(*channel);
                     }
 
-                    if match_tail_filters(tail_filter_info, *archetype_index, &mut channels) {
+                    if match_tail_filters(tail_filter_info, archetype_index, &mut channels) {
                         return Some(ArchetypeMatch {
-                            archetype_index: *archetype_index,
+                            archetype_index,
                             channels,
                         });
                     }
