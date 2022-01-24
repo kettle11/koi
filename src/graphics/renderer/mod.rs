@@ -80,6 +80,7 @@ pub type RendererQuery<'a> = (
 );
 
 struct Renderer<'a, 'b: 'a> {
+    renderer_info: &'a RendererInfo,
     render_pass: &'a mut RenderPass<'b>,
     camera_info: &'a [ViewInfo],
     shader_assets: &'a Assets<Shader>,
@@ -101,7 +102,7 @@ struct Renderer<'a, 'b: 'a> {
 
 impl<'a, 'b: 'a> Renderer<'a, 'b> {
     pub fn new(
-        renderer_info: &RendererInfo,
+        renderer_info: &'a RendererInfo,
         render_pass: &'a mut RenderPass<'b>,
         shader_assets: &'a Assets<Shader>,
         material_assets: &'a Assets<Material>,
@@ -120,6 +121,7 @@ impl<'a, 'b: 'a> Renderer<'a, 'b> {
 
         let brdf_lookup_texture = texture_assets.get(&renderer_info.brdf_lookup_table);
         Self {
+            renderer_info,
             render_pass,
             // camera_info,
             shader_assets,
@@ -299,6 +301,7 @@ impl<'a, 'b: 'a> Renderer<'a, 'b> {
     ) {
         // Avoid unnecessary [Material] rebinds.
         if Some(material_handle) != self.material_handle {
+            //println!("CHANGE MATERIAL");
             self.just_changed_material = true;
 
             // When a pipeline change occurs a bunch of uniforms need to be rebound.
@@ -322,6 +325,8 @@ impl<'a, 'b: 'a> Renderer<'a, 'b> {
             // For now this is commented out but it could be reintroduced later.
             // This check would prevent pipleline changes if the material is different but the pipeline is the same.
             if self.bound_shader != Some(&material.shader) {
+                //println!("CHANGE SHADER");
+
                 self.current_pipeline = Some(pipeline);
                 self.render_pass.set_pipeline(pipeline);
 
@@ -544,18 +549,19 @@ impl<'a, 'b: 'a> Renderer<'a, 'b> {
         let camera_position = camera_transform.position;
         let camera_forward = -camera_transform.forward();
 
-        let mut transparent_renderables = Vec::new();
-
         let frustum =
             Frustum::from_matrix(camera.projection_matrix() * camera_transform.model().inversed());
+
+        // These should *really* be preallocated somehow.
+        let mut transparent_renderables = Vec::new();
+        let mut non_transparent_renderables = Vec::new();
 
         for renderable in renderables.iter() {
             let (transform, material_handle, mesh_handle, render_flags, optional_sprite, color) =
                 renderable;
             let render_flags = render_flags.cloned().unwrap_or(RenderFlags::DEFAULT);
+
             if camera.render_flags.includes_layer(render_flags) {
-                // Frustum cull models
-                // Always render models without bounding boxes.
                 let should_render = render_flags.includes_layer(RenderFlags::IGNORE_CULLING)
                     || self
                         .mesh_assets
@@ -574,19 +580,39 @@ impl<'a, 'b: 'a> Renderer<'a, 'b> {
                     if is_transparent {
                         transparent_renderables.push(renderable);
                     } else {
-                        self.change_material(material_handle, lights, reflection_probes);
-                        if let Some(sprite) = optional_sprite {
-                            self.prepare_sprite(sprite);
-                        }
-                        if let Some(color) = color {
-                            self.set_color(*color);
-                        }
-
-                        self.render_mesh(transform, mesh_handle);
+                        non_transparent_renderables.push(renderable);
                     }
                 }
             }
         }
+
+        non_transparent_renderables.sort_by(
+            |(_, material_a, mesh_a, _, _, _), (_, material_b, mesh_b, _, _, _)| {
+                // Sort by material then mesh.
+                // In the future sorting could occur by pipeline as well.
+                let cmp = material_a.cmp(&material_b);
+                match cmp {
+                    std::cmp::Ordering::Less | std::cmp::Ordering::Greater => cmp,
+                    _ => mesh_a.cmp(mesh_b),
+                }
+            },
+        );
+
+        for renderable in non_transparent_renderables {
+            let (transform, material_handle, mesh_handle, render_flags, optional_sprite, color) =
+                renderable;
+
+            self.change_material(material_handle, lights, reflection_probes);
+            if let Some(sprite) = optional_sprite {
+                self.prepare_sprite(sprite);
+            }
+            if let Some(color) = color {
+                self.set_color(*color);
+            }
+
+            self.render_mesh(transform, mesh_handle);
+        }
+
         transparent_renderables.sort_by(|(a, ..), (b, ..)| {
             let v0 = (a.position - camera_position).dot(camera_forward);
             let v1 = (b.position - camera_position).dot(camera_forward);
