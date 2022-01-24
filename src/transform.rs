@@ -187,22 +187,14 @@ pub fn update_global_transforms(
     let mut parents = Vec::new();
 
     // This is a bit inefficient in that all hierarchies are updated, regardless of if they changed.
-    for (node, local_transform, _global_transform) in &query {
-        if let Some(last_child) = node.last_child() {
-            if node.parent().is_none() {
-                if let Some(local_transform) = local_transform {
-                    let global_transform = GlobalTransform(*local_transform);
-                    parents.push((global_transform, *last_child));
-                } else {
-                    parents.push((GlobalTransform(Transform::new()), *last_child));
-                }
-            }
+    for (e, (node, local_transform, _global_transform)) in query.entities_and_components() {
+        if node.parent().is_none() {
+            parents.push(*e)
         }
     }
 
-    for (parent_transform, last_child) in &parents {
-        let parent_matrix = parent_transform.model();
-        update_descendent_transforms(commands, &mut query, *last_child, &parent_matrix);
+    for parent_entity in &parents {
+        update_descendent_transforms(commands, &mut query, *parent_entity, &Mat4::IDENTITY);
     }
 }
 
@@ -219,9 +211,6 @@ fn update_descendent_transforms(
     if let Some((hierarchy_node, local_transform, global_transform)) =
         query.get_entity_components_mut(child_entity)
     {
-        let last_child = *hierarchy_node.last_child();
-        let previous_sibling = *hierarchy_node.previous_sibling();
-
         let my_global_matrix = if let Some(local_transform) = local_transform {
             *parent_matrix * local_transform.model()
         } else {
@@ -238,13 +227,11 @@ fn update_descendent_transforms(
             commands.add_component(child_entity, new_global_transform);
         }
 
-        // Iterate through descendent transforms
-        if let Some(child) = last_child {
-            update_descendent_transforms(commands, query, child, &my_global_matrix);
-        }
-        // Iterate through sibling transforms
-        if let Some(previous_sibling) = previous_sibling {
-            update_descendent_transforms(commands, query, previous_sibling, parent_matrix);
+        let mut child = *hierarchy_node.last_child();
+        while let Some(child_entity) = child {
+            let hierachy_node = query.get_entity_components_mut(child_entity).unwrap();
+            child = *hierachy_node.0.previous_sibling();
+            update_descendent_transforms(commands, query, child_entity, &my_global_matrix);
         }
     }
 }
