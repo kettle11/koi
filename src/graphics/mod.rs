@@ -436,6 +436,7 @@ fn check_for_dropped_graphics_assets(
     graphics: &mut Graphics,
     meshes: &mut Assets<Mesh>,
     textures: &mut Assets<Texture>,
+    cube_maps: &mut Assets<CubeMap>,
 ) {
     meshes.drop_items(|mesh| {
         if let Some(gpu_mesh) = mesh.gpu_mesh {
@@ -458,5 +459,6 @@ fn check_for_dropped_graphics_assets(
         }
     });
 
-    textures.drop_items(move |texture| graphics.context.delete_texture(texture.0));
+    textures.drop_items(|texture| graphics.context.delete_texture(texture.0));
+    cube_maps.drop_items(|cube_map| graphics.context.delete_cube_map(cube_map))
 }

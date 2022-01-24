@@ -23,9 +23,17 @@ pub struct RendererInfo {
 pub fn renderer_plugin() -> Plugin {
     Plugin {
         setup_systems: vec![setup_renderer.system()],
-        end_of_frame_systems: vec![prepare_shadow_casters.system(), render_scene.system()],
+        end_of_frame_systems: vec![
+            prepare_shadow_casters.system(),
+            render_scene.system(),
+            drop_materials.system(),
+        ],
         ..Default::default()
     }
+}
+
+pub fn drop_materials(materials: &mut Assets<Material>) {
+    materials.drop_items(|_| {})
 }
 
 pub fn setup_renderer(world: &mut World) {
