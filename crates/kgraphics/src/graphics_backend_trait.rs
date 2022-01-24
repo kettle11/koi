@@ -101,6 +101,7 @@ pub trait CommandBufferTrait {
         stencil_texture: Option<&Texture>,
         clear_color: Option<(f32, f32, f32, f32)>,
     ) -> RenderPass<'a>;
+    fn present(&mut self);
 }
 
 pub trait GraphicsContextTrait: Sized {

@@ -587,6 +587,8 @@ impl CommandBufferTrait for CommandBuffer {
         }
         */
     }
+
+    fn present(&mut self) {}
 }
 
 struct WebGLJS {

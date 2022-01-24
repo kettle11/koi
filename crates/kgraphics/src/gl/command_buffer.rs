@@ -151,6 +151,9 @@ impl CommandBufferTrait for CommandBuffer {
         */
         todo!()
     }
+    fn present(&mut self) {
+        self.actions.push(CommandBufferAction::Present);
+    }
 }
 
 impl<'a> RenderPassTrait for RenderPass<'a> {
@@ -378,13 +381,5 @@ impl<'a> RenderPassTrait for RenderPass<'a> {
                 dest_width,
                 dest_height,
             })
-    }
-}
-
-impl<'a> Drop for RenderPass<'a> {
-    fn drop(&mut self) {
-        self.command_buffer
-            .actions
-            .push(CommandBufferAction::Present);
     }
 }

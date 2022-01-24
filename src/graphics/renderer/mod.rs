@@ -768,6 +768,7 @@ pub fn render_scene<'a, 'b>(
         }
     }
 
+    command_buffer.present();
     graphics.context.commit_command_buffer(command_buffer);
 }
 
