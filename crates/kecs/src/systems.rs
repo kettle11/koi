@@ -199,7 +199,12 @@ impl<'a, T: ComponentTrait> SystemParameterFetchTrait<'a> for &T {
             meta_data.channels[0].unwrap().0,
         );
 
-        world.archetypes[*archetype_index].get_read_channel::<T>(channel_index)
+        let channel = world.archetypes[*archetype_index].get_read_channel::<T>(channel_index)?;
+        if channel.len() == 0 {
+            Err(KecsError::no_matching_component::<T>())
+        } else {
+            Ok(channel)
+        }
     }
 }
 
@@ -241,7 +246,12 @@ impl<'a, T: ComponentTrait> SystemParameterFetchTrait<'a> for &mut T {
     ) -> Result<Self::FetchResult, KecsError> {
         let (archetype_index, channel_index) =
             (meta_data.archetypes[0], meta_data.channels[0].unwrap().0);
-        world.archetypes[archetype_index].get_write_channel::<T>(channel_index)
+        let channel = world.archetypes[archetype_index].get_write_channel::<T>(channel_index)?;
+        if channel.len() == 0 {
+            Err(KecsError::no_matching_component::<T>())
+        } else {
+            Ok(channel)
+        }
     }
 }
 
