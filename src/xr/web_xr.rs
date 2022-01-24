@@ -271,7 +271,7 @@ pub(super) fn xr_control_flow(koi_state: &mut KoiState, event: KappEvent) -> boo
                         let viewport = &data[32..36];
 
                         let multiview_view = GraphicsViewInfo {
-                            output_rectangle: BoundingBox::new_with_min_corner_and_size(
+                            output_rectangle: Box2::new_with_min_corner_and_size(
                                 Vec2::new(viewport[0], viewport[1]),
                                 Vec2::new(viewport[2], viewport[3]),
                             ),
