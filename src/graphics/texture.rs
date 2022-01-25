@@ -31,10 +31,15 @@ impl<T: Pod + Send + Sync + 'static> AsU8Array for Vec<T> {
     }
 }
 
+// Todo: This shouldn't be necessary.
+// kwasm::JSObjectDynamic should instead be wrapped in a `NotSyncSend`, but `NotSyncSend` isn't its own crate yet.
+unsafe impl Send for TextureData {}
+unsafe impl Sync for TextureData {}
+
 pub enum TextureData {
     Bytes(Box<dyn AsU8Array>),
     #[cfg(target_arch = "wasm32")]
-    JSObject(JSObjectDynamic),
+    JSObject(kwasm::JSObjectDynamic),
 }
 pub struct TextureLoadData {
     pub data: TextureData,
@@ -68,11 +73,11 @@ pub fn new_texture_from_texture_load_data(
             graphics
                 .context
                 .new_texture_from_js_object(
-                    message.texture_load_data.width,
-                    message.texture_load_data.height,
-                    data,
-                    message.texture_load_data.pixel_format,
-                    message.texture_settings,
+                    texture_load_data.width,
+                    texture_load_data.height,
+                    &data,
+                    texture_load_data.pixel_format,
+                    texture_settings,
                 )
                 .unwrap(),
         ),
@@ -275,26 +280,43 @@ impl AssetLoader<Texture> for TextureAssetLoader {
         &mut self,
         path: &str,
         handle: Handle<Texture>,
-        mut options: <Texture as LoadableAssetTrait>::Options,
+        #[allow(unused_mut)] mut options: <Texture as LoadableAssetTrait>::Options,
     ) {
         let path = path.to_owned();
         let sender = self.sender.inner().clone();
 
         ktasks::spawn(async move {
-            let extension = std::path::Path::new(&path)
-                .extension()
-                .and_then(std::ffi::OsStr::to_str)
-                .expect("Expected image file extension");
+            #[cfg(not(target_arch = "wasm32"))]
+            let texture_load_data = {
+                let extension = std::path::Path::new(&path)
+                    .extension()
+                    .and_then(std::ffi::OsStr::to_str)
+                    .expect("Expected image file extension");
 
-            let bytes = crate::fetch_bytes(&path)
-                .await
-                .unwrap_or_else(|_| panic!("Failed to open file: {}", path));
+                let bytes = crate::fetch_bytes(&path)
+                    .await
+                    .unwrap_or_else(|_| panic!("Failed to open file: {}", path));
+                texture_load_data_from_bytes(extension, &bytes, &mut options)
+            };
 
-            let texture_load_data = texture_load_data_from_bytes(extension, &bytes, &mut options);
+            // Web uses the browser-native decoders as much faster path.
+            #[cfg(target_arch = "wasm32")]
+            let texture_load_data = {
+                let kwasm::libraries::ImageLoadResult {
+                    image_js_object,
+                    width,
+                    height,
+                } = kwasm::libraries::load_image(&path)
+                    .await
+                    .unwrap_or_else(|_| panic!("Failed to open file: {}", path));
+                TextureLoadData {
+                    data: TextureData::JSObject(image_js_object),
+                    width,
+                    height,
+                    pixel_format: PixelFormat::RGBA8Unorm,
+                }
+            };
 
-            // Send data to GPU AssetLoader channel.
-            // Potentially this could occur if somehow the main thread shuts down first.
-            // But in that case it's OK to simply do nothing.
             let _ = sender.send(TextureLoadMessage {
                 texture_load_data,
                 handle,

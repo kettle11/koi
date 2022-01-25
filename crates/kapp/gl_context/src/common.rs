@@ -17,6 +17,7 @@ pub struct GLContextAttributes {
 pub enum WebGLVersion {
     One,
     Two,
+    #[allow(unused)]
     None,
 }
 

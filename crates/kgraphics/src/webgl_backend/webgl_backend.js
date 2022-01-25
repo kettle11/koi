@@ -86,15 +86,13 @@ var gl_web_object = {
         return buffer;
     },
     update_texture(texture_index, target, image_target, inner_pixel_format, width, height, pixel_format, type_, js_data_object, data_ptr, data_length, min, mag, wrapping_horizontal, wrapping_vertical) {
-        let data = self.kwasm_get_object[js_data_object];
-        if (!data) {
-            if (data_ptr !== 0) {
-                if (type_ == gl.FLOAT) {
-                    // If it's a floating point array
-                    data = new Float32Array(self.kwasm_memory.buffer, data_ptr, data_length / 4);
-                } else {
-                    data = new Uint8Array(self.kwasm_memory.buffer, data_ptr, data_length);
-                }
+        let data = self.kwasm_get_object(js_data_object);
+        if (data_ptr !== 0) {
+            if (type_ == gl.FLOAT) {
+                // If it's a floating point array
+                data = new Float32Array(self.kwasm_memory.buffer, data_ptr, data_length / 4);
+            } else {
+                data = new Uint8Array(self.kwasm_memory.buffer, data_ptr, data_length);
             }
         }
 

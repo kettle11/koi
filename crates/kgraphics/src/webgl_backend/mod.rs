@@ -470,15 +470,15 @@ impl RenderPassTrait for RenderPass<'_> {
 
     fn blit_framebuffer(
         self,
-        target: Framebuffer,
-        source_x: u32,
-        source_y: u32,
-        source_width: u32,
-        source_height: u32,
-        dest_x: u32,
-        dest_y: u32,
-        dest_width: u32,
-        dest_height: u32,
+        _target: Framebuffer,
+        _source_x: u32,
+        _source_y: u32,
+        _source_width: u32,
+        _source_height: u32,
+        _dest_x: u32,
+        _dest_y: u32,
+        _dest_width: u32,
+        _dest_height: u32,
     ) {
         todo!()
     }
@@ -650,11 +650,11 @@ impl WebGLJS {
 
 impl GraphicsContext {
     /// A web-only way to use browser image decoders.
-    fn new_texture_from_js_object(
+    pub fn new_texture_from_js_object(
         &mut self,
         width: u32,
         height: u32,
-        js_object_data: kwasm::JSObjectDynamic,
+        js_object_data: &kwasm::JSObjectDynamic,
         pixel_format: PixelFormat,
         texture_settings: TextureSettings,
     ) -> Result<Texture, ()> {
@@ -681,7 +681,7 @@ impl GraphicsContext {
         texture: &Texture,
         width: u32,
         height: u32,
-        js_object_data: kwasm::JSObjectDynamic,
+        js_object_data: &kwasm::JSObjectDynamic,
         data: Option<&[u8]>,
         pixel_format: PixelFormat,
         texture_settings: TextureSettings,
@@ -858,7 +858,7 @@ impl GraphicsContextTrait for GraphicsContext {
             texture,
             width,
             height,
-            JSObject::null(),
+            &JSObject::null(),
             data,
             pixel_format,
             texture_settings,
@@ -981,6 +981,7 @@ impl GraphicsContextTrait for GraphicsContext {
                 height,
                 pixel_format,
                 type_,
+                0,
                 data_ptr,
                 data_len,
                 minification_filter,

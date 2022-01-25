@@ -1,3 +1,4 @@
+#[allow(unused)]
 const SAMPLE_RATE: usize = 44100;
 
 #[cfg(all(target_os = "windows", not(feature = "SDL")))]
