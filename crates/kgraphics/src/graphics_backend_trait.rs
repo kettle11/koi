@@ -197,4 +197,7 @@ pub trait GraphicsContextTrait: Sized {
         stencil_texture: Option<&Texture>,
     ) -> Framebuffer;
     fn delete_framebuffer(&mut self, framebuffer: Framebuffer);
+    fn get_multiview_supported(&self) -> MultiviewSupport {
+        MultiviewSupport::None
+    }
 }

@@ -97,8 +97,8 @@ impl WebXR {
         })
     }
 
-    pub fn update_controller_state(&mut self) {
-        fn update_controller_state(
+    fn update_controller_state(&mut self) {
+        fn update_controller_state_inner(
             get_button_count: &JSObject,
             get_button_info: &JSObject,
             controller_index: usize,
@@ -127,13 +127,13 @@ impl WebXR {
                 controller_state.buttons.push(button_data);
             }
         }
-        update_controller_state(
+        update_controller_state_inner(
             &self.get_button_count,
             &self.get_button_info,
             0,
             &mut self.controller_state[0],
         );
-        update_controller_state(
+        update_controller_state_inner(
             &self.get_button_count,
             &self.get_button_info,
             1,

@@ -8,14 +8,15 @@ mod web_xr;
 type InnerXR = web_xr::WebXR;
 
 #[cfg(not(target_arch = "wasm32"))]
-mod open_xr;
+mod do_nothing_xr_backend;
 
 #[cfg(not(target_arch = "wasm32"))]
-type InnerXR = open_xr::OpenXR;
+type InnerXR = do_nothing_xr_backend::DoNothingXrBackend;
 
 pub fn xr_plugin() -> Plugin {
     Plugin {
         setup_systems: vec![setup_xr.system()],
+        #[cfg(target_arch = "wasm32")]
         additional_control_flow: vec![Box::new(web_xr::xr_control_flow)],
         ..Default::default()
     }
@@ -59,4 +60,13 @@ pub struct ButtonState {
     pub value: f32,
     pub pressed: bool,
     pub touched: bool,
+}
+
+pub trait XRBackendTrait {
+    fn start(&mut self);
+    fn stop(&mut self);
+    fn running(&self) -> bool;
+    fn button_state(&self, controller_index: usize, button_index: usize) -> bool;
+    fn button_just_pressed(&self, controller_index: usize, button_index: usize) -> bool;
+    fn button_just_released(&self, controller_index: usize, button_index: usize) -> bool;
 }

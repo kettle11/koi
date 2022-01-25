@@ -71,7 +71,7 @@ fn main() {
                             camera.clear_color = Some(Color::RED);
                         }
 
-                        for (transform, controller) in &controllers {
+                        for (_transform, controller) in &controllers {
                             if xr.button_state(controller.id, 0) {
                                 move_amount = 0.5;
                             }

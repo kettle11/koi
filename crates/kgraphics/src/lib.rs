@@ -132,3 +132,9 @@ impl Default for TextureSettings {
         }
     }
 }
+
+pub enum MultiviewSupport {
+    None,
+    WithoutMsaa,
+    OculusWithMsaa,
+}

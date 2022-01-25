@@ -648,29 +648,6 @@ impl WebGLJS {
     }
 }
 
-pub enum MultiviewSupport {
-    None,
-    WithoutMsaa,
-    OculusWithMsaa,
-}
-
-impl GraphicsContext {
-    pub fn get_multiview_supported(&self) -> MultiviewSupport {
-        match self
-            .js
-            .get_multiview_supported
-            .call()
-            .unwrap()
-            .get_value_u32()
-        {
-            0 => MultiviewSupport::None,
-            1 => MultiviewSupport::WithoutMsaa,
-            2 => MultiviewSupport::OculusWithMsaa,
-            _ => unreachable!(),
-        }
-    }
-}
-
 impl GraphicsContextTrait for GraphicsContext {
     fn new() -> Result<Self, ()> {
         Self::new_with_settings(Default::default())
@@ -1043,6 +1020,21 @@ impl GraphicsContextTrait for GraphicsContext {
     fn delete_framebuffer(&mut self, framebuffer: Framebuffer) {
         if let Some(framebuffer) = framebuffer.0 {
             self.js.delete_framebuffer.call_1_arg(&framebuffer);
+        }
+    }
+
+    fn get_multiview_supported(&self) -> MultiviewSupport {
+        match self
+            .js
+            .get_multiview_supported
+            .call()
+            .unwrap()
+            .get_value_u32()
+        {
+            0 => MultiviewSupport::None,
+            1 => MultiviewSupport::WithoutMsaa,
+            2 => MultiviewSupport::OculusWithMsaa,
+            _ => unreachable!(),
         }
     }
 }
