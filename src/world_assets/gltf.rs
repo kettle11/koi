@@ -47,7 +47,6 @@ pub(super) fn load_gltf_as_world(
                     Color::new(base_color[0], base_color[1], base_color[2], base_color[3]);
                 pbr_properties.metallic = pbr_metallic_roughness.metallic_factor;
                 pbr_properties.roughness = pbr_metallic_roughness.roughness_factor;
-
                 pbr_properties.base_color_texture =
                     pbr_metallic_roughness.base_color_texture.as_ref().map(|t| {
                         get_texture(
@@ -55,7 +54,6 @@ pub(super) fn load_gltf_as_world(
                             &data,
                             path,
                             textures,
-                            graphics,
                             &mut texture_load_states,
                             true,
                             t.index,
@@ -71,7 +69,6 @@ pub(super) fn load_gltf_as_world(
                             &data,
                             path,
                             textures,
-                            graphics,
                             &mut texture_load_states,
                             false,
                             t.index,
@@ -85,7 +82,6 @@ pub(super) fn load_gltf_as_world(
                     &data,
                     path,
                     textures,
-                    graphics,
                     &mut texture_load_states,
                     false,
                     t.index,
@@ -106,7 +102,6 @@ pub(super) fn load_gltf_as_world(
                     &data,
                     path,
                     textures,
-                    graphics,
                     &mut texture_load_states,
                     true,
                     t.index,
@@ -322,7 +317,6 @@ fn get_texture(
     data: &Option<&[u8]>,
     path: &str,
     textures: &mut Assets<Texture>,
-    graphics: &mut Graphics,
     texture_load_states: &mut [TextureLoadState],
     srgb: bool,
     texture_index: usize,
@@ -348,33 +342,23 @@ fn get_texture(
             },
         )
     } else {
-        // This should probably instead kick of a message to decode the data on another thread
-        // using the standard texture loading process.
         let buffer_view = &gltf.buffer_views[image.buffer_view.unwrap()];
         let byte_offset = buffer_view.byte_offset;
         let byte_length = buffer_view.byte_length;
         let bytes = &data.unwrap()[byte_offset..byte_offset + byte_length];
-        let image_data = match image.mime_type.as_ref().unwrap() {
-            kgltf::ImageMimeType::ImageJpeg => jpeg_data_from_bytes(bytes, srgb),
-            #[cfg(feature = "png")]
-            kgltf::ImageMimeType::ImagePng => png_data_from_bytes(bytes, srgb),
-            #[cfg(not(feature = "png"))]
-            kgltf::ImageMimeType::ImagePng => panic!("PNG feature disabled"),
+        let extension = match image.mime_type.as_ref().unwrap() {
+            kgltf::ImageMimeType::ImageJpeg => "jpeg",
+            kgltf::ImageMimeType::ImagePng => "png",
         };
 
-        textures.add(
-            graphics
-                .new_texture(
-                    Some(image_data.data.as_u8_array()),
-                    image_data.width,
-                    image_data.height,
-                    image_data.pixel_format,
-                    TextureSettings {
-                        srgb,
-                        ..Default::default()
-                    },
-                )
-                .unwrap(),
+        textures.load_with_data_and_options_and_extension(
+            // Todo: this is likely to be a large allocation. Perhaps an `Arc` should be used instead?
+            bytes.to_vec(),
+            extension.to_string(),
+            TextureSettings {
+                srgb,
+                ..Default::default()
+            },
         )
     };
 

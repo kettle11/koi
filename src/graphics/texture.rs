@@ -31,8 +31,13 @@ impl<T: Pod + Send + Sync + 'static> AsU8Array for Vec<T> {
     }
 }
 
+pub enum TextureData {
+    Bytes(Box<dyn AsU8Array>),
+    #[cfg(target_arch = "wasm32")]
+    JSObject(JSObjectDynamic),
+}
 pub struct TextureLoadData {
-    pub data: Box<dyn AsU8Array>,
+    pub data: TextureData,
     pub pixel_format: PixelFormat,
     pub width: u32,
     pub height: u32,
@@ -43,6 +48,36 @@ pub struct TextureAssetLoader {
     receiver: SyncGuard<mpsc::Receiver<TextureLoadMessage>>,
 }
 
+pub fn new_texture_from_texture_load_data(
+    graphics: &mut Graphics,
+    texture_load_data: TextureLoadData,
+    texture_settings: TextureSettings,
+) -> Texture {
+    match texture_load_data.data {
+        TextureData::Bytes(data) => graphics
+            .new_texture(
+                Some(data.as_u8_array()),
+                texture_load_data.width,
+                texture_load_data.height,
+                texture_load_data.pixel_format,
+                texture_settings,
+            )
+            .unwrap(),
+        #[cfg(target_arch = "wasm32")]
+        TextureData::JSObject(data) => Texture(
+            graphics
+                .context
+                .new_texture_from_js_object(
+                    message.texture_load_data.width,
+                    message.texture_load_data.height,
+                    data,
+                    message.texture_load_data.pixel_format,
+                    message.texture_settings,
+                )
+                .unwrap(),
+        ),
+    }
+}
 /// A system that loads textures onto the GPU
 pub(crate) fn load_textures(textures: &mut Assets<Texture>, graphics: &mut Graphics) {
     // A Vec doesn't need to be allocated here.
@@ -51,54 +86,13 @@ pub(crate) fn load_textures(textures: &mut Assets<Texture>, graphics: &mut Graph
     let messages: Vec<TextureLoadMessage> =
         textures.asset_loader.receiver.inner().try_iter().collect();
     for message in messages.into_iter() {
-        let texture = graphics
-            .new_texture(
-                Some(message.texture_load_data.data.as_u8_array()),
-                message.texture_load_data.width,
-                message.texture_load_data.height,
-                message.texture_load_data.pixel_format,
-                message.texture_settings,
-            )
-            .unwrap();
-
+        let texture = new_texture_from_texture_load_data(
+            graphics,
+            message.texture_load_data,
+            message.texture_settings,
+        );
         textures.replace_placeholder(&message.handle, texture);
     }
-}
-
-#[cfg(feature = "png")]
-pub fn new_texture_from_png_bytes(
-    graphics: &mut Graphics,
-    texture_settings: TextureSettings,
-    bytes: &[u8],
-) -> Texture {
-    let texture_load_data = png_data_from_bytes(bytes, texture_settings.srgb);
-    graphics
-        .new_texture(
-            Some(&texture_load_data.data),
-            texture_load_data.width,
-            texture_load_data.height,
-            texture_load_data.pixel_format,
-            texture_settings,
-        )
-        .unwrap()
-}
-
-#[cfg(feature = "jpeg")]
-pub fn new_texture_from_jpeg_bytes(
-    graphics: &mut Graphics,
-    texture_settings: TextureSettings,
-    bytes: &[u8],
-) -> Texture {
-    let texture_load_data = jpeg_data_from_bytes(bytes, texture_settings.srgb);
-    graphics
-        .new_texture(
-            Some(&texture_load_data.data.as_u8_array()),
-            texture_load_data.width,
-            texture_load_data.height,
-            texture_load_data.pixel_format,
-            texture_settings,
-        )
-        .unwrap()
 }
 
 fn extend_pixels_1_with_alpha(pixels: Vec<u8>) -> Vec<u8> {
@@ -159,11 +153,11 @@ pub fn png_data_from_bytes(bytes: &[u8], srgb: bool) -> TextureLoadData {
 }
 
 #[cfg(feature = "imagine_png")]
-pub fn png_data_from_bytes(bytes: &[u8], _srgb: bool) -> TextureLoadData {
+fn png_data_from_bytes(bytes: &[u8], _srgb: bool) -> TextureLoadData {
     let (data, width, height) = imagine_integration::parse_me_a_png_yo(bytes).unwrap();
 
     TextureLoadData {
-        data: Box::new(data),
+        data: TextureData::Bytes(Box::new(data)),
         pixel_format: PixelFormat::RGBA8Unorm,
         width,
         height,
@@ -171,7 +165,7 @@ pub fn png_data_from_bytes(bytes: &[u8], _srgb: bool) -> TextureLoadData {
 }
 
 #[cfg(feature = "jpeg")]
-pub fn jpeg_data_from_bytes(bytes: &[u8], srgb: bool) -> TextureLoadData {
+fn jpeg_data_from_bytes(bytes: &[u8], srgb: bool) -> TextureLoadData {
     let reader = std::io::BufReader::new(bytes);
 
     let mut decoder = jpeg_decoder::Decoder::new(reader);
@@ -204,7 +198,7 @@ pub fn jpeg_data_from_bytes(bytes: &[u8], srgb: bool) -> TextureLoadData {
         } // _ => unimplemented!("Unsupported Jpeg pixel format: {:?}", metadata.pixel_format,),
     };
     TextureLoadData {
-        data: Box::new(pixels),
+        data: TextureData::Bytes(Box::new(pixels)),
         pixel_format,
         width: metadata.width as u32,
         height: metadata.height as u32,
@@ -212,7 +206,7 @@ pub fn jpeg_data_from_bytes(bytes: &[u8], srgb: bool) -> TextureLoadData {
 }
 
 #[cfg(feature = "hdri")]
-pub fn hdri_data_from_bytes(bytes: &[u8]) -> TextureLoadData {
+fn hdri_data_from_bytes(bytes: &[u8]) -> TextureLoadData {
     // This data is always assumed to be linear sRGB
     let image = hdrldr::load(bytes).expect("Failed to decode HDRI image data");
 
@@ -224,10 +218,29 @@ pub fn hdri_data_from_bytes(bytes: &[u8]) -> TextureLoadData {
     }
 
     TextureLoadData {
-        data: Box::new(texture),
+        data: TextureData::Bytes(Box::new(texture)),
         width: image.width as u32,
         height: image.height as u32,
         pixel_format: PixelFormat::RGBA32F,
+    }
+}
+
+pub fn texture_load_data_from_bytes(
+    extension: &str,
+    bytes: &[u8],
+    options: &mut TextureSettings,
+) -> TextureLoadData {
+    match extension {
+        #[cfg(any(feature = "png", feature = "imagine_png"))]
+        "png" => png_data_from_bytes(&bytes, options.srgb),
+        #[cfg(feature = "jpeg")]
+        "jpg" | "jpeg" => jpeg_data_from_bytes(&bytes, options.srgb),
+        #[cfg(feature = "hdri")]
+        "hdr" => {
+            options.srgb = false;
+            hdri_data_from_bytes(&bytes)
+        }
+        _ => panic!("Unsupported texture extension: {:?}", extension),
     }
 }
 
@@ -237,24 +250,14 @@ pub(crate) async fn texture_data_from_path(
 ) -> TextureLoadData {
     let extension = std::path::Path::new(&path)
         .extension()
-        .and_then(std::ffi::OsStr::to_str);
+        .and_then(std::ffi::OsStr::to_str)
+        .expect("Expected image file extension");
 
     let bytes = crate::fetch_bytes(&path)
         .await
         .unwrap_or_else(|_| panic!("Failed to open file: {}", path));
-    match extension {
-        #[cfg(any(feature = "png", feature = "imagine_png"))]
-        Some("png") => png_data_from_bytes(&bytes, options.srgb),
-        #[cfg(feature = "jpeg")]
-        Some("jpg") | Some("jpeg") => jpeg_data_from_bytes(&bytes, options.srgb),
-        #[cfg(feature = "hdri")]
-        Some("hdr") => {
-            options.srgb = false;
-            hdri_data_from_bytes(&bytes)
-        }
-        None => panic!("No file extension for path: {:?}", path),
-        _ => panic!("Unsupported texture extension: {:?}", path),
-    }
+
+    texture_load_data_from_bytes(extension, &bytes, options)
 }
 
 impl TextureAssetLoader {
@@ -278,11 +281,40 @@ impl AssetLoader<Texture> for TextureAssetLoader {
         let sender = self.sender.inner().clone();
 
         ktasks::spawn(async move {
-            let texture_load_data = texture_data_from_path(&path, &mut options).await;
+            let extension = std::path::Path::new(&path)
+                .extension()
+                .and_then(std::ffi::OsStr::to_str)
+                .expect("Expected image file extension");
+
+            let bytes = crate::fetch_bytes(&path)
+                .await
+                .unwrap_or_else(|_| panic!("Failed to open file: {}", path));
+
+            let texture_load_data = texture_load_data_from_bytes(extension, &bytes, &mut options);
 
             // Send data to GPU AssetLoader channel.
             // Potentially this could occur if somehow the main thread shuts down first.
             // But in that case it's OK to simply do nothing.
+            let _ = sender.send(TextureLoadMessage {
+                texture_load_data,
+                handle,
+                texture_settings: options,
+            });
+        })
+        .run();
+    }
+
+    fn load_with_data_and_options_and_extension(
+        &mut self,
+        data: Vec<u8>,
+        extension: String,
+        handle: Handle<Texture>,
+        mut options: <Texture as LoadableAssetTrait>::Options,
+    ) {
+        let sender = self.sender.inner().clone();
+
+        ktasks::spawn(async move {
+            let texture_load_data = texture_load_data_from_bytes(&extension, &data, &mut options);
             let _ = sender.send(TextureLoadMessage {
                 texture_load_data,
                 handle,

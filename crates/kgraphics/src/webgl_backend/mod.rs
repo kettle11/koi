@@ -648,6 +648,99 @@ impl WebGLJS {
     }
 }
 
+impl GraphicsContext {
+    /// A web-only way to use browser image decoders.
+    fn new_texture_from_js_object(
+        &mut self,
+        width: u32,
+        height: u32,
+        js_object_data: kwasm::JSObjectDynamic,
+        pixel_format: PixelFormat,
+        texture_settings: TextureSettings,
+    ) -> Result<Texture, ()> {
+        let js_texture_object = self.js.new_texture.call().unwrap();
+
+        let texture = Texture {
+            texture_type: TextureType::Texture(js_texture_object),
+            mip: 0,
+        };
+        self.update_texture_internal(
+            &texture,
+            width,
+            height,
+            js_object_data,
+            None,
+            pixel_format,
+            texture_settings,
+        );
+        Ok(texture)
+    }
+
+    fn update_texture_internal(
+        &mut self,
+        texture: &Texture,
+        width: u32,
+        height: u32,
+        js_object_data: kwasm::JSObjectDynamic,
+        data: Option<&[u8]>,
+        pixel_format: PixelFormat,
+        texture_settings: TextureSettings,
+    ) {
+        let (pixel_format, inner_pixel_format, type_) =
+            crate::gl_shared::pixel_format_to_gl_format_and_inner_format_and_type(
+                pixel_format,
+                texture_settings.srgb,
+            );
+
+        let (target, texture) = match &texture.texture_type {
+            TextureType::Texture(t) => (TEXTURE_2D, t.index()),
+            TextureType::CubeMap {
+                face,
+                texture_native,
+            } => (
+                TEXTURE_CUBE_MAP_POSITIVE_X + *face as u32,
+                texture_native.index(),
+            ),
+            TextureType::DefaultFramebuffer => panic!("Cannot update default framebuffer"),
+        };
+
+        let minification_filter = minification_filter_to_gl_enum(
+            texture_settings.minification_filter,
+            texture_settings.mipmap_filter,
+            texture_settings.generate_mipmaps,
+        );
+        let magnification_filter =
+            magnification_filter_to_gl_enum(texture_settings.magnification_filter);
+
+        let wrapping_horizontal = wrapping_to_gl_enum(texture_settings.wrapping_horizontal);
+        let wrapping_vertical = wrapping_to_gl_enum(texture_settings.wrapping_vertical);
+
+        let (data_ptr, data_len) = data.map_or((0, 0), |d| (d.as_ptr() as u32, d.len() as u32));
+
+        self.js.update_texture.call_raw(&[
+            texture,
+            target,
+            target,
+            inner_pixel_format,
+            width,
+            height,
+            pixel_format,
+            type_,
+            js_object_data.index(),
+            data_ptr,
+            data_len,
+            minification_filter,
+            magnification_filter,
+            wrapping_horizontal,
+            wrapping_vertical,
+        ]);
+
+        if texture_settings.generate_mipmaps {
+            self.js.generate_mip_map.call_raw(&[texture, TEXTURE_2D]);
+        }
+    }
+}
+
 impl GraphicsContextTrait for GraphicsContext {
     fn new() -> Result<Self, ()> {
         Self::new_with_settings(Default::default())
@@ -761,59 +854,15 @@ impl GraphicsContextTrait for GraphicsContext {
         pixel_format: PixelFormat,
         texture_settings: TextureSettings,
     ) {
-        // Convert data to linear instead of sRGB if needed and flip the image vertically.
-
-        let (pixel_format, inner_pixel_format, type_) =
-            crate::gl_shared::pixel_format_to_gl_format_and_inner_format_and_type(
-                pixel_format,
-                texture_settings.srgb,
-            );
-
-        let (target, texture) = match &texture.texture_type {
-            TextureType::Texture(t) => (TEXTURE_2D, t.index()),
-            TextureType::CubeMap {
-                face,
-                texture_native,
-            } => (
-                TEXTURE_CUBE_MAP_POSITIVE_X + *face as u32,
-                texture_native.index(),
-            ),
-            TextureType::DefaultFramebuffer => panic!("Cannot update default framebuffer"),
-        };
-
-        let minification_filter = minification_filter_to_gl_enum(
-            texture_settings.minification_filter,
-            texture_settings.mipmap_filter,
-            texture_settings.generate_mipmaps,
-        );
-        let magnification_filter =
-            magnification_filter_to_gl_enum(texture_settings.magnification_filter);
-
-        let wrapping_horizontal = wrapping_to_gl_enum(texture_settings.wrapping_horizontal);
-        let wrapping_vertical = wrapping_to_gl_enum(texture_settings.wrapping_vertical);
-
-        let (data_ptr, data_len) = data.map_or((0, 0), |d| (d.as_ptr() as u32, d.len() as u32));
-
-        self.js.update_texture.call_raw(&[
+        self.update_texture_internal(
             texture,
-            target,
-            target,
-            inner_pixel_format,
             width,
             height,
+            JSObject::null(),
+            data,
             pixel_format,
-            type_,
-            data_ptr,
-            data_len,
-            minification_filter,
-            magnification_filter,
-            wrapping_horizontal,
-            wrapping_vertical,
-        ]);
-
-        if texture_settings.generate_mipmaps {
-            self.js.generate_mip_map.call_raw(&[texture, TEXTURE_2D]);
-        }
+            texture_settings,
+        )
     }
 
     fn delete_texture(&mut self, texture: Texture) {

@@ -102,7 +102,7 @@ function kwasm_stuff() {
             let worker = new Worker(kwasm_stuff_blob);
 
             // This does nothing, but without it Firefox / Safari seem to do some sort of 
-            // fault optimization that incorrectly sets up or kills the worker early.
+            // faulty optimization that incorrectly sets up or kills the worker early.
             kwasm_workers.push(worker);
 
             worker.postMessage({

@@ -306,6 +306,24 @@ impl<T: LoadableAssetTrait> Assets<T> {
         new_handle
     }
 
+    pub fn load_with_data_and_options_and_extension(
+        &mut self,
+        data: Vec<u8>,
+        extension: String,
+        options: T::Options,
+    ) -> Handle<T> {
+        // Could a path be accepted instead of extension to allow for temporary substitutions of assets?
+        // Or for gltfs to have subpaths like "some_file.gltf/buffer_data0_100.png"?
+        let new_handle = self.new_handle();
+        self.asset_loader.load_with_data_and_options_and_extension(
+            data,
+            extension,
+            new_handle.clone(),
+            options,
+        );
+        new_handle
+    }
+
     // Points a `Handle` towards a new asset if it were previously pointed at the default placeholder.
     // Panics if the `Handle` were not previously pointing at a placeholder.
     pub fn replace_placeholder(&mut self, handle: &Handle<T>, asset: T) {
@@ -338,6 +356,15 @@ pub trait LoadableAssetTrait: Sized + 'static {
 
 pub trait AssetLoader<T: LoadableAssetTrait> {
     fn load_with_options(&mut self, path: &str, handle: Handle<T>, options: T::Options);
+    fn load_with_data_and_options_and_extension(
+        &mut self,
+        _data: Vec<u8>,
+        _extension: String,
+        _handle: Handle<T>,
+        _options: T::Options,
+    ) {
+        unimplemented!()
+    }
 }
 
 pub struct SyncGuard<T> {

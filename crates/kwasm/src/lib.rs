@@ -16,10 +16,12 @@ pub mod libraries {
     pub mod eval;
     pub mod fetch;
     pub mod instant;
+    pub mod load_image;
     pub use console::*;
     pub use eval::*;
     pub use fetch::*;
     pub use instant::*;
+    pub use load_image::*;
 }
 
 mod js_object;

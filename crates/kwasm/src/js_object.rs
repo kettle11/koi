@@ -140,7 +140,9 @@ impl JSObject {
 
 impl Drop for JSObjectDynamicInner {
     fn drop(&mut self) {
-        unsafe { kwasm_free_js_object(self.0.index()) }
+        if !self.0.is_null() {
+            unsafe { kwasm_free_js_object(self.0.index()) }
+        }
     }
 }
 

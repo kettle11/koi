@@ -21,7 +21,7 @@ fn main() {
                 scale: Vec3::ONE,
             },
             Light::new(LightMode::Directional, Color::WHITE, 0.0),
-            ShadowCaster::new().with_ibl_shadowing(0.8),
+            //  ShadowCaster::new().with_ibl_shadowing(0.8),
         ));
 
         world.spawn((
@@ -35,7 +35,7 @@ fn main() {
         spawn_skybox(world, "assets/venice_sunset_1k.hdr");
 
         let worlds = world.get_single_component_mut::<Assets<World>>().unwrap();
-        let gltf_world = worlds.load("assets/silent_ash/scene.gltf");
+        let gltf_world = worlds.load("assets/huge_medieval_battle_scene/scene.gltf");
 
         // Spawn a Handle<World> that will be replaced with the GlTf when it's loaded.
         let gltf_hierarchy = world.spawn(gltf_world);

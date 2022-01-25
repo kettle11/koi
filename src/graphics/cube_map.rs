@@ -313,16 +313,13 @@ pub(crate) fn load_cube_maps(
             ..message.texture_settings
         };
 
+        let pixel_format = message.texture_load_data.pixel_format;
         // Create a GPU texture to process into the CubeMap
-        let texture = graphics
-            .new_texture(
-                Some(message.texture_load_data.data.as_u8_array()),
-                message.texture_load_data.width,
-                message.texture_load_data.height,
-                message.texture_load_data.pixel_format,
-                texture_settings,
-            )
-            .unwrap();
+        let texture = new_texture_from_texture_load_data(
+            graphics,
+            message.texture_load_data,
+            texture_settings,
+        );
 
         let face_size = 512;
         // Hardcode the cube map's size for now.
@@ -331,7 +328,7 @@ pub(crate) fn load_cube_maps(
                 None,
                 face_size,
                 face_size,
-                message.texture_load_data.pixel_format,
+                pixel_format,
                 texture_settings,
             )
             .unwrap();
