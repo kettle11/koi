@@ -14,10 +14,11 @@ pub struct GLContextAttributes {
     pub high_resolution_framebuffer: bool,
 }
 
+#[allow(unused)]
+
 pub enum WebGLVersion {
     One,
     Two,
-    #[allow(unused)]
     None,
 }
 

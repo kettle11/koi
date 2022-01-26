@@ -22,7 +22,7 @@ impl Light {
             color,
             intensity,
             light_mode,
-            ambient_light_amount: 0.05,
+            ambient_light_amount: 0.0,
         }
     }
 }

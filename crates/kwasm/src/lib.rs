@@ -29,13 +29,11 @@ mod panic_hook;
 
 pub use js_object::*;
 
-#[cfg(target_feature = "atomics")]
 pub mod web_worker;
 
 mod js_future;
 pub(crate) use js_future::*;
 
-#[cfg(target_feature = "atomics")]
 use std::sync::Once;
 
 use libraries::eval;
@@ -62,7 +60,6 @@ extern "C" {
         args_data: *const c_void,
         data_length: u32,
     ) -> u32;
-    #[cfg(target_feature = "atomics")]
     pub(crate) fn kwasm_new_worker(
         entry_point: u32,
         stack_pointer: u32,
@@ -114,14 +111,10 @@ pub extern "C" fn kwasm_reserve_space(space: usize) -> *mut u8 {
 // The main thread needs its thread local storage initialized.
 // Web Workers will also use this to allocate their own thread local storage which is deallocated
 // when the worker is dropped.
-#[cfg(target_feature = "atomics")]
 pub(crate) static mut THREAD_LOCAL_STORAGE_SIZE: u32 = 0;
-#[cfg(target_feature = "atomics")]
 pub(crate) static mut THREAD_LOCAL_STORAGE_ALIGNMENT: u32 = 0;
-#[cfg(target_feature = "atomics")]
 static THREAD_LOCAL_STORAGE_METADATA_INIT: Once = Once::new();
 
-#[cfg(target_feature = "atomics")]
 #[no_mangle]
 pub(crate) extern "C" fn kwasm_alloc_thread_local_storage() -> u32 {
     unsafe {

@@ -122,19 +122,5 @@ pub extern "C" fn kaudio_run_callback(channels: u32, frame_size: u32, sample_rat
             }
             index_in_frame += 1;
         }
-
-        //  let thing = Box::new(true);
-
-        /*
-        unsafe {
-            let thread_local_data = CALLBACK.as_mut().unwrap();
-            let a = &mut thread_local_data.audio_scratch_buffers;
-            // for b in thread_local_data.audio_scratch_buffers.iter() {}
-            // for b in thread_local_data.audio_scratch_buffers.iter_mut() {}
-            //    panic!("HI THERE");
-            //  b.iter_mut().for_each(|i| *i = 0.);
-            //  }
-        }
-        */
     })
 }
