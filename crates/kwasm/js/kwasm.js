@@ -166,8 +166,8 @@ function kwasm_stuff() {
             let shared_memory_supported = false;//typeof SharedArrayBuffer !== 'undefined';
             console.log("Shared memory supported: " + shared_memory_supported);
 
-            let starting_mem = (bytes.byteLength / 65536) + 5;
-            self.kwasm_memory = new WebAssembly.Memory({ initial: starting_mem, maximum: 16384 * 2 });
+            self.kwasm_starting_memory = (bytes.byteLength / 65536) + 5;
+            self.kwasm_memory = new WebAssembly.Memory({ initial: kwasm_starting_memory });
             imports.env.memory = self.kwasm_memory;
             return WebAssembly.instantiate(bytes, imports)
         }).catch(error => {
@@ -175,12 +175,12 @@ function kwasm_stuff() {
 
             let shared_memory_supported = typeof SharedArrayBuffer !== 'undefined';
             console.log("Shared memory supported: " + shared_memory_supported);
+            self.kwasm_shared_memory_supported = shared_memory_supported;
 
             // Start with a large amount of memory to avoid issues in Safari / Firefox with grow.
             // It seems grow fails if called from another thread, so this solution isn't exceptionally robust.
             // 5 is arbitrary here
-            let starting_mem = (bytes.byteLength / 65536) + 5;
-            self.kwasm_memory = new WebAssembly.Memory({ initial: starting_mem, maximum: 16384 * 2, shared: true });
+            self.kwasm_memory = new WebAssembly.Memory({ initial: kwasm_starting_memory, maximum: 16384 * 2, shared: true });
             imports.env.memory = self.kwasm_memory;
             return WebAssembly.instantiate(bytes, imports)
         }).then(results => {
@@ -192,7 +192,7 @@ function kwasm_stuff() {
             self.kwasm_module = results.module;
 
             // Setup thread-local storage for the main thread
-            if (kwasm_exports.kwasm_alloc_thread_local_storage) {
+            if (self.kwasm_shared_memory_supported) {
                 const thread_local_storage = kwasm_exports.kwasm_alloc_thread_local_storage();
                 self.kwasm_exports.__wasm_init_tls(thread_local_storage);
             }
