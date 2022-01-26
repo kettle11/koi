@@ -324,13 +324,7 @@ pub(crate) fn load_cube_maps(
         let face_size = 512;
         // Hardcode the cube map's size for now.
         let cube_map = graphics
-            .new_cube_map(
-                None,
-                face_size,
-                face_size,
-                pixel_format,
-                texture_settings,
-            )
+            .new_cube_map(None, face_size, face_size, pixel_format, texture_settings)
             .unwrap();
 
         render_cube_map(
