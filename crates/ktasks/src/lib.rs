@@ -35,8 +35,8 @@ thread_local! {
 /// Count must be 1 or greater.
 /// This should only be called once.
 /// Only creates workers for targets that support threads.
-pub fn create_workers(count: u32) {
-    #[cfg(target_feature = "atomics")]
+pub fn create_workers(#[allow(unused)] count: u32) {
+    #[cfg(all(target_arch = "wasm32", not(target_feature = "atomics")))]
     let count = 1;
 
     use std::sync::Once;

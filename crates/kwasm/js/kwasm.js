@@ -163,9 +163,6 @@ function kwasm_stuff() {
             bytes = bytes_in;
 
             // 5 is arbitrary here
-            let shared_memory_supported = false;//typeof SharedArrayBuffer !== 'undefined';
-            console.log("Shared memory supported: " + shared_memory_supported);
-
             self.kwasm_starting_memory = (bytes.byteLength / 65536) + 5;
             self.kwasm_memory = new WebAssembly.Memory({ initial: kwasm_starting_memory });
             imports.env.memory = self.kwasm_memory;
@@ -177,9 +174,6 @@ function kwasm_stuff() {
             console.log("Shared memory supported: " + shared_memory_supported);
             self.kwasm_shared_memory_supported = shared_memory_supported;
 
-            // Start with a large amount of memory to avoid issues in Safari / Firefox with grow.
-            // It seems grow fails if called from another thread, so this solution isn't exceptionally robust.
-            // 5 is arbitrary here
             self.kwasm_memory = new WebAssembly.Memory({ initial: kwasm_starting_memory, maximum: 16384 * 2, shared: true });
             imports.env.memory = self.kwasm_memory;
             return WebAssembly.instantiate(bytes, imports)
