@@ -34,7 +34,6 @@ function kwasm_stuff() {
         const client_string = new Uint8Array(self.kwasm_memory.buffer, pointer, length);
         client_string.set(string_data);
     };
-
     self.kwasm_free_js_object = function (index) {
         if (index > 1) {
             kwasm_js_objects[index] = null;
@@ -157,25 +156,31 @@ function kwasm_stuff() {
 
         imports.env = Object.assign(imports.env, kwasm_import_functions);
 
+        let bytes;
         fetch(wasm_library_path).then(response =>
             response.arrayBuffer()
-        ).then(bytes => {
+        ).then(bytes_in => {
+            bytes = bytes_in;
+
             // 5 is arbitrary here
+            let shared_memory_supported = false;//typeof SharedArrayBuffer !== 'undefined';
+            console.log("Shared memory supported: " + shared_memory_supported);
+
+            let starting_mem = (bytes.byteLength / 65536) + 5;
+            self.kwasm_memory = new WebAssembly.Memory({ initial: starting_mem, maximum: 16384 * 2 });
+            imports.env.memory = self.kwasm_memory;
+            return WebAssembly.instantiate(bytes, imports)
+        }).catch(error => {
+            console.log("Could not initialize with regular Wasm memory. Trying with shared memory");
+
             let shared_memory_supported = typeof SharedArrayBuffer !== 'undefined';
             console.log("Shared memory supported: " + shared_memory_supported);
 
             // Start with a large amount of memory to avoid issues in Safari / Firefox with grow.
             // It seems grow fails if called from another thread, so this solution isn't exceptionally robust.
             // 5 is arbitrary here
-            let starting_mem = Math.max(12800 / 2, (bytes.byteLength / 65536) + 5);
-
-            if (!self.kwasm_module) {
-                if (shared_memory_supported) {
-                    self.kwasm_memory = new WebAssembly.Memory({ initial: starting_mem, maximum: 16384 * 2, shared: true });
-                } else {
-                    self.kwasm_memory = new WebAssembly.Memory({ initial: starting_mem, maximum: 16384 * 2 });
-                }
-            }
+            let starting_mem = (bytes.byteLength / 65536) + 5;
+            self.kwasm_memory = new WebAssembly.Memory({ initial: starting_mem, maximum: 16384 * 2, shared: true });
             imports.env.memory = self.kwasm_memory;
             return WebAssembly.instantiate(bytes, imports)
         }).then(results => {

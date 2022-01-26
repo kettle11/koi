@@ -36,6 +36,9 @@ thread_local! {
 /// This should only be called once.
 /// Only creates workers for targets that support threads.
 pub fn create_workers(count: u32) {
+    #[cfg(target_feature = "atomics")]
+    let count = 1;
+
     use std::sync::Once;
     static SETUP: Once = Once::new();
 
