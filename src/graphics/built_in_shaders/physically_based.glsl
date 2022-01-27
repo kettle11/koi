@@ -103,20 +103,20 @@ vec3 getNormalFromMap()
   // return N;
 }
 
+const float MEDIUMP_FLOAT_MAX = 65504.0;
+
 // ----------------------------------------------------------------------------
 float DistributionGGX(vec3 N, vec3 H, float roughness)
 {
-    float a = roughness*roughness;
-    float a2 = a*a;
-    float NdotH = max(dot(N, H), 0.0);
-    float NdotH2 = NdotH*NdotH;
-
-    float nom   = a2;
-    float denom = (NdotH2 * (a2 - 1.0) + 1.0);
-    denom = PI * denom * denom;
-
-    // Is code needed here to prevent a divide by zero?
-    return nom / denom;
+    // The rational behind this is explained in the Filament explainer section 4.4.1:
+    // https://google.github.io/filament/Filament.md.html
+    float NoH = dot(N, H);
+    vec3 NxH = cross(N, H);
+    float a = NoH * roughness;
+    float roughness_squared = 
+    float k = roughness / (dot(NxH, NxH) + a * a);
+    float d = k * k * (1.0 / PI);
+    return min(d, MEDIUMP_FLOAT_MAX);
 }
 // ----------------------------------------------------------------------------
 float GeometrySchlickGGX(float NdotV, float roughness)
