@@ -31,14 +31,11 @@ thread_local! {
     static WORKER: RefCell<Worker<'static>> = RefCell::new(Worker::new());
 }
 
-/// Create workers for this thread and other threads.
-/// Count must be 1 or greater.
-/// This should only be called once.
-/// Only creates workers for targets that support threads.
-pub fn create_workers(#[allow(unused)] count: u32) {
+pub fn create_workers_with_count(count: usize) {
     #[cfg(all(target_arch = "wasm32", not(target_feature = "atomics")))]
     let count = 1;
 
+    klog::log!("ktasks: Creating {:?} workers", count);
     use std::sync::Once;
     static SETUP: Once = Once::new();
 
@@ -99,6 +96,32 @@ pub fn create_workers(#[allow(unused)] count: u32) {
             kwasm::web_worker::spawn(closure);
         }
     });
+}
+
+/// Create workers for this thread and other threads.
+/// Count must be 1 or greater.
+/// This should only be called once.
+/// Only creates workers for targets that support threads.
+pub fn create_workers() {
+    // Safari sadly does not implement this. :(
+    #[cfg(all(target_arch = "wasm32", target_feature = "atomics"))]
+    let cores_count = {
+        let result = kwasm::libraries::eval("window.navigator.hardwareConcurrency");
+        if let Some(result) = result {
+            result.get_value_u32() as usize
+        } else {
+            4
+        }
+    };
+
+    #[cfg(all(target_arch = "wasm32", not(target_feature = "atomics")))]
+    let cores_count = 1;
+
+    #[cfg(not(target_arch = "wasm32"))]
+    let cores_count = num_cpus::get();
+
+    // Spawn one fewer workers to give other system things a chance to run.
+    create_workers_with_count((cores_count - 1).max(1));
 }
 
 #[derive(Clone)]

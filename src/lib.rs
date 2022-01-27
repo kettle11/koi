@@ -212,7 +212,7 @@ impl App {
         ktracing_allocator::set_alloc_error_hook();
 
         // Todo: Base this on number of cores
-        ktasks::create_workers(4);
+        ktasks::create_workers();
 
         let mut world = World::new();
         world.spawn((Name("Commands"), Commands::new()));

@@ -2,7 +2,7 @@ use ktasks::*;
 use std::task::Poll;
 
 fn main() {
-    create_workers(3);
+    create_workers();
     let main_thread_id = std::thread::current().id();
 
     let task0 = spawn(async move {

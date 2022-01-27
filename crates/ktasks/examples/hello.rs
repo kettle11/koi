@@ -2,7 +2,7 @@ use ktasks::*;
 use std::task::Poll;
 
 fn main() {
-    create_workers(3);
+    create_workers();
 
     let task0 = spawn(async {
         println!("HERE IN TASK0");

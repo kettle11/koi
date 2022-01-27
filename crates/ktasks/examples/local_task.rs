@@ -2,7 +2,7 @@ use ktasks::*;
 use std::task::Poll;
 
 fn main() {
-    create_workers(3);
+    create_workers();
 
     let thread_id = std::thread::current().id();
     println!("Main thread ID: {:?}", thread_id);
