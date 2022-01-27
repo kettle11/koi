@@ -525,6 +525,24 @@ var gl_web_object = {
                     gl.depthMask(depth_mask);
                     break;
                 }
+                case 17: {
+                    // BlitFramebuffer
+                    let framebuffer_index = u32_data[u32_offset++];
+                    let source_x = u32_data[u32_offset++];
+                    let source_y = u32_data[u32_offset++];
+                    let source_w = u32_data[u32_offset++];
+                    let source_h = u32_data[u32_offset++];
+
+                    let dest_x = u32_data[u32_offset++];
+                    let dest_y = u32_data[u32_offset++];
+                    let dest_w = u32_data[u32_offset++];
+                    let dest_h = u32_data[u32_offset++];
+
+                    let framebuffer = kwasm_get_object(framebuffer_index);
+                    gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, framebuffer)
+                    gl.blitFramebuffer(source_x, source_y, source_w, source_h, dest_x, dest_y, dest_w, dest_h, gl.COLOR_BUFFER_BIT, gl.LINEAR);
+                    break;
+                }
             }
         }
 

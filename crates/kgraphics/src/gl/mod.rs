@@ -972,6 +972,7 @@ impl GraphicsContextTrait for GraphicsContext {
                         dest_width,
                         dest_height,
                     } => {
+                        println!("TARGET: {:?}", target);
                         self.gl.bind_framebuffer(GL_DRAW_FRAMEBUFFER, target);
                         self.gl.blit_framebuffer(
                             source_x,

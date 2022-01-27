@@ -282,6 +282,7 @@ impl GL {
     }
 
     pub unsafe fn bind_framebuffer(&self, target: GLenum, framebuffer: Framebuffer) {
+        println!("BINDING FRAMEBUFFER: {:?}", framebuffer);
         self.gl.BindFramebuffer(target, framebuffer.0);
     }
 

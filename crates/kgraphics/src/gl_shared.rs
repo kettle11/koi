@@ -76,6 +76,8 @@ pub const COLOR_ATTACHMENT0: c_uint = 0x8CE0;
 pub const DEPTH_ATTACHMENT: c_uint = 0x8D00;
 pub const STENCIL_ATTACHMENT: c_uint = 0x8D20;
 
+pub const FRAMEBUFFER: c_uint = 0x8D40;
+
 #[inline]
 fn srgb_to_linear(byte: u8) -> u8 {
     let u = byte as f64 / 255.0;

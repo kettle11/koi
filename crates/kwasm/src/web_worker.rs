@@ -101,7 +101,7 @@ pub fn spawn<F>(f: F)
 where
     F: FnOnce() + Send + 'static,
 {
-    crate::libraries::console::log("SPAWNING NEW WORKER!");
+    // crate::libraries::console::log("SPAWNING NEW WORKER!");
 
     unsafe {
         // Create a separate worker for fetch

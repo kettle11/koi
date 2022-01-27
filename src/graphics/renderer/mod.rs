@@ -25,7 +25,7 @@ pub fn renderer_plugin() -> Plugin {
         setup_systems: vec![setup_renderer.system()],
         end_of_frame_systems: vec![
             prepare_shadow_casters.system(),
-            render_scene.system(),
+            render_scene_system.system(),
             drop_materials.system(),
         ],
         ..Default::default()
@@ -677,7 +677,7 @@ pub fn prepare_shadow_casters(
     }
 }
 
-pub fn render_scene<'a, 'b>(
+pub fn render_scene_system<'a, 'b>(
     graphics: &mut Graphics,
     shader_assets: &Assets<Shader>,
     material_assets: &Assets<Material>,
@@ -688,8 +688,9 @@ pub fn render_scene<'a, 'b>(
     renderables: Renderables<'a>,
     mut lights: Lights<'b>,
     reflection_probes: Query<(&'static GlobalTransform, &'static ReflectionProbe)>,
-    renderer_info: &RendererInfo,
+    renderer_info: &mut RendererInfo,
 ) {
+    println!("RENDERING-----");
     let mut command_buffer = graphics.context.new_command_buffer();
 
     let is_primary_camera_target =
@@ -732,6 +733,7 @@ pub fn render_scene<'a, 'b>(
         let mut render_pass = command_buffer
             .begin_render_pass_with_framebuffer(&graphics.current_target_framebuffer, clear_color);
 
+        /*
         for (camera_global_transform, camera) in &cameras {
             // Check that the camera is setup to render to the current CameraTarget.
             let camera_should_render = (graphics.current_camera_target.is_some()
@@ -795,6 +797,15 @@ pub fn render_scene<'a, 'b>(
                 );
             }
         }
+        */
+    }
+
+    {
+        let render_pass = command_buffer.begin_render_pass_with_framebuffer(
+            &renderer_info.triple_buffered_framebuffer.get_next(),
+            Some((1.0, 0.0, 0.0, 1.0)),
+        );
+        render_pass.blit_framebuffer(Framebuffer::default(), 0, 0, 300, 300, 0, 0, 600, 600)
     }
 
     command_buffer.present();
