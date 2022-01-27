@@ -34,7 +34,6 @@ thread_local! {
 pub fn begin_audio_thread(
     audio_callback: impl FnMut(&mut [AudioOutputFormat], StreamInfo) + Send + 'static,
 ) {
-    #[cfg(target_feature = "atomics")]
     {
         use kwasm::*;
 

@@ -1,5 +1,4 @@
 pub struct Sound {
-    /// Sounds are stored internally as an i16 at 44100 HZ
     pub data: Vec<f32>,
     /// Channels are interleaved if greater than 1
     pub channels: u8,

@@ -11,6 +11,15 @@ pub struct AudioSource {
     pub teleported: bool,
 }
 
+// Stop all playing sounds when the AudioSource is despawned.
+impl Drop for AudioSource {
+    fn drop(&mut self) {
+        for sound in &mut self.playing {
+            sound.stop();
+        }
+    }
+}
+
 // For now `AudioSource`'s clone with nothing playing.
 // Should it be this way?
 impl Clone for AudioSource {
@@ -180,6 +189,7 @@ pub(super) trait SpatialHandle: Send + Sync {
     fn set_motion(&mut self, position: Vec3, velocity: Vec3, discontinuity: bool);
     fn set_volume(&mut self, volume: f32);
     fn is_stopped(&mut self) -> bool;
+    fn stop(&mut self);
 }
 
 impl<T> SpatialHandle for oddio::Handle<oddio::Spatial<oddio::Stop<oddio::Gain<T>>>> {
@@ -199,5 +209,8 @@ impl<T> SpatialHandle for oddio::Handle<oddio::Spatial<oddio::Stop<oddio::Gain<T
 
     fn is_stopped(&mut self) -> bool {
         self.control::<oddio::Stop<_>, _>().is_stopped()
+    }
+    fn stop(&mut self) {
+        self.control::<oddio::Stop<_>, _>().stop()
     }
 }

@@ -55,7 +55,7 @@ async function on_session_started(session) {
     // Use the new WebGL context to create a XRWebGLLayer and set it as the
     // sessions baseLayer. This allows any content rendered to the layer to
     // be displayed on the XRDevice.
-    xr_session.updateRenderState({ baseLayer: new XRWebGLLayer(xr_session, gl) });
+    xr_session.updateRenderState({ baseLayer: new XRWebGLLayer(xr_session, gl, { antialias: true }) });
 
     // Get a reference space, which is required for querying poses. In this
     // case an 'local' reference space means that all poses will be relative

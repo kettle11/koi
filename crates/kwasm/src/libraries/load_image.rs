@@ -7,7 +7,7 @@ thread_local! {
             return fetch(url)
                 .then(response => response.blob()).
                 then(blob => {
-                    return createImageBitmap(blob);
+                    return createImageBitmap(blob, {colorSpaceConversion: "none"});
                 })
         };
         f
