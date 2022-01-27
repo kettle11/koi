@@ -113,7 +113,6 @@ float DistributionGGX(vec3 N, vec3 H, float roughness)
     float NoH = dot(N, H);
     vec3 NxH = cross(N, H);
     float a = NoH * roughness;
-    float roughness_squared = 
     float k = roughness / (dot(NxH, NxH) + a * a);
     float d = k * k * (1.0 / PI);
     return min(d, MEDIUMP_FLOAT_MAX);
