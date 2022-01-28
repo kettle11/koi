@@ -555,8 +555,22 @@ impl<'a, 'b: 'a> Renderer<'a, 'b> {
         let camera_position = camera_transform.position;
         let camera_forward = -camera_transform.forward();
 
-        let frustum =
-            Frustum::from_matrix(camera.projection_matrix() * camera_transform.model().inversed());
+        let frustum = if self.camera_info.len() > 1 {
+            let mut frustum_left = Frustum::from_matrix(
+                self.camera_info[0].projection_matrix * self.camera_info[0].view_matrix,
+            );
+            let frustum_right = Frustum::from_matrix(
+                self.camera_info[1].projection_matrix * self.camera_info[1].view_matrix,
+            );
+            // Expand the culling frustum to accomodate both views.
+            // Note: This approach won't work for headseys with a greater than 180 field of view.
+            frustum_left.planes[1] = frustum_right.planes[1];
+            frustum_left
+        } else {
+            Frustum::from_matrix(
+                self.camera_info[0].projection_matrix * self.camera_info[0].view_matrix,
+            )
+        };
 
         // These should *really* be preallocated somehow.
         let mut transparent_renderables = Vec::new();
