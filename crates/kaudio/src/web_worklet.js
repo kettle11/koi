@@ -113,6 +113,6 @@ function setup_worklet(entry_point, stack_pointer, thread_local_storage_pointer)
 
     };
 
-    document.onclick = callback;
+    document.addEventListener("click", callback);
 }
 setup_worklet

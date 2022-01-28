@@ -163,7 +163,7 @@ let kxr = {
             if (!xr_session) {
 
                 // Set up a click handler to start XR when the page is clicked.
-                document.onclick = function () {
+                document.addEventListener("click", function () {
                     navigator.xr.isSessionSupported('immersive-vr').then((supported) => {
                         console.log("STARTING SESSION!");
                         if (supported) {
@@ -174,7 +174,7 @@ let kxr = {
                             navigator.xr.requestSession('inline').then(on_session_started);
                         }
                     })
-                };
+                });
             }
         }
     },
