@@ -986,6 +986,8 @@ impl GraphicsContextTrait for GraphicsContext {
                         )
                     }
                     Present => {
+                        self.gl
+                            .bind_framebuffer(GL_FRAMEBUFFER, Framebuffer::default());
                         self.gl_context.swap_buffers();
                     }
                 }

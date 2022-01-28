@@ -12,6 +12,9 @@ pub use sprite::*;
 
 mod brdf_lookup;
 
+mod triple_buffered_framebuffer;
+use triple_buffered_framebuffer::*;
+
 use crate::graphics::texture::Texture;
 
 #[derive(NotCloneComponent)]
@@ -721,6 +724,7 @@ pub fn render_scene_system<'a, 'b>(
         }
     }
 
+    /*
     let clear_color = clear_color.map(|c| {
         // Presently the output needs to be in non-linear sRGB.
         // However that means that blending with the clear-color will be incorrect.
@@ -728,10 +732,13 @@ pub fn render_scene_system<'a, 'b>(
         let c = c.to_rgb_color(color_spaces::ENCODED_SRGB);
         c.into()
     });
+    */
 
     {
-        let mut render_pass = command_buffer
-            .begin_render_pass_with_framebuffer(&graphics.current_target_framebuffer, clear_color);
+        let mut render_pass = command_buffer.begin_render_pass_with_framebuffer(
+            &graphics.current_target_framebuffer,
+            Some((0., 1., 0., 1.)),
+        );
 
         /*
         for (camera_global_transform, camera) in &cameras {
@@ -1042,97 +1049,5 @@ pub fn render_shadow_pass(
                 );
             }
         }
-    }
-}
-
-/// A triple buffered framebuffer abstraction to avoid OpenGL stalls
-pub struct TripleBufferedFramebuffer {
-    framebuffers: [(Framebuffer, Texture, Texture); 3],
-    width: u32,
-    height: u32,
-    viewport_size: (u32, u32),
-    current: usize,
-}
-
-impl TripleBufferedFramebuffer {
-    pub fn new(graphics: &mut Graphics, width: u32, height: u32) -> Self {
-        fn new_frambuffer(
-            graphics: &mut Graphics,
-            width: u32,
-            height: u32,
-        ) -> (Framebuffer, Texture, Texture) {
-            let color_texture = graphics
-                .new_texture(
-                    None,
-                    width,
-                    height,
-                    PixelFormat::RGBA32F,
-                    TextureSettings {
-                        srgb: false,
-                        generate_mipmaps: false,
-                        ..TextureSettings::default()
-                    },
-                )
-                .unwrap();
-
-            let depth_texture = graphics
-                .new_texture(
-                    None,
-                    width,
-                    height,
-                    PixelFormat::Depth16,
-                    TextureSettings {
-                        srgb: false,
-                        generate_mipmaps: false,
-                        ..TextureSettings::default()
-                    },
-                )
-                .unwrap();
-
-            (
-                graphics
-                    .context
-                    .new_framebuffer(Some(&color_texture), Some(&depth_texture), None),
-                color_texture,
-                depth_texture,
-            )
-        }
-
-        Self {
-            framebuffers: [
-                new_frambuffer(graphics, width, height),
-                new_frambuffer(graphics, width, height),
-                new_frambuffer(graphics, width, height),
-            ],
-            width,
-            height,
-            viewport_size: (width, height),
-            current: 0,
-        }
-    }
-
-    pub fn resize(&mut self, graphics: &mut Graphics, width: u32, height: u32) {
-        if width > self.width || height > self.height {
-            let mut old_self = Self::new(graphics, width, height);
-            std::mem::swap(self, &mut old_self);
-
-            // This should be done automatically by `kgraphics` instead.
-            for (framebuffer, color_texture, depth_texture) in old_self.framebuffers {
-                graphics.context.delete_framebuffer(framebuffer);
-                graphics.context.delete_texture(color_texture.0);
-                graphics.context.delete_texture(depth_texture.0);
-            }
-            *self = Self::new(graphics, width, height);
-        } else {
-            self.viewport_size = (width, height);
-        }
-    }
-
-    pub fn get_next(&mut self) -> &Framebuffer {
-        self.current += 1;
-        if self.current > 2 {
-            self.current = 0;
-        }
-        &self.framebuffers[self.current].0
     }
 }

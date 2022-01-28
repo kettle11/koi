@@ -309,6 +309,7 @@ impl GL {
             GL_COLOR_BUFFER_BIT,
             GL_LINEAR,
         );
+        println!("ERROR: {:?}", self.gl.GetError());
     }
 
     pub unsafe fn create_framebuffer(&self) -> Result<Framebuffer, String> {
