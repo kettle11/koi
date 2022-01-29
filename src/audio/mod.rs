@@ -9,6 +9,9 @@ pub use listener::*;
 mod audio_source;
 pub use audio_source::*;
 
+mod fixed_gain;
+use fixed_gain::*;
+
 pub(crate) const SAMPLE_RATE: u32 = 44100;
 
 pub fn audio_plugin() -> Plugin {
@@ -26,7 +29,7 @@ pub fn setup_audio(world: &mut World) {
     const QUIET_AMPLITUDE: f32 = 0.001;
 
     let spatial_scene = oddio::SpatialScene::new(SAMPLE_RATE, 0.1);
-    let mixer = oddio::Adapt::new(
+    let mixer = oddio::Reinhard::new(oddio::Adapt::new(
         spatial_scene,
         QUIET_AMPLITUDE / 2.0f32.sqrt(),
         oddio::AdaptOptions {
@@ -35,7 +38,7 @@ pub fn setup_audio(world: &mut World) {
             low: 0.1 / 2.0f32.sqrt(),
             high: 0.5 / 2.0f32.sqrt(),
         },
-    );
+    ));
 
     let (scene_handle, scene) = oddio::split(mixer);
 
@@ -49,7 +52,7 @@ pub fn setup_audio(world: &mut World) {
 }
 
 struct AudioThread {
-    scene: oddio::SplitSignal<oddio::Adapt<oddio::SpatialScene>>,
+    scene: oddio::SplitSignal<oddio::Reinhard<oddio::Adapt<oddio::SpatialScene>>>,
 }
 
 impl AudioThread {
@@ -61,5 +64,5 @@ impl AudioThread {
 
 #[derive(NotCloneComponent)]
 pub struct AudioManager {
-    scene_handle: oddio::Handle<oddio::Adapt<oddio::SpatialScene>>,
+    scene_handle: oddio::Handle<oddio::Reinhard<oddio::Adapt<oddio::SpatialScene>>>,
 }

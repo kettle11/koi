@@ -89,12 +89,14 @@ impl AudioSource {
         }
     }
 
+    /*
     pub fn set_volume(&mut self, volume: f32) {
         self.volume = volume;
         for sound in &mut self.playing {
             sound.set_volume(volume)
         }
     }
+    */
 }
 
 pub fn move_sources(
@@ -160,24 +162,32 @@ pub fn move_sources(
                     continue;
                 }
 
+                let max_distance = 1000.;
                 let sound = sounds.get(sound_handle);
                 let spatial_options = oddio::SpatialOptions {
                     position,
                     velocity,
                     radius: 1.0,
-                    max_distance: 1000.,
                 };
-                let mut frames_source = if *looped {
-                    let source = oddio::Gain::new(oddio::Cycle::new(sound.frames.clone()), 1.0);
-                    Box::new(spatial_scene_control.play(source, spatial_options))
-                        as Box<dyn SpatialHandle>
-                } else {
+                let frames_source = if *looped {
                     let source =
-                        oddio::Gain::new(oddio::FramesSignal::new(sound.frames.clone(), 0.), 1.0);
-                    Box::new(spatial_scene_control.play(source, spatial_options))
-                        as Box<dyn SpatialHandle>
+                        FixedGain::new(oddio::Cycle::new(sound.frames.clone()), source.volume);
+                    Box::new(spatial_scene_control.play_buffered(
+                        source,
+                        spatial_options,
+                        max_distance,
+                    )) as Box<dyn SpatialHandle>
+                } else {
+                    let source = FixedGain::new(
+                        oddio::FramesSignal::new(sound.frames.clone(), 0.),
+                        source.volume,
+                    );
+                    Box::new(spatial_scene_control.play_buffered(
+                        source,
+                        spatial_options,
+                        max_distance,
+                    )) as Box<dyn SpatialHandle>
                 };
-                frames_source.set_volume(source.volume);
                 source.playing.push(frames_source);
                 source.to_play.swap_remove(i);
             }
@@ -187,25 +197,30 @@ pub fn move_sources(
 
 pub(super) trait SpatialHandle: Send + Sync {
     fn set_motion(&mut self, position: Vec3, velocity: Vec3, discontinuity: bool);
-    fn set_volume(&mut self, volume: f32);
+    // fn set_volume(&mut self, volume: f32);
     fn is_stopped(&mut self) -> bool;
     fn stop(&mut self);
 }
 
-impl<T> SpatialHandle for oddio::Handle<oddio::Spatial<oddio::Stop<oddio::Gain<T>>>> {
+impl<T> SpatialHandle for oddio::Handle<oddio::SpatialBuffered<oddio::Stop<FixedGain<T>>>> {
     fn set_motion(&mut self, position: Vec3, velocity: Vec3, discontinuity: bool) {
         let position: [f32; 3] = position.into();
         let velocity: [f32; 3] = velocity.into();
 
         let position = position.into();
         let velocity = velocity.into();
-        self.control::<oddio::Spatial<_>, _>()
-            .set_motion(position, velocity, discontinuity);
+        self.control::<oddio::SpatialBuffered<_>, _>().set_motion(
+            position,
+            velocity,
+            discontinuity,
+        );
     }
 
+    /*
     fn set_volume(&mut self, volume: f32) {
-        self.control::<oddio::Gain<_>, _>().set_gain(volume);
+        self.control::<FixedGain<_>, _>().set_gain(volume);
     }
+    */
 
     fn is_stopped(&mut self) -> bool {
         self.control::<oddio::Stop<_>, _>().is_stopped()
