@@ -162,7 +162,6 @@ pub fn move_sources(
                     continue;
                 }
 
-                let max_distance = 1000.;
                 let sound = sounds.get(sound_handle);
                 let spatial_options = oddio::SpatialOptions {
                     position,
@@ -172,21 +171,15 @@ pub fn move_sources(
                 let frames_source = if *looped {
                     let source =
                         FixedGain::new(oddio::Cycle::new(sound.frames.clone()), source.volume);
-                    Box::new(spatial_scene_control.play_buffered(
-                        source,
-                        spatial_options,
-                        max_distance,
-                    )) as Box<dyn SpatialHandle>
+                    Box::new(spatial_scene_control.play(source, spatial_options))
+                        as Box<dyn SpatialHandle>
                 } else {
                     let source = FixedGain::new(
                         oddio::FramesSignal::new(sound.frames.clone(), 0.),
                         source.volume,
                     );
-                    Box::new(spatial_scene_control.play_buffered(
-                        source,
-                        spatial_options,
-                        max_distance,
-                    )) as Box<dyn SpatialHandle>
+                    Box::new(spatial_scene_control.play(source, spatial_options))
+                        as Box<dyn SpatialHandle>
                 };
                 source.playing.push(frames_source);
                 source.to_play.swap_remove(i);
@@ -202,18 +195,15 @@ pub(super) trait SpatialHandle: Send + Sync {
     fn stop(&mut self);
 }
 
-impl<T> SpatialHandle for oddio::Handle<oddio::SpatialBuffered<oddio::Stop<FixedGain<T>>>> {
+impl<T> SpatialHandle for oddio::Handle<oddio::Spatial<oddio::Stop<FixedGain<T>>>> {
     fn set_motion(&mut self, position: Vec3, velocity: Vec3, discontinuity: bool) {
         let position: [f32; 3] = position.into();
         let velocity: [f32; 3] = velocity.into();
 
         let position = position.into();
         let velocity = velocity.into();
-        self.control::<oddio::SpatialBuffered<_>, _>().set_motion(
-            position,
-            velocity,
-            discontinuity,
-        );
+        self.control::<oddio::Spatial<_>, _>()
+            .set_motion(position, velocity, discontinuity);
     }
 
     /*
