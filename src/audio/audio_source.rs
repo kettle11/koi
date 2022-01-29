@@ -142,7 +142,7 @@ pub fn move_sources(
             source.teleported = false;
 
             let velocity: [f32; 3] = relative_velocity.into();
-            let position: [f32; 3] = relative_velocity.into();
+            let position: [f32; 3] = relative_position.into();
 
             let position = position.into();
             let velocity = velocity.into();
