@@ -17,8 +17,8 @@ impl XRBackendTrait for DoNothingXrBackend {
         // Also do nothing
     }
     fn running(&self) -> bool {
-        // Of course we are!
-        true
+        // Of course we aren't!
+        false
     }
     fn button_state(&self, _controller_index: usize, _button_index: usize) -> bool {
         // Definitely no XR button pressed

@@ -80,9 +80,6 @@ function on_xr_frame(time, frame) {
 
     let session = frame.session;
 
-    // Inform the session that we're ready for the next frame.
-    session.requestAnimationFrame(on_xr_frame);
-
     // Get the XRDevice pose relative to the reference space we created
     // earlier.
     let pose = frame.getViewerPose(xr_reference_space);
@@ -99,36 +96,8 @@ function on_xr_frame(time, frame) {
 
     self.kwasm_exports.koi_begin_xr_frame();
 
-    if (pose) {
-        // If we do have a valid pose, bind the WebGL layer's framebuffer,
-        // which is where any content to be displayed on the XRDevice must be
-        // rendered.
-        /*
-        gl.bindFramebuffer(gl.FRAMEBUFFER, glLayer.framebuffer);
-
-        // Update the clear color so that we can observe the color in the
-        // headset changing over time.
-        gl.clearColor(Math.cos(time / 2000),
-            Math.cos(time / 4000),
-            Math.cos(time / 6000), 1.0);
-
-        // Clear the framebuffer
-        gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-        */
-        //console.log(pose);
-        // Normally you'd loop through each of the views reported by the frame
-        // and draw them into the corresponding viewport here, but we're
-        // keeping this sample slim so we're not bothering to draw any
-        // geometry.
-        /*for (let view of pose.views) {
-          let viewport = glLayer.getViewport(view);
-          gl.viewport(viewport.x, viewport.y,
-                      viewport.width, viewport.height);
-          // Draw a scene using view.projectionMatrix as the projection matrix
-          // and view.transform to position the virtual camera. If you need a
-          // view matrix, use view.transform.inverse.matrix.
-        }*/
-    }
+     // Inform the session that we're ready for the next frame.
+     session.requestAnimationFrame(on_xr_frame);
 }
 
 // Called either when the user has explicitly ended the session by calling
