@@ -120,12 +120,9 @@ impl<'a, 'b: 'a> Renderer<'a, 'b> {
         viewport: kmath::geometry::BoundingBox<u32, 2>,
         multiview_enabled: bool,
     ) -> Self {
-        // let camera_info = Self::get_camera_info(camera_transform, camera);
-        // let (view_width, view_height) = camera.get_view_size();
         let min = viewport.min;
         let size = viewport.size();
         render_pass.set_viewport(min.x as u32, min.y as u32, size.x as u32, size.y as u32);
-
         let brdf_lookup_texture = texture_assets.get(&renderer_info.brdf_lookup_table);
         Self {
             render_pass,
@@ -336,17 +333,12 @@ impl<'a, 'b: 'a> Renderer<'a, 'b> {
                 self.current_pipeline = Some(pipeline);
                 self.render_pass.set_pipeline(pipeline);
 
-                if self.multiview_enabled || self.camera_info.len() == 1 {
-                    for (i, camera_info) in self.camera_info.iter().enumerate() {
-                        self.bind_view(camera_info, i);
-                    }
+                for (i, camera_info) in self.camera_info.iter().enumerate() {
+                    self.bind_view(camera_info, i);
                 }
 
                 self.render_pass.set_float_property(
-                    &shader
-                        .pipeline
-                        .get_float_property("p_dither_scale")
-                        .unwrap(),
+                    &pipeline.get_float_property("p_dither_scale").unwrap(),
                     self.dither_scale,
                 );
 
@@ -516,7 +508,7 @@ impl<'a, 'b: 'a> Renderer<'a, 'b> {
                 self.render_pass
                     .set_mat4_property(&material_info.model_property, model_matrix.as_array());
 
-                if self.camera_info.len() == 1 {
+                if self.camera_info.len() == 1 || self.multiview_enabled {
                     self.render_pass
                         .draw_triangles(gpu_mesh.triangle_count, &gpu_mesh.index_buffer);
                 } else {
@@ -777,10 +769,13 @@ pub fn render_scene<'a, 'b>(
                     }
                 }
 
-                // #[cfg(not(feature = "xr"))]
+                /*
+                #[cfg(not(feature = "xr"))]
                 let multiview_enabled = false;
-                // #[cfg(feature = "xr")]
-                // let multiview_enabled = camera_info.len() > 1;
+                #[cfg(feature = "xr")]
+                let multiview_enabled = camera_info.len() > 1;
+                */
+                let multiview_enabled = false;
 
                 let (width, height) = camera.get_view_size();
 

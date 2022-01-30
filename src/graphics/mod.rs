@@ -66,7 +66,15 @@ pub fn graphics_plugin() -> Plugin {
 }
 
 /// Ensure that the primary window redraws continuously.
-fn request_window_redraw(window: &mut NotSendSync<kapp::Window>) {
+fn request_window_redraw(
+    window: &mut NotSendSync<kapp::Window>,
+    #[cfg(feature = "xr")] xr: &crate::XR,
+) {
+    #[cfg(feature = "xr")]
+    if !xr.running() {
+        window.request_redraw();
+    }
+    #[cfg(not(feature = "xr"))]
     window.request_redraw();
 }
 
