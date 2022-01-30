@@ -598,6 +598,7 @@ pub fn merge_meshes(
 }
 
 impl Mesh {
+    pub const EMPTY: Handle<Mesh> = Handle::<Mesh>::new_with_just_index(0);
     pub const PLANE: Handle<Mesh> = Handle::<Mesh>::new_with_just_index(1);
     pub const VERTICAL_QUAD: Handle<Mesh> = Handle::<Mesh>::new_with_just_index(2);
     pub const CUBE: Handle<Mesh> = Handle::<Mesh>::new_with_just_index(3);
