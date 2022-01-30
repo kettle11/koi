@@ -304,7 +304,7 @@ pub(crate) fn load_cube_maps(
     for message in messages.into_iter() {
         // Force ClampToEdge because other WrappingModes create a seam for CubeMaps.
 
-        let texture_settings = TextureSettings {
+        let mut texture_settings = TextureSettings {
             wrapping_horizontal: WrappingMode::ClampToEdge,
             wrapping_vertical: WrappingMode::ClampToEdge,
             minification_filter: FilterMode::Linear,
@@ -321,6 +321,9 @@ pub(crate) fn load_cube_maps(
             texture_settings,
         );
 
+        // This needs to be true otherwise artifacts are introduced into the CubeMap.
+        // Why?
+        texture_settings.generate_mipmaps = true;
         let face_size = 512;
         // Hardcode the cube map's size for now.
         let cube_map = graphics
