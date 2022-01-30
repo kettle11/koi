@@ -150,7 +150,7 @@ pub fn png_data_from_bytes(bytes: &[u8], srgb: bool) -> TextureLoadData {
     };
 
     TextureLoadData {
-        data: Box::new(pixels),
+        data: TextureData::Bytes(Box::new(pixels)),
         pixel_format,
         width: metadata.width,
         height: metadata.height,
