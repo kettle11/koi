@@ -80,6 +80,10 @@ impl Shader {
     pub const UI: Handle<Shader> = Handle::<Shader>::new_with_just_index(5);
     pub const SKY_BOX: Handle<Shader> = Handle::<Shader>::new_with_just_index(6);
     pub const UNLIT_TRANSPARENT: Handle<Shader> = Handle::<Shader>::new_with_just_index(7);
+    pub const PHYSICALLY_BASED_DOUBLE_SIDED: Handle<Shader> =
+        Handle::<Shader>::new_with_just_index(8);
+    pub const PHYSICALLY_BASED_TRANSPARENT_DOUBLE_SIDED: Handle<Shader> =
+        Handle::<Shader>::new_with_just_index(9);
 }
 
 pub(crate) fn initialize_static_shaders(graphics: &mut Graphics, shaders: &mut Assets<Shader>) {
@@ -177,5 +181,33 @@ pub(crate) fn initialize_static_shaders(graphics: &mut Graphics, shaders: &mut A
             )
             .unwrap(),
         &Shader::UNLIT_TRANSPARENT,
+    );
+
+    shaders.add_and_leak(
+        graphics
+            .new_shader(
+                include_str!("built_in_shaders/physically_based.glsl"),
+                PipelineSettings {
+                    faces_to_render: FacesToRender::FrontAndBack,
+                    blending: None,
+                    ..Default::default()
+                },
+            )
+            .unwrap(),
+        &Shader::PHYSICALLY_BASED_DOUBLE_SIDED,
+    );
+
+    shaders.add_and_leak(
+        graphics
+            .new_shader(
+                include_str!("built_in_shaders/physically_based.glsl"),
+                PipelineSettings {
+                    faces_to_render: FacesToRender::FrontAndBack,
+                    blending: Some((BlendFactor::SourceAlpha, BlendFactor::OneMinusSourceAlpha)),
+                    ..Default::default()
+                },
+            )
+            .unwrap(),
+        &Shader::PHYSICALLY_BASED_TRANSPARENT_DOUBLE_SIDED,
     );
 }

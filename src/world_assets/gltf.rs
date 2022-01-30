@@ -124,10 +124,11 @@ pub(super) fn load_gltf_as_world(
                 material.set_vec2("p_texture_coordinate_scale", Vec2::ONE);
                 material
             } else {
-                let shader = if transparent {
-                    Shader::PHYSICALLY_BASED_TRANSPARENT
-                } else {
-                    Shader::PHYSICALLY_BASED
+                let shader = match (transparent, material.double_sided) {
+                    (false, false) => Shader::PHYSICALLY_BASED,
+                    (true, false) => Shader::PHYSICALLY_BASED_TRANSPARENT,
+                    (false, true) => Shader::PHYSICALLY_BASED_DOUBLE_SIDED,
+                    (true, true) => Shader::PHYSICALLY_BASED_TRANSPARENT_DOUBLE_SIDED,
                 };
                 new_pbr_material(shader, pbr_properties)
             };
