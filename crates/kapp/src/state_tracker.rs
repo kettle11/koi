@@ -9,7 +9,7 @@ use std::time::Duration;
 
 /// Tracks key and pointer input state based on events.
 pub struct StateTracker {
-    all_events_since_last_frame: Vec<Event>,
+    pub all_events_since_last_frame: Vec<Event>,
     keys_down_since_last_frame: HashMap<Key, Duration>, // Key was pressed since the last clear for any window.
     keys_pressed: HashMap<Key, Duration>,
     pointer_buttons_down_since_last_frame: HashMap<PointerButton, Duration>, // pointer was pressed since the last clear for any window.
@@ -44,7 +44,16 @@ impl StateTracker {
         }
     }
 
-    pub fn handle_event(&mut self, event: &Event) {
+    /// Constructs a [StateTracker] from a series of events all at once.
+    pub fn set_with_events(&mut self, events: Vec<Event>) {
+        self.clear();
+        for event in &events {
+            self.handle_event_inner(event);
+        }
+        self.all_events_since_last_frame = events;
+    }
+
+    fn handle_event_inner(&mut self, event: &Event) {
         match event {
             Event::KeyDown { key, timestamp } => {
                 self.keys_pressed.insert(*key, *timestamp);
@@ -80,6 +89,9 @@ impl StateTracker {
             }
             _ => {}
         };
+    }
+    pub fn handle_event(&mut self, event: &Event) {
+        self.handle_event_inner(event);
         self.all_events_since_last_frame.push(event.clone());
     }
 

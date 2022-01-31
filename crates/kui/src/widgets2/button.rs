@@ -88,7 +88,34 @@ impl<State, Context: GetStandardInput + Clone, Child: Widget<State, ButtonContex
     Widget<State, Context> for ButtonBase<State, Context, Child>
 {
     fn update(&mut self, state: &mut State, context: &mut Context) {
-        let standard_input = context.standard_input();
+        let standard_input = context.standard_input_mut();
+
+        for (handled, event) in standard_input.input_events_iter() {
+            match event {
+                kapp_platform_common::Event::PointerDown {
+                    x,
+                    y,
+                    button: kapp_platform_common::PointerButton::Primary,
+                    ..
+                } => {
+                    if self
+                        .bounding_rect
+                        .contains_point(Vec2::new(x as f32, y as f32))
+                    {
+                        if !self.clicked {
+                            self.clicked = true;
+                            (self.on_click)(state)
+                        }
+                        *handled = true;
+                    }
+                }
+                kapp_platform_common::Event::PointerUp {
+                    button: kapp_platform_common::PointerButton::Primary,
+                    ..
+                } => self.clicked = false,
+                _ => {}
+            }
+        }
 
         let mut context = ButtonContext {
             context: context.clone(),
@@ -96,18 +123,6 @@ impl<State, Context: GetStandardInput + Clone, Child: Widget<State, ButtonContex
         };
         // Todo: Check for input here and handle click event.
         self.child_widget.update(state, &mut context);
-
-        let start_clicked = standard_input.pointer_down
-            && self
-                .bounding_rect
-                .contains_point(standard_input.pointer_position);
-        if start_clicked && !self.clicked {
-            self.clicked = true;
-            (self.on_click)(state)
-        }
-        if !standard_input.pointer_down {
-            self.clicked = false
-        }
     }
     fn layout(
         &mut self,

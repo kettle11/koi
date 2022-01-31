@@ -47,29 +47,54 @@ impl UIManager {
 
     fn update_input(&mut self, world: &mut World, standard_input: &mut StandardInput) {
         let input = world.get_singleton::<Input>();
-        standard_input.pointer_down = input.pointer_button(PointerButton::Primary);
-        standard_input.pointer_position = {
-            let (x, y) = input.pointer_position();
-            Vec2::new(x as f32, y as f32) / self.ui_scale
-        };
-        standard_input.keys_pressed.clear();
-        standard_input.characters_input.clear();
 
-        for event in input.all_events_since_last_frame().iter() {
+        // Take input events from the world. Later we'll redefined the World's Input
+        // based on the events that aren't handled.
+
+        standard_input.input_events.clear();
+
+        for event in input.all_events_since_last_frame() {
             match event {
-                kapp::Event::CharacterReceived { character } => {
-                    standard_input.characters_input.push(*character);
-                }
-                kapp::Event::KeyDown { key, .. } | kapp::Event::KeyRepeat { key, .. } => {
-                    standard_input.keys_pressed.push(*key);
-                }
-                _ => {}
+                &kapp::Event::PointerDown {
+                    x,
+                    y,
+                    source,
+                    button,
+                    timestamp,
+                } => standard_input.input_events.push(kapp::Event::PointerDown {
+                    x: x / self.ui_scale as f64,
+                    y: y / self.ui_scale as f64,
+                    source,
+                    button,
+                    timestamp,
+                }),
+                &kapp::Event::PointerUp {
+                    x,
+                    y,
+                    source,
+                    button,
+                    timestamp,
+                } => standard_input.input_events.push(kapp::Event::PointerUp {
+                    x: x / self.ui_scale as f64,
+                    y: y / self.ui_scale as f64,
+                    source,
+                    button,
+                    timestamp,
+                }),
+                _ => standard_input.input_events.push(event.clone()),
             }
+        }
+
+        standard_input
+            .input_events_handled
+            .resize(standard_input.input_events.len(), false);
+        for b in &mut standard_input.input_events_handled {
+            *b = false;
         }
         standard_input.delta_time = world.get_singleton::<Time>().delta_seconds_f64 as f32;
     }
 
-    pub fn prepare<Style: GetStandardStyle>(
+    fn prepare<Style: GetStandardStyle>(
         &mut self,
         world: &mut World,
         standard_context: &mut StandardContext<Style, StandardInput>,
@@ -88,11 +113,61 @@ impl UIManager {
         self.update_input(world, standard_context.standard_input_mut())
     }
 
-    pub fn update_layout_draw<Data, Context>(
+    /// Remove all handled events from the World so that other systems don't react to them.
+    fn remove_handled_events_from_world(
+        &mut self,
+        standard_input: &mut StandardInput,
+        world: &mut World,
+    ) {
+        let input = world.get_singleton::<Input>();
+
+        // Reuse [Input]'s [Vec] instead of allocating a new one.
+        let mut swap_vec = Vec::new();
+        std::mem::swap(&mut swap_vec, &mut input.0.all_events_since_last_frame);
+
+        let mut new_events = Vec::new();
+        for (handled, event) in standard_input.input_events_iter() {
+            if !*handled {
+                new_events.push(match event {
+                    kapp::Event::PointerDown {
+                        x,
+                        y,
+                        source,
+                        button,
+                        timestamp,
+                    } => kapp::Event::PointerDown {
+                        x: x * self.ui_scale as f64,
+                        y: y * self.ui_scale as f64,
+                        source,
+                        button,
+                        timestamp,
+                    },
+                    kapp::Event::PointerUp {
+                        x,
+                        y,
+                        source,
+                        button,
+                        timestamp,
+                    } => kapp::Event::PointerUp {
+                        x: x * self.ui_scale as f64,
+                        y: y * self.ui_scale as f64,
+                        source,
+                        button,
+                        timestamp,
+                    },
+                    _ => event.clone(),
+                })
+            }
+        }
+
+        input.0.set_with_events(new_events);
+    }
+
+    fn update_layout_draw<Data, Style: GetStandardStyle>(
         &mut self,
         data: &mut Data,
-        context: &mut Context,
-        root_widget: &mut impl kui::Widget<Data, Context>,
+        context: &mut StandardContext<Style, StandardInput>,
+        root_widget: &mut impl kui::Widget<Data, StandardContext<Style, StandardInput>>,
     ) {
         let (width, height, _) = self.initial_constraints.size().into();
         self.drawer.set_view_width_height(width, height);
@@ -109,7 +184,37 @@ impl UIManager {
         root_widget.draw(data, context, &mut self.drawer, self.initial_constraints);
     }
 
-    pub fn draw(&mut self, world: &mut World) {
+    pub fn render_ui(&mut self, world: &mut World) {
+        render_ui(world, self.entity, &mut self.drawer);
+    }
+    pub fn update<Style: GetStandardStyle>(
+        &mut self,
+        world: &mut World,
+        context: &mut StandardContext<Style, StandardInput>,
+        root_widget: &mut impl kui::Widget<World, StandardContext<Style, StandardInput>>,
+    ) {
+        self.prepare(world, context);
+        root_widget.update(world, context);
+        self.remove_handled_events_from_world(context.standard_input_mut(), world);
+    }
+
+    pub fn layout_and_draw<Style: GetStandardStyle>(
+        &mut self,
+        world: &mut World,
+        context: &mut StandardContext<Style, StandardInput>,
+        root_widget: &mut impl kui::Widget<World, StandardContext<Style, StandardInput>>,
+    ) {
+        root_widget.layout(
+            world,
+            context,
+            MinAndMaxSize {
+                min: Vec3::ZERO,
+                max: Vec3::MAX,
+            },
+        );
+        let (width, height, _) = self.initial_constraints.size().into();
+        self.drawer.set_view_width_height(width, height);
+        root_widget.draw(world, context, &mut self.drawer, self.initial_constraints);
         render_ui(world, self.entity, &mut self.drawer);
     }
 }
@@ -175,7 +280,11 @@ pub fn run_simple_ui<Data: 'static>(
                 Event::Draw => {
                     ui_manager.prepare(world, &mut standard_context);
                     ui_manager.update_layout_draw(&mut data, &mut standard_context, &mut root);
-                    ui_manager.draw(world);
+                    ui_manager.render_ui(world);
+                    ui_manager.remove_handled_events_from_world(
+                        standard_context.standard_input_mut(),
+                        world,
+                    );
                 }
                 _ => {}
             }

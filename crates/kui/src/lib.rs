@@ -90,23 +90,28 @@ pub trait GetStandardInput {
 }
 
 pub struct StandardInput {
-    pub pointer_position: Vec2,
-    pub pointer_down: bool,
-    pub characters_input: Vec<char>,
-    pub keys_pressed: Vec<kapp_platform_common::Key>,
     pub text_input_rect: Option<Box2>,
     pub delta_time: f32,
+    pub input_events: Vec<kapp_platform_common::Event>,
+    pub input_events_handled: Vec<bool>,
 }
 
+impl StandardInput {
+    pub fn input_events_iter(
+        &mut self,
+    ) -> impl Iterator<Item = (&mut bool, kapp_platform_common::Event)> {
+        self.input_events_handled
+            .iter_mut()
+            .zip(self.input_events.iter().cloned())
+    }
+}
 impl Default for StandardInput {
     fn default() -> Self {
         Self {
-            pointer_position: Vec2::ZERO,
-            pointer_down: false,
-            characters_input: Vec::new(),
-            keys_pressed: Vec::new(),
             text_input_rect: None,
             delta_time: 0.0,
+            input_events: Vec::new(),
+            input_events_handled: Vec::new(),
         }
     }
 }

@@ -67,34 +67,38 @@ impl<Data, Context: GetStandardStyle + GetFonts + GetStandardInput> Widget<Data,
         let mut edit_index = char_indices_iter.next().map_or(character_count, |(i, _)| i);
 
         let at_start = character_count - self.cursor_offset_from_end == 0;
-        for &char in context.standard_input().characters_input.iter() {
-            self.reset_cursor_animation();
-            string.insert(edit_index, char);
-            edit_index += char.len_utf8();
-        }
-        for &key in context.standard_input().keys_pressed.iter() {
-            match key {
-                kapp_platform_common::Key::Backspace => {
-                    if !at_start {
-                        self.cursor_on = true;
-                        self.cursor_animation = 0.0;
-                        string.replace_range(remove_index..remove_index + remove_range, &"");
-                        character_count = character_count.saturating_sub(1);
+
+        for (_handled, event) in context.standard_input_mut().input_events_iter() {
+            match event {
+                kapp_platform_common::Event::CharacterReceived { character, .. } => {
+                    self.reset_cursor_animation();
+                    string.insert(edit_index, character);
+                    edit_index += character.len_utf8();
+                }
+                kapp_platform_common::Event::KeyDown { key, .. } => match key {
+                    kapp_platform_common::Key::Backspace => {
+                        if !at_start {
+                            self.cursor_on = true;
+                            self.cursor_animation = 0.0;
+                            string.replace_range(remove_index..remove_index + remove_range, &"");
+                            character_count = character_count.saturating_sub(1);
+                        }
                     }
-                }
-                kapp_platform_common::Key::Left => {
-                    self.selected_area = None;
-                    self.reset_cursor_animation();
-                    self.cursor_offset_from_end += 1;
-                }
-                kapp_platform_common::Key::Right => {
-                    self.selected_area = None;
-                    self.reset_cursor_animation();
-                    self.cursor_offset_from_end = self.cursor_offset_from_end.saturating_sub(1);
-                }
-                kapp_platform_common::Key::Meta => {
-                    self.select_all();
-                }
+                    kapp_platform_common::Key::Left => {
+                        self.selected_area = None;
+                        self.reset_cursor_animation();
+                        self.cursor_offset_from_end += 1;
+                    }
+                    kapp_platform_common::Key::Right => {
+                        self.selected_area = None;
+                        self.reset_cursor_animation();
+                        self.cursor_offset_from_end = self.cursor_offset_from_end.saturating_sub(1);
+                    }
+                    kapp_platform_common::Key::Meta => {
+                        self.select_all();
+                    }
+                    _ => {}
+                },
                 _ => {}
             }
         }
