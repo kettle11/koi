@@ -19,6 +19,7 @@ fn setup_prefabs(world: &mut World) {
     world.spawn((Name("Assets<World>"), assets));
 }
 
+#[allow(dead_code, unused_variables, unreachable_code)]
 fn load_prefabs_system(
     #[cfg(feature = "graphics")] graphics: &mut Graphics,
     worlds: &mut Assets<World>,
@@ -53,10 +54,8 @@ fn load_prefabs_system(
                 mesh_primitive_data,
             ),
         };
-        // log!("REPLACING WORLD PREFAB");
 
         worlds.replace_placeholder(&handle, world.unwrap());
-        //log!("REPLACED PREFAB!");
     }
 }
 
@@ -139,6 +138,7 @@ impl WorldLoader {
 }
 
 impl AssetLoader<World> for WorldLoader {
+    #[allow(unused_variables)]
     fn load_with_options(
         &mut self,
         path: &str,
@@ -171,6 +171,7 @@ impl AssetLoader<World> for WorldLoader {
     }
 }
 
+#[allow(dead_code, unused_variables)]
 async fn load_world(path: &str) -> Option<PrefabLoadMessageData> {
     let extension = std::path::Path::new(&path)
         .extension()
@@ -178,6 +179,7 @@ async fn load_world(path: &str) -> Option<PrefabLoadMessageData> {
 
     let bytes = crate::fetch_bytes(path).await.ok()?;
 
+    #[allow(unreachable_code)]
     Some(match extension {
         #[cfg(feature = "gltf")]
         "glb" => {
