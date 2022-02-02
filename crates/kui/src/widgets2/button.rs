@@ -44,7 +44,14 @@ pub struct ButtonContext<Context> {
     clicked: bool,
 }
 
-pub fn button<State, Context: GetStandardInput + GetStandardStyle + Clone>(
+pub fn button<State, Context: GetStandardInput + GetStandardStyle + Clone + GetFonts>(
+    on_click: fn(&mut State),
+    text: impl Into<TextSource<State>>,
+) -> impl Widget<State, Context> {
+    button_with_child(on_click, crate::text(text))
+}
+
+pub fn button_with_child<State, Context: GetStandardInput + GetStandardStyle + Clone>(
     on_click: fn(&mut State),
     child_widget: impl Widget<State, Context>,
 ) -> impl Widget<State, Context> {

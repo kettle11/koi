@@ -164,6 +164,7 @@ impl<T> Handle<T> {
         }
     }
 
+    #[allow(dead_code)]
     pub(crate) const fn new_with_just_index(indirection_index: usize) -> Self {
         Self {
             indirection_index,
@@ -255,6 +256,7 @@ impl<T: LoadableAssetTrait> Assets<T> {
 
     /// Used to initialize static variables
     /// Adds an asset and leaks it.
+    #[allow(dead_code)]
     pub(crate) fn add_and_leak(&mut self, asset: T, handle_to_check: &Handle<T>) {
         let indirection_index = self.indirection_storage.push(asset);
         assert!(indirection_index == handle_to_check.indirection_index);
@@ -384,12 +386,12 @@ impl<T> SyncGuard<T> {
 unsafe impl<T> Sync for SyncGuard<T> {}
 
 #[cfg(not(target_arch = "wasm32"))]
-pub(crate) async fn fetch_bytes(path: &str) -> Result<Vec<u8>, ()> {
+pub async fn fetch_bytes(path: &str) -> Result<Vec<u8>, ()> {
     let contents = std::fs::read(path).unwrap_or_else(|_| panic!("No such path: {:?}", path));
     Ok(contents)
 }
 
 #[cfg(target_arch = "wasm32")]
-pub(crate) async fn fetch_bytes(path: &str) -> Result<Vec<u8>, ()> {
+pub async fn fetch_bytes(path: &str) -> Result<Vec<u8>, ()> {
     kwasm::libraries::fetch(path).await
 }

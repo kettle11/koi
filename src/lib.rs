@@ -310,7 +310,7 @@ impl KoiState {
             .world
             .get_component_mut::<Input>(self.input_entity)
             .unwrap();
-        input.state.handle_event(&event);
+        input.0.handle_event(&event);
 
         self.world
             .get_component_mut::<KappEvents>(self.kapp_events_entity)
@@ -348,16 +348,16 @@ impl KoiState {
 
         let elapsed = self.start.elapsed();
         let time_elapsed_seconds = elapsed.as_secs_f64();
-        klog::log!("TIME ELAPSED: {:?}", elapsed.as_millis());
+        //klog::log!("TIME ELAPSED: {:?}", elapsed.as_millis());
         self.start = Instant::now();
         self.time_acumulator += time_elapsed_seconds;
 
         while self.time_acumulator >= self.fixed_time_step {
+            (self.run_system)(crate::Event::FixedUpdate, &mut self.world);
+            apply_commands(&mut self.world);
             for system in &mut self.systems.fixed_update_systems {
                 system.run(&mut self.world)
             }
-            apply_commands(&mut self.world);
-            (self.run_system)(crate::Event::FixedUpdate, &mut self.world);
             apply_commands(&mut self.world);
             self.time_acumulator -= self.fixed_time_step;
         }
@@ -387,7 +387,7 @@ impl KoiState {
         self.world
             .get_component_mut::<Input>(self.input_entity)
             .unwrap()
-            .state
+            .0
             .clear();
     }
 }
