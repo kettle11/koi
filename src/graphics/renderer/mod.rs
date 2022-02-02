@@ -633,7 +633,7 @@ impl<'a, 'b: 'a> Renderer<'a, 'b> {
 
         // Don't write to depth for transparent objects.
         // This prevents transparent objects from occluding each-other.
-        self.render_pass.set_depth_mask(false);
+        // self.render_pass.set_depth_mask(false);
 
         for renderable in transparent_renderables.iter() {
             let (transform, material_handle, mesh_handle, _render_flags, optional_sprite, color) =

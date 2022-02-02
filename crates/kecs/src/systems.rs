@@ -287,3 +287,11 @@ where
         }))
     }
 }
+
+/// Run a number of systems.
+/// In the future this could be extended to run systems in parallel, but for now it does not.
+pub fn run_systems(world: &mut World, systems: &mut [System]) {
+    for system in systems {
+        system.run(world);
+    }
+}

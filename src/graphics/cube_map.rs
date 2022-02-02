@@ -291,7 +291,7 @@ struct CubeMapLoadMessage {
 }
 
 /// A system that loads textures onto the GPU
-pub(crate) fn load_cube_maps(
+pub fn load_cube_maps(
     cube_maps: &mut Assets<CubeMap>,
     graphics: &mut Graphics,
     meshes: &Assets<Mesh>,

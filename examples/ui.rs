@@ -27,7 +27,7 @@ fn main() {
                 |_| 50.,
                 button(
                     |world: &mut World| world.get_singleton::<Counter>().0 += 1,
-                    text("Button"),
+                    "Button",
                 ),
             ),
             text(|world: &mut World| world.get_singleton::<Counter>().0.to_string()),
