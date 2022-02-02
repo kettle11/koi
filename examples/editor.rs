@@ -1,10 +1,11 @@
+/* A work-in-progress example exploring some UI for an editor */
+
 use std::{
     collections::{HashMap, HashSet},
     hash::Hash,
 };
 
 use koi::*;
-use kui::*;
 
 #[derive(Component, Clone)]
 struct EditorComponent {
@@ -120,10 +121,10 @@ fn entity_column<Context: GetStandardStyle + GetFonts + GetStandardInput + Clone
             },
             || {
                 button(
-                    |child_data| {
+                    |child_data: &mut (Entity, bool)| {
                         child_data.1 = true;
                     },
-                    text(|t: &(Entity, bool)| format!("Entity {:?}", t.0.index())),
+                    |t: &mut (Entity, bool)| format!("Entity {:?}", t.0.index()),
                 )
             },
         )),
@@ -210,12 +211,12 @@ fn main() {
         }
         let mut root_widget = tree(
             |world, call_per_child| {
-                (|mut transforms: Query<(
+                (|transforms: Query<(
                     Option<&mut Transform>,
                     Option<&Name>,
                     Option<&HierarchyNode>,
                 )>,
-                  editor_component: &mut EditorComponent| {
+                  _editor_component: &mut EditorComponent| {
                     for (e, (_, name, hierarchy_node)) in transforms.entities_and_components() {
                         let name = name.map_or("Unnamed", |n| n.0);
                         if let Some(hierarchy_node) = hierarchy_node {
@@ -234,17 +235,18 @@ fn main() {
                 })
                 .run(world)
             },
-            || text(|e: &(Entity, bool, &'static str)| e.2.to_string()),
+            || text(|e: &mut (Entity, bool, &'static str)| e.2.to_string()),
         ); //entity_column();
 
         let mut ui_manager = UIManager::new(world);
 
         move |event: Event, world| {
             match event {
+                Event::FixedUpdate => {
+                    ui_manager.update(world, &mut standard_context, &mut root_widget)
+                }
                 Event::Draw => {
-                    ui_manager.prepare(world, &mut standard_context);
-                    ui_manager.update_layout_draw(world, &mut standard_context, &mut root_widget);
-                    ui_manager.draw(world);
+                    ui_manager.layout_and_draw(world, &mut standard_context, &mut root_widget)
                 }
                 _ => {}
             }

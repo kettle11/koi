@@ -24,17 +24,13 @@ fn dark_authoratative_style() -> StandardStyle {
 fn main() {
     let ui = standard_frame(column((
         heading("Application"),
-        button(|_| println!("CLICKED"), text("Hello")),
+        button(|_| println!("CLICKED"), "Hello"),
     )));
 
     let mut fonts = Fonts::empty();
     fonts.load_default_fonts();
-    let header_font = fonts
-        .load_system_font(&[Family::Name("Big Caslon")])
-        .unwrap();
 
     let style = StandardStyle::default();
-    let style = dark_authoratative_style();
 
     run_simple_ui((), style, fonts, ui)
 }
