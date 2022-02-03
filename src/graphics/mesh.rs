@@ -28,6 +28,26 @@ pub struct MeshData {
     pub colors: Vec<Vec4>,
 }
 
+impl MeshData {
+    pub fn new() -> Self {
+        MeshData {
+            positions: Vec::new(),
+            indices: Vec::new(),
+            normals: Vec::new(),
+            texture_coordinates: Vec::new(),
+            colors: Vec::new(),
+        }
+    }
+
+    pub fn clear(&mut self) {
+        self.positions.clear();
+        self.indices.clear();
+        self.normals.clear();
+        self.texture_coordinates.clear();
+        self.colors.clear();
+    }
+}
+
 #[derive(Clone)]
 pub struct GPUMesh {
     pub positions: DataBuffer<Vec3>,
