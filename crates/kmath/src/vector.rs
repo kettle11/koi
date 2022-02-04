@@ -330,11 +330,19 @@ impl<T: Numeric, const N: usize> Vector<T, N> {
     };
 }
 
-impl<T: Numeric> Vector<T, 3> {
+impl<T: NumericFloat> Vector<T, 3> {
     /// Produces a `Vector<T, 3>` perpendicular to `self` and `other`.
     /// Only applicable to 3-dimensional `Vector`s.
     pub fn cross(self, other: Self) -> Self {
         (self.zxy().mul_by_component(other) - self.mul_by_component(other.zxy())).zxy()
+    }
+
+    /// Returns the counter-clockwise angle between two vectors in relation to the axis.
+    /// Units are in radians.
+    pub fn counter_clockwise_angle_between(self, other: Self, axis: Self) -> T {
+        let v = self.cross(other).dot(axis);
+        let dot = self.dot(other);
+        T::atan2(-v, -dot) + T::PI
     }
 }
 

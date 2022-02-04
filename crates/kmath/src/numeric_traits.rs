@@ -35,6 +35,7 @@ pub trait NumericFloat:
     const HALF: Self;
     const INFINITY: Self;
     const NEG_INFINITY: Self;
+    const PI: Self;
 
     fn sin_cos_numeric(self) -> (Self, Self);
     fn tan_numeric(self) -> Self;
@@ -44,12 +45,14 @@ pub trait NumericFloat:
     fn max_numeric(self, other: Self) -> Self;
     fn powf_numeric(self, other: Self) -> Self;
     fn floor_numeric(self) -> Self;
+    fn atan2(self, other: Self) -> Self;
 }
 
 impl NumericFloat for f32 {
     const HALF: Self = 0.5;
     const INFINITY: Self = Self::INFINITY;
     const NEG_INFINITY: Self = Self::NEG_INFINITY;
+    const PI: Self = std::f32::consts::PI;
 
     fn sin_cos_numeric(self) -> (Self, Self) {
         self.sin_cos()
@@ -75,6 +78,9 @@ impl NumericFloat for f32 {
     }
     fn floor_numeric(self) -> Self {
         self.floor()
+    }
+    fn atan2(self, other: Self) -> Self {
+        Self::atan2(self, other)
     }
 }
 
@@ -82,6 +88,7 @@ impl NumericFloat for f64 {
     const HALF: Self = 0.5;
     const INFINITY: Self = Self::INFINITY;
     const NEG_INFINITY: Self = Self::NEG_INFINITY;
+    const PI: Self = std::f64::consts::PI;
 
     fn sin_cos_numeric(self) -> (Self, Self) {
         self.sin_cos()
@@ -106,6 +113,9 @@ impl NumericFloat for f64 {
     }
     fn floor_numeric(self) -> Self {
         self.floor()
+    }
+    fn atan2(self, other: Self) -> Self {
+        Self::atan2(self, other)
     }
 }
 
