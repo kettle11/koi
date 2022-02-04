@@ -246,7 +246,7 @@ impl<T: NumericFloat, const DIM: usize> Plane<T, DIM> {
 
 /// Returns distance along the ray if it intersects.
 /// The ray will not intersect if it points away from the plane or is parallel to the plane.
-/// Call [Ray::get_point] with the return value to get the intersection point.
+/// Call [Ray::get_point] with the return value to get the intersection point or just use [ray_with_plane_point].
 pub fn ray_with_plane<F: NumericFloat, const DIM: usize>(
     ray: Ray<F, DIM>,
     plane: Plane<F, DIM>,
@@ -267,6 +267,15 @@ pub fn ray_with_plane<F: NumericFloat, const DIM: usize>(
             Some(-distance)
         }
     }
+}
+
+/// Returns the point where a ray and plane intersect, if there is one.
+/// The ray will not intersect if it points away from the plane or is parallel to the plane.
+pub fn ray_with_plane_point<F: NumericFloat, const DIM: usize>(
+    ray: Ray<F, DIM>,
+    plane: Plane<F, DIM>,
+) -> Option<Vector<F, DIM>> {
+    ray_with_plane(ray, plane).map(|v| ray.get_point(v))
 }
 
 /// Returns distance along the [Line] away from `line.point` if it intersects.
