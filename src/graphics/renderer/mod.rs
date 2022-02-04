@@ -105,6 +105,7 @@ struct Renderer<'a, 'b: 'a> {
     dither_scale: f32,
     just_changed_material: bool,
     brdf_lookup_texture: &'a Texture,
+    color_is_set: bool,
 }
 
 impl<'a, 'b: 'a> Renderer<'a, 'b> {
@@ -142,6 +143,7 @@ impl<'a, 'b: 'a> Renderer<'a, 'b> {
             dither_scale: 4.0,
             just_changed_material: false,
             brdf_lookup_texture,
+            color_is_set: false,
         }
     }
 
@@ -303,7 +305,10 @@ impl<'a, 'b: 'a> Renderer<'a, 'b> {
         reflection_probes: &Query<(&'static GlobalTransform, &'static ReflectionProbe)>,
     ) {
         // Avoid unnecessary [Material] rebinds.
-        if Some(material_handle) != self.material_handle {
+        // Todo: For now we rebind the entire material if a color variant has been set. This makes color variants less efficient.
+        // A better strategy should be found.
+        if Some(material_handle) != self.material_handle || self.color_is_set {
+            self.color_is_set = false;
             //println!("CHANGE MATERIAL");
             self.just_changed_material = true;
 
@@ -440,6 +445,7 @@ impl<'a, 'b: 'a> Renderer<'a, 'b> {
 
             self.render_pass
                 .set_vec4_property(&material_info.base_color_property, rgb_color.into());
+            self.color_is_set = true;
         }
     }
 
