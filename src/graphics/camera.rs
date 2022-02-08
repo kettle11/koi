@@ -207,7 +207,7 @@ impl Camera {
 
         Ray3::new(
             world_space_near,
-            (world_space_far - world_space_near).normalized(),
+            -(world_space_far - world_space_near).normalized(),
         )
     }
 }
