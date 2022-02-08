@@ -352,6 +352,12 @@ impl KoiState {
         self.start = Instant::now();
         self.time_acumulator += time_elapsed_seconds;
 
+        // Check that there aren't a huge number of fixed time steps to process.
+        // This can happen if a computer goes to sleep and then exits sleep.
+        if self.time_acumulator / self.fixed_time_step > 30. {
+            self.time_acumulator = 0.0;
+        }
+
         while self.time_acumulator >= self.fixed_time_step {
             (self.run_system)(crate::Event::FixedUpdate, &mut self.world);
             apply_commands(&mut self.world);
