@@ -2,7 +2,7 @@ use crate::numeric_traits::*;
 use crate::*;
 
 /// A circle in 2D, a sphere in 3D.
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug)]
 pub struct Ball<T, const DIMENSIONS: usize> {
     pub center: Vector<T, DIMENSIONS>,
     pub radius: T,
@@ -34,13 +34,19 @@ impl<T: Numeric + NumericSqrt, const DIMENSIONS: usize> Line<T, DIMENSIONS> {
     }
 }
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug)]
 pub struct LineSegment<T, const DIMENSIONS: usize> {
     pub a: Vector<T, DIMENSIONS>,
     pub b: Vector<T, DIMENSIONS>,
 }
 
-// Returns magnitude of distance and the point
+impl<T, const DIMENSIONS: usize> LineSegment<T, DIMENSIONS> {
+    pub fn new(a: Vector<T, DIMENSIONS>, b: Vector<T, DIMENSIONS>) -> Self {
+        Self { a, b }
+    }
+}
+
+/// Returns point on the line segment.
 pub fn closest_point_on_line_segment<T: NumericFloat, const DIMENSIONS: usize>(
     point: Vector<T, DIMENSIONS>,
     line_segment: LineSegment<T, DIMENSIONS>,
