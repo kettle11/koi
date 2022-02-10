@@ -2,6 +2,7 @@ use crate::*;
 use kgraphics::*;
 
 mod material;
+use kmath::intersections::frustum_with_bounding_box;
 pub use material::*;
 
 mod pbr_material;
@@ -585,7 +586,9 @@ impl<'a, 'b: 'a> Renderer<'a, 'b> {
                         .mesh_assets
                         .get(mesh_handle)
                         .bounding_box
-                        .map_or(true, |b| frustum.intersects_box(transform.model(), b));
+                        .map_or(true, |b| {
+                            intersections::frustum_with_bounding_box(&frustum, transform.model(), b)
+                        });
 
                 if should_render {
                     let is_transparent = self
@@ -866,7 +869,7 @@ pub fn render_depth_only(
             let mesh = meshes.get(mesh_handle);
             let should_render = render_flags.includes_layer(RenderFlags::IGNORE_CULLING)
                 || meshes.get(mesh_handle).bounding_box.map_or(true, |b| {
-                    culling_frustum.intersects_box(global_transform.model(), b)
+                    frustum_with_bounding_box(&culling_frustum, global_transform.model(), b)
                 });
 
             if should_render {

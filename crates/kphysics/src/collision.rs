@@ -1,6 +1,5 @@
 use std::fmt::Debug;
 
-use kmath::geometry::line_with_plane;
 use kmath::numeric_traits::NumericFloat;
 use kmath::*;
 
@@ -692,7 +691,7 @@ fn sutherland_hodgman_clipping<F: NumericFloat + Debug, const DIM: usize>(
                     // `line_with_plane` can return `None` if the current point is on the plane.
                     // In that case `current_outside` will be false and the point will be pushed.
                     // But a cross point should not be pushed.
-                    if let Some(cross_point) = line_with_plane(line, plane) {
+                    if let Some(cross_point) = kmath::intersections::line_with_plane(line, plane) {
                         output_points.push(cross_point);
                     }
                 }
