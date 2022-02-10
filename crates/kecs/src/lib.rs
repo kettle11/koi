@@ -22,6 +22,9 @@ pub(crate) use storage_lookup::*;
 mod systems;
 pub use systems::*;
 
+mod singleton_queries;
+pub use singleton_queries::*;
+
 #[macro_use]
 mod component_bundle;
 pub use component_bundle::*;
