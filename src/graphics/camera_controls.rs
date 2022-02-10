@@ -20,8 +20,6 @@ pub enum CameraControlsMode {
 pub struct CameraControls {
     velocity: Vec3,
     pub max_speed: f32,
-    pub acceleration: f32,
-    pub friction: f32,
     pub rotation_sensitivity: f32,
     pub mode: CameraControlsMode,
     pub rotate_button: PointerButton,
@@ -39,9 +37,7 @@ impl CameraControls {
     pub fn new() -> Self {
         Self {
             velocity: Vec3::ZERO,
-            acceleration: 4000.0,
-            max_speed: 15.2,
-            friction: 0.01,
+            max_speed: 10.0,
             rotation_sensitivity: 1.5,
             mode: CameraControlsMode::Fly,
             rotate_button: PointerButton::Secondary,
@@ -100,10 +96,9 @@ pub fn update_camera_controls(
         }
 
         if direction != Vec3::ZERO {
-            controls.velocity +=
-                direction.normalized() * controls.acceleration * time.delta_seconds_f64 as f32;
+            controls.velocity = direction.normalized() * controls.max_speed;
         } else {
-            controls.velocity *= controls.friction.powf(time.delta_seconds_f64 as f32);
+            controls.velocity = Vec3::ZERO;
         }
 
         if controls.velocity.length() > controls.max_speed {
@@ -165,7 +160,7 @@ pub fn update_camera_controls(
                     pointer_position.0 as f32,
                     pointer_position.1 as f32,
                 );
-                transform.position += -zoom_direction.direction * input.pinch() as f32 * 5.;
+                transform.position += zoom_direction.direction * input.pinch() as f32 * 5.;
 
                 let rotation_pitch = Quat::from_yaw_pitch_roll(0., pitch, 0.);
                 let rotation_yaw = Quat::from_yaw_pitch_roll(yaw, 0., 0.);
