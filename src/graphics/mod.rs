@@ -448,12 +448,14 @@ fn check_for_dropped_graphics_assets(
 ) {
     meshes.drop_items(|mesh| {
         if let Some(gpu_mesh) = mesh.gpu_mesh {
+            //println!("DELETING MESH!");
             let GPUMesh {
                 positions,
                 normals,
                 index_buffer,
                 texture_coordinates,
-                ..
+                colors,
+                triangle_count: _,
             } = gpu_mesh;
             graphics.context.delete_data_buffer(positions);
             graphics.context.delete_index_buffer(index_buffer);
@@ -462,6 +464,9 @@ fn check_for_dropped_graphics_assets(
                 graphics.context.delete_data_buffer(d);
             }
             if let Some(d) = texture_coordinates {
+                graphics.context.delete_data_buffer(d);
+            }
+            if let Some(d) = colors {
                 graphics.context.delete_data_buffer(d);
             }
         }
