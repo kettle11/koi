@@ -1,6 +1,159 @@
 use crate::geometry::*;
 use crate::*;
 
+pub trait IntersectionEpsilon {
+    const EPSILON: Self;
+}
+
+impl IntersectionEpsilon for f32 {
+    const EPSILON: Self = 0.00001;
+}
+
+impl IntersectionEpsilon for f64 {
+    const EPSILON: Self = 0.00001;
+}
+
+fn closest_parametric_values_between_lines<
+    T: NumericFloat + IntersectionEpsilon,
+    const DIMENSIONS: usize,
+>(
+    l0: Line<T, DIMENSIONS>,
+    l1: Line<T, DIMENSIONS>,
+) -> Option<(T, T)> {
+    // Based on the implementation described here:
+    // http://paulbourke.net/geometry/pointlineplane/
+    let p13 = l0.point - l1.point;
+    let p43 = l0.direction;
+    let p21 = l1.direction;
+
+    let d1343 = p13.dot(p43);
+    let d4321 = p43.dot(p21);
+    let d1321 = p13.dot(p21);
+    let d4343 = p43.dot(p43);
+    let d2121 = p21.dot(p21);
+
+    let denom = d2121 * d4343 - d4321 * d4321;
+    if denom.numeric_abs() < T::EPSILON {
+        None
+    } else {
+        let numer = d1343 * d4321 - d1321 * d4343;
+        let s = numer / denom;
+        let t = (d1343 + d4321 * s) / d4343;
+        Some((s, t))
+    }
+}
+
+#[derive(Debug)]
+pub enum LineIntersectionResult<T, const DIMENSIONS: usize> {
+    Parallel,
+    Point(Vector<T, DIMENSIONS>),
+    ClosestPoints((Vector<T, DIMENSIONS>, Vector<T, DIMENSIONS>)),
+}
+
+/// Returns that the lines are parallel, intersect at a point, or returns the two closest points.
+pub fn line_line<T: NumericFloat + IntersectionEpsilon, const DIMENSIONS: usize>(
+    l0: Line<T, DIMENSIONS>,
+    l1: Line<T, DIMENSIONS>,
+) -> LineIntersectionResult<T, DIMENSIONS> {
+    if let Some((s, t)) = closest_parametric_values_between_lines(l0, l1) {
+        let s = s - l0.direction.dot(l0.point);
+        let t = t - l1.direction.dot(l1.point);
+
+        let p0 = l0.get_point(s);
+        let p1 = l1.get_point(t);
+        if (p0 - p1).length_squared() < T::EPSILON {
+            LineIntersectionResult::Point(p0)
+        } else {
+            LineIntersectionResult::ClosestPoints((p0, p1))
+        }
+    } else {
+        LineIntersectionResult::Parallel
+    }
+}
+
+/// Returns that the lines are parallel, intersect at a point, or returns the two closest points.
+/// The closest points may be on the ends of the segments.
+pub fn line_segment_line_segment<
+    T: NumericFloat + IntersectionEpsilon + std::fmt::Debug,
+    const DIMENSIONS: usize,
+>(
+    s0: LineSegment<T, DIMENSIONS>,
+    s1: LineSegment<T, DIMENSIONS>,
+) -> LineIntersectionResult<T, DIMENSIONS> {
+    let l0 = Line::new(s0.a, s0.b);
+    let l1 = Line::new(s1.a, s1.b);
+
+    if let Some((s, t)) = closest_parametric_values_between_lines(l0, l1) {
+        let s = s
+            .max_numeric(l0.direction.dot(s0.a))
+            .min_numeric(l0.direction.dot(s0.b));
+        let s = s
+            .max_numeric(l1.direction.dot(s1.a))
+            .min_numeric(l1.direction.dot(s1.b));
+
+        let p0 = l0.get_point(s);
+        let p1 = l1.get_point(t);
+        if (p0 - p1).length_squared() < T::EPSILON {
+            LineIntersectionResult::Point(p0)
+        } else {
+            LineIntersectionResult::ClosestPoints((p0, p1))
+        }
+    } else {
+        LineIntersectionResult::Parallel
+    }
+}
+
+/// Returns that the lines are parallel, intersect at a point, or returns the two closest points.
+/// The closest points may be on the ends of the segment or the start of the ray.
+pub fn ray_line_segment<
+    T: NumericFloat + IntersectionEpsilon + std::fmt::Debug,
+    const DIMENSIONS: usize,
+>(
+    ray: Ray<T, DIMENSIONS>,
+    s1: LineSegment<T, DIMENSIONS>,
+) -> LineIntersectionResult<T, DIMENSIONS> {
+    let l0 = Line {
+        point: ray.origin,
+        direction: ray.direction,
+    };
+    let l1 = Line::new(s1.a, s1.b);
+
+    if let Some((s, t)) = closest_parametric_values_between_lines(l0, l1) {
+        let s = s.max_numeric(l0.direction.dot(ray.origin));
+
+        let s = s
+            .max_numeric(l1.direction.dot(s1.a))
+            .min_numeric(l1.direction.dot(s1.b));
+
+        let p0 = l0.get_point(s);
+        let p1 = l1.get_point(t);
+        if (p0 - p1).length_squared() < T::EPSILON {
+            LineIntersectionResult::Point(p0)
+        } else {
+            LineIntersectionResult::ClosestPoints((p0, p1))
+        }
+    } else {
+        LineIntersectionResult::Parallel
+    }
+}
+
+#[test]
+fn line_intersection() {
+    let l0 = Line::new(Vec3::new(3., -1., 0.), Vec3::new(8., -1., 0.));
+    let l1 = Line::new(Vec3::new(1., 0., 0.), Vec3::new(1., 1., 0.));
+
+    let result = line_line(l0, l1);
+    println!("{:?} {:?}", l0, l1);
+    println!("RESULT: {:#?}", result);
+
+    let l0 = Line::new(Vec3::new(0., -1., 0.), Vec3::new(1., -1., 0.));
+    let l1 = Line::new(Vec3::new(1., 0., 0.), Vec3::new(2., 0., 0.));
+
+    let result = line_line(l0, l1);
+    println!("{:?} {:?}", l0, l1);
+    println!("RESULT: {:#?}", result);
+}
+
 /// Returns point on the line segment.
 pub fn closest_point_on_line_segment<T: NumericFloat, const DIMENSIONS: usize>(
     point: Vector<T, DIMENSIONS>,

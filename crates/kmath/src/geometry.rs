@@ -14,7 +14,7 @@ impl<T, const DIMENSIONS: usize> Ball<T, DIMENSIONS> {
     }
 }
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug)]
 pub struct Line<T: Numeric, const DIMENSIONS: usize> {
     pub point: Vector<T, DIMENSIONS>,
     pub direction: Vector<T, DIMENSIONS>,
