@@ -34,6 +34,7 @@ fn main() {
 
         spawn_skybox(world, "assets/venice_sunset_1k.hdr");
 
+        /*
         let worlds = world.get_single_component_mut::<Assets<World>>().unwrap();
         let gltf_world = worlds.load("assets/huge_medieval_battle_scene/scene.gltf");
 
@@ -41,7 +42,7 @@ fn main() {
         let gltf_hierarchy = world.spawn(gltf_world);
         let scaled_down = world.spawn(Transform::new().with_scale(Vec3::fill(5.0)));
         set_parent(world, Some(scaled_down), gltf_hierarchy);
-
+        */
         // Spawn a series of balls with different material properties.
         // Up is more metallaic
         // Right is more more rough
@@ -55,7 +56,7 @@ fn main() {
                     let new_material = materials.add(new_pbr_material(
                         Shader::PHYSICALLY_BASED,
                         PBRProperties {
-                            base_color: Color::new(0.5, 0.0, 0.0, 1.0),
+                            base_color: Color::AZURE,
                             metallic: i as f32 / rows as f32,
                             roughness: (j as f32 / columns as f32).clamp(0.05, 1.0),
                             ..Default::default()
@@ -74,7 +75,7 @@ fn main() {
             }
         })
         .run(world);
-        // commands.apply(world);
+        commands.apply(world);
 
         |event, _world| {
             match event {

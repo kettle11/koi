@@ -1,3 +1,6 @@
+mod color_constants;
+pub use color_constants::*;
+
 pub use kolor::spaces as color_spaces;
 pub use kolor::ColorSpace;
 use kserde::SerializeDeserialize;
@@ -7,6 +10,8 @@ type FType = f32;
 // Color conversions in this file are computed every time a conversion occurs.
 // It may be faster to precalculate the conversions and store them in a matrix.
 
+/// koi's color type. [Color] has various helper functions designed to make it easier
+/// to work with color.
 #[derive(Clone, Copy, Debug, PartialEq, PartialOrd, SerializeDeserialize)]
 pub struct Color {
     x: FType,
@@ -24,20 +29,10 @@ impl kecs::ComponentTrait for Color {
     }
 }
 
-/*
-/// A [Color] with `red`, `green`, and `blue`, components but without a specified `ColorSpace`.
-#[derive(Clone, Copy, Debug, PartialEq, PartialOrd)]
-pub struct RGBColor {
-    pub red: FType,
-    pub green: FType,
-    pub blue: FType,
-    pub alpha: FType,
-}
-*/
-
 impl Color {
     /// Create a new [Color] from sRGB red, green, blue, and alpha (transparency) values.
     pub fn new(red: FType, green: FType, blue: FType, alpha: FType) -> Self {
+        // Internally colors are stored in CIE_XYZ color space.
         let converter =
             kolor::ColorConversion::new(kolor::spaces::ENCODED_SRGB, kolor::spaces::CIE_XYZ);
         let result = converter.convert(kolor::Vec3::new(red, green, blue));
@@ -58,8 +53,7 @@ impl Color {
         )
     }
 
-    /// Creates a new [Color] from `red`, `green`, and `blue` components and you can specify the
-    /// [ColorSpace] of the components.
+    /// Creates a new [Color] from `red`, `green`, and `blue` components with a specified [ColorSpace].
     pub fn new_with_colorspace(
         x: FType,
         y: FType,
@@ -100,7 +94,6 @@ impl Color {
 
     /// Interpolates (synonyms: blend, mix, lerp) between two [Color]s.
     /// Colors are interpolated in the [OKLAB] [ColorSpace] for better results.
-    /// Use
     pub fn interpolate(a: Self, b: Self, amount: FType) -> Self {
         Self::interpolate_in_color_space(a, b, amount, kolor::spaces::OKLAB)
     }
@@ -173,50 +166,11 @@ impl Color {
         }
     }
 
+    /// With a specific alpha (transparency).
     pub fn with_alpha(mut self, alpha: FType) -> Self {
         self.alpha = alpha;
         self
     }
-
-    /// White in sRGB
-    pub const WHITE: Color = Color {
-        x: 0.950470,
-        y: 1.0000,
-        z: 1.08883,
-        alpha: 1.0,
-    };
-
-    /// Black in sRGB
-    pub const BLACK: Color = Color {
-        x: 0.0,
-        y: 0.0,
-        z: 0.0,
-        alpha: 1.0,
-    };
-
-    /// Red in sRGB
-    pub const RED: Color = Color {
-        x: 0.412456,
-        y: 0.212673,
-        z: 0.019334,
-        alpha: 1.0,
-    };
-
-    /// Green in sRGB
-    pub const GREEN: Color = Color {
-        x: 0.357576,
-        y: 0.715152,
-        z: 0.119192,
-        alpha: 1.0,
-    };
-
-    /// Blue in sRGB
-    pub const BLUE: Color = Color {
-        x: 0.180437,
-        y: 0.072175,
-        z: 0.950304,
-        alpha: 1.0,
-    };
 }
 
 impl From<(f32, f32, f32, f32)> for Color {

@@ -84,6 +84,7 @@ pub use ktracing_allocator::*;
 static GLOBAL_ALLOCATOR: ktracing_allocator::TracingAllocator<std::alloc::System> =
     ktracing_allocator::TracingAllocator(std::alloc::System);
 
+/// Keeps track of the app's systems and title.
 pub struct App {
     systems: Plugin,
     title: String,
@@ -165,16 +166,20 @@ impl App {
         s.add_default_plugins()
     }
 
+    /// Set the app's title.
     pub fn title(mut self, title: &str) -> Self {
         self.title = title.to_string();
         self
     }
 
+    /// Adds a [Plugin] to this system.
     pub fn add_plugin(mut self, plugin: Plugin) -> Self {
         self.systems.append(plugin);
         self
     }
 
+    /// Adds standard koi plugins.
+    /// Some can be toggled on / off based on feature flags.
     #[allow(clippy::let_and_return)]
     pub fn add_default_plugins(self) -> Self {
         let app = self;
@@ -204,6 +209,9 @@ impl App {
         app
     }
 
+    /// Pass in a 'setup' function that returns a 'run' function.
+    /// The setup functon is called once and gives the program a chance to initialize things.
+    /// The 'run' function is called continuously with [Event]s until shutdown. 
     pub fn setup_and_run<S: FnMut(Event, &mut World) -> bool + 'static>(
         mut self,
         setup_and_run_function: impl FnOnce(&mut World) -> S,

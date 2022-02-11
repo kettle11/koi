@@ -368,8 +368,7 @@ pub fn triangle() -> MeshData {
     }
 }
 
-/// Creates a ring
-/// Thickness is the radius of the tube itself.
+/// Creates a ring.
 pub fn ring(
     tube_radius: f32,
     ring_radius: f32,

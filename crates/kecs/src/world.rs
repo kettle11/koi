@@ -126,6 +126,8 @@ impl ArchetypeChannel {
     }
 }
 
+/// Mostly an internal implementation detail of `kecs`.
+/// [Archetype]s are groupings of [Entity]s that share the same types of components.
 pub struct Archetype {
     pub(crate) entities: Vec<Entity>,
     pub(crate) channels: Vec<ArchetypeChannel>,

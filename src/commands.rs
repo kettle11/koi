@@ -10,6 +10,7 @@ enum Command {
     },
 }
 
+/// [Commands] is a way to enque edits of the [World] for later.
 #[derive(NotCloneComponent)]
 pub struct Commands(Vec<Command>);
 

@@ -215,6 +215,10 @@ impl<T> WeakHandle<T> {
     }
 }
 
+/// [Assets] keeps track of assets and enables loading
+/// ref-counted [Handle]s to different types of assets.
+/// Many types of [Assets] are used by koi:
+/// `Assets<Texture>`, `Assets<World>`, `Assets<Shader>`, etc.
 #[derive(NotCloneComponent)]
 pub struct Assets<T: LoadableAssetTrait> {
     indirection_storage: IndirectionStorage<T>,

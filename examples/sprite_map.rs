@@ -3,7 +3,7 @@ use koi::*;
 fn main() {
     App::new().setup_and_run(|world: &mut World| {
         // Spawn a camera
-        let mut camera = Camera::new().orthographic();
+        let mut camera = Camera::new().with_orthographic();
         camera.set_orthographic_height(10.0);
 
         // Back up the camera so we can see the sprites.
