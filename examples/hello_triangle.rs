@@ -6,9 +6,13 @@ fn main() {
         world.spawn((
             Transform::new().with_position(Vec3::Z),
             Camera::new().with_orthographic_projection(),
-            CameraControls::new(),
         ));
-        world.spawn((Transform::new(), Mesh::TRIANGLE, Material::UNLIT));
+        world.spawn((
+            Transform::new(),
+            Mesh::TRIANGLE,
+            Material::UNLIT,
+            Color::MAJORELLE_BLUE,
+        ));
 
         // Run the World with this mutable closure.
         |_event: Event, _world: &mut World| false

@@ -120,6 +120,13 @@ impl Color {
         z: 0.6919497,
         alpha: 1.0,
     };
+
+    pub const CORNFLOWER_BLUE: Color = Color {
+        x: 0.31283748,
+        y: 0.3031602,
+        z: 0.8430735,
+        alpha: 1.0,
+    };
 }
 
 #[test]
@@ -162,4 +169,7 @@ fn print_colors() {
 
     let color = Color::from_srgb_hex(0x6050DC, 1.0);
     println!("pub const MAJORELLE_BLUE: Color = {:#?};", color);
+
+    let color = Color::from_srgb_hex(0x6495ED, 1.0);
+    println!("pub const CORNFLOWER_BLUE: Color = {:#?};", color);
 }
