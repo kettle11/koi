@@ -7,6 +7,7 @@
 in vec2 TexCoords;
 in vec3 WorldPosition;  
 in vec3 Normal;
+in vec4 VertexColor;
 
 out vec4 color_out;
 
@@ -226,7 +227,7 @@ void main()
     vec3 debug_color = vec3(0.0);
 
     vec4 metallic_roughness = texture(p_metallic_roughness_texture, TexCoords);
-    vec4 base_color_rgba = (p_base_color * texture(p_base_color_texture, TexCoords));
+    vec4 base_color_rgba = (p_base_color * texture(p_base_color_texture, TexCoords) * VertexColor);
     vec3 base_color = base_color_rgba.rgb;
     alpha = base_color_rgba.a;
 
@@ -239,8 +240,8 @@ void main()
     //  float roughness = p_roughness;
 
     // When interpolating between face normals the normal can get shorted, so renormalize here.
-    //  vec3 N = normalize(Normal);
-    vec3 N = getNormalFromMap();
+      vec3 N = normalize(Normal);
+   // vec3 N = getNormalFromMap();
     vec3 V = normalize(p_camera_positions[0] - WorldPosition);
 
     // calculate reflectance at normal incidence; if dia-electric (like plastic) use F0 
@@ -370,7 +371,6 @@ void main()
         // 1.0 - rougnness because brdf_lookup_table is flipped vertically for now.   
         vec2 brdf  = texture(p_brdf_lookup_table, vec2(max(dot(N, V), 0.0), roughness)).rg;
         vec3 specular = prefilteredColor * (kS * brdf.x + brdf.y);
-
 
         vec3 ambient = (kD * diffuse + specular) * ambient_amount * ibl_scale; 
 
