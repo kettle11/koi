@@ -49,7 +49,8 @@ impl<Data, Context, ChildData, Child: Widget<ChildData, Context>, ChildKey: Eq +
         // Update the tree in response to data.
         (self.build_tree)(data, &mut |_, child_data, child_key| {
             let entry = self.children.entry(child_key);
-            let v = entry.or_insert_with(|| ((self.create_node)(), 0.0, false));
+            // The `true` indicates this starts out expanded.
+            let v = entry.or_insert_with(|| ((self.create_node)(), 0.0, true));
             v.0.update(child_data, context);
             v.2
         });
@@ -211,13 +212,13 @@ fn main() {
         }
         let mut root_widget = tree(
             |world, call_per_child| {
-                (|transforms: Query<(
+                (|entities: Query<(
                     Option<&mut Transform>,
                     Option<&Name>,
                     Option<&HierarchyNode>,
                 )>,
                   _editor_component: &mut EditorComponent| {
-                    for (e, (_, name, hierarchy_node)) in transforms.entities_and_components() {
+                    for (e, (_, name, hierarchy_node)) in entities.entities_and_components() {
                         let name = name.map_or("Unnamed", |n| n.0);
                         if let Some(hierarchy_node) = hierarchy_node {
                             if hierarchy_node.parent().is_none() {
@@ -225,7 +226,7 @@ fn main() {
                                     *e,
                                     name,
                                     hierarchy_node.clone(),
-                                    &transforms,
+                                    &entities,
                                     call_per_child,
                                     0,
                                 );
