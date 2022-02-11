@@ -113,7 +113,6 @@ impl Random {
     }
 
     /// Returns a normalized vector pointing a random direction.
-    /// This is useful to get a vector pointing a random direction
     /// TODO: Test and verify that this has a reasonable distribution.
     pub fn normalized_vec<const DIMENSIONS: usize>(&mut self) -> Vector<f32, DIMENSIONS> {
         let mut v = Vector::<f32, DIMENSIONS>::ZERO;

@@ -211,7 +211,7 @@ impl App {
 
     /// Pass in a 'setup' function that returns a 'run' function.
     /// The setup functon is called once and gives the program a chance to initialize things.
-    /// The 'run' function is called continuously with [Event]s until shutdown. 
+    /// The 'run' function is called continuously with [Event]s until shutdown.
     pub fn setup_and_run<S: FnMut(Event, &mut World) -> bool + 'static>(
         mut self,
         setup_and_run_function: impl FnOnce(&mut World) -> S,
