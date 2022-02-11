@@ -762,7 +762,7 @@ impl<'a> RustGenerator {
                     for property in s.properties.iter() {
                         if property.optional
                             && (property.default_value.is_none()
-                                && property.incompatible_with.len() > 0)
+                                || property.incompatible_with.len() > 0)
                         {
                             match &property.property_type {
                                 // Only serialize if the Vec is not empty.
@@ -794,7 +794,7 @@ impl<'a> RustGenerator {
                                             .unwrap();
                                             write!(
                                                 output,
-                                                "           serializer.property(\"{}\");\n           serializer.value(&{});\n",
+                                                "           serializer.property(\"{}\");\n           serializer.value(&self.{});\n",
                                                 property.json_name, property.name
                                             )
                                             .unwrap();
@@ -809,7 +809,7 @@ impl<'a> RustGenerator {
                                             .unwrap();
                                             write!(
                                                 output,
-                                                "           serializer.property(\"{}\");\n           serializer.value(&{});\n",
+                                                "           serializer.property(\"{}\");\n           serializer.value(&self.{});\n",
                                                 property.json_name, property.name
                                             )
                                             .unwrap();
@@ -837,6 +837,17 @@ impl<'a> RustGenerator {
                                 }
                             }
                         } else {
+                            /*
+                            println!(
+                                "SERIALIZING VALUE AS NON-OPTIONAL: {:?}, {:?}",
+                                property.name,
+                                (
+                                    property.optional,
+                                    property.default_value.is_none(),
+                                    property.incompatible_with.len() > 0
+                                )
+                            );
+                            */
                             write!(
                                 output,
                                 "           serializer.property(\"{}\");\n           serializer.value(&self.{});\n",

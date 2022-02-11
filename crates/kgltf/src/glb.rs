@@ -1,5 +1,5 @@
 use kserde::*;
-use std::{borrow::Cow, io::Read};
+use std::{borrow::Cow, io::Read, io::Write};
 
 use crate::GlTf;
 
@@ -24,19 +24,26 @@ pub enum GLBError {
     /// The GLB's inner JSON is incorrectly formatted or could not be parsed.
     InvalidJSON,
 }
+const GLB_MAGIC_NUMBER: u32 = 0x46546C67;
+const JSON_CHUNK_TYPE: u32 = 0x4E4F534A;
+const BIN_CHUNK_TYPE: u32 = 0x004E4942;
 
 impl<'a> GLB<'a> {
     pub fn from_bytes(data: &'a [u8]) -> Result<Self, GLBError> {
-        // This function extra copies.
-        // That could be improved in the future.
         let reader = std::io::BufReader::new(data);
         Self::from_reader(reader)
+    }
+
+    pub fn to_bytes(&self) -> Result<Vec<u8>, std::io::Error> {
+        let mut writer = Vec::new();
+        self.to_writer(&mut writer)?;
+        Ok(writer)
     }
 
     pub fn from_reader<R: Read>(mut reader: R) -> Result<Self, GLBError> {
         // Header
         let magic = reader.get_u32()?;
-        if magic != 0x46546C67 {
+        if magic != GLB_MAGIC_NUMBER {
             return Err(GLBError::IncorrectMagicNumber);
         }
 
@@ -46,7 +53,8 @@ impl<'a> GLB<'a> {
         // JSON Chunk
         let json_chunk_length = reader.get_u32()?;
         let json_chunk_type = reader.get_u32()?;
-        if json_chunk_type != 0x4E4F534A {
+
+        if json_chunk_type != JSON_CHUNK_TYPE {
             // The chunk type does not match the expected chunk type
             return Err(GLBError::IncorrectFormatting);
         }
@@ -58,12 +66,13 @@ impl<'a> GLB<'a> {
 
         let json_string =
             String::from_utf8(json_string_bytes).map_err(|_| GLBError::IncorrectFormatting)?;
+
         let gltf = GlTf::from_json(&json_string).ok_or(GLBError::InvalidJSON)?;
 
         let mut binary_data = None;
         if let Ok(binary_chunk_length) = reader.get_u32() {
             let binary_chunk_type = reader.get_u32()?;
-            if binary_chunk_type == 0x004E4942 {
+            if binary_chunk_type == BIN_CHUNK_TYPE {
                 let mut binary_data_buffer = vec![0; binary_chunk_length as usize];
                 reader
                     .read_exact(&mut binary_data_buffer)
@@ -77,6 +86,37 @@ impl<'a> GLB<'a> {
             glb_version,
             binary_data,
         })
+    }
+
+    pub fn to_writer<W: Write>(&self, mut writer: W) -> Result<(), std::io::Error> {
+        let json = self.gltf.to_json();
+        let json_length: u32 = json.len() as u32;
+
+        let file_length: u32 = 4 * 5
+            + json_length
+            + self
+                .binary_data
+                .as_ref()
+                .map_or(0, |b| 4 * 2 + b.len() as u32);
+
+        // Write magic number
+        writer.write(&GLB_MAGIC_NUMBER.to_le_bytes())?; // 1 counting u32s written
+        writer.write(&self.glb_version.to_le_bytes())?; // 2
+
+        writer.write(&file_length.to_le_bytes())?; // 3
+
+        writer.write(&(json_length).to_le_bytes())?; // 4
+        writer.write(&JSON_CHUNK_TYPE.to_le_bytes())?; // 5
+
+        writer.write(json.as_bytes())?;
+
+        if let Some(data) = &self.binary_data {
+            writer.write(&(data.len() as u32).to_le_bytes())?;
+            writer.write(&BIN_CHUNK_TYPE.to_le_bytes())?;
+            writer.write(&data)?;
+        }
+
+        Ok(())
     }
 }
 

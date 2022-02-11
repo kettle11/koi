@@ -70,10 +70,12 @@ impl<CONTEXT> Serializer for JSONSerializer<CONTEXT> {
     }
 
     fn begin_array(&mut self) {
+        self.added_comma = false;
         self.s.push('[');
     }
 
     fn begin_object(&mut self) {
+        self.added_comma = false;
         self.s.push('{');
         self.indentation += 4;
     }

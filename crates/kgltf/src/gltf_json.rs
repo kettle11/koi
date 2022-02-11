@@ -48,44 +48,80 @@ pub struct GlTf {
 impl<S: Serializer> Serialize<S> for GlTf {
     fn serialize(&self, serializer: &mut S) {
         serializer.begin_object();
-        serializer.property("extensionsUsed");
-        serializer.value(&self.extensions_used);
-        serializer.property("extensionsRequired");
-        serializer.value(&self.extensions_required);
-        serializer.property("accessors");
-        serializer.value(&self.accessors);
-        serializer.property("animations");
-        serializer.value(&self.animations);
+        if !self.extensions_used.is_empty() {
+            serializer.property("extensionsUsed");
+            serializer.value(&self.extensions_used);
+        }
+        if !self.extensions_required.is_empty() {
+            serializer.property("extensionsRequired");
+            serializer.value(&self.extensions_required);
+        }
+        if !self.accessors.is_empty() {
+            serializer.property("accessors");
+            serializer.value(&self.accessors);
+        }
+        if !self.animations.is_empty() {
+            serializer.property("animations");
+            serializer.value(&self.animations);
+        }
         serializer.property("asset");
         serializer.value(&self.asset);
-        serializer.property("buffers");
-        serializer.value(&self.buffers);
-        serializer.property("bufferViews");
-        serializer.value(&self.buffer_views);
-        serializer.property("cameras");
-        serializer.value(&self.cameras);
-        serializer.property("images");
-        serializer.value(&self.images);
-        serializer.property("materials");
-        serializer.value(&self.materials);
-        serializer.property("meshes");
-        serializer.value(&self.meshes);
-        serializer.property("nodes");
-        serializer.value(&self.nodes);
-        serializer.property("samplers");
-        serializer.value(&self.samplers);
-        serializer.property("scene");
-        serializer.value(&self.scene);
-        serializer.property("scenes");
-        serializer.value(&self.scenes);
-        serializer.property("skins");
-        serializer.value(&self.skins);
-        serializer.property("textures");
-        serializer.value(&self.textures);
-        serializer.property("extensions");
-        serializer.value(&self.extensions);
-        serializer.property("extras");
-        serializer.value(&self.extras);
+        if !self.buffers.is_empty() {
+            serializer.property("buffers");
+            serializer.value(&self.buffers);
+        }
+        if !self.buffer_views.is_empty() {
+            serializer.property("bufferViews");
+            serializer.value(&self.buffer_views);
+        }
+        if !self.cameras.is_empty() {
+            serializer.property("cameras");
+            serializer.value(&self.cameras);
+        }
+        if !self.images.is_empty() {
+            serializer.property("images");
+            serializer.value(&self.images);
+        }
+        if !self.materials.is_empty() {
+            serializer.property("materials");
+            serializer.value(&self.materials);
+        }
+        if !self.meshes.is_empty() {
+            serializer.property("meshes");
+            serializer.value(&self.meshes);
+        }
+        if !self.nodes.is_empty() {
+            serializer.property("nodes");
+            serializer.value(&self.nodes);
+        }
+        if !self.samplers.is_empty() {
+            serializer.property("samplers");
+            serializer.value(&self.samplers);
+        }
+        if let Some(v) = self.scene.as_ref() {
+            serializer.property("scene");
+            serializer.value(&v);
+        }
+        if !self.scenes.is_empty() {
+            serializer.property("scenes");
+            serializer.value(&self.scenes);
+        }
+        if !self.skins.is_empty() {
+            serializer.property("skins");
+            serializer.value(&self.skins);
+        }
+        if !self.textures.is_empty() {
+            serializer.property("textures");
+            serializer.value(&self.textures);
+        }
+        if !self.extensions.is_empty() {
+            serializer.property("extensions");
+            serializer.value(&self.extensions);
+        }
+        if let Some(v) = self.extras.as_ref() {
+            serializer.property("extras");
+            serializer.value(&v);
+        }
         serializer.end_object();
     }
 }
@@ -185,16 +221,26 @@ pub struct Texture {
 impl<S: Serializer> Serialize<S> for Texture {
     fn serialize(&self, serializer: &mut S) {
         serializer.begin_object();
-        serializer.property("sampler");
-        serializer.value(&self.sampler);
-        serializer.property("source");
-        serializer.value(&self.source);
-        serializer.property("name");
-        serializer.value(&self.name);
-        serializer.property("extensions");
-        serializer.value(&self.extensions);
-        serializer.property("extras");
-        serializer.value(&self.extras);
+        if let Some(v) = self.sampler.as_ref() {
+            serializer.property("sampler");
+            serializer.value(&v);
+        }
+        if let Some(v) = self.source.as_ref() {
+            serializer.property("source");
+            serializer.value(&v);
+        }
+        if let Some(v) = self.name.as_ref() {
+            serializer.property("name");
+            serializer.value(&v);
+        }
+        if !self.extensions.is_empty() {
+            serializer.property("extensions");
+            serializer.value(&self.extensions);
+        }
+        if let Some(v) = self.extras.as_ref() {
+            serializer.property("extras");
+            serializer.value(&v);
+        }
         serializer.end_object();
     }
 }
@@ -250,18 +296,28 @@ pub struct Skin {
 impl<S: Serializer> Serialize<S> for Skin {
     fn serialize(&self, serializer: &mut S) {
         serializer.begin_object();
-        serializer.property("inverseBindMatrices");
-        serializer.value(&self.inverse_bind_matrices);
-        serializer.property("skeleton");
-        serializer.value(&self.skeleton);
+        if let Some(v) = self.inverse_bind_matrices.as_ref() {
+            serializer.property("inverseBindMatrices");
+            serializer.value(&v);
+        }
+        if let Some(v) = self.skeleton.as_ref() {
+            serializer.property("skeleton");
+            serializer.value(&v);
+        }
         serializer.property("joints");
         serializer.value(&self.joints);
-        serializer.property("name");
-        serializer.value(&self.name);
-        serializer.property("extensions");
-        serializer.value(&self.extensions);
-        serializer.property("extras");
-        serializer.value(&self.extras);
+        if let Some(v) = self.name.as_ref() {
+            serializer.property("name");
+            serializer.value(&v);
+        }
+        if !self.extensions.is_empty() {
+            serializer.property("extensions");
+            serializer.value(&self.extensions);
+        }
+        if let Some(v) = self.extras.as_ref() {
+            serializer.property("extras");
+            serializer.value(&v);
+        }
         serializer.end_object();
     }
 }
@@ -318,14 +374,22 @@ pub struct Scene {
 impl<S: Serializer> Serialize<S> for Scene {
     fn serialize(&self, serializer: &mut S) {
         serializer.begin_object();
-        serializer.property("nodes");
-        serializer.value(&self.nodes);
-        serializer.property("name");
-        serializer.value(&self.name);
-        serializer.property("extensions");
-        serializer.value(&self.extensions);
-        serializer.property("extras");
-        serializer.value(&self.extras);
+        if !self.nodes.is_empty() {
+            serializer.property("nodes");
+            serializer.value(&self.nodes);
+        }
+        if let Some(v) = self.name.as_ref() {
+            serializer.property("name");
+            serializer.value(&v);
+        }
+        if !self.extensions.is_empty() {
+            serializer.property("extensions");
+            serializer.value(&self.extensions);
+        }
+        if let Some(v) = self.extras.as_ref() {
+            serializer.property("extras");
+            serializer.value(&v);
+        }
         serializer.end_object();
     }
 }
@@ -380,20 +444,30 @@ pub struct Sampler {
 impl<S: Serializer> Serialize<S> for Sampler {
     fn serialize(&self, serializer: &mut S) {
         serializer.begin_object();
-        serializer.property("magFilter");
-        serializer.value(&self.mag_filter);
-        serializer.property("minFilter");
-        serializer.value(&self.min_filter);
+        if let Some(v) = self.mag_filter.as_ref() {
+            serializer.property("magFilter");
+            serializer.value(&v);
+        }
+        if let Some(v) = self.min_filter.as_ref() {
+            serializer.property("minFilter");
+            serializer.value(&v);
+        }
         serializer.property("wrapS");
         serializer.value(&self.wrap_s);
         serializer.property("wrapT");
         serializer.value(&self.wrap_t);
-        serializer.property("name");
-        serializer.value(&self.name);
-        serializer.property("extensions");
-        serializer.value(&self.extensions);
-        serializer.property("extras");
-        serializer.value(&self.extras);
+        if let Some(v) = self.name.as_ref() {
+            serializer.property("name");
+            serializer.value(&v);
+        }
+        if !self.extensions.is_empty() {
+            serializer.property("extensions");
+            serializer.value(&self.extensions);
+        }
+        if let Some(v) = self.extras.as_ref() {
+            serializer.property("extras");
+            serializer.value(&v);
+        }
         serializer.end_object();
     }
 }
@@ -589,30 +663,54 @@ pub struct Node {
 impl<S: Serializer> Serialize<S> for Node {
     fn serialize(&self, serializer: &mut S) {
         serializer.begin_object();
-        serializer.property("camera");
-        serializer.value(&self.camera);
-        serializer.property("children");
-        serializer.value(&self.children);
-        serializer.property("skin");
-        serializer.value(&self.skin);
-        serializer.property("matrix");
-        serializer.value(&self.matrix);
-        serializer.property("mesh");
-        serializer.value(&self.mesh);
-        serializer.property("rotation");
-        serializer.value(&self.rotation);
-        serializer.property("scale");
-        serializer.value(&self.scale);
-        serializer.property("translation");
-        serializer.value(&self.translation);
-        serializer.property("weights");
-        serializer.value(&self.weights);
-        serializer.property("name");
-        serializer.value(&self.name);
-        serializer.property("extensions");
-        serializer.value(&self.extensions);
-        serializer.property("extras");
-        serializer.value(&self.extras);
+        if let Some(v) = self.camera.as_ref() {
+            serializer.property("camera");
+            serializer.value(&v);
+        }
+        if !self.children.is_empty() {
+            serializer.property("children");
+            serializer.value(&self.children);
+        }
+        if let Some(v) = self.skin.as_ref() {
+            serializer.property("skin");
+            serializer.value(&v);
+        }
+        if let Some(v) = self.matrix.as_ref() {
+            serializer.property("matrix");
+            serializer.value(&v);
+        }
+        if let Some(v) = self.mesh.as_ref() {
+            serializer.property("mesh");
+            serializer.value(&v);
+        }
+        if let Some(v) = self.rotation.as_ref() {
+            serializer.property("rotation");
+            serializer.value(&v);
+        }
+        if let Some(v) = self.scale.as_ref() {
+            serializer.property("scale");
+            serializer.value(&v);
+        }
+        if let Some(v) = self.translation.as_ref() {
+            serializer.property("translation");
+            serializer.value(&v);
+        }
+        if !self.weights.is_empty() {
+            serializer.property("weights");
+            serializer.value(&self.weights);
+        }
+        if let Some(v) = self.name.as_ref() {
+            serializer.property("name");
+            serializer.value(&v);
+        }
+        if !self.extensions.is_empty() {
+            serializer.property("extensions");
+            serializer.value(&self.extensions);
+        }
+        if let Some(v) = self.extras.as_ref() {
+            serializer.property("extras");
+            serializer.value(&v);
+        }
         serializer.end_object();
     }
 }
@@ -713,14 +811,22 @@ impl<S: Serializer> Serialize<S> for Mesh {
         serializer.begin_object();
         serializer.property("primitives");
         serializer.value(&self.primitives);
-        serializer.property("weights");
-        serializer.value(&self.weights);
-        serializer.property("name");
-        serializer.value(&self.name);
-        serializer.property("extensions");
-        serializer.value(&self.extensions);
-        serializer.property("extras");
-        serializer.value(&self.extras);
+        if !self.weights.is_empty() {
+            serializer.property("weights");
+            serializer.value(&self.weights);
+        }
+        if let Some(v) = self.name.as_ref() {
+            serializer.property("name");
+            serializer.value(&v);
+        }
+        if !self.extensions.is_empty() {
+            serializer.property("extensions");
+            serializer.value(&self.extensions);
+        }
+        if let Some(v) = self.extras.as_ref() {
+            serializer.property("extras");
+            serializer.value(&v);
+        }
         serializer.end_object();
     }
 }
@@ -780,18 +886,28 @@ impl<S: Serializer> Serialize<S> for MeshPrimitive {
         serializer.begin_object();
         serializer.property("attributes");
         serializer.value(&self.attributes);
-        serializer.property("indices");
-        serializer.value(&self.indices);
-        serializer.property("material");
-        serializer.value(&self.material);
+        if let Some(v) = self.indices.as_ref() {
+            serializer.property("indices");
+            serializer.value(&v);
+        }
+        if let Some(v) = self.material.as_ref() {
+            serializer.property("material");
+            serializer.value(&v);
+        }
         serializer.property("mode");
         serializer.value(&self.mode);
-        serializer.property("targets");
-        serializer.value(&self.targets);
-        serializer.property("extensions");
-        serializer.value(&self.extensions);
-        serializer.property("extras");
-        serializer.value(&self.extras);
+        if !self.targets.is_empty() {
+            serializer.property("targets");
+            serializer.value(&self.targets);
+        }
+        if !self.extensions.is_empty() {
+            serializer.property("extensions");
+            serializer.value(&self.extensions);
+        }
+        if let Some(v) = self.extras.as_ref() {
+            serializer.property("extras");
+            serializer.value(&v);
+        }
         serializer.end_object();
     }
 }
@@ -908,20 +1024,34 @@ pub struct Material {
 impl<S: Serializer> Serialize<S> for Material {
     fn serialize(&self, serializer: &mut S) {
         serializer.begin_object();
-        serializer.property("name");
-        serializer.value(&self.name);
-        serializer.property("extensions");
-        serializer.value(&self.extensions);
-        serializer.property("extras");
-        serializer.value(&self.extras);
-        serializer.property("pbrMetallicRoughness");
-        serializer.value(&self.pbr_metallic_roughness);
-        serializer.property("normalTexture");
-        serializer.value(&self.normal_texture);
-        serializer.property("occlusionTexture");
-        serializer.value(&self.occlusion_texture);
-        serializer.property("emissiveTexture");
-        serializer.value(&self.emissive_texture);
+        if let Some(v) = self.name.as_ref() {
+            serializer.property("name");
+            serializer.value(&v);
+        }
+        if !self.extensions.is_empty() {
+            serializer.property("extensions");
+            serializer.value(&self.extensions);
+        }
+        if let Some(v) = self.extras.as_ref() {
+            serializer.property("extras");
+            serializer.value(&v);
+        }
+        if let Some(v) = self.pbr_metallic_roughness.as_ref() {
+            serializer.property("pbrMetallicRoughness");
+            serializer.value(&v);
+        }
+        if let Some(v) = self.normal_texture.as_ref() {
+            serializer.property("normalTexture");
+            serializer.value(&v);
+        }
+        if let Some(v) = self.occlusion_texture.as_ref() {
+            serializer.property("occlusionTexture");
+            serializer.value(&v);
+        }
+        if let Some(v) = self.emissive_texture.as_ref() {
+            serializer.property("emissiveTexture");
+            serializer.value(&v);
+        }
         serializer.property("emissiveFactor");
         serializer.value(&self.emissive_factor);
         serializer.property("alphaMode");
@@ -1049,10 +1179,14 @@ impl<S: Serializer> Serialize<S> for MaterialOcclusionTextureInfo {
         serializer.value(&self.tex_coord);
         serializer.property("strength");
         serializer.value(&self.strength);
-        serializer.property("extensions");
-        serializer.value(&self.extensions);
-        serializer.property("extras");
-        serializer.value(&self.extras);
+        if !self.extensions.is_empty() {
+            serializer.property("extensions");
+            serializer.value(&self.extensions);
+        }
+        if let Some(v) = self.extras.as_ref() {
+            serializer.property("extras");
+            serializer.value(&v);
+        }
         serializer.end_object();
     }
 }
@@ -1112,10 +1246,14 @@ impl<S: Serializer> Serialize<S> for MaterialNormalTextureInfo {
         serializer.value(&self.tex_coord);
         serializer.property("scale");
         serializer.value(&self.scale);
-        serializer.property("extensions");
-        serializer.value(&self.extensions);
-        serializer.property("extras");
-        serializer.value(&self.extras);
+        if !self.extensions.is_empty() {
+            serializer.property("extensions");
+            serializer.value(&self.extensions);
+        }
+        if let Some(v) = self.extras.as_ref() {
+            serializer.property("extras");
+            serializer.value(&v);
+        }
         serializer.end_object();
     }
 }
@@ -1175,18 +1313,26 @@ impl<S: Serializer> Serialize<S> for MaterialPbrMetallicRoughness {
         serializer.begin_object();
         serializer.property("baseColorFactor");
         serializer.value(&self.base_color_factor);
-        serializer.property("baseColorTexture");
-        serializer.value(&self.base_color_texture);
+        if let Some(v) = self.base_color_texture.as_ref() {
+            serializer.property("baseColorTexture");
+            serializer.value(&v);
+        }
         serializer.property("metallicFactor");
         serializer.value(&self.metallic_factor);
         serializer.property("roughnessFactor");
         serializer.value(&self.roughness_factor);
-        serializer.property("metallicRoughnessTexture");
-        serializer.value(&self.metallic_roughness_texture);
-        serializer.property("extensions");
-        serializer.value(&self.extensions);
-        serializer.property("extras");
-        serializer.value(&self.extras);
+        if let Some(v) = self.metallic_roughness_texture.as_ref() {
+            serializer.property("metallicRoughnessTexture");
+            serializer.value(&v);
+        }
+        if !self.extensions.is_empty() {
+            serializer.property("extensions");
+            serializer.value(&self.extensions);
+        }
+        if let Some(v) = self.extras.as_ref() {
+            serializer.property("extras");
+            serializer.value(&v);
+        }
         serializer.end_object();
     }
 }
@@ -1254,10 +1400,14 @@ impl<S: Serializer> Serialize<S> for TextureInfo {
         serializer.value(&self.index);
         serializer.property("texCoord");
         serializer.value(&self.tex_coord);
-        serializer.property("extensions");
-        serializer.value(&self.extensions);
-        serializer.property("extras");
-        serializer.value(&self.extras);
+        if !self.extensions.is_empty() {
+            serializer.property("extensions");
+            serializer.value(&self.extensions);
+        }
+        if let Some(v) = self.extras.as_ref() {
+            serializer.property("extras");
+            serializer.value(&v);
+        }
         serializer.end_object();
     }
 }
@@ -1310,18 +1460,30 @@ pub struct Image {
 impl<S: Serializer> Serialize<S> for Image {
     fn serialize(&self, serializer: &mut S) {
         serializer.begin_object();
-        serializer.property("uri");
-        serializer.value(&self.uri);
-        serializer.property("mimeType");
-        serializer.value(&self.mime_type);
-        serializer.property("bufferView");
-        serializer.value(&self.buffer_view);
-        serializer.property("name");
-        serializer.value(&self.name);
-        serializer.property("extensions");
-        serializer.value(&self.extensions);
-        serializer.property("extras");
-        serializer.value(&self.extras);
+        if let Some(v) = self.uri.as_ref() {
+            serializer.property("uri");
+            serializer.value(&v);
+        }
+        if let Some(v) = self.mime_type.as_ref() {
+            serializer.property("mimeType");
+            serializer.value(&v);
+        }
+        if let Some(v) = self.buffer_view.as_ref() {
+            serializer.property("bufferView");
+            serializer.value(&v);
+        }
+        if let Some(v) = self.name.as_ref() {
+            serializer.property("name");
+            serializer.value(&v);
+        }
+        if !self.extensions.is_empty() {
+            serializer.property("extensions");
+            serializer.value(&self.extensions);
+        }
+        if let Some(v) = self.extras.as_ref() {
+            serializer.property("extras");
+            serializer.value(&v);
+        }
         serializer.end_object();
     }
 }
@@ -1416,12 +1578,18 @@ impl<S: Serializer> Serialize<S> for Camera {
         }
         serializer.property("type");
         serializer.value(&self.type_);
-        serializer.property("name");
-        serializer.value(&self.name);
-        serializer.property("extensions");
-        serializer.value(&self.extensions);
-        serializer.property("extras");
-        serializer.value(&self.extras);
+        if let Some(v) = self.name.as_ref() {
+            serializer.property("name");
+            serializer.value(&v);
+        }
+        if !self.extensions.is_empty() {
+            serializer.property("extensions");
+            serializer.value(&self.extensions);
+        }
+        if let Some(v) = self.extras.as_ref() {
+            serializer.property("extras");
+            serializer.value(&v);
+        }
         serializer.end_object();
     }
 }
@@ -1518,18 +1686,26 @@ pub struct CameraPerspective {
 impl<S: Serializer> Serialize<S> for CameraPerspective {
     fn serialize(&self, serializer: &mut S) {
         serializer.begin_object();
-        serializer.property("aspectRatio");
-        serializer.value(&self.aspect_ratio);
+        if let Some(v) = self.aspect_ratio.as_ref() {
+            serializer.property("aspectRatio");
+            serializer.value(&v);
+        }
         serializer.property("yfov");
         serializer.value(&self.yfov);
-        serializer.property("zfar");
-        serializer.value(&self.zfar);
+        if let Some(v) = self.zfar.as_ref() {
+            serializer.property("zfar");
+            serializer.value(&v);
+        }
         serializer.property("znear");
         serializer.value(&self.znear);
-        serializer.property("extensions");
-        serializer.value(&self.extensions);
-        serializer.property("extras");
-        serializer.value(&self.extras);
+        if !self.extensions.is_empty() {
+            serializer.property("extensions");
+            serializer.value(&self.extensions);
+        }
+        if let Some(v) = self.extras.as_ref() {
+            serializer.property("extras");
+            serializer.value(&v);
+        }
         serializer.end_object();
     }
 }
@@ -1596,10 +1772,14 @@ impl<S: Serializer> Serialize<S> for CameraOrthographic {
         serializer.value(&self.zfar);
         serializer.property("znear");
         serializer.value(&self.znear);
-        serializer.property("extensions");
-        serializer.value(&self.extensions);
-        serializer.property("extras");
-        serializer.value(&self.extras);
+        if !self.extensions.is_empty() {
+            serializer.property("extensions");
+            serializer.value(&self.extensions);
+        }
+        if let Some(v) = self.extras.as_ref() {
+            serializer.property("extras");
+            serializer.value(&v);
+        }
         serializer.end_object();
     }
 }
@@ -1668,16 +1848,26 @@ impl<S: Serializer> Serialize<S> for BufferView {
         serializer.value(&self.byte_offset);
         serializer.property("byteLength");
         serializer.value(&self.byte_length);
-        serializer.property("byteStride");
-        serializer.value(&self.byte_stride);
-        serializer.property("target");
-        serializer.value(&self.target);
-        serializer.property("name");
-        serializer.value(&self.name);
-        serializer.property("extensions");
-        serializer.value(&self.extensions);
-        serializer.property("extras");
-        serializer.value(&self.extras);
+        if let Some(v) = self.byte_stride.as_ref() {
+            serializer.property("byteStride");
+            serializer.value(&v);
+        }
+        if let Some(v) = self.target.as_ref() {
+            serializer.property("target");
+            serializer.value(&v);
+        }
+        if let Some(v) = self.name.as_ref() {
+            serializer.property("name");
+            serializer.value(&v);
+        }
+        if !self.extensions.is_empty() {
+            serializer.property("extensions");
+            serializer.value(&self.extensions);
+        }
+        if let Some(v) = self.extras.as_ref() {
+            serializer.property("extras");
+            serializer.value(&v);
+        }
         serializer.end_object();
     }
 }
@@ -1766,16 +1956,24 @@ pub struct Buffer {
 impl<S: Serializer> Serialize<S> for Buffer {
     fn serialize(&self, serializer: &mut S) {
         serializer.begin_object();
-        serializer.property("uri");
-        serializer.value(&self.uri);
+        if let Some(v) = self.uri.as_ref() {
+            serializer.property("uri");
+            serializer.value(&v);
+        }
         serializer.property("byteLength");
         serializer.value(&self.byte_length);
-        serializer.property("name");
-        serializer.value(&self.name);
-        serializer.property("extensions");
-        serializer.value(&self.extensions);
-        serializer.property("extras");
-        serializer.value(&self.extras);
+        if let Some(v) = self.name.as_ref() {
+            serializer.property("name");
+            serializer.value(&v);
+        }
+        if !self.extensions.is_empty() {
+            serializer.property("extensions");
+            serializer.value(&self.extensions);
+        }
+        if let Some(v) = self.extras.as_ref() {
+            serializer.property("extras");
+            serializer.value(&v);
+        }
         serializer.end_object();
     }
 }
@@ -1831,18 +2029,28 @@ pub struct Asset {
 impl<S: Serializer> Serialize<S> for Asset {
     fn serialize(&self, serializer: &mut S) {
         serializer.begin_object();
-        serializer.property("copyright");
-        serializer.value(&self.copyright);
-        serializer.property("generator");
-        serializer.value(&self.generator);
+        if let Some(v) = self.copyright.as_ref() {
+            serializer.property("copyright");
+            serializer.value(&v);
+        }
+        if let Some(v) = self.generator.as_ref() {
+            serializer.property("generator");
+            serializer.value(&v);
+        }
         serializer.property("version");
         serializer.value(&self.version);
-        serializer.property("minVersion");
-        serializer.value(&self.min_version);
-        serializer.property("extensions");
-        serializer.value(&self.extensions);
-        serializer.property("extras");
-        serializer.value(&self.extras);
+        if let Some(v) = self.min_version.as_ref() {
+            serializer.property("minVersion");
+            serializer.value(&v);
+        }
+        if !self.extensions.is_empty() {
+            serializer.property("extensions");
+            serializer.value(&self.extensions);
+        }
+        if let Some(v) = self.extras.as_ref() {
+            serializer.property("extras");
+            serializer.value(&v);
+        }
         serializer.end_object();
     }
 }
@@ -1903,12 +2111,18 @@ impl<S: Serializer> Serialize<S> for Animation {
         serializer.value(&self.channels);
         serializer.property("samplers");
         serializer.value(&self.samplers);
-        serializer.property("name");
-        serializer.value(&self.name);
-        serializer.property("extensions");
-        serializer.value(&self.extensions);
-        serializer.property("extras");
-        serializer.value(&self.extras);
+        if let Some(v) = self.name.as_ref() {
+            serializer.property("name");
+            serializer.value(&v);
+        }
+        if !self.extensions.is_empty() {
+            serializer.property("extensions");
+            serializer.value(&self.extensions);
+        }
+        if let Some(v) = self.extras.as_ref() {
+            serializer.property("extras");
+            serializer.value(&v);
+        }
         serializer.end_object();
     }
 }
@@ -1968,10 +2182,14 @@ impl<S: Serializer> Serialize<S> for AnimationSampler {
         serializer.value(&self.interpolation);
         serializer.property("output");
         serializer.value(&self.output);
-        serializer.property("extensions");
-        serializer.value(&self.extensions);
-        serializer.property("extras");
-        serializer.value(&self.extras);
+        if !self.extensions.is_empty() {
+            serializer.property("extensions");
+            serializer.value(&self.extensions);
+        }
+        if let Some(v) = self.extras.as_ref() {
+            serializer.property("extras");
+            serializer.value(&v);
+        }
         serializer.end_object();
     }
 }
@@ -2063,10 +2281,14 @@ impl<S: Serializer> Serialize<S> for AnimationChannel {
         serializer.value(&self.sampler);
         serializer.property("target");
         serializer.value(&self.target);
-        serializer.property("extensions");
-        serializer.value(&self.extensions);
-        serializer.property("extras");
-        serializer.value(&self.extras);
+        if !self.extensions.is_empty() {
+            serializer.property("extensions");
+            serializer.value(&self.extensions);
+        }
+        if let Some(v) = self.extras.as_ref() {
+            serializer.property("extras");
+            serializer.value(&v);
+        }
         serializer.end_object();
     }
 }
@@ -2115,14 +2337,20 @@ pub struct AnimationChannelTarget {
 impl<S: Serializer> Serialize<S> for AnimationChannelTarget {
     fn serialize(&self, serializer: &mut S) {
         serializer.begin_object();
-        serializer.property("node");
-        serializer.value(&self.node);
+        if let Some(v) = self.node.as_ref() {
+            serializer.property("node");
+            serializer.value(&v);
+        }
         serializer.property("path");
         serializer.value(&self.path);
-        serializer.property("extensions");
-        serializer.value(&self.extensions);
-        serializer.property("extras");
-        serializer.value(&self.extras);
+        if !self.extensions.is_empty() {
+            serializer.property("extensions");
+            serializer.value(&self.extensions);
+        }
+        if let Some(v) = self.extras.as_ref() {
+            serializer.property("extras");
+            serializer.value(&v);
+        }
         serializer.end_object();
     }
 }
@@ -2219,8 +2447,10 @@ pub struct Accessor {
 impl<S: Serializer> Serialize<S> for Accessor {
     fn serialize(&self, serializer: &mut S) {
         serializer.begin_object();
-        serializer.property("bufferView");
-        serializer.value(&self.buffer_view);
+        if let Some(v) = self.buffer_view.as_ref() {
+            serializer.property("bufferView");
+            serializer.value(&v);
+        }
         serializer.property("byteOffset");
         serializer.value(&self.byte_offset);
         serializer.property("componentType");
@@ -2231,18 +2461,30 @@ impl<S: Serializer> Serialize<S> for Accessor {
         serializer.value(&self.count);
         serializer.property("type");
         serializer.value(&self.type_);
-        serializer.property("max");
-        serializer.value(&self.max);
-        serializer.property("min");
-        serializer.value(&self.min);
-        serializer.property("sparse");
-        serializer.value(&self.sparse);
-        serializer.property("name");
-        serializer.value(&self.name);
-        serializer.property("extensions");
-        serializer.value(&self.extensions);
-        serializer.property("extras");
-        serializer.value(&self.extras);
+        if !self.max.is_empty() {
+            serializer.property("max");
+            serializer.value(&self.max);
+        }
+        if !self.min.is_empty() {
+            serializer.property("min");
+            serializer.value(&self.min);
+        }
+        if let Some(v) = self.sparse.as_ref() {
+            serializer.property("sparse");
+            serializer.value(&v);
+        }
+        if let Some(v) = self.name.as_ref() {
+            serializer.property("name");
+            serializer.value(&v);
+        }
+        if !self.extensions.is_empty() {
+            serializer.property("extensions");
+            serializer.value(&self.extensions);
+        }
+        if let Some(v) = self.extras.as_ref() {
+            serializer.property("extras");
+            serializer.value(&v);
+        }
         serializer.end_object();
     }
 }
@@ -2325,10 +2567,14 @@ impl<S: Serializer> Serialize<S> for AccessorSparse {
         serializer.value(&self.indices);
         serializer.property("values");
         serializer.value(&self.values);
-        serializer.property("extensions");
-        serializer.value(&self.extensions);
-        serializer.property("extras");
-        serializer.value(&self.extras);
+        if !self.extensions.is_empty() {
+            serializer.property("extensions");
+            serializer.value(&self.extensions);
+        }
+        if let Some(v) = self.extras.as_ref() {
+            serializer.property("extras");
+            serializer.value(&v);
+        }
         serializer.end_object();
     }
 }
@@ -2384,10 +2630,14 @@ impl<S: Serializer> Serialize<S> for AccessorSparseValues {
         serializer.value(&self.buffer_view);
         serializer.property("byteOffset");
         serializer.value(&self.byte_offset);
-        serializer.property("extensions");
-        serializer.value(&self.extensions);
-        serializer.property("extras");
-        serializer.value(&self.extras);
+        if !self.extensions.is_empty() {
+            serializer.property("extensions");
+            serializer.value(&self.extensions);
+        }
+        if let Some(v) = self.extras.as_ref() {
+            serializer.property("extras");
+            serializer.value(&v);
+        }
         serializer.end_object();
     }
 }
@@ -2444,10 +2694,14 @@ impl<S: Serializer> Serialize<S> for AccessorSparseIndices {
         serializer.value(&self.byte_offset);
         serializer.property("componentType");
         serializer.value(&self.component_type);
-        serializer.property("extensions");
-        serializer.value(&self.extensions);
-        serializer.property("extras");
-        serializer.value(&self.extras);
+        if !self.extensions.is_empty() {
+            serializer.property("extensions");
+            serializer.value(&self.extensions);
+        }
+        if let Some(v) = self.extras.as_ref() {
+            serializer.property("extras");
+            serializer.value(&v);
+        }
         serializer.end_object();
     }
 }
