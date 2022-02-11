@@ -127,6 +127,13 @@ impl Color {
         z: 0.8430735,
         alpha: 1.0,
     };
+
+    pub const COSMIC_LATTE: Color = Color {
+        x: 0.8922961,
+        y: 0.94165134,
+        z: 0.8906085,
+        alpha: 1.0,
+    };
 }
 
 #[test]
@@ -172,4 +179,7 @@ fn print_colors() {
 
     let color = Color::from_srgb_hex(0x6495ED, 1.0);
     println!("pub const CORNFLOWER_BLUE: Color = {:#?};", color);
+
+    let color = Color::from_srgb_hex(0xFFF8E7, 1.0);
+    println!("pub const COSMIC_LATTE: Color = {:#?};", color);
 }
