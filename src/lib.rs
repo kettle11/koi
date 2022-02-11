@@ -362,7 +362,17 @@ impl KoiState {
             (self.run_system)(crate::Event::FixedUpdate, &mut self.world);
             apply_commands(&mut self.world);
             for system in &mut self.systems.fixed_update_systems {
-                system.run(&mut self.world)
+                system.run(&mut self.world);
+
+                // Clear Input after each FixedUpdate. This means if there are multiple FixedUpdates per frame
+                // only the first will receive input events.
+                // Todo: It would be better if Input was updated based on an event's timestamp. Each FixedUpdate would progress time
+                // and only events that occurred before that time would progress the input.
+                self.world
+                    .get_component_mut::<Input>(self.input_entity)
+                    .unwrap()
+                    .0
+                    .clear();
             }
             apply_commands(&mut self.world);
             self.time_acumulator -= self.fixed_time_step;
@@ -389,11 +399,6 @@ impl KoiState {
         self.world
             .get_component_mut::<KappEvents>(self.kapp_events_entity)
             .unwrap()
-            .clear();
-        self.world
-            .get_component_mut::<Input>(self.input_entity)
-            .unwrap()
-            .0
             .clear();
     }
 }

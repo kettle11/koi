@@ -50,7 +50,7 @@ fn main() {
                             let ray =
                                 camera.view_to_ray(camera_global_transform, x as f32, y as f32);
                             let plane = Plane::new(Vec3::Y, Vec3::ZERO);
-                            let intersection = koi::geometry::ray_with_plane(ray, plane);
+                            let intersection = koi::intersections::ray_with_plane(ray, plane);
                             if let Some(intersection) = intersection {
                                 commands.spawn((
                                     Transform::new().with_position(ray.get_point(intersection)),
