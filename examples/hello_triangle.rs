@@ -5,7 +5,7 @@ fn main() {
         // Setup things here.
         world.spawn((
             Transform::new().with_position(Vec3::Z),
-            Camera::new().with_orthographic(),
+            Camera::new().with_orthographic_projection(),
             CameraControls::new(),
         ));
         world.spawn((Transform::new(), Mesh::TRIANGLE, Material::UNLIT));
