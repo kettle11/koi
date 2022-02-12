@@ -357,16 +357,14 @@ impl Parser {
             None => (),
         };
 
-        if let Some(e) = thing.get("enum") {
-            let e = e.item.array().unwrap();
-            for member in e.iter() {
-                let member = match member {
-                    Thing::String(s) => EnumValue::String(s.to_string()),
-                    Thing::Number(n) => EnumValue::Number(*n as f32),
-                    _ => panic!("Unsupported enum type"),
-                };
-                schema.enum_values.push(member)
-            }
+        if let Some(e) = thing.get("const") {
+            let member = match &e.item {
+                Thing::String(s) => EnumValue::String(s.to_string()),
+                Thing::Number(n) => EnumValue::Number(*n as f32),
+                _ => panic!("Unsupported enum type"),
+            };
+            schema.enum_values.push(member);
+
             schema.schema_type = SchemaType::Enum;
         }
 
