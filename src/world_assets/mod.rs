@@ -6,6 +6,8 @@ mod gltf;
 #[cfg(feature = "gltf")]
 use gltf::*;
 
+pub use kgltf;
+
 pub fn world_assets_plugin() -> Plugin {
     Plugin {
         setup_systems: vec![setup_prefabs.system()],
