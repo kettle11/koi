@@ -90,30 +90,43 @@ impl<'a> GLB<'a> {
 
     pub fn to_writer<W: Write>(&self, mut writer: W) -> Result<(), std::io::Error> {
         let json = self.gltf.to_json();
-        let json_length: u32 = json.len() as u32;
+        let json_length: u32 = to_power_of_4(json.len()) as u32;
+        let json_padding = json_length - json.len() as u32;
+
+        let data_padding = self
+            .binary_data
+            .as_ref()
+            .map_or(0, |d| to_power_of_4(d.len()) - d.len()) as u32;
 
         let file_length: u32 = 4 * 5
             + json_length
             + self
                 .binary_data
                 .as_ref()
-                .map_or(0, |b| 4 * 2 + b.len() as u32);
+                .map_or(0, |b| 4 * 2 + b.len() as u32)
+            + data_padding;
 
         // Write magic number
         writer.write(&GLB_MAGIC_NUMBER.to_le_bytes())?; // 1 counting u32s written
         writer.write(&self.glb_version.to_le_bytes())?; // 2
-
         writer.write(&file_length.to_le_bytes())?; // 3
 
         writer.write(&(json_length).to_le_bytes())?; // 4
         writer.write(&JSON_CHUNK_TYPE.to_le_bytes())?; // 5
-
         writer.write(json.as_bytes())?;
 
+        for _ in 0..json_padding {
+            writer.write(&[0x20])?;
+        }
+
         if let Some(data) = &self.binary_data {
-            writer.write(&(data.len() as u32).to_le_bytes())?;
+            writer.write(&(data.len() as u32 + data_padding).to_le_bytes())?;
             writer.write(&BIN_CHUNK_TYPE.to_le_bytes())?;
             writer.write(&data)?;
+
+            for _ in 0..data_padding {
+                writer.write(&[0])?;
+            }
         }
 
         Ok(())
@@ -129,3 +142,12 @@ trait ReaderExtensions: Read {
 }
 
 impl<R: Read> ReaderExtensions for R {}
+
+fn to_power_of_4(n: usize) -> usize {
+    let remainder = n % 4;
+    if remainder == 0 {
+        n
+    } else {
+        n + 4 - remainder
+    }
+}
