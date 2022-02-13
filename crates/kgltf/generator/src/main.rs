@@ -846,12 +846,24 @@ impl<'a> RustGenerator {
                                 )
                             );
                             */
-                            write!(
-                                output,
-                                "           serializer.property(\"{}\");\n           serializer.value(&self.{});\n",
-                                property.json_name, property.name
-                            )
-                            .unwrap();
+
+                            // Only serialize a property if it does not equal the default.
+                            if property.default_value.is_some() {
+                                write!(
+                                    output,
+                                    "           if self.{} != {} {{\nserializer.property(\"{}\");\n           serializer.value(&self.{});\n}}\n",
+                                    property.name, format_default_value(&property),
+                                    property.json_name, property.name
+                                )
+                                .unwrap();
+                            } else {
+                                write!(
+                                    output,
+                                    "           serializer.property(\"{}\");\n           serializer.value(&self.{});\n",
+                                    property.json_name, property.name
+                                )
+                                .unwrap();
+                            }
                         }
                     }
                     write!(output, "        serializer.end_object();\n").unwrap();
@@ -950,7 +962,7 @@ impl<'a> RustGenerator {
                         };
 
                         let mut cloned = false;
-                        if let Some(default_value) = &property.default_value {
+                        if property.default_value.is_some() {
                             value = format!(
                                 "{}{}.map_or_else(|| {}, |m| m)",
                                 value,
@@ -964,72 +976,7 @@ impl<'a> RustGenerator {
                                 } else {
                                     ""
                                 },
-                                match default_value {
-                                    ThingOwned::String(s) => {
-                                        match &property.property_type {
-                                            // Find an enum member with the same name
-                                            RustType::Enum(e) => {
-                                                let mut result = "".to_string();
-                                                for member in &e.members {
-                                                    match &member.json_value {
-                                                        JsonEnumValue::String(v) => {
-                                                            if v == s {
-                                                                result = format!(
-                                                                    "{}::{}",
-                                                                    e.name, member.name
-                                                                );
-                                                                break;
-                                                            }
-                                                        }
-                                                        _ => unimplemented!(),
-                                                    }
-                                                }
-                                                result
-                                            }
-                                            _ => s.clone(),
-                                        }
-                                    }
-                                    ThingOwned::Bool(b) => b.to_string(),
-                                    ThingOwned::Number(n) => {
-                                        match &property.property_type {
-                                            RustType::USIZE => {
-                                                format!("{}usize", n.to_string())
-                                            }
-                                            RustType::F32 => {
-                                                format!("{}f32", n.to_string())
-                                            }
-                                            RustType::Enum(e) => {
-                                                // Find the matching enum value
-                                                let mut s = "".to_string();
-                                                for member in &e.members {
-                                                    if *n as u32 == member.value.unwrap() {
-                                                        s = format!("{}::{}", e.name, member.name);
-                                                        break;
-                                                    }
-                                                }
-                                                s
-                                            }
-                                            _ => unreachable!(),
-                                        }
-                                    }
-                                    ThingOwned::Object(_) => unimplemented!(),
-                                    ThingOwned::Array(a) => {
-                                        let mut s = "[".to_string();
-                                        for v in a {
-                                            match v {
-                                                ThingOwned::Number(n) => {
-                                                    s.push_str(&format!("{}f32, ", n.to_string()))
-                                                }
-                                                _ => s.push_str(&format!("{}, ", &v.to_json())),
-                                            }
-                                        }
-                                        s.push_str("]");
-                                        s
-                                    }
-                                    ThingOwned::Null => {
-                                        unimplemented!()
-                                    }
-                                }
+                                format_default_value(&property)
                             );
 
                             if optional {
@@ -1090,7 +1037,7 @@ impl<'a> RustGenerator {
                     write!(output, "/// {}\n", rust_enum.description).unwrap();
                     write!(
                         output,
-                        "#[derive(Debug, Clone)]pub enum {} {{\n",
+                        "#[derive(Debug, Clone, PartialEq, Eq)]pub enum {} {{\n",
                         rust_enum.name
                     )
                     .unwrap();
@@ -1207,6 +1154,70 @@ impl<'a> RustGenerator {
             }
         }
         output
+    }
+}
+
+fn format_default_value(property: &RustStructProperty) -> String {
+    match property.default_value.as_ref().unwrap() {
+        ThingOwned::String(s) => {
+            match &property.property_type {
+                // Find an enum member with the same name
+                RustType::Enum(e) => {
+                    let mut result = "".to_string();
+                    for member in &e.members {
+                        match &member.json_value {
+                            JsonEnumValue::String(v) => {
+                                if v == s {
+                                    result = format!("{}::{}", e.name, member.name);
+                                    break;
+                                }
+                            }
+                            _ => unimplemented!(),
+                        }
+                    }
+                    result
+                }
+                _ => s.clone(),
+            }
+        }
+        ThingOwned::Bool(b) => b.to_string(),
+        ThingOwned::Number(n) => {
+            match &property.property_type {
+                RustType::USIZE => {
+                    format!("{}usize", n.to_string())
+                }
+                RustType::F32 => {
+                    format!("{}f32", n.to_string())
+                }
+                RustType::Enum(e) => {
+                    // Find the matching enum value
+                    let mut s = "".to_string();
+                    for member in &e.members {
+                        if *n as u32 == member.value.unwrap() {
+                            s = format!("{}::{}", e.name, member.name);
+                            break;
+                        }
+                    }
+                    s
+                }
+                _ => unreachable!(),
+            }
+        }
+        ThingOwned::Object(_) => unimplemented!(),
+        ThingOwned::Array(a) => {
+            let mut s = "[".to_string();
+            for v in a {
+                match v {
+                    ThingOwned::Number(n) => s.push_str(&format!("{}f32, ", n.to_string())),
+                    _ => s.push_str(&format!("{}, ", &v.to_json())),
+                }
+            }
+            s.push_str("]");
+            s
+        }
+        ThingOwned::Null => {
+            unimplemented!()
+        }
     }
 }
 
