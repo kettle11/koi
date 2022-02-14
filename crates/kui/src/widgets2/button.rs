@@ -94,11 +94,8 @@ pub fn toggle_button<
 ) -> impl Widget<State, Context> {
     ButtonBase {
         child_widget: fit(stack((
-            outlined_rounded_fill(
-                move |_, c: &ButtonContext<Context>| {
-                    c.context.standard_style().primary_variant_color
-                },
-                move |state, c| {
+            rounded_fill(
+                move |state, c: &ButtonContext<Context>| {
                     let selected = *get_state(state) == state_value;
                     if c.clicked || selected {
                         c.context.standard_style().disabled_color

@@ -2,47 +2,85 @@ use crate::*;
 
 pub fn stack<State, Context, I: IntoWidgetChildren<State, Context>>(
     children: I,
-) -> Consecutive<State, Context, I::WidgetChildren> {
+) -> Consecutive<State, Context, I::WidgetChildren, fn(&mut State, &Context) -> f32> {
     Consecutive {
         // This should be reversed for right-to-left.
         direction: Vec3::Z,
         children: children.into_widget_children(),
+        get_spacing: |_, _| 0.0,
         phantom: std::marker::PhantomData,
     }
 }
 
 pub fn column<State, Context, I: IntoWidgetChildren<State, Context>>(
     children: I,
-) -> Consecutive<State, Context, I::WidgetChildren> {
+) -> Consecutive<State, Context, I::WidgetChildren, fn(&mut State, &Context) -> f32> {
     Consecutive {
         // This should be reversed for right-to-left.
         direction: Vec3::Y,
         children: children.into_widget_children(),
+        get_spacing: |_, _| 0.0,
         phantom: std::marker::PhantomData,
     }
 }
 
 pub fn row<State, Context, I: IntoWidgetChildren<State, Context>>(
     children: I,
-) -> Consecutive<State, Context, I::WidgetChildren> {
+) -> Consecutive<State, Context, I::WidgetChildren, fn(&mut State, &Context) -> f32> {
     Consecutive {
         // This should be reversed for right-to-left.
         direction: Vec3::X,
         children: children.into_widget_children(),
+        get_spacing: |_, _| 0.0,
         phantom: std::marker::PhantomData,
     }
 }
 
-pub struct Consecutive<State, Context, Children: WidgetChildren<State, Context>> {
+pub fn row_spaced<State, Context, I: IntoWidgetChildren<State, Context>>(
+    get_spacing: impl Fn(&mut State, &Context) -> f32,
+    children: I,
+) -> impl Widget<State, Context> {
+    Consecutive {
+        // This should be reversed for right-to-left.
+        direction: Vec3::X,
+        children: children.into_widget_children(),
+        get_spacing,
+        phantom: std::marker::PhantomData,
+    }
+}
+
+pub fn column_spaced<State, Context, I: IntoWidgetChildren<State, Context>>(
+    get_spacing: impl Fn(&mut State, &Context) -> f32,
+    children: I,
+) -> impl Widget<State, Context> {
+    Consecutive {
+        direction: Vec3::Y,
+        children: children.into_widget_children(),
+        get_spacing,
+        phantom: std::marker::PhantomData,
+    }
+}
+
+pub struct Consecutive<
+    State,
+    Context,
+    Children: WidgetChildren<State, Context>,
+    GetSpacing: Fn(&mut State, &Context) -> f32,
+> {
     direction: Vec3,
     children: Children,
+    get_spacing: GetSpacing,
     phantom: std::marker::PhantomData<(State, Context)>,
 }
 
 // This is written a bit more verbosely and less efficiently than necessary to accomodate rows, columns,
 // and maybe eventually Z-axis stacks with the same code.
-impl<State, Context, Children: WidgetChildren<State, Context>> Widget<State, Context>
-    for Consecutive<State, Context, Children>
+impl<
+        State,
+        Context,
+        Children: WidgetChildren<State, Context>,
+        GetSpacing: Fn(&mut State, &Context) -> f32,
+    > Widget<State, Context> for Consecutive<State, Context, Children, GetSpacing>
 {
     fn update(&mut self, data: &mut State, context: &mut Context) {
         self.children.update(data, context)
@@ -54,6 +92,8 @@ impl<State, Context, Children: WidgetChildren<State, Context>> Widget<State, Con
         context: &mut Context,
         min_and_max_size: MinAndMaxSize,
     ) -> Vec3 {
+        let spacing = (self.get_spacing)(data, context);
+
         let mut offset_in_direction = 0.;
         let mut other_dimension_size = Vec3::ZERO;
         self.children
@@ -64,10 +104,13 @@ impl<State, Context, Children: WidgetChildren<State, Context>> Widget<State, Con
             other_dimension_size = other_dimension_size.max(non_direction_size);
             offset_in_direction += amount_in_directon;
         }
+        offset_in_direction += spacing * self.children.len().saturating_sub(1) as f32;
         other_dimension_size + self.direction * offset_in_direction
     }
 
     fn draw(&mut self, data: &mut State, context: &mut Context, drawer: &mut Drawer, bounds: Box3) {
+        let spacing = (self.get_spacing)(data, context);
+
         let constraint_size = bounds.size();
         let mut offset = bounds.min;
         let size_not_along_direction =
@@ -79,7 +122,7 @@ impl<State, Context, Children: WidgetChildren<State, Context>> Widget<State, Con
                 offset,
                 offset + child_size_along_direction + size_not_along_direction,
             );
-            offset += constraints.dot(self.direction) * self.direction;
+            offset += (constraints.dot(self.direction) + spacing) * self.direction;
             child_constraints
         })
     }

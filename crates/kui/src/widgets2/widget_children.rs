@@ -16,6 +16,7 @@ pub trait WidgetChildren<Data, Context>: for<'a> GetConstraintsIter<'a> {
         drawer: &mut Drawer,
         f: F,
     );
+    fn len(&self) -> usize;
 }
 
 pub trait GetConstraintsIter<'a> {
@@ -103,6 +104,9 @@ impl<Data, Context, ChildData, Child: Widget<ChildData, Context>> WidgetChildren
             i += 1;
         });
     }
+    fn len(&self) -> usize {
+        self.children.len()
+    }
 }
 
 impl<'a, Data, Context, ChildData, Child: Widget<ChildData, Context>> GetConstraintsIter<'a>
@@ -171,6 +175,10 @@ macro_rules! tuple_impls {
                 mut f: FUNCTION,
             ) {
                 $(self.children.$index.draw(state, context, drawer, f(&self.constraints[$index]));)*
+            }
+
+            fn len(&self) -> usize {
+                $count
             }
         }
     }
