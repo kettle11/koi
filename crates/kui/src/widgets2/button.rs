@@ -58,15 +58,15 @@ pub fn button_with_child<State, Context: GetStandardInput + GetStandardStyle + C
     ButtonBase {
         child_widget: fit(stack((
             outlined_rounded_fill(
-                |c: &ButtonContext<Context>| c.context.standard_style().primary_variant_color,
-                |c| {
+                |_, c: &ButtonContext<Context>| c.context.standard_style().primary_variant_color,
+                |_, c| {
                     if c.clicked {
                         c.context.standard_style().disabled_color
                     } else {
                         c.context.standard_style().primary_color
                     }
                 },
-                |c| c.context.standard_style().rounding,
+                |_, c| c.context.standard_style().rounding,
             ),
             padding(
                 |c: &ButtonContext<Context>| c.context.standard_style().padding,
@@ -83,16 +83,68 @@ pub fn button_with_child<State, Context: GetStandardInput + GetStandardStyle + C
     }
 }
 
-pub struct ButtonBase<State, Context, Child: Widget<State, ButtonContext<Context>>> {
-    child_widget: Child,
-    bounding_rect: Box2,
-    on_click: fn(&mut State),
-    clicked: bool,
-    phantom: std::marker::PhantomData<fn() -> Context>,
+pub fn toggle_button<
+    State,
+    Context: GetStandardInput + GetStandardStyle + Clone + GetFonts,
+    EditState: 'static + Copy + PartialEq,
+>(
+    text: impl Into<TextSource<State>>,
+    get_state: fn(&mut State) -> &mut EditState,
+    state_value: EditState,
+) -> impl Widget<State, Context> {
+    ButtonBase {
+        child_widget: fit(stack((
+            outlined_rounded_fill(
+                move |_, c: &ButtonContext<Context>| {
+                    c.context.standard_style().primary_variant_color
+                },
+                move |state, c| {
+                    let selected = *get_state(state) == state_value;
+                    if c.clicked || selected {
+                        c.context.standard_style().disabled_color
+                    } else {
+                        c.context.standard_style().primary_color
+                    }
+                },
+                |_, c| c.context.standard_style().rounding,
+            ),
+            padding(
+                |c: &ButtonContext<Context>| c.context.standard_style().padding,
+                narrow_context(
+                    |c: &mut ButtonContext<Context>| &mut c.context,
+                    crate::text(text),
+                ),
+            ),
+        ))),
+        bounding_rect: Box2::ZERO,
+        on_click: move |state| {
+            let state = get_state(state);
+            *state = state_value;
+        },
+        clicked: false,
+        phantom: std::marker::PhantomData,
+    }
 }
 
-impl<State, Context: GetStandardInput + Clone, Child: Widget<State, ButtonContext<Context>>>
-    Widget<State, Context> for ButtonBase<State, Context, Child>
+pub struct ButtonBase<
+    State,
+    Context,
+    Child: Widget<State, ButtonContext<Context>>,
+    OnClick: Fn(&mut State),
+> {
+    child_widget: Child,
+    bounding_rect: Box2,
+    on_click: OnClick,
+    clicked: bool,
+    phantom: std::marker::PhantomData<fn() -> (Context, State)>,
+}
+
+impl<
+        State,
+        Context: GetStandardInput + Clone,
+        Child: Widget<State, ButtonContext<Context>>,
+        OnClick: Fn(&mut State),
+    > Widget<State, Context> for ButtonBase<State, Context, Child, OnClick>
 {
     fn update(&mut self, state: &mut State, context: &mut Context) {
         let standard_input = context.standard_input_mut();

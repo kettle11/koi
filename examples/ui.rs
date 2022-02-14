@@ -22,7 +22,7 @@ fn main() {
         );
 
         let mut root_widget = stack((
-            fill(|_| Color::WHITE),
+            fill(|_, _| Color::WHITE),
             padding(
                 |_| 50.,
                 button(

@@ -5,7 +5,7 @@ fn standard_frame<Data, Context: GetStandardStyle>(
     child: impl Widget<Data, Context>,
 ) -> impl Widget<Data, Context> {
     stack((
-        fill(|c: &Context| c.standard_style().background_color),
+        fill(|_, c: &Context| c.standard_style().background_color),
         padding(|_| 50., child),
     ))
 }
