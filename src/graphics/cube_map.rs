@@ -566,3 +566,17 @@ pub fn spawn_skybox_without_image_based_lighting(world: &mut World, path: &str) 
             .with_layer(RenderFlags::DEFAULT),
     ));
 }
+
+pub fn spawn_reflection_probe(world: &mut World, path: &str) {
+    let (reflection_probe, skybox_material) =
+        (|cube_maps: &mut Assets<CubeMap>, materials: &mut Assets<Material>| {
+            let reflection_probe = cube_maps.load_reflection_probe(path);
+
+            let mut material = Material::new(Shader::SKY_BOX);
+            material.set_cube_map("p_environment_map", reflection_probe.source.clone());
+            (reflection_probe, materials.add(material))
+        })
+        .run(world);
+
+    world.spawn((Transform::new(), reflection_probe));
+}
