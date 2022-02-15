@@ -68,6 +68,12 @@ impl Fonts {
                 }
             }
         }
+
+        #[cfg(target_arch = "wasm32")]
+        {
+            self.new_font_from_bytes(include_bytes!("../Inter-Regular.otf"))
+                .unwrap();
+        }
     }
 
     #[cfg(not(target_arch = "wasm32"))]
