@@ -237,6 +237,16 @@ impl<T: Numeric, const R: usize, const C: usize> Matrix<T, R, C> {
         output
     }
 
+    pub fn clamp(self, min: Self, max: Self) -> Self {
+        let mut output = Self::ZERO;
+        for i in 0..C {
+            for j in 0..R {
+                output.0[i][j] = self.0[i][j].numeric_clamp(min.0[i][j], max.0[i][j])
+            }
+        }
+        output
+    }
+
     /// Returns the value of the minimum component.
     pub fn min_component(self) -> T {
         let mut min = T::MAX;

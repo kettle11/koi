@@ -21,6 +21,7 @@ pub trait Numeric:
 
     fn numeric_min(self, other: Self) -> Self;
     fn numeric_max(self, other: Self) -> Self;
+    fn numeric_clamp(self, min: Self, max: Self) -> Self;
 }
 
 pub trait NumericFloat:
@@ -155,6 +156,9 @@ impl Numeric for f32 {
     fn numeric_max(self, other: Self) -> Self {
         self.max(other)
     }
+    fn numeric_clamp(self, min: Self, max: Self) -> Self {
+        self.clamp(min, max)
+    }
 }
 
 impl NumericAbs for f32 {
@@ -180,6 +184,9 @@ impl Numeric for f64 {
     }
     fn numeric_max(self, other: Self) -> Self {
         self.max(other)
+    }
+    fn numeric_clamp(self, min: Self, max: Self) -> Self {
+        self.clamp(min, max)
     }
 }
 
@@ -207,6 +214,9 @@ impl Numeric for i8 {
     fn numeric_max(self, other: Self) -> Self {
         self.max(other)
     }
+    fn numeric_clamp(self, min: Self, max: Self) -> Self {
+        self.clamp(min, max)
+    }
 }
 
 impl NumericAbs for i8 {
@@ -232,6 +242,9 @@ impl Numeric for i16 {
     }
     fn numeric_max(self, other: Self) -> Self {
         self.max(other)
+    }
+    fn numeric_clamp(self, min: Self, max: Self) -> Self {
+        self.clamp(min, max)
     }
 }
 
@@ -259,6 +272,9 @@ impl Numeric for i32 {
     fn numeric_max(self, other: Self) -> Self {
         self.max(other)
     }
+    fn numeric_clamp(self, min: Self, max: Self) -> Self {
+        self.clamp(min, max)
+    }
 }
 
 impl NumericAbs for i32 {
@@ -284,6 +300,9 @@ impl Numeric for i64 {
     }
     fn numeric_max(self, other: Self) -> Self {
         self.max(other)
+    }
+    fn numeric_clamp(self, min: Self, max: Self) -> Self {
+        self.clamp(min, max)
     }
 }
 
@@ -311,6 +330,9 @@ impl Numeric for i128 {
     fn numeric_max(self, other: Self) -> Self {
         self.max(other)
     }
+    fn numeric_clamp(self, min: Self, max: Self) -> Self {
+        self.clamp(min, max)
+    }
 }
 
 impl NumericAbs for i128 {
@@ -337,6 +359,9 @@ impl Numeric for u8 {
     fn numeric_max(self, other: Self) -> Self {
         self.max(other)
     }
+    fn numeric_clamp(self, min: Self, max: Self) -> Self {
+        self.clamp(min, max)
+    }
 }
 
 impl Numeric for u16 {
@@ -350,6 +375,9 @@ impl Numeric for u16 {
     }
     fn numeric_max(self, other: Self) -> Self {
         self.max(other)
+    }
+    fn numeric_clamp(self, min: Self, max: Self) -> Self {
+        self.clamp(min, max)
     }
 }
 
@@ -365,6 +393,9 @@ impl Numeric for u32 {
     fn numeric_max(self, other: Self) -> Self {
         self.max(other)
     }
+    fn numeric_clamp(self, min: Self, max: Self) -> Self {
+        self.clamp(min, max)
+    }
 }
 
 impl Numeric for u64 {
@@ -378,6 +409,9 @@ impl Numeric for u64 {
     }
     fn numeric_max(self, other: Self) -> Self {
         self.max(other)
+    }
+    fn numeric_clamp(self, min: Self, max: Self) -> Self {
+        self.clamp(min, max)
     }
 }
 
@@ -393,6 +427,9 @@ impl Numeric for u128 {
     fn numeric_max(self, other: Self) -> Self {
         self.max(other)
     }
+    fn numeric_clamp(self, min: Self, max: Self) -> Self {
+        self.clamp(min, max)
+    }
 }
 
 impl Numeric for usize {
@@ -406,5 +443,8 @@ impl Numeric for usize {
     }
     fn numeric_max(self, other: Self) -> Self {
         self.max(other)
+    }
+    fn numeric_clamp(self, min: Self, max: Self) -> Self {
+        self.clamp(min, max)
     }
 }
