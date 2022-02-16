@@ -31,6 +31,7 @@ thread_local! {
     static WORKER: RefCell<Worker<'static>> = RefCell::new(Worker::new());
 }
 
+#[allow(unused)]
 pub fn create_workers_with_count(count: usize) {
     #[cfg(all(target_arch = "wasm32", not(target_feature = "atomics")))]
     let count = 1;
