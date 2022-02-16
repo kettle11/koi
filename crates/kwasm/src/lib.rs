@@ -13,11 +13,13 @@ use std::ops::Deref;
 
 pub mod libraries {
     pub mod console;
+    pub mod download;
     pub mod eval;
     pub mod fetch;
     pub mod instant;
     pub mod load_image;
     pub use console::*;
+    pub use download::*;
     pub use eval::*;
     pub use fetch::*;
     pub use instant::*;
