@@ -113,16 +113,22 @@ impl<
 
         let constraint_size = bounds.size();
         let mut offset = bounds.min;
+
+        // Simple logic for now, but could be more general.
+        if self.direction.x < 0.0 {
+            offset.x = bounds.max.x;
+        }
         let size_not_along_direction =
             constraint_size - (constraint_size.dot(self.direction) * self.direction);
         self.children.draw(data, context, drawer, |constraints| {
-            let child_size_along_direction = constraint_size.dot(self.direction) * self.direction;
+            let child_size_along_direction = constraints.dot(self.direction).abs() * self.direction;
 
-            let child_constraints = Box3::new(
-                offset,
-                offset + child_size_along_direction + size_not_along_direction,
-            );
-            offset += (constraints.dot(self.direction) + spacing) * self.direction;
+            let corner0 = offset;
+            let corner1 = offset + child_size_along_direction + size_not_along_direction;
+            let child_constraints = Box3::new(corner0.min(corner1), corner0.max(corner1));
+
+            offset += child_size_along_direction + spacing * self.direction;
+
             child_constraints
         })
     }

@@ -24,6 +24,12 @@ pub use toggle::*;
 mod text_box;
 pub use text_box::*;
 
+mod align;
+pub use align::*;
+
+mod conditional;
+pub use conditional::*;
+
 pub fn fill<State, Context>(
     color: impl Fn(&mut State, &Context) -> Color,
 ) -> impl Widget<State, Context> {
@@ -89,14 +95,24 @@ impl<
 /// Just a colored rectangle for debug purposes
 pub struct Rectangle {
     pub size: Vec3,
-    pub color: Color,
 }
 
-pub fn rectangle(size: Vec2, color: Color) -> Rectangle {
+pub fn rectangle(size: Vec2) -> Rectangle {
     Rectangle {
         size: size.extend(0.1),
-        color,
     }
+}
+
+pub fn colored_rectangle<State, Context>(
+    size: Vec2,
+    color: impl Fn(&mut State, &Context) -> Color,
+) -> impl Widget<State, Context> {
+    stack((
+        Rectangle {
+            size: size.extend(0.1),
+        },
+        fill(color),
+    ))
 }
 
 impl<State, Context> Widget<State, Context> for Rectangle {
@@ -112,12 +128,9 @@ impl<State, Context> Widget<State, Context> for Rectangle {
         &mut self,
         _state: &mut State,
         _context: &mut Context,
-        drawer: &mut Drawer,
-        bounds: Box3,
+        _drawer: &mut Drawer,
+        _bounds: Box3,
     ) {
-        let size = bounds.size().min(self.size);
-        let bounds = Box3::new_with_min_corner_and_size(bounds.min, size);
-        drawer.standard().rectangle(bounds, self.color);
     }
 }
 
