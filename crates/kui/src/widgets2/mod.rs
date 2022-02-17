@@ -30,6 +30,9 @@ pub use align::*;
 mod conditional;
 pub use conditional::*;
 
+mod ignore_size;
+pub use ignore_size::*;
+
 pub fn fill<State, Context>(
     color: impl Fn(&mut State, &Context) -> Color,
 ) -> impl Widget<State, Context> {
