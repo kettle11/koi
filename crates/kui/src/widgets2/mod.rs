@@ -36,7 +36,6 @@ pub use ignore_size::*;
 mod fill;
 pub use fill::*;
 
-
 /// Just a colored rectangle for debug purposes
 pub struct Rectangle {
     pub size: Vec3,
