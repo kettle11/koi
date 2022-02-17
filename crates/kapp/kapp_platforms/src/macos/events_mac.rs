@@ -312,8 +312,8 @@ extern "C" fn flags_changed(_this: &Object, _sel: Sel, event: *mut Object) {
         Key::RightControl,
         Key::LeftAlt,
         Key::RightAlt,
-        Key::Meta,
-        Key::Meta,
+        Key::LeftMeta,
+        Key::RightMeta,
     ];
 
     let modifier_flags_old = APPLICATION_DATA.with(|d| d.borrow().modifier_flags);
@@ -323,7 +323,7 @@ extern "C" fn flags_changed(_this: &Object, _sel: Sel, event: *mut Object) {
     let flag_state_old = get_modifier_state(modifier_flags_old);
     let flag_state_new = get_modifier_state(modifier_flags_new);
 
-    for i in 0..8 {
+    for i in 0..9 {
         if !flag_state_old[i] && flag_state_new[i] {
             self::submit_event(Event::KeyDown {
                 key: KEYS[i],
