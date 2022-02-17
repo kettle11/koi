@@ -44,6 +44,18 @@ pub struct ButtonContext<Context> {
     pub clicked: bool,
 }
 
+impl<Context: GetStandardInput> GetStandardInput for ButtonContext<Context> {
+    fn standard_input(&self) -> &StandardInput {
+        self.context.standard_input()
+    }
+    fn standard_input_mut(&mut self) -> &mut StandardInput {
+        self.context.standard_input_mut()
+    }
+    fn try_standard_input_mut(&mut self) -> Option<&mut StandardInput> {
+        self.context.try_standard_input_mut()
+    }
+}
+
 pub fn button<State, Context: GetStandardInput + GetStandardStyle + Clone + GetFonts>(
     text: impl Into<TextSource<State>>,
     on_click: fn(&mut State),
@@ -188,6 +200,9 @@ impl<
         let standard_input = context.standard_input_mut();
 
         for (handled, event) in standard_input.input_events_iter() {
+            if *handled {
+                continue;
+            }
             match event {
                 kapp_platform_common::Event::PointerDown {
                     x,

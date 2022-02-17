@@ -178,7 +178,7 @@ impl UIManager {
             context,
             MinAndMaxSize {
                 min: Vec3::ZERO,
-                max: Vec3::MAX,
+                max: self.initial_constraints.size(),
             },
         );
         root_widget.draw(data, context, &mut self.drawer, self.initial_constraints);
@@ -209,7 +209,7 @@ impl UIManager {
             context,
             MinAndMaxSize {
                 min: Vec3::ZERO,
-                max: Vec3::MAX,
+                max: self.initial_constraints.size(),
             },
         );
         let (width, height, _) = self.initial_constraints.size().into();

@@ -33,67 +33,9 @@ pub use conditional::*;
 mod ignore_size;
 pub use ignore_size::*;
 
-pub fn fill<State, Context>(
-    color: impl Fn(&mut State, &Context) -> Color,
-) -> impl Widget<State, Context> {
-    Fill {
-        color,
-        rounding: |_, _| 0.0,
-        phantom: std::marker::PhantomData,
-    }
-}
+mod fill;
+pub use fill::*;
 
-pub fn rounded_fill<State, Context>(
-    color: impl Fn(&mut State, &Context) -> Color,
-    rounding: impl Fn(&mut State, &Context) -> f32,
-) -> impl Widget<State, Context> {
-    Fill {
-        color,
-        rounding,
-        phantom: std::marker::PhantomData,
-    }
-}
-
-pub struct Fill<
-    State,
-    Context,
-    GetColor: Fn(&mut State, &Context) -> Color,
-    GetRounding: Fn(&mut State, &Context) -> f32,
-> {
-    pub color: GetColor,
-    pub rounding: GetRounding,
-    phantom: std::marker::PhantomData<fn() -> (State, Context)>,
-}
-
-impl<
-        State,
-        Context,
-        GetColor: Fn(&mut State, &Context) -> Color,
-        GetRounding: Fn(&mut State, &Context) -> f32,
-    > Widget<State, Context> for Fill<State, Context, GetColor, GetRounding>
-{
-    fn layout(
-        &mut self,
-        _data: &mut State,
-        _context: &mut Context,
-        _min_and_max_size: MinAndMaxSize,
-    ) -> Vec3 {
-        Vec3::ZERO
-    }
-    fn draw(
-        &mut self,
-        state: &mut State,
-        context: &mut Context,
-        drawer: &mut Drawer,
-        bounds: Box3,
-    ) {
-        drawer.standard().rounded_rectangle(
-            bounds,
-            Vec4::fill((self.rounding)(state, context)),
-            (self.color)(state, context),
-        );
-    }
-}
 
 /// Just a colored rectangle for debug purposes
 pub struct Rectangle {
@@ -106,7 +48,7 @@ pub fn rectangle(size: Vec2) -> Rectangle {
     }
 }
 
-pub fn colored_rectangle<State, Context>(
+pub fn colored_rectangle<State, Context: GetStandardInput>(
     size: Vec2,
     color: impl Fn(&mut State, &Context) -> Color,
 ) -> impl Widget<State, Context> {
@@ -137,7 +79,7 @@ impl<State, Context> Widget<State, Context> for Rectangle {
     }
 }
 
-pub fn outlined_rounded_fill<State, Context>(
+pub fn outlined_rounded_fill<State, Context: GetStandardInput>(
     outline_color: impl Fn(&mut State, &Context) -> Color,
     inner_color: impl Fn(&mut State, &Context) -> Color,
     rounding: impl Fn(&mut State, &Context) -> f32,

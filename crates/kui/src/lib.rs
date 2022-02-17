@@ -87,6 +87,10 @@ pub trait GetStandardStyle {
 pub trait GetStandardInput {
     fn standard_input(&self) -> &StandardInput;
     fn standard_input_mut(&mut self) -> &mut StandardInput;
+
+    /// This can be used in scenarios where the Context internals have been cloned
+    /// This is mostly a workaround, there's almost certainly a better design.
+    fn try_standard_input_mut(&mut self) -> Option<&mut StandardInput>;
 }
 
 pub struct StandardInput {
@@ -122,6 +126,9 @@ impl GetStandardInput for StandardInput {
     }
     fn standard_input_mut(&mut self) -> &mut StandardInput {
         self
+    }
+    fn try_standard_input_mut(&mut self) -> Option<&mut StandardInput> {
+        Some(self)
     }
 }
 
@@ -171,6 +178,9 @@ impl<Style, Input: GetStandardInput> GetStandardInput for StandardContext<Style,
         std::rc::Rc::get_mut(&mut self.input)
             .unwrap()
             .standard_input_mut()
+    }
+    fn try_standard_input_mut(&mut self) -> Option<&mut StandardInput> {
+        std::rc::Rc::get_mut(&mut self.input).map(|i| i.standard_input_mut())
     }
 }
 

@@ -1,7 +1,7 @@
 use koi::*;
 use kui::*;
 
-fn standard_frame<Data, Context: GetStandardStyle>(
+fn standard_frame<Data, Context: GetStandardStyle + GetStandardInput>(
     child: impl Widget<Data, Context>,
 ) -> impl Widget<Data, Context> {
     stack((

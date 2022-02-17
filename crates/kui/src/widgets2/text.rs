@@ -69,6 +69,12 @@ pub struct Text<State, Context: GetStandardStyle + GetFonts> {
 }
 
 impl<State, Context: GetStandardStyle + GetFonts> Text<State, Context> {
+    pub fn with_color(self, get_color: fn(&Context) -> Color) -> Self {
+        Self { get_color, ..self }
+    }
+}
+
+impl<State, Context: GetStandardStyle + GetFonts> Text<State, Context> {
     pub fn new(
         text: impl Into<TextSource<State>>,
         get_font: fn(&Context) -> Font,
@@ -150,15 +156,18 @@ impl<State, Context: GetStandardStyle + GetFonts> Widget<State, Context> for Tex
         &mut self,
         state: &mut State,
         context: &mut Context,
-        _min_and_max_size: MinAndMaxSize,
+        min_and_max_size: MinAndMaxSize,
     ) -> Vec3 {
         let ui_scale = context.standard_style().ui_scale;
 
         // This layout should instead be stored in standard state.
         let layout = &mut self.layout;
 
-        // Various alignments could be introduced here.
-        layout.reset(&Default::default());
+        layout.reset(&fontdue::layout::LayoutSettings {
+            max_width: Some(min_and_max_size.max.x * ui_scale),
+            max_height: Some(min_and_max_size.max.y * ui_scale),
+            ..Default::default()
+        });
 
         let font_index = (self.get_font)(context).0;
         let fonts = context.get_fonts().fonts();
