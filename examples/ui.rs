@@ -25,10 +25,9 @@ fn main() {
             fill(|_, _| Color::WHITE),
             padding(
                 |_| 50.,
-                button(
-                    |world: &mut World| world.get_singleton::<Counter>().0 += 1,
-                    "Button",
-                ),
+                button("Button", |world: &mut World| {
+                    world.get_singleton::<Counter>().0 += 1
+                }),
             ),
             text(|world: &mut World| world.get_singleton::<Counter>().0.to_string()),
         ));

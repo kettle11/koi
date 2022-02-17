@@ -122,10 +122,10 @@ fn entity_column<Context: GetStandardStyle + GetFonts + GetStandardInput + Clone
             },
             || {
                 button(
+                    |t: &mut (Entity, bool)| format!("Entity {:?}", t.0.index()),
                     |child_data: &mut (Entity, bool)| {
                         child_data.1 = true;
                     },
-                    |t: &mut (Entity, bool)| format!("Entity {:?}", t.0.index()),
                 )
             },
         )),

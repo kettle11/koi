@@ -24,7 +24,7 @@ fn dark_authoratative_style() -> StandardStyle {
 fn main() {
     let ui = standard_frame(column((
         heading("Application"),
-        button(|_| println!("CLICKED"), "Hello"),
+        button("Hello", |_| println!("CLICKED")),
     )));
 
     let mut fonts = Fonts::empty();

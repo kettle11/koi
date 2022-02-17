@@ -45,8 +45,8 @@ pub struct ButtonContext<Context> {
 }
 
 pub fn button<State, Context: GetStandardInput + GetStandardStyle + Clone + GetFonts>(
-    on_click: fn(&mut State),
     text: impl Into<TextSource<State>>,
+    on_click: fn(&mut State),
 ) -> impl Widget<State, Context> {
     button_with_child(on_click, crate::text(text))
 }
@@ -57,9 +57,8 @@ pub fn button_with_child<State, Context: GetStandardInput + GetStandardStyle + C
 ) -> impl Widget<State, Context> {
     ButtonBase {
         child_widget: fit(stack((
-            outlined_rounded_fill(
-                |_, c: &ButtonContext<Context>| c.context.standard_style().primary_variant_color,
-                |_, c| {
+            rounded_fill(
+                |_, c: &ButtonContext<Context>| {
                     if c.clicked {
                         c.context.standard_style().disabled_color
                     } else {
