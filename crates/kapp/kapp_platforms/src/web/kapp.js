@@ -105,6 +105,11 @@ function receive_message(command, data) {
                     self.kwasm_pass_string_to_client(event.key);
                     self.kwasm_exports.kapp_character_received(event.timeStamp);
                 }
+
+                // This prevents everything else on the page from receiving an event. 
+                // It's probably OK for now.
+                // It fixes a Safari issue where Ctrl+Z and Shift+Ctrl+Z are used for browser navigation.
+                event.preventDefault();
             }
 
             document.onkeyup = function (event) {
@@ -128,6 +133,9 @@ function receive_message(command, data) {
                 } else {
                     self.kwasm_exports.kapp_on_scroll(-event.deltaX, -event.deltaY, event.timeStamp);
                 }
+
+                // Prevent scrolling horizontally from going back on Safari
+                event.preventDefault();
             }
             break;
         case 3:
