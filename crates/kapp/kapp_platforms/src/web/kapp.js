@@ -72,11 +72,9 @@ function receive_message(command, data) {
                 let pointer_type = get_pointer_type(event);
                 self.kwasm_exports.kapp_on_pointer_move(event.clientX * window.devicePixelRatio, event.clientY * window.devicePixelRatio, pointer_type, event.timeStamp);
             }
-
             canvas.onmousemove = function (event) {
                 self.kwasm_exports.kapp_on_mouse_move(event.movementX * window.devicePixelRatio, event.movementY * window.devicePixelRatio, event.timeStamp);
             }
-
             canvas.onpointerdown = function (event) {
                 canvas.setPointerCapture(event.pointerId);
                 let pointer_type = get_pointer_type(event);

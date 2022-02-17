@@ -52,9 +52,15 @@ pub extern "C" fn kapp_on_pointer_move(x: f64, y: f64, pointer_enum: u32, time_s
 
 #[no_mangle]
 pub extern "C" fn kapp_on_mouse_move(delta_x: f64, delta_y: f64, time_stamp: f64) {
+    // This is different from other platforms in that the values reported are pixels.
+    // This is because on web there isn't a way to report deltas without locking the mouse.
+    // This makes the values substantially more sensitive on Mac. :(
+    // The values are artificially tweaked a bit.
+    // If FPS games depend on this in the future then this should branch to provide the real deltas
+    // when the mouse is locked.
     send_event(Event::MouseMotion {
-        delta_x,
-        delta_y,
+        delta_x: delta_x / 1.75,
+        delta_y: delta_y / 1.75,
         timestamp: Duration::from_secs_f64(time_stamp * 1000.0),
     });
 }
