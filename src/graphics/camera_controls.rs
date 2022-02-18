@@ -169,7 +169,10 @@ pub fn update_camera_controls(
                 transform.position += controls.velocity * time.delta_seconds_f64 as f32;
             }
             CameraControlsMode::Orbit { target } => {
-                transform.position += transform.forward() * input.pinch() as f32 * 5.;
+                let diff_here = transform.position - *target;
+
+                transform.position +=
+                    transform.forward() * (input.pinch() as f32 * 5.).min(diff_here.length());
 
                 let rotation_pitch = Quat::from_yaw_pitch_roll(0., pitch, 0.);
                 let rotation_yaw = Quat::from_yaw_pitch_roll(yaw, 0., 0.);
