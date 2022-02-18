@@ -266,6 +266,7 @@ impl App {
                 // Set the delta_time to fixed_time_delta so that a fixed update runs for the first frame.
                 delta_seconds_f64: fixed_time_step,
                 fixed_time_step,
+                discontinuity: false,
             },
         ));
 
@@ -359,6 +360,11 @@ impl KoiState {
         //klog::log!("TIME ELAPSED: {:?}", elapsed.as_millis());
         self.start = Instant::now();
         self.time_acumulator += time_elapsed_seconds;
+
+        // If the engine isn't updating continuously there can be discontinuities that shouldn't produce multiple fixed updates.
+        if self.world.get_singleton::<Time>().discontinuity {
+            self.time_acumulator = self.fixed_time_step;
+        }
 
         // Check that there aren't a huge number of fixed time steps to process.
         // This can happen if a computer goes to sleep and then exits sleep.
