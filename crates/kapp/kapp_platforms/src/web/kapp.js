@@ -13,9 +13,7 @@ var canvas_last_width = 0;
 var canvas_last_height = 0;
 
 var animation_frame_requested = false;
-function request_animation_frame_callback(time) {
-    animation_frame_requested = false;
-
+function check_resize() {
     let width = canvas.clientWidth;
     let height = canvas.clientHeight;
 
@@ -28,6 +26,11 @@ function request_animation_frame_callback(time) {
         self.kwasm_exports.kapp_on_window_resized(width * devicePixelRatio, height * devicePixelRatio);
 
     }
+}
+
+function request_animation_frame_callback(time) {
+    animation_frame_requested = false;
+    check_resize();
     self.kwasm_exports.kapp_on_animation_frame(self.kwasm_exports.kapp_on_animation_frame);
 }
 
@@ -68,6 +71,9 @@ function receive_message(command, data) {
             // SetCallbacks
 
             // Hook up callbacks
+            window.onresize = function (event) {
+                check_resize();
+            }
             canvas.onpointermove = function (event) {
                 let pointer_type = get_pointer_type(event);
                 self.kwasm_exports.kapp_on_pointer_move(event.clientX * window.devicePixelRatio, event.clientY * window.devicePixelRatio, pointer_type, event.timeStamp);
