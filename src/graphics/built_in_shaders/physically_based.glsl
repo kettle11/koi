@@ -182,14 +182,14 @@ float ShadowCalculation(in sampler2D shadowMap, vec4 fragPosLightSpace, vec3 lig
     // check whether d frag pos is in shadow
    // float shadow = currentDepth - 0.002 > closestDepth  ? 1.0 : 0.0;
 
-    float bias = 0.0005;
+    float bias = 0.000001;
     float shadow = 0.0;
     vec2 texelSize = 1.0 / vec2(textureSize(shadowMap, 0));
 
 
     // Percentage-close filtering (PCF)
     // This could be improved in the future by taking fewer dithered samples.
-    int shadow_samples = 0;
+    int shadow_samples = 4;
     for(int x = -shadow_samples; x <= shadow_samples; ++x)
     {
         for(int y = -shadow_samples; y <= shadow_samples; ++y)
