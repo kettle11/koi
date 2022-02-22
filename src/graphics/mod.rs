@@ -59,23 +59,42 @@ pub fn graphics_plugin() -> Plugin {
         end_of_frame_systems: vec![
             load_textures.system(),
             load_cube_maps.system(),
-            request_window_redraw.system(),
+            automatic_redraw_request.system(),
         ],
         ..Default::default()
     }
 }
 
+pub fn request_window_redraw(world: &mut World) {
+    (|window: &mut NotSendSync<kapp::Window>, #[cfg(feature = "xr")] xr: &crate::XR| {
+        #[cfg(feature = "xr")]
+        if !xr.running() {
+            window.request_redraw();
+        }
+        #[cfg(not(feature = "xr"))]
+        window.request_redraw();
+    })
+    .run(world);
+}
+
 /// Ensure that the primary window redraws continuously.
-fn request_window_redraw(
+fn automatic_redraw_request(
+    graphics: &mut Graphics,
     window: &mut NotSendSync<kapp::Window>,
+    time: &mut Time,
     #[cfg(feature = "xr")] xr: &crate::XR,
 ) {
-    #[cfg(feature = "xr")]
-    if !xr.running() {
+    if graphics.request_redraw || graphics.automatic_request_redraw {
+        #[cfg(feature = "xr")]
+        if !xr.running() {
+            window.request_redraw();
+        }
+        #[cfg(not(feature = "xr"))]
         window.request_redraw();
+        graphics.request_redraw = graphics.automatic_request_redraw;
+    } else {
+        time.discontinuity = true;
     }
-    #[cfg(not(feature = "xr"))]
-    window.request_redraw();
 }
 
 // Alias this type so that it's simpler to query for it.
@@ -99,6 +118,8 @@ pub struct GraphicsInner {
     shader_snippets: HashMap<&'static str, &'static str>,
     #[cfg(feature = "xr")]
     multiview_support: MultiviewSupport,
+    automatic_request_redraw: bool,
+    request_redraw: bool,
 }
 
 #[derive(Clone, Debug)]
@@ -143,7 +164,7 @@ fn setup_graphics(world: &mut World) {
     let mut context = GraphicsContext::new_with_settings(GraphicsContextSettings {
         high_resolution_framebuffer: true,
         /// How many MSAA samples the window framebuffer should have
-        samples: 0,
+        samples: 4,
     })
     .unwrap();
 
@@ -179,6 +200,8 @@ fn setup_graphics(world: &mut World) {
         shader_snippets: HashMap::new(),
         #[cfg(feature = "xr")]
         multiview_support,
+        automatic_request_redraw: true,
+        request_redraw: true,
     });
 
     graphics.register_shader_snippet(
@@ -279,6 +302,14 @@ fn assign_current_camera_target(graphics: &mut Graphics, events: &KappEvents) {
 }
 
 impl GraphicsInner {
+    pub fn request_redraw(&mut self) {
+        self.request_redraw = true;
+    }
+
+    pub fn set_automatic_redraw(&mut self, automatic_redraw: bool) {
+        self.automatic_request_redraw = automatic_redraw;
+    }
+
     fn create_pipeline(
         &mut self,
         source: &str,
