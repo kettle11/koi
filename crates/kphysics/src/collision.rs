@@ -678,11 +678,11 @@ fn sutherland_hodgman_clipping<F: NumericFloat + Debug, const DIM: usize>(
         output_points.clear();
 
         if let Some(mut previous_point) = input_points.last().cloned() {
-            let mut previous_outside = plane.distance_to_point(previous_point) > F::ZERO;
+            let mut previous_outside = plane.signed_distance_to_point(previous_point) > F::ZERO;
 
             println!("PLANE: {:#?}", plane);
             for &current_point in input_points.iter() {
-                let current_outside = plane.distance_to_point(current_point) > F::ZERO;
+                let current_outside = plane.signed_distance_to_point(current_point) > F::ZERO;
 
                 if current_outside != previous_outside {
                     // Crossing

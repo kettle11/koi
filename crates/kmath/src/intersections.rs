@@ -49,7 +49,7 @@ fn closest_parametric_values_between_lines<
 pub enum LineIntersectionResult<T, const DIMENSIONS: usize> {
     Parallel,
     Point(Vector<T, DIMENSIONS>),
-    ClosestPoints((Vector<T, DIMENSIONS>, Vector<T, DIMENSIONS>)),
+    ClosestPoints(Vector<T, DIMENSIONS>, Vector<T, DIMENSIONS>),
 }
 
 /// Returns that the lines are parallel, intersect at a point, or returns the two closest points.
@@ -68,7 +68,7 @@ pub fn line_line<
         if (p0 - p1).length_squared() < T::EPSILON {
             LineIntersectionResult::Point(p0)
         } else {
-            LineIntersectionResult::ClosestPoints((p0, p1))
+            LineIntersectionResult::ClosestPoints(p0, p1)
         }
     } else {
         LineIntersectionResult::Parallel
@@ -121,7 +121,7 @@ pub fn line_segment_line_segment<
         if (p0 - p1).length_squared() < T::EPSILON {
             LineIntersectionResult::Point(p0)
         } else {
-            LineIntersectionResult::ClosestPoints((p0, p1))
+            LineIntersectionResult::ClosestPoints(p0, p1)
         }
     } else {
         LineIntersectionResult::Parallel
@@ -146,7 +146,7 @@ pub fn ray_line_segment<T: NumericFloat + IntersectionEpsilon, const DIMENSIONS:
         if (p0 - p1).length_squared() < T::EPSILON {
             LineIntersectionResult::Point(p0)
         } else {
-            LineIntersectionResult::ClosestPoints((p0, p1))
+            LineIntersectionResult::ClosestPoints(p0, p1)
         }
     } else {
         LineIntersectionResult::Parallel
@@ -323,7 +323,7 @@ pub fn frustum_with_bounding_box(frustum: &Frustum, transform: Mat4, box3: Box3)
     for plane in frustum.planes.iter() {
         let mut corners_outside_plane = 0;
         for corner in corners {
-            if plane.distance_to_point(corner) > 0.0 {
+            if plane.signed_distance_to_point(corner) > 0.0 {
                 corners_outside_plane += 1;
             }
         }

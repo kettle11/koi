@@ -410,6 +410,19 @@ impl<T: Numeric, const R: usize, const C: usize> Matrix<T, R, C> {
         }
         v
     }
+
+    pub fn round(&self) -> Self
+    where
+        T: NumericFloat,
+    {
+        let mut v = Self::ZERO;
+        for i in 0..C {
+            for j in 0..R {
+                v.0[i][j] = self.0[i][j].round_numeric();
+            }
+        }
+        v
+    }
 }
 
 impl<T: NumericFloat> Matrix<T, 3, 3> {

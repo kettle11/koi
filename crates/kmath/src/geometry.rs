@@ -232,7 +232,7 @@ impl<T: NumericFloat, const DIM: usize> Plane<T, DIM> {
         }
     }
 
-    pub fn distance_to_point(&self, point: Vector<T, DIM>) -> T {
+    pub fn signed_distance_to_point(&self, point: Vector<T, DIM>) -> T {
         self.normal.dot(point) - self.distance_along_normal
     }
 }
