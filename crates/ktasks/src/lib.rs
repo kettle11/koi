@@ -125,24 +125,34 @@ pub fn create_workers() {
     create_workers_with_count((cores_count - 1).max(1));
 }
 
+struct WorkerWakerInner {
+    new_task: bool,
+    shutdown: bool,
+}
 #[derive(Clone)]
 // Blocks a single thread.
-struct WorkerWaker(Arc<(Mutex<bool>, Condvar)>);
+struct WorkerWaker(Arc<(Mutex<WorkerWakerInner>, Condvar)>);
 
 impl WorkerWaker {
     fn new() -> Self {
         // The docs for Condvar show using a [Mutex], but clippy recommends otherwise.
         // Which is correct?
         #[allow(clippy::mutex_atomic)]
-        Self(Arc::new((Mutex::new(false), Condvar::new())))
+        Self(Arc::new((
+            Mutex::new(WorkerWakerInner {
+                new_task: false,
+                shutdown: false,
+            }),
+            Condvar::new(),
+        )))
     }
 
     fn wake_one(&self) {
         // Notify other threads that work is available to steal.
         let (lock, condvar) = &*self.0;
         loop {
-            if let Ok(mut new_task) = lock.try_lock() {
-                *new_task = true;
+            if let Ok(mut worker_waker_inner) = lock.try_lock() {
+                worker_waker_inner.new_task = true;
                 condvar.notify_one();
                 break;
             }
@@ -153,22 +163,38 @@ impl WorkerWaker {
         // Notify other threads that work is available to steal.
         let (lock, condvar) = &*self.0;
         loop {
-            if let Ok(mut new_task) = lock.try_lock() {
-                *new_task = true;
+            if let Ok(mut worker_waker_inner) = lock.try_lock() {
+                worker_waker_inner.new_task = true;
                 condvar.notify_all();
                 break;
             }
         }
     }
 
-    fn wait(&self) {
+    fn shutdown_all(&self) {
+        // Notify other threads that work is available to steal.
+        let (lock, condvar) = &*self.0;
+        loop {
+            if let Ok(mut worker_waker_inner) = lock.try_lock() {
+                worker_waker_inner.shutdown = true;
+                condvar.notify_all();
+                break;
+            }
+        }
+    }
+
+    fn wait(&self) -> bool {
         // If I reach here then block until other tasks are enqueued.
         let (lock, condvar) = &*self.0;
-        let mut new_task = lock.lock().unwrap();
-        while !*new_task {
-            new_task = condvar.wait(new_task).unwrap();
+        let mut guard = lock.lock().unwrap();
+        while !guard.new_task {
+            guard = condvar.wait(guard).unwrap();
+            if guard.shutdown {
+                return false;
+            }
         }
-        *new_task = false;
+        guard.new_task = false;
+        true
     }
 }
 
@@ -376,6 +402,10 @@ impl<'a> Worker<'a> {
         self.new_task.wake_one()
     }
 
+    pub fn shutdown_all(&self) {
+        self.new_task.shutdown_all();
+    }
+
     pub fn spawn<T: Send + 'a>(
         &self,
         future: impl Future<Output = T> + Send + 'a,
@@ -536,7 +566,11 @@ impl<'a> Worker<'a> {
             if !ran_a_task {
                 // klog::log!("WORKER {:?}: Waiting for tasks to steal", self.id);
                 // If I reach here then block until other tasks are enqueued.
-                self.new_task.wait();
+
+                // Shutdown all workers
+                if !self.new_task.wait() {
+                    break;
+                }
                 // klog::log!("WORKER {:?}: Woken up to steal a task", self.id);
             }
         }
@@ -603,6 +637,11 @@ pub fn spawn<T: Send + 'static>(
     task: impl Future<Output = T> + Send + 'static,
 ) -> JoinHandle<'static, T> {
     WORKER.with(|w| w.borrow().spawn(task))
+}
+
+/// Stops all running worker threads and lets them return.
+pub fn shutdown_worker_threads() {
+    WORKER.with(|w| w.borrow().shutdown_all());
 }
 
 /// Spawn a task on the current thread

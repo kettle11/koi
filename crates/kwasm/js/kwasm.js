@@ -174,7 +174,7 @@ function kwasm_stuff() {
             console.log("Shared memory supported: " + shared_memory_supported);
             self.kwasm_shared_memory_supported = shared_memory_supported;
 
-            self.kwasm_memory = new WebAssembly.Memory({ initial: self.kwasm_starting_memory, maximum: 16384 * 2, shared: true });
+            self.kwasm_memory = new WebAssembly.Memory({ initial: self.kwasm_starting_memory, maximum: 16384 * 1, shared: true });
             imports.env.memory = self.kwasm_memory;
             return WebAssembly.instantiate(bytes, imports)
         }).then(results => {

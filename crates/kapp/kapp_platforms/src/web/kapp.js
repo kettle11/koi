@@ -143,6 +143,15 @@ function receive_message(command, data) {
                 // Prevent scrolling horizontally from going back on Safari
                 event.preventDefault();
             }
+
+            window.addEventListener("unload", function (event) {
+                this.self.kwasm_exports.kapp_on_unload();
+            });
+
+            window.addEventListener("beforeunload", function (event) {
+                this.self.kwasm_exports.kapp_on_before_unload();
+            });
+
             break;
         case 3:
             // GetDevicePixelRatio

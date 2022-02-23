@@ -167,6 +167,16 @@ pub extern "C" fn kapp_on_pinch(delta: f64, time_stamp: f64) {
     });
 }
 
+#[no_mangle]
+pub extern "C" fn kapp_on_unload() {
+    send_event(Event::Quit);
+}
+
+#[no_mangle]
+pub extern "C" fn kapp_on_before_unload() {
+    send_event(Event::QuitRequested);
+}
+
 fn pointer_source_from_u32(f: u32) -> PointerSource {
     match f {
         1 => PointerSource::Mouse,

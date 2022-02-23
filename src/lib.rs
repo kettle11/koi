@@ -288,6 +288,10 @@ impl App {
             match event {
                 KappEvent::WindowCloseRequested { .. } => kapp_app.quit(),
                 KappEvent::Draw { .. } => {}
+                KappEvent::Quit => {
+                    klog::log!("ABOUT TO QUIT");
+                    ktasks::shutdown_worker_threads();
+                }
                 _ => {}
             }
         })
