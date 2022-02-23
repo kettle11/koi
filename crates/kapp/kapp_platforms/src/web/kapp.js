@@ -92,6 +92,11 @@ function receive_message(command, data) {
                 self.kwasm_exports.kapp_on_pointer_up(event.clientX * window.devicePixelRatio, event.clientY * window.devicePixelRatio, pointer_type, event.button, event.timeStamp);
             }
 
+            // This is a hack to prevent the iPad's "scribble" feature from messing up PointerDown events in Safari.
+            canvas.ontouchmove = function (event) {
+                event.preventDefault();
+            }
+
             document.onkeydown = function (event) {
                 self.kwasm_pass_string_to_client(event.code);
                 if (event.repeat) {
