@@ -97,6 +97,11 @@ function receive_message(command, data) {
                 event.preventDefault();
             }
 
+            // Prevent backswipe gesture on Safari
+            canvas.ontouchstart = function (event) {
+                event.preventDefault();
+            }
+
             document.onkeydown = function (event) {
                 self.kwasm_pass_string_to_client(event.code);
                 if (event.repeat) {
