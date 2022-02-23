@@ -63,15 +63,25 @@ impl StateTracker {
                 self.keys_pressed.remove(key);
             }
             Event::PointerDown {
-                button, timestamp, ..
+                button,
+                timestamp,
+                x,
+                y,
+                ..
             } => {
+                self.pointer_position = (*x, *y);
                 self.pointer_buttons_pressed.insert(*button, *timestamp);
                 self.pointer_buttons_down_since_last_frame
                     .insert(*button, *timestamp);
             }
             Event::PointerUp {
-                button, timestamp, ..
+                button,
+                timestamp,
+                x,
+                y,
+                ..
             } => {
+                self.pointer_position = (*x, *y);
                 self.pointer_buttons_released_since_last_frame
                     .insert(*button, *timestamp);
                 self.pointer_buttons_pressed.remove(button);
