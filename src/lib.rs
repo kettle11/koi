@@ -63,7 +63,7 @@ mod physics;
 #[cfg(feature = "physics")]
 pub use physics::*;
 
-pub use kapp::{Event as KappEvent, Key, PointerButton};
+pub use kapp::{Event as KappEvent, Key, PointerButton, PointerSource};
 
 #[cfg(target_arch = "wasm32")]
 use kwasm::libraries::Instant;

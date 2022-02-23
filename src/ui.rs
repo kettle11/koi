@@ -26,7 +26,7 @@ impl UIManager {
         }
     }
 
-    fn update_size<Style: GetStandardStyle, Input>(
+    fn update_size<Style: GetStandardStyle, Input: GetStandardInput>(
         &mut self,
         world: &mut World,
         standard_context: &mut StandardContext<Style, Input>,
@@ -40,6 +40,7 @@ impl UIManager {
         let height = window_height / ui_scale;
         self.ui_scale = ui_scale;
         standard_context.standard_style_mut().ui_scale = ui_scale;
+        standard_context.standard_input_mut().view_size = Vec2::new(width, height);
 
         self.initial_constraints =
             Box3::new_with_min_corner_and_size(Vec3::ZERO, Vec3::new(width, height, f32::MAX));

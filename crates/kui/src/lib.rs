@@ -98,6 +98,7 @@ pub struct StandardInput {
     pub delta_time: f32,
     pub input_events: Vec<kapp_platform_common::Event>,
     pub input_events_handled: Vec<bool>,
+    pub view_size: Vec2,
 }
 
 impl StandardInput {
@@ -116,6 +117,7 @@ impl Default for StandardInput {
             delta_time: 0.0,
             input_events: Vec::new(),
             input_events_handled: Vec::new(),
+            view_size: Vec2::ZERO,
         }
     }
 }

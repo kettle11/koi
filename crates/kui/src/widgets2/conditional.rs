@@ -43,6 +43,14 @@ impl<
         let child_size = if self.child_visible {
             self.child.layout(state, context, min_and_max_size)
         } else {
+            self.child.layout(
+                state,
+                context,
+                MinAndMaxSize {
+                    min: Vec3::ZERO,
+                    max: Vec3::ZERO,
+                },
+            );
             Vec3::ZERO
         };
         self.child_size = child_size;
@@ -61,8 +69,8 @@ impl<
     }
     fn update(&mut self, state: &mut State, context: &mut Context) {
         self.child_visible = (self.get_condition)(state, context);
-        if self.child_visible {
-            self.child.update(state, context)
-        }
+        //   if self.child_visible {
+        self.child.update(state, context)
+        // }
     }
 }
