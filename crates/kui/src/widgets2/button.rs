@@ -261,7 +261,7 @@ impl<
             .layout(state, &mut context, min_and_max_size);
         self.bounding_rect = Box2 {
             min: Vec2::ZERO,
-            max: child_size.xy(),
+            max: child_size.xy().min(min_and_max_size.max.xy()),
         };
         child_size
     }
