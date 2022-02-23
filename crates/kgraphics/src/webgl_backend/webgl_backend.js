@@ -16,6 +16,11 @@ var gl_web_object = {
 
         if (gl === null) {
             console.log("Could not initialize WebGL2 canvas!");
+            // This is probably over tailored to the use cases I'm using `koi` for
+            let warning_message = document.getElementById("WebGLSupportMessage");
+            if (warning_message) {
+                warning_message.style.display = "block";
+            }
         }
 
         function enable_extension(gl, extension) {
