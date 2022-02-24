@@ -228,6 +228,12 @@ impl<
                         *handled = true;
                     }
                 }
+                kapp_platform_common::Event::PointerUp {
+                    button: kapp_platform_common::PointerButton::Primary,
+                    ..
+                } => {
+                    self.clicked = false;
+                }
                 _ => {}
             }
         }
