@@ -386,11 +386,13 @@ impl KoiState {
                 // only the first will receive input events.
                 // Todo: It would be better if Input was updated based on an event's timestamp. Each FixedUpdate would progress time
                 // and only events that occurred before that time would progress the input.
-                self.world
+                let input = &mut self
+                    .world
                     .get_component_mut::<Input>(self.input_entity)
                     .unwrap()
-                    .0
-                    .clear();
+                    .0;
+                input.clear();
+                input.reset_touch();
             }
             apply_commands(&mut self.world);
             self.time_acumulator -= self.fixed_time_step;

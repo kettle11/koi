@@ -25,6 +25,7 @@ pub struct CameraControls {
     pub rotate_button: PointerButton,
     pub panning_mouse_button: Option<PointerButton>,
     pub panning_scale: f32,
+    pub touch_rotate_enabled: bool,
 }
 
 impl Default for CameraControls {
@@ -43,6 +44,7 @@ impl CameraControls {
             rotate_button: PointerButton::Secondary,
             panning_mouse_button: None,
             panning_scale: 1.0,
+            touch_rotate_enabled: true,
         }
     }
 
@@ -127,6 +129,16 @@ pub fn update_camera_controls(
             pan.y -= -input.scroll().1 as f32 * scale;
         };
 
+        if controls.touch_rotate_enabled {
+            if input.touch_state.touches.len() == 1 {
+                if let Some((_, touch)) = input.touch_state.touches.iter().next() {
+                    let diff = touch.delta();
+                    pitch -= diff.y / 400.;
+                    yaw -= diff.x / 400.;
+                }
+            }
+        }
+
         if let Some(panning_mouse_button) = controls.panning_mouse_button {
             if input.pointer_button(panning_mouse_button) {
                 let scale = controls.panning_scale * 3.0;
@@ -152,6 +164,8 @@ pub fn update_camera_controls(
             println!("TRANSFORM: {:#?}", transform);
         }
 
+        let pinch = input.pinch();
+
         match &mut controls.mode {
             CameraControlsMode::Fly => {
                 let pointer_position = input.pointer_position();
@@ -160,7 +174,7 @@ pub fn update_camera_controls(
                     pointer_position.0 as f32,
                     pointer_position.1 as f32,
                 );
-                transform.position += zoom_direction.direction * input.pinch() as f32 * 5.;
+                transform.position += zoom_direction.direction * pinch * 5.;
 
                 let rotation_pitch = Quat::from_yaw_pitch_roll(0., pitch, 0.);
                 let rotation_yaw = Quat::from_yaw_pitch_roll(yaw, 0., 0.);
@@ -171,8 +185,7 @@ pub fn update_camera_controls(
             CameraControlsMode::Orbit { target } => {
                 let diff_here = transform.position - *target;
 
-                transform.position +=
-                    transform.forward() * (input.pinch() as f32 * 5.).min(diff_here.length());
+                transform.position += transform.forward() * (pinch * 5.).min(diff_here.length());
 
                 let rotation_pitch = Quat::from_yaw_pitch_roll(0., pitch, 0.);
                 let rotation_yaw = Quat::from_yaw_pitch_roll(yaw, 0., 0.);

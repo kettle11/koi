@@ -1,4 +1,6 @@
-use crate::{Event, Key, PointerButton};
+use kmath::Vec2;
+
+use crate::{Event, Key, PointerButton, PointerSource};
 use std::collections::HashMap;
 use std::time::Duration;
 
@@ -20,6 +22,7 @@ pub struct StateTracker {
     /// How much pinching (the gesture used to zoom on touch devices) occured in the last frame
     pinch: f64,
     scroll: (f64, f64),
+    pub touch_state: TouchState,
 }
 
 impl Default for StateTracker {
@@ -41,12 +44,14 @@ impl StateTracker {
             mouse_motion: (0., 0.),
             pinch: 0.0,
             scroll: (0.0, 0.0),
+            touch_state: TouchState::new(),
         }
     }
 
     /// Constructs a [StateTracker] from a series of events all at once.
     pub fn set_with_events(&mut self, events: Vec<Event>) {
         self.clear();
+
         for event in &events {
             self.handle_event_inner(event);
         }
@@ -54,6 +59,8 @@ impl StateTracker {
     }
 
     fn handle_event_inner(&mut self, event: &Event) {
+        self.touch_state.handle_event(event);
+
         match event {
             Event::KeyDown { key, timestamp } => {
                 self.keys_pressed.insert(*key, *timestamp);
@@ -162,8 +169,15 @@ impl StateTracker {
         self.mouse_motion
     }
 
-    pub fn pinch(&self) -> f64 {
-        self.pinch
+    /// Returns a trackpad or touch pinch event.
+    pub fn pinch(&self) -> f32 {
+        let pinch = self.pinch as f32;
+        let touch_pinch = self.touch_state.pinch();
+        if pinch.abs() > touch_pinch.abs() {
+            pinch
+        } else {
+            touch_pinch
+        }
     }
 
     pub fn scroll(&self) -> (f64, f64) {
@@ -172,5 +186,107 @@ impl StateTracker {
 
     pub fn all_events_since_last_frame(&self) -> &[Event] {
         &self.all_events_since_last_frame
+    }
+
+    pub fn reset_touch(&mut self) {
+        self.touch_state.set_old_positions();
+    }
+}
+
+#[derive(Clone)]
+pub struct Touch {
+    old_position: Vec2,
+    position: Vec2,
+}
+
+impl Touch {
+    pub fn delta(&self) -> Vec2 {
+        self.position - self.old_position
+    }
+}
+#[derive(Clone)]
+pub struct TouchState {
+    pub touches: std::collections::HashMap<usize, Touch>,
+    pinch_pair: Option<(usize, usize)>,
+}
+
+impl TouchState {
+    pub fn new() -> Self {
+        Self {
+            touches: std::collections::HashMap::new(),
+            pinch_pair: None,
+        }
+    }
+    pub fn set_old_positions(&mut self) {
+        for touch in self.touches.iter_mut() {
+            touch.1.old_position = touch.1.position;
+        }
+    }
+    pub fn handle_event(&mut self, event: &Event) {
+        match event {
+            Event::PointerDown {
+                x,
+                y,
+                source: PointerSource::Touch,
+                id,
+                ..
+            } => {
+                let position = Vec2::new(*x as f32, *y as f32);
+                self.touches.insert(
+                    *id,
+                    Touch {
+                        old_position: position,
+                        position,
+                    },
+                );
+                if self.touches.len() == 2 && self.pinch_pair.is_none() {
+                    let mut iter = self.touches.keys();
+                    self.pinch_pair = Some((*iter.next().unwrap(), *iter.next().unwrap()));
+                }
+            }
+            Event::PointerMoved {
+                x,
+                y,
+                source: PointerSource::Touch,
+                id,
+                ..
+            } => {
+                let position = Vec2::new(*x as f32, *y as f32);
+                // I thought this
+                if let Some(touch) = self.touches.get_mut(id) {
+                    touch.position = position;
+                }
+            }
+            Event::PointerUp {
+                source: PointerSource::Touch,
+                id,
+                ..
+            } => {
+                self.touches.remove(id);
+                if let Some(pinch_pair) = self.pinch_pair {
+                    if pinch_pair.0 == *id || pinch_pair.1 == *id {
+                        self.pinch_pair = None;
+                    }
+                }
+            }
+            _ => {}
+        }
+    }
+
+    pub fn pinch(&self) -> f32 {
+        if let Some(pinch_pair) = self.pinch_pair {
+            let touch0 = self.touches.get(&pinch_pair.0).unwrap();
+            let touch1 = self.touches.get(&pinch_pair.1).unwrap();
+
+            let previous_amount_apart = (touch0.old_position - touch1.old_position).length();
+            let current_amount_apart = (touch0.position - touch1.position).length();
+
+            let pinch = current_amount_apart - previous_amount_apart;
+
+            // 500. is completely arbitrary here. Probably this should be scaled by the UI scale factor as well.
+            pinch / 500.
+        } else {
+            0.0
+        }
     }
 }

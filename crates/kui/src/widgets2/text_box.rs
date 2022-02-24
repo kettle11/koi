@@ -125,7 +125,7 @@ impl<Data, Context: GetStandardStyle + GetFonts + GetStandardInput> Widget<Data,
         self.child_text.layout(data, context, min_and_max_size)
     }
     fn draw(&mut self, data: &mut Data, context: &mut Context, drawer: &mut Drawer, bounds: Box3) {
-        let line_height = self.child_text.get_line_height(context);
+        let line_height = self.child_text.get_line_height(data, context);
 
         // Draw selected area highlight. Notably it's drawn before the child to ensure it's drawn underneath.
         if let Some((start, end)) = self.selected_area {
@@ -137,7 +137,7 @@ impl<Data, Context: GetStandardStyle + GetFonts + GetStandardInput> Widget<Data,
             let end_bounds = bounds.min.x
                 + self
                     .child_text
-                    .get_glyph_advance_width_position(context, end - 1);
+                    .get_glyph_advance_width_position(data, context, end - 1);
             drawer.rectangle(
                 Box3 {
                     min: Vec3::new(start_bounds, bounds.min.y, bounds.min.z),
@@ -163,6 +163,7 @@ impl<Data, Context: GetStandardStyle + GetFonts + GetStandardInput> Widget<Data,
                 // If this isn't before the first character.
                 bounds.min.x
                     + self.child_text.get_glyph_advance_width_position(
+                        data,
                         context,
                         glyph_count - self.cursor_offset_from_end - 1,
                     )

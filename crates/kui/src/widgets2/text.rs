@@ -5,9 +5,9 @@ pub fn text<State, Context: GetStandardStyle + GetFonts>(
 ) -> Text<State, Context> {
     Text::new(
         text,
-        |context: &Context| context.standard_style().primary_font,
-        |context: &Context| context.standard_style().primary_text_color,
-        |context: &Context| context.standard_style().primary_text_size,
+        |_, context: &Context| context.standard_style().primary_font,
+        |_, context: &Context| context.standard_style().primary_text_color,
+        |_, context: &Context| context.standard_style().primary_text_size,
     )
 }
 
@@ -16,9 +16,9 @@ pub fn heading<State, Context: GetStandardStyle + GetFonts>(
 ) -> Text<State, Context> {
     Text::new(
         text,
-        |context: &Context| context.standard_style().heading_font,
-        |context: &Context| context.standard_style().primary_text_color,
-        |context: &Context| context.standard_style().heading_text_size,
+        |_, context: &Context| context.standard_style().heading_font,
+        |_, context: &Context| context.standard_style().primary_text_color,
+        |_, context: &Context| context.standard_style().heading_text_size,
     )
 }
 
@@ -62,24 +62,32 @@ impl<Data, F: Fn(&mut Data) -> String + Send + 'static> From<F> for TextSource<D
 
 pub struct Text<State, Context: GetStandardStyle + GetFonts> {
     text_source: TextSource<State>,
-    get_font: fn(&Context) -> Font,
-    get_color: fn(&Context) -> Color,
-    get_size: fn(&Context) -> f32,
+    get_font: fn(&mut State, &Context) -> Font,
+    get_color: fn(&mut State, &Context) -> Color,
+    get_size: fn(&mut State, &Context) -> f32,
     layout: fontdue::layout::Layout,
 }
 
 impl<State, Context: GetStandardStyle + GetFonts> Text<State, Context> {
-    pub fn with_color(self, get_color: fn(&Context) -> Color) -> Self {
+    pub fn with_color(self, get_color: fn(&mut State, &Context) -> Color) -> Self {
         Self { get_color, ..self }
+    }
+
+    pub fn with_font(self, get_font: fn(&mut State, &Context) -> Font) -> Self {
+        Self { get_font, ..self }
+    }
+
+    pub fn with_size(self, get_size: fn(&mut State, &Context) -> f32) -> Self {
+        Self { get_size, ..self }
     }
 }
 
 impl<State, Context: GetStandardStyle + GetFonts> Text<State, Context> {
     pub fn new(
         text: impl Into<TextSource<State>>,
-        get_font: fn(&Context) -> Font,
-        get_color: fn(&Context) -> Color,
-        get_size: fn(&Context) -> f32,
+        get_font: fn(&mut State, &Context) -> Font,
+        get_color: fn(&mut State, &Context) -> Color,
+        get_size: fn(&mut State, &Context) -> f32,
     ) -> Self {
         Self {
             text_source: text.into(),
@@ -92,7 +100,7 @@ impl<State, Context: GetStandardStyle + GetFonts> Text<State, Context> {
 
     pub fn draw_text_with_color(
         &mut self,
-        _state: &mut State,
+        state: &mut State,
         context: &mut Context,
         drawer: &mut Drawer,
         rectangle: Box3,
@@ -101,7 +109,7 @@ impl<State, Context: GetStandardStyle + GetFonts> Text<State, Context> {
         let ui_scale = context.standard_style().ui_scale;
         let layout = &mut self.layout;
 
-        let font_index = (self.get_font)(context).0;
+        let font_index = (self.get_font)(state, context).0;
         let fonts = context.get_fonts().fonts();
 
         let font = &fonts[font_index];
@@ -119,15 +127,20 @@ impl<State, Context: GetStandardStyle + GetFonts> Text<State, Context> {
         Drawer::glyph_position(offset, ui_scale, &glyph)
     }
 
-    pub fn get_glyph_advance_width_position(&mut self, context: &mut Context, index: usize) -> f32 {
+    pub fn get_glyph_advance_width_position(
+        &mut self,
+        state: &mut State,
+        context: &mut Context,
+        index: usize,
+    ) -> f32 {
         let glyph_position = self.layout.glyphs()[index];
 
-        let font_index = (self.get_font)(context).0;
+        let font_index = (self.get_font)(state, context).0;
         let fonts = context.get_fonts().fonts();
         let font = &fonts[font_index];
 
         let ui_scale = context.standard_style().ui_scale;
-        let text_size = (self.get_size)(context) * ui_scale;
+        let text_size = (self.get_size)(state, context) * ui_scale;
         (font
             .metrics_indexed(glyph_position.key.glyph_index, text_size)
             .advance_width as f32
@@ -139,11 +152,11 @@ impl<State, Context: GetStandardStyle + GetFonts> Text<State, Context> {
         self.layout.glyphs().len()
     }
 
-    pub fn get_line_height(&mut self, context: &mut Context) -> f32 {
+    pub fn get_line_height(&mut self, state: &mut State, context: &mut Context) -> f32 {
         let ui_scale = context.standard_style().ui_scale;
-        let text_size = (self.get_size)(context) * ui_scale;
+        let text_size = (self.get_size)(state, context) * ui_scale;
 
-        let font_index = (self.get_font)(context).0;
+        let font_index = (self.get_font)(state, context).0;
         let fonts = context.get_fonts().fonts();
         let font = &fonts[font_index];
         let metrics = font.horizontal_line_metrics(text_size).unwrap();
@@ -169,10 +182,10 @@ impl<State, Context: GetStandardStyle + GetFonts> Widget<State, Context> for Tex
             ..Default::default()
         });
 
-        let font_index = (self.get_font)(context).0;
+        let font_index = (self.get_font)(state, context).0;
         let fonts = context.get_fonts().fonts();
 
-        let text_size = (self.get_size)(context) * ui_scale;
+        let text_size = (self.get_size)(state, context) * ui_scale;
 
         match &self.text_source {
             TextSource::String(s) => {
@@ -215,7 +228,7 @@ impl<State, Context: GetStandardStyle + GetFonts> Widget<State, Context> for Tex
             .size();
 
         // Prevent text from shrinking its requested size when there's no text.
-        size.y = size.y.max(self.get_line_height(context));
+        size.y = size.y.max(self.get_line_height(state, context));
         size.extend(0.1)
     }
 
@@ -226,7 +239,7 @@ impl<State, Context: GetStandardStyle + GetFonts> Widget<State, Context> for Tex
         drawer: &mut Drawer,
         bounds: Box3,
     ) {
-        let color = (self.get_color)(context);
+        let color = (self.get_color)(state, context);
         self.draw_text_with_color(state, context, drawer.standard(), bounds, color)
     }
 }

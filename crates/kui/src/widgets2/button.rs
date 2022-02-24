@@ -150,9 +150,8 @@ pub fn base_button<State, Context: GetStandardInput + GetStandardStyle + Clone>(
 ) -> impl Widget<State, Context> {
     ButtonBase {
         child_widget: fit(stack((
-            outlined_rounded_fill(
-                |_, c: &ButtonContext<Context>| c.context.standard_style().primary_variant_color,
-                |_, c| {
+            rounded_fill(
+                |_, c: &ButtonContext<Context>| {
                     if c.clicked {
                         c.context.standard_style().disabled_color
                     } else {
@@ -218,6 +217,14 @@ impl<
                             self.clicked = true;
                             (self.on_click)(state)
                         }
+                        *handled = true;
+                    }
+                }
+                kapp_platform_common::Event::PointerMoved { x, y, .. } => {
+                    if self
+                        .bounding_rect
+                        .contains_point(Vec2::new(x as f32, y as f32))
+                    {
                         *handled = true;
                     }
                 }

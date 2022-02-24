@@ -117,7 +117,7 @@ impl Fonts {
         Ok(Font(self.fonts.len() - 1))
     }
 
-    pub(crate) fn fonts(&self) -> &[fontdue::Font] {
+    pub fn fonts(&self) -> &[fontdue::Font] {
         &self.fonts
     }
 }

@@ -41,11 +41,18 @@ pub extern "C" fn kapp_on_animation_frame() {
 }
 
 #[no_mangle]
-pub extern "C" fn kapp_on_pointer_move(x: f64, y: f64, pointer_enum: u32, time_stamp: f64) {
+pub extern "C" fn kapp_on_pointer_move(
+    x: f64,
+    y: f64,
+    pointer_enum: u32,
+    time_stamp: f64,
+    id: u32,
+) {
     send_event(Event::PointerMoved {
         x,
         y,
         source: pointer_source_from_u32(pointer_enum),
+        id: id as usize,
         timestamp: Duration::from_secs_f64(time_stamp * 1000.0),
     });
 }
@@ -72,12 +79,14 @@ pub extern "C" fn kapp_on_pointer_down(
     pointer_enum: u32,
     button: f64,
     time_stamp: f64,
+    id: u32,
 ) {
     send_event(Event::PointerDown {
         button: button_from_f64(button), // This is incorrect
         x,
         y,
         source: pointer_source_from_u32(pointer_enum),
+        id: id as usize,
         timestamp: Duration::from_secs_f64(time_stamp * 1000.0),
     });
 }
@@ -89,12 +98,14 @@ pub extern "C" fn kapp_on_pointer_up(
     pointer_enum: u32,
     button: f64,
     time_stamp: f64,
+    id: u32,
 ) {
     send_event(Event::PointerUp {
         button: button_from_f64(button), // This is incorrect
         x,
         y,
         source: pointer_source_from_u32(pointer_enum),
+        id: id as usize,
         timestamp: Duration::from_secs_f64(time_stamp * 1000.0),
     });
 }

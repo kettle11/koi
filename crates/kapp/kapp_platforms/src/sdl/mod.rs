@@ -402,6 +402,7 @@ fn process_event(callback: &mut Box<dyn FnMut(Event)>, event: &SDL_Event) {
                     x: mouse_motion_event.x as f64,
                     y: mouse_motion_event.y as f64,
                     source,
+                    id: 0,
                     timestamp,
                 });
             }
@@ -429,6 +430,7 @@ fn process_event(callback: &mut Box<dyn FnMut(Event)>, event: &SDL_Event) {
                     y: event.y as f64,
                     source,
                     button,
+                    id: 0,
                     timestamp,
                 });
 
@@ -470,6 +472,7 @@ fn process_event(callback: &mut Box<dyn FnMut(Event)>, event: &SDL_Event) {
                     y: event.y as f64,
                     source,
                     button,
+                    id: 0,
                     timestamp,
                 });
                 if event.clicks == 2 {

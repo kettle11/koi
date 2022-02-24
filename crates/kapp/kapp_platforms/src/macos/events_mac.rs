@@ -355,6 +355,7 @@ extern "C" fn mouse_down(this: &Object, _sel: Sel, event: *mut Object) {
         y,
         button: PointerButton::Primary,
         source: PointerSource::Mouse,
+        id: 0,
         timestamp: get_timestamp(event),
     });
     let click_count: c_int = unsafe { msg(event, Sels::clickCount, ()) };
@@ -375,6 +376,7 @@ extern "C" fn mouse_up(this: &Object, _sel: Sel, event: *mut Object) {
         y,
         button: PointerButton::Primary,
         source: PointerSource::Mouse,
+        id: 0,
         timestamp: get_timestamp(event),
     });
     let click_count: c_int = unsafe { msg(event, Sels::clickCount, ()) };
@@ -402,6 +404,7 @@ extern "C" fn right_mouse_down(this: &Object, _sel: Sel, event: *mut Object) {
         y,
         button: PointerButton::Secondary,
         source: PointerSource::Mouse,
+        id: 0,
         timestamp: get_timestamp(event),
     });
     let click_count: c_int = unsafe { msg(event, Sels::clickCount, ()) };
@@ -423,6 +426,7 @@ extern "C" fn right_mouse_up(this: &Object, _sel: Sel, event: *mut Object) {
         y,
         button: PointerButton::Secondary,
         source: PointerSource::Mouse,
+        id: 0,
         timestamp: get_timestamp(event),
     });
     let click_count: c_int = unsafe { msg(event, Sels::clickCount, ()) };
@@ -458,6 +462,7 @@ extern "C" fn other_mouse_down(this: &Object, _sel: Sel, event: *mut Object) {
         y,
         button,
         source: PointerSource::Mouse,
+        id: 0,
         timestamp: get_timestamp(event),
     });
     let click_count: c_int = unsafe { msg(event, Sels::clickCount, ()) };
@@ -487,6 +492,7 @@ extern "C" fn other_mouse_up(this: &Object, _sel: Sel, event: *mut Object) {
         y,
         button,
         source: PointerSource::Mouse,
+        id: 0,
         timestamp: get_timestamp(event),
     });
     let click_count: c_int = unsafe { msg(event, Sels::clickCount, ()) };
@@ -886,6 +892,7 @@ fn send_mouse_move(this: &Object, event: *mut Object) {
             x,
             y,
             source: PointerSource::Mouse,
+            id: 0,
             timestamp,
         });
     }

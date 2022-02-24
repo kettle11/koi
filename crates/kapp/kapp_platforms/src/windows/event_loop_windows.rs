@@ -114,6 +114,7 @@ pub unsafe extern "system" fn window_callback(
                 y: y as f64,
                 source: PointerSource::Mouse,
                 button: PointerButton::Primary,
+                id: 0,
                 timestamp: get_message_time(),
             });
             *DBLCLICK_L.get_mut() = false;
@@ -126,6 +127,7 @@ pub unsafe extern "system" fn window_callback(
                 y: y as f64,
                 source: PointerSource::Mouse,
                 button: PointerButton::Auxillary,
+                id: 0,
                 timestamp: get_message_time(),
             });
             *DBLCLICK_M.get_mut() = false;
@@ -138,6 +140,7 @@ pub unsafe extern "system" fn window_callback(
                 y: y as f64,
                 source: PointerSource::Mouse,
                 button: PointerButton::Secondary,
+                id: 0,
                 timestamp: get_message_time(),
             });
             *DBLCLICK_R.get_mut() = false;
@@ -161,6 +164,7 @@ pub unsafe extern "system" fn window_callback(
                 y: y as f64,
                 source: PointerSource::Mouse,
                 button,
+                id: 0,
                 timestamp: get_message_time(),
             });
         }
@@ -173,6 +177,7 @@ pub unsafe extern "system" fn window_callback(
                 y: y as f64,
                 source: PointerSource::Mouse,
                 button: PointerButton::Primary,
+                id: 0,
                 timestamp: get_message_time(),
             });
 
@@ -181,6 +186,7 @@ pub unsafe extern "system" fn window_callback(
                     x: x as f64,
                     y: y as f64,
                     button: PointerButton::Primary,
+                    id: 0,
                     timestamp: get_message_time(),
                 });
             }
@@ -194,6 +200,7 @@ pub unsafe extern "system" fn window_callback(
                 y: y as f64,
                 source: PointerSource::Mouse,
                 button: PointerButton::Auxillary,
+                id: 0,
                 timestamp: get_message_time(),
             });
 
@@ -215,6 +222,7 @@ pub unsafe extern "system" fn window_callback(
                 y: y as f64,
                 source: PointerSource::Mouse,
                 button: PointerButton::Secondary,
+                id: 0,
                 timestamp: get_message_time(),
             });
 
@@ -240,6 +248,7 @@ pub unsafe extern "system" fn window_callback(
                 y: y as f64,
                 source: PointerSource::Mouse,
                 button,
+                id: 0,
                 timestamp: get_message_time(),
             });
 
@@ -267,6 +276,7 @@ pub unsafe extern "system" fn window_callback(
                 y: y as f64,
                 source: PointerSource::Mouse,
                 button: PointerButton::Primary,
+                id: 0,
                 timestamp: get_message_time(),
             });
             produce_event(Event::DoubleClickDown {
@@ -287,6 +297,7 @@ pub unsafe extern "system" fn window_callback(
                 y: y as f64,
                 source: PointerSource::Mouse,
                 button: PointerButton::Auxillary,
+                id: 0,
                 timestamp: get_message_time(),
             });
             produce_event(Event::DoubleClickDown {
@@ -307,6 +318,7 @@ pub unsafe extern "system" fn window_callback(
                 y: y as f64,
                 source: PointerSource::Mouse,
                 button: PointerButton::Secondary,
+                id: 0,
                 timestamp: get_message_time(),
             });
             produce_event(Event::DoubleClickDown {
@@ -339,6 +351,7 @@ pub unsafe extern "system" fn window_callback(
                 y: y as f64,
                 source: PointerSource::Mouse,
                 button,
+                id: 0,
                 timestamp: get_message_time(),
             });
             produce_event(Event::DoubleClickDown {
@@ -481,6 +494,7 @@ fn process_mouse_move_event(_hwnd: HWND, l_param: LPARAM) -> Event {
         x: x as f64,
         y: y as f64,
         source: PointerSource::Mouse,
+        id: 0,
         timestamp: get_message_time(),
     }
 }

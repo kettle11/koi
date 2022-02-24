@@ -15,3 +15,5 @@ kserde = ["kapp_platforms/kserde"]
 [dependencies]
 kapp_gl_context = { path = "./gl_context", optional = true }
 kapp_platforms = { path = "./kapp_platforms" }
+klog = {path = "../klog"}
+kmath = {path = "../kmath"}

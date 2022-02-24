@@ -76,7 +76,7 @@ function receive_message(command, data) {
             }
             canvas.onpointermove = function (event) {
                 let pointer_type = get_pointer_type(event);
-                self.kwasm_exports.kapp_on_pointer_move(event.clientX * window.devicePixelRatio, event.clientY * window.devicePixelRatio, pointer_type, event.timeStamp);
+                self.kwasm_exports.kapp_on_pointer_move(event.clientX * window.devicePixelRatio, event.clientY * window.devicePixelRatio, pointer_type, event.timeStamp, event.pointerId);
             }
             canvas.onmousemove = function (event) {
                 self.kwasm_exports.kapp_on_mouse_move(event.movementX * window.devicePixelRatio, event.movementY * window.devicePixelRatio, event.timeStamp);
@@ -84,12 +84,12 @@ function receive_message(command, data) {
             canvas.onpointerdown = function (event) {
                 canvas.setPointerCapture(event.pointerId);
                 let pointer_type = get_pointer_type(event);
-                self.kwasm_exports.kapp_on_pointer_down(event.clientX * window.devicePixelRatio, event.clientY * window.devicePixelRatio, pointer_type, event.button, event.timeStamp);
+                self.kwasm_exports.kapp_on_pointer_down(event.clientX * window.devicePixelRatio, event.clientY * window.devicePixelRatio, pointer_type, event.button, event.timeStamp, event.pointerId);
             }
 
             canvas.onpointerup = function (event) {
                 let pointer_type = get_pointer_type(event);
-                self.kwasm_exports.kapp_on_pointer_up(event.clientX * window.devicePixelRatio, event.clientY * window.devicePixelRatio, pointer_type, event.button, event.timeStamp);
+                self.kwasm_exports.kapp_on_pointer_up(event.clientX * window.devicePixelRatio, event.clientY * window.devicePixelRatio, pointer_type, event.button, event.timeStamp, event.pointerId);
             }
 
             // This is a hack to prevent the iPad's "scribble" feature from messing up PointerDown events in Safari.

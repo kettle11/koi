@@ -66,6 +66,7 @@ pub enum Event {
         x: f64,
         y: f64,
         source: PointerSource,
+        id: usize,
         timestamp: Duration,
     },
     /// How much the mouse has moved regardless of the pointer position.
@@ -82,6 +83,7 @@ pub enum Event {
         y: f64,
         source: PointerSource,
         button: PointerButton,
+        id: usize,
         timestamp: Duration,
     },
     /// Reports physical coordinates in relation to the pointer's window
@@ -90,6 +92,7 @@ pub enum Event {
         y: f64,
         source: PointerSource,
         button: PointerButton,
+        id: usize,
         timestamp: Duration,
     },
     /// Occurs when pressing a mouse button twice in quick succession.
