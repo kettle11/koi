@@ -228,20 +228,6 @@ impl<
                         *handled = true;
                     }
                 }
-                kapp_platform_common::Event::PointerUp {
-                    button: kapp_platform_common::PointerButton::Primary,
-                    x,
-                    y,
-                    ..
-                } => {
-                    self.clicked = false;
-                    if self
-                        .bounding_rect
-                        .contains_point(Vec2::new(x as f32, y as f32))
-                    {
-                        *handled = true;
-                    }
-                }
                 _ => {}
             }
         }
