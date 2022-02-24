@@ -186,7 +186,6 @@ pub unsafe extern "system" fn window_callback(
                     x: x as f64,
                     y: y as f64,
                     button: PointerButton::Primary,
-                    id: 0,
                     timestamp: get_message_time(),
                 });
             }
