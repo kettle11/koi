@@ -180,6 +180,10 @@ impl StateTracker {
         }
     }
 
+    pub fn two_finger_pan(&self) -> Vec2 {
+        self.touch_state.two_finger_pan()
+    }
+
     pub fn scroll(&self) -> (f64, f64) {
         self.scroll
     }
@@ -287,6 +291,27 @@ impl TouchState {
             pinch / 500.
         } else {
             0.0
+        }
+    }
+
+    /// Returns how much two finger panning has occurred since the last frame.
+    pub fn two_finger_pan(&self) -> Vec2 {
+        let len = self.touches.len();
+        if len < 2 {
+            Vec2::ZERO
+        } else {
+            let len = len as f32;
+            let mut previous_center = Vec2::ZERO;
+            let mut current_center = Vec2::ZERO;
+
+            for touch in self.touches.iter() {
+                previous_center += touch.1.old_position;
+                current_center += touch.1.position;
+            }
+
+            previous_center /= len as f32;
+            current_center /= len as f32;
+            (current_center - previous_center) / 200.
         }
     }
 }

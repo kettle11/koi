@@ -146,6 +146,8 @@ pub fn update_camera_controls(
             }
         }
 
+        pan += input.two_finger_pan();
+
         let left = transform.left();
         let up = transform.up();
         let offset = left * pan.x + up * pan.y;
