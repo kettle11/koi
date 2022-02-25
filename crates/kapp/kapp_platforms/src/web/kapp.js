@@ -86,8 +86,11 @@ function receive_message(command, data) {
                 let pointer_type = get_pointer_type(event);
                 self.kwasm_exports.kapp_on_pointer_down(event.clientX * window.devicePixelRatio, event.clientY * window.devicePixelRatio, pointer_type, event.button, event.timeStamp, event.pointerId);
             }
-
             canvas.onpointerup = function (event) {
+                let pointer_type = get_pointer_type(event);
+                self.kwasm_exports.kapp_on_pointer_up(event.clientX * window.devicePixelRatio, event.clientY * window.devicePixelRatio, pointer_type, event.button, event.timeStamp, event.pointerId);
+            }
+            canvas.onpointercancel = function (event) {
                 let pointer_type = get_pointer_type(event);
                 self.kwasm_exports.kapp_on_pointer_up(event.clientX * window.devicePixelRatio, event.clientY * window.devicePixelRatio, pointer_type, event.button, event.timeStamp, event.pointerId);
             }
