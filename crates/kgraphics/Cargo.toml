@@ -19,7 +19,7 @@ do_nothing_backend = []
 SDL = ["gl33"]
 
 [target.'cfg(target_os="windows")'.dependencies]
-gl33 = {version = "0.2.1", optional = true}
+gl33 = {version = "0.2.1"}
 
 [target.'cfg(target_os="macos")'.dependencies]
 gl33 = {version = "0.2.1"}

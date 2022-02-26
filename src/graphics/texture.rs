@@ -100,10 +100,12 @@ pub(crate) fn load_textures(textures: &mut Assets<Texture>, graphics: &mut Graph
     }
 }
 
+#[allow(unused)]
 fn extend_pixels_1_with_alpha(pixels: Vec<u8>) -> Vec<u8> {
     pixels.iter().flat_map(|a| [*a, *a, *a, 255]).collect()
 }
 
+#[allow(unused)]
 fn extend_pixels_3_with_alpha(pixels: Vec<u8>) -> Vec<u8> {
     pixels
         .chunks_exact(3)
