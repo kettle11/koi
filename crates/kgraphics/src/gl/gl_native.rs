@@ -3,7 +3,7 @@ use std::ffi::CString;
 pub use gl33::gl_enumerations::*;
 pub use gl33::*;
 
-pub type GLInt = chlorine::c_uint;
+pub type GLInt = std::os::raw::c_uint;
 
 #[derive(Clone, PartialEq, Debug, Copy)]
 

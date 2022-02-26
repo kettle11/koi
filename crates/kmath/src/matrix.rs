@@ -423,6 +423,21 @@ impl<T: Numeric, const R: usize, const C: usize> Matrix<T, R, C> {
         }
         v
     }
+
+    pub fn approx_equal(&self, other: Self, max_difference: T) -> bool
+    where
+        T: NumericFloat,
+    {
+        for i in 0..C {
+            for j in 0..R {
+                let diff = other.0[i][j] - self.0[i][j];
+                if diff.numeric_abs() > max_difference {
+                    return false;
+                }
+            }
+        }
+        true
+    }
 }
 
 impl<T: NumericFloat> Matrix<T, 3, 3> {

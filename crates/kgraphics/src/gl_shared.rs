@@ -1,5 +1,5 @@
 pub use crate::{FilterMode, PixelFormat, WrappingMode};
-pub use chlorine::c_uint;
+pub use std::os::raw::c_uint;
 
 pub const ACTIVE_UNIFORMS: c_uint = 0x8B86;
 pub const ACTIVE_ATTRIBUTES: c_uint = 0x8B89;
