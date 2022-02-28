@@ -210,8 +210,8 @@ const float cascade_depths[4] = float[4](5., 15., 30., 60.);
 
 void main()
 {
-    vec3 normal = normalize(Normal);
-
+    vec3 normal = gl_FrontFacing ? Normal : Normal * -1.0;
+   
     float z = gl_FragCoord.z / gl_FragCoord.w;
     float fog_factor = (z - p_fog_start) / (p_fog_end - p_fog_start);
     fog_factor = clamp(fog_factor, 0.0, 1.0 );
@@ -240,7 +240,7 @@ void main()
     //  float roughness = p_roughness;
 
     // When interpolating between face normals the normal can get shorted, so renormalize here.
-      vec3 N = normalize(Normal);
+      vec3 N = normalize(normal);
    // vec3 N = getNormalFromMap();
     vec3 V = normalize(p_camera_positions[0] - WorldPosition);
 
