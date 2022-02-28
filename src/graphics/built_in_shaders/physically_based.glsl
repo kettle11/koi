@@ -182,7 +182,7 @@ float ShadowCalculation(in sampler2D shadowMap, vec4 fragPosLightSpace, vec3 lig
     // check whether d frag pos is in shadow
    // float shadow = currentDepth - 0.002 > closestDepth  ? 1.0 : 0.0;
 
-    float bias = 0.000001;
+    float bias = 0.0001;
     float shadow = 0.0;
     vec2 texelSize = 1.0 / vec2(textureSize(shadowMap, 0));
 
@@ -206,7 +206,7 @@ float ShadowCalculation(in sampler2D shadowMap, vec4 fragPosLightSpace, vec3 lig
     return shadow;
 }
 
-const float cascade_depths[4] = float[4](5., 15., 30., 200.);
+const float cascade_depths[4] = float[4](5., 15., 30., 60.);
 
 void main()
 {

@@ -966,7 +966,7 @@ pub fn render_shadow_pass(
 ) {
     let camera_view_inversed = camera_global_transform.model();
 
-    let cascade_depths = [5., 15., 30., 200.];
+    let cascade_depths = [5., 15., 30., 60.];
 
     let mut z_near = camera.get_near_plane();
     let mut camera_clip_space_to_world = [Mat4::ZERO; 4];
