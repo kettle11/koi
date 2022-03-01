@@ -156,44 +156,38 @@ function kwasm_stuff() {
 
         imports.env = Object.assign(imports.env, kwasm_import_functions);
 
-        let bytes;
-        fetch(wasm_library_path).then(response =>
-            response.arrayBuffer()
-        ).then(bytes_in => {
-            bytes = bytes_in;
+        self.kwasm_starting_memory = 100;//(bytes.byteLength / 65536) + 5;
+        self.kwasm_memory = new WebAssembly.Memory({ initial: kwasm_starting_memory });
+        imports.env.memory = self.kwasm_memory;
 
-            // 5 is arbitrary here
-            self.kwasm_starting_memory = (bytes.byteLength / 65536) + 5;
-            self.kwasm_memory = new WebAssembly.Memory({ initial: kwasm_starting_memory });
-            imports.env.memory = self.kwasm_memory;
-            return WebAssembly.instantiate(bytes, imports)
-        }).catch(error => {
-            console.log("Could not initialize with regular Wasm memory. Trying with shared memory");
+        WebAssembly.instantiateStreaming(fetch(wasm_library_path), imports)
+            .catch(error => {
+                console.log("Could not initialize with regular Wasm memory. Trying with shared memory");
 
-            let shared_memory_supported = typeof SharedArrayBuffer !== 'undefined';
-            console.log("Shared memory supported: " + shared_memory_supported);
-            self.kwasm_shared_memory_supported = shared_memory_supported;
+                let shared_memory_supported = typeof SharedArrayBuffer !== 'undefined';
+                console.log("Shared memory supported: " + shared_memory_supported);
+                self.kwasm_shared_memory_supported = shared_memory_supported;
 
-            self.kwasm_memory = new WebAssembly.Memory({ initial: self.kwasm_starting_memory, maximum: 16384 * 1, shared: true });
-            imports.env.memory = self.kwasm_memory;
-            return WebAssembly.instantiate(bytes, imports)
-        }).then(results => {
-            // If this module exports memory use that instead.
-            if (results.instance.exports.memory) {
-                self.kwasm_memory = results.instance.exports.memory;
-            }
-            self.kwasm_exports = results.instance.exports;
-            self.kwasm_module = results.module;
+                self.kwasm_memory = new WebAssembly.Memory({ initial: self.kwasm_starting_memory, maximum: 16384 * 1, shared: true });
+                imports.env.memory = self.kwasm_memory;
+                return WebAssembly.instantiateStreaming(fetch(wasm_library_path), imports)
+            }).then(results => {
+                // If this module exports memory use that instead.
+                if (results.instance.exports.memory) {
+                    self.kwasm_memory = results.instance.exports.memory;
+                }
+                self.kwasm_exports = results.instance.exports;
+                self.kwasm_module = results.module;
 
-            // Setup thread-local storage for the main thread
-            if (self.kwasm_shared_memory_supported) {
-                const thread_local_storage = kwasm_exports.kwasm_alloc_thread_local_storage();
-                self.kwasm_exports.__wasm_init_tls(thread_local_storage);
-            }
+                // Setup thread-local storage for the main thread
+                if (self.kwasm_shared_memory_supported) {
+                    const thread_local_storage = kwasm_exports.kwasm_alloc_thread_local_storage();
+                    self.kwasm_exports.__wasm_init_tls(thread_local_storage);
+                }
 
-            // Call our start function.
-            results.instance.exports.main();
-        });
+                // Call our start function.
+                results.instance.exports.main();
+            });
     }
 
     // If we're a worker thread we'll use this to setup.
