@@ -60,12 +60,12 @@ pub fn button<State, Context: GetStandardInput + GetStandardStyle + Clone + GetF
     text: impl Into<TextSource<State>>,
     on_click: fn(&mut State),
 ) -> impl Widget<State, Context> {
-    button_with_child(on_click, crate::text(text))
+    button_with_child(crate::text(text), on_click)
 }
 
 pub fn button_with_child<State, Context: GetStandardInput + GetStandardStyle + Clone>(
-    on_click: fn(&mut State),
     child_widget: impl Widget<State, Context>,
+    on_click: fn(&mut State),
 ) -> impl Widget<State, Context> {
     ButtonBase {
         child_widget: fit(stack((
