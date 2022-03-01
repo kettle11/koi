@@ -25,7 +25,7 @@ pub fn heading<State, Context: GetStandardStyle + GetFonts>(
 pub enum TextSource<State> {
     Data(Box<dyn Fn(&mut State) -> String + Send + 'static>),
     MutString(fn(&mut State) -> &mut String),
-    DataDyn(fn(&mut State) -> &str),
+    DataDyn(Box<dyn Fn(&mut State) -> &str>),
     String(&'static str),
 }
 
@@ -35,25 +35,12 @@ impl<Data> From<&'static str> for TextSource<Data> {
     }
 }
 
-pub struct StrSource<Data>(pub fn(&mut Data) -> &str);
-
-impl<Data> From<fn(&mut Data) -> &str> for TextSource<Data> {
-    fn from(f: fn(&mut Data) -> &str) -> Self {
-        Self::DataDyn(f)
-    }
-}
-
 impl<Data> From<fn(&mut Data) -> &mut String> for TextSource<Data> {
     fn from(f: fn(&mut Data) -> &mut String) -> Self {
         Self::MutString(f)
     }
 }
 
-impl<Data> From<StrSource<Data>> for TextSource<Data> {
-    fn from(f: StrSource<Data>) -> Self {
-        Self::DataDyn(f.0)
-    }
-}
 impl<Data, F: Fn(&mut Data) -> String + Send + 'static> From<F> for TextSource<Data> {
     fn from(f: F) -> Self {
         Self::Data(Box::new(f))
