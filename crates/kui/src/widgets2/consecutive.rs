@@ -12,51 +12,49 @@ pub fn stack<State, Context, I: IntoWidgetChildren<State, Context>>(
     }
 }
 
-pub fn column<State, Context, I: IntoWidgetChildren<State, Context>>(
+pub fn column<State, Context: GetStandardStyle, I: IntoWidgetChildren<State, Context>>(
     children: I,
 ) -> Consecutive<State, Context, I::WidgetChildren, fn(&mut State, &Context) -> f32> {
     Consecutive {
         // This should be reversed for right-to-left.
         direction: Vec3::Y,
         children: children.into_widget_children(),
-        get_spacing: |_, _| 0.0,
+        get_spacing: |_, c| c.standard_style().padding,
         phantom: std::marker::PhantomData,
     }
 }
 
-pub fn row<State, Context, I: IntoWidgetChildren<State, Context>>(
+pub fn row<State, Context: GetStandardStyle, I: IntoWidgetChildren<State, Context>>(
     children: I,
 ) -> Consecutive<State, Context, I::WidgetChildren, fn(&mut State, &Context) -> f32> {
     Consecutive {
         // This should be reversed for right-to-left.
         direction: Vec3::X,
         children: children.into_widget_children(),
-        get_spacing: |_, _| 0.0,
+        get_spacing: |_, c| c.standard_style().padding,
         phantom: std::marker::PhantomData,
     }
 }
 
-pub fn row_spaced<State, Context, I: IntoWidgetChildren<State, Context>>(
-    get_spacing: impl Fn(&mut State, &Context) -> f32,
+pub fn row_unspaced<State, Context, I: IntoWidgetChildren<State, Context>>(
     children: I,
 ) -> impl Widget<State, Context> {
     Consecutive {
         // This should be reversed for right-to-left.
         direction: Vec3::X,
         children: children.into_widget_children(),
-        get_spacing,
+        get_spacing: |_, _| 0.0,
         phantom: std::marker::PhantomData,
     }
 }
 
-pub fn column_spaced<State, Context, I: IntoWidgetChildren<State, Context>>(
-    get_spacing: impl Fn(&mut State, &Context) -> f32,
+pub fn column_unspaced<State, Context, I: IntoWidgetChildren<State, Context>>(
     children: I,
 ) -> impl Widget<State, Context> {
     Consecutive {
         direction: Vec3::Y,
         children: children.into_widget_children(),
-        get_spacing,
+        get_spacing: |_, _| 0.0,
         phantom: std::marker::PhantomData,
     }
 }

@@ -17,8 +17,6 @@ pub struct StandardStyle {
     /// How much the UI is scaled from the native pixel size. Usually set higher for high-dpi devices.
     // Maybe this shouldn't be here
     pub ui_scale: f32,
-    pub column_spacing: f32,
-    pub row_spacing: f32,
     pub background_color: Color,
 }
 
@@ -32,7 +30,7 @@ impl StandardStyle {
     pub fn new() -> Self {
         Self {
             primary_text_color: Color::new_from_bytes(40, 40, 40, 255),
-            primary_text_size: 18.,
+            primary_text_size: 16.,
             heading_text_size: 32.,
             primary_font: Font::default(),
             heading_font: Font::default(),
@@ -41,8 +39,6 @@ impl StandardStyle {
             primary_variant_color: Color::from_srgb_hex(0xF6F6F6, 1.0),
             rounding: 8.,
             ui_scale: 1.0,
-            column_spacing: 30.,
-            row_spacing: 30.,
             disabled_color: Color::from_srgb_hex(0x9B9B9B, 1.0),
             background_color: Color::WHITE,
         }
