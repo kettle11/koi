@@ -42,7 +42,7 @@ impl CameraControls {
             rotation_sensitivity: 1.5,
             mode: CameraControlsMode::Fly,
             rotate_button: PointerButton::Secondary,
-            panning_mouse_button: None,
+            panning_mouse_button: Some(PointerButton::Auxillary),
             panning_scale: 1.0,
             touch_rotate_enabled: true,
         }
@@ -141,7 +141,7 @@ pub fn update_camera_controls(
 
         if let Some(panning_mouse_button) = controls.panning_mouse_button {
             if input.pointer_button(panning_mouse_button) {
-                let scale = controls.panning_scale * 3.0;
+                let scale = controls.panning_scale * 10.0;
                 pan += difference * scale;
             }
         }
@@ -176,7 +176,7 @@ pub fn update_camera_controls(
                     pointer_position.0 as f32,
                     pointer_position.1 as f32,
                 );
-                transform.position += zoom_direction.direction * pinch * 5.;
+                transform.position += zoom_direction.direction * pinch * 3.;
 
                 let rotation_pitch = Quat::from_yaw_pitch_roll(0., pitch, 0.);
                 let rotation_yaw = Quat::from_yaw_pitch_roll(yaw, 0., 0.);
@@ -187,7 +187,7 @@ pub fn update_camera_controls(
             CameraControlsMode::Orbit { target } => {
                 let diff_here = transform.position - *target;
 
-                transform.position += transform.forward() * (pinch * 5.).min(diff_here.length());
+                transform.position += transform.forward() * (pinch * 3.).min(diff_here.length());
 
                 let rotation_pitch = Quat::from_yaw_pitch_roll(0., pitch, 0.);
                 let rotation_yaw = Quat::from_yaw_pitch_roll(yaw, 0., 0.);
