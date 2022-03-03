@@ -50,6 +50,8 @@ function pass_f32_f32_to_client(x, y) {
 var canvas = document
     .getElementById("canvas");
 
+let previous_mouse_x;
+let previous_mouse_y;
 
 function receive_message(command, data) {
 
@@ -79,7 +81,12 @@ function receive_message(command, data) {
                 self.kwasm_exports.kapp_on_pointer_move(event.clientX * window.devicePixelRatio, event.clientY * window.devicePixelRatio, pointer_type, event.timeStamp, event.pointerId);
             }
             canvas.onmousemove = function (event) {
-                self.kwasm_exports.kapp_on_mouse_move(event.movementX * window.devicePixelRatio, event.movementY * window.devicePixelRatio, event.timeStamp);
+                // Calculate delta instead to make it more consistent between browsers. 
+                let movement_x = (previous_mouse_x ? event.screenX - previous_mouse_x : 0)
+                let movement_y = (previous_mouse_y ? event.screenY - previous_mouse_y : 0)
+                previous_mouse_x = event.screenX;
+                previous_mouse_y = event.screenY;
+                self.kwasm_exports.kapp_on_mouse_move(movement_x * window.devicePixelRatio, movement_y * window.devicePixelRatio, event.timeStamp);
             }
             canvas.onpointerdown = function (event) {
                 canvas.setPointerCapture(event.pointerId);
