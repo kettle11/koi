@@ -284,10 +284,162 @@ pub fn bind_view(
 }
 
 struct CubeMapLoadMessage {
-    handle: Handle<CubeMap>,
     texture_load_data: TextureLoadData,
     texture_settings: TextureSettings,
     diffuse_and_specular_irradiance_cubemaps: Option<(Handle<CubeMap>, Handle<CubeMap>)>,
+}
+
+pub fn load_reflection_probe_immediate(
+    cube_maps: &mut Assets<CubeMap>,
+    graphics: &mut Graphics,
+    meshes: &Assets<Mesh>,
+    data: &[u8],
+) -> ReflectionProbe {
+    let diffuse_irradiance_map = cube_maps.new_handle();
+    let specular_irradiance_map = cube_maps.new_handle();
+
+    let mut options = CubeMapOptions {
+        diffuse_and_specular_irradiance_cubemaps: Some((
+            diffuse_irradiance_map.clone(),
+            specular_irradiance_map.clone(),
+        )),
+        ..Default::default()
+    };
+
+    let texture_load_data =
+        texture_load_data_from_bytes("hdr", data, &mut options.texture_settings);
+
+    let new_handle = cube_maps.new_handle();
+    let cube_map_load_message = CubeMapLoadMessage {
+        texture_load_data,
+        texture_settings: options.texture_settings,
+        diffuse_and_specular_irradiance_cubemaps: options.diffuse_and_specular_irradiance_cubemaps,
+    };
+
+    load_cube_map_immediate(cube_maps, graphics, meshes, cube_map_load_message);
+    ReflectionProbe {
+        source: new_handle,
+        diffuse_irradiance_map,
+        specular_irradiance_map,
+    }
+}
+
+fn load_cube_map_immediate(
+    cube_maps: &mut Assets<CubeMap>,
+    graphics: &mut Graphics,
+    meshes: &Assets<Mesh>,
+    message: CubeMapLoadMessage,
+) {
+    // Force ClampToEdge because other WrappingModes create a seam for CubeMaps.
+
+    let mut texture_settings = TextureSettings {
+        wrapping_horizontal: WrappingMode::ClampToEdge,
+        wrapping_vertical: WrappingMode::ClampToEdge,
+        minification_filter: FilterMode::Linear,
+        magnification_filter: FilterMode::Linear,
+        generate_mipmaps: false,
+        ..message.texture_settings
+    };
+
+    let pixel_format = message.texture_load_data.pixel_format;
+    // Create a GPU texture to process into the CubeMap
+    let texture =
+        new_texture_from_texture_load_data(graphics, message.texture_load_data, texture_settings);
+
+    // This needs to be true otherwise artifacts are introduced into the CubeMap.
+    // Why?
+    texture_settings.generate_mipmaps = true;
+    let face_size = 512;
+    // Hardcode the cube map's size for now.
+    let cube_map = graphics
+        .new_cube_map(None, face_size, face_size, pixel_format, texture_settings)
+        .unwrap();
+
+    render_cube_map(
+        graphics,
+        meshes,
+        &cube_maps
+            .asset_loader
+            .cube_map_renderer
+            .equirectangular_to_cubemap_shader,
+        TextureIn::Texture(&texture),
+        &cube_map,
+        face_size as usize,
+    );
+    graphics.context.generate_mip_map_for_cube_map(&cube_map);
+
+    // Manually free the texture here.
+    graphics.context.delete_texture(texture.0);
+
+    // If we also want to convolute the CubeMap do so here.
+    if let Some((diffuse_handle, specular_handle)) =
+        message.diffuse_and_specular_irradiance_cubemaps
+    {
+        let size = 32;
+        let diffuse_irradiance_cubemap = graphics
+            .new_cube_map(
+                None,
+                size,
+                size,
+                PixelFormat::RGBA16F,
+                TextureSettings {
+                    srgb: false,
+                    minification_filter: FilterMode::Linear,
+                    magnification_filter: FilterMode::Linear,
+                    wrapping_horizontal: WrappingMode::ClampToEdge,
+                    wrapping_vertical: WrappingMode::ClampToEdge,
+                    generate_mipmaps: false,
+                    ..Default::default()
+                },
+            )
+            .unwrap();
+
+        // Convolute here.
+        render_cube_map(
+            graphics,
+            meshes,
+            &cube_maps
+                .asset_loader
+                .cube_map_renderer
+                .diffuse_irradiance_convolution_shader,
+            TextureIn::CubeMap(&cube_map),
+            &diffuse_irradiance_cubemap,
+            size as usize,
+        );
+
+        cube_maps.replace_placeholder(&diffuse_handle, diffuse_irradiance_cubemap);
+
+        let specular_irradiance_cubemap = graphics
+            .new_cube_map(
+                None,
+                128,
+                128,
+                PixelFormat::RGBA16F,
+                TextureSettings {
+                    srgb: false,
+                    minification_filter: FilterMode::Linear,
+                    magnification_filter: FilterMode::Linear,
+                    wrapping_horizontal: WrappingMode::ClampToEdge,
+                    wrapping_vertical: WrappingMode::ClampToEdge,
+                    generate_mipmaps: true,
+                    ..Default::default()
+                },
+            )
+            .unwrap();
+
+        render_specular_irradiance_cube_map(
+            graphics,
+            meshes,
+            &cube_maps
+                .asset_loader
+                .cube_map_renderer
+                .specular_irradiance_shader,
+            &cube_map,
+            &specular_irradiance_cubemap,
+        );
+
+        cube_maps.replace_placeholder(&specular_handle, specular_irradiance_cubemap);
+    }
 }
 
 /// A system that loads textures onto the GPU
@@ -302,121 +454,7 @@ pub fn load_cube_maps(
     let messages: Vec<CubeMapLoadMessage> =
         cube_maps.asset_loader.receiver.inner().try_iter().collect();
     for message in messages.into_iter() {
-        // Force ClampToEdge because other WrappingModes create a seam for CubeMaps.
-
-        let mut texture_settings = TextureSettings {
-            wrapping_horizontal: WrappingMode::ClampToEdge,
-            wrapping_vertical: WrappingMode::ClampToEdge,
-            minification_filter: FilterMode::Linear,
-            magnification_filter: FilterMode::Linear,
-            generate_mipmaps: false,
-            ..message.texture_settings
-        };
-
-        let pixel_format = message.texture_load_data.pixel_format;
-        // Create a GPU texture to process into the CubeMap
-        let texture = new_texture_from_texture_load_data(
-            graphics,
-            message.texture_load_data,
-            texture_settings,
-        );
-
-        // This needs to be true otherwise artifacts are introduced into the CubeMap.
-        // Why?
-        texture_settings.generate_mipmaps = true;
-        let face_size = 512;
-        // Hardcode the cube map's size for now.
-        let cube_map = graphics
-            .new_cube_map(None, face_size, face_size, pixel_format, texture_settings)
-            .unwrap();
-
-        render_cube_map(
-            graphics,
-            meshes,
-            &cube_maps
-                .asset_loader
-                .cube_map_renderer
-                .equirectangular_to_cubemap_shader,
-            TextureIn::Texture(&texture),
-            &cube_map,
-            face_size as usize,
-        );
-        graphics.context.generate_mip_map_for_cube_map(&cube_map);
-
-        // Manually free the texture here.
-        graphics.context.delete_texture(texture.0);
-
-        // If we also want to convolute the CubeMap do so here.
-        if let Some((diffuse_handle, specular_handle)) =
-            message.diffuse_and_specular_irradiance_cubemaps
-        {
-            let size = 32;
-            let diffuse_irradiance_cubemap = graphics
-                .new_cube_map(
-                    None,
-                    size,
-                    size,
-                    PixelFormat::RGBA16F,
-                    TextureSettings {
-                        srgb: false,
-                        minification_filter: FilterMode::Linear,
-                        magnification_filter: FilterMode::Linear,
-                        wrapping_horizontal: WrappingMode::ClampToEdge,
-                        wrapping_vertical: WrappingMode::ClampToEdge,
-                        generate_mipmaps: false,
-                        ..Default::default()
-                    },
-                )
-                .unwrap();
-
-            // Convolute here.
-            render_cube_map(
-                graphics,
-                meshes,
-                &cube_maps
-                    .asset_loader
-                    .cube_map_renderer
-                    .diffuse_irradiance_convolution_shader,
-                TextureIn::CubeMap(&cube_map),
-                &diffuse_irradiance_cubemap,
-                size as usize,
-            );
-
-            cube_maps.replace_placeholder(&diffuse_handle, diffuse_irradiance_cubemap);
-
-            let specular_irradiance_cubemap = graphics
-                .new_cube_map(
-                    None,
-                    128,
-                    128,
-                    PixelFormat::RGBA16F,
-                    TextureSettings {
-                        srgb: false,
-                        minification_filter: FilterMode::Linear,
-                        magnification_filter: FilterMode::Linear,
-                        wrapping_horizontal: WrappingMode::ClampToEdge,
-                        wrapping_vertical: WrappingMode::ClampToEdge,
-                        generate_mipmaps: true,
-                        ..Default::default()
-                    },
-                )
-                .unwrap();
-
-            render_specular_irradiance_cube_map(
-                graphics,
-                meshes,
-                &cube_maps
-                    .asset_loader
-                    .cube_map_renderer
-                    .specular_irradiance_shader,
-                &cube_map,
-                &specular_irradiance_cubemap,
-            );
-
-            cube_maps.replace_placeholder(&specular_handle, specular_irradiance_cubemap);
-        }
-
-        cube_maps.replace_placeholder(&message.handle, cube_map);
+        load_cube_map_immediate(cube_maps, graphics, meshes, message)
     }
 }
 
@@ -472,7 +510,6 @@ impl AssetLoader<CubeMap> for NotSendSync<CubeMapAssetLoader> {
 
             let _ = sender.send(CubeMapLoadMessage {
                 texture_load_data,
-                handle,
                 texture_settings: options.texture_settings,
                 diffuse_and_specular_irradiance_cubemaps: options
                     .diffuse_and_specular_irradiance_cubemaps,
@@ -571,6 +608,24 @@ pub fn spawn_reflection_probe(world: &mut World, path: &str) {
     let (reflection_probe, _) =
         (|cube_maps: &mut Assets<CubeMap>, materials: &mut Assets<Material>| {
             let reflection_probe = cube_maps.load_reflection_probe(path);
+
+            let mut material = Material::new(Shader::SKY_BOX);
+            material.set_cube_map("p_environment_map", reflection_probe.source.clone());
+            (reflection_probe, materials.add(material))
+        })
+        .run(world);
+
+    world.spawn((Transform::new(), reflection_probe));
+}
+
+pub fn spawn_reflection_probe_immediate(world: &mut World, data: &[u8]) {
+    let (reflection_probe, _) =
+        (|cube_maps: &mut Assets<CubeMap>,
+          graphics: &mut Graphics,
+          meshes: &mut Assets<Mesh>,
+          materials: &mut Assets<Material>| {
+            let reflection_probe =
+                load_reflection_probe_immediate(cube_maps, graphics, meshes, data);
 
             let mut material = Material::new(Shader::SKY_BOX);
             material.set_cube_map("p_environment_map", reflection_probe.source.clone());
