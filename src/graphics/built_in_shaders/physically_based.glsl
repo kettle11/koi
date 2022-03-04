@@ -163,7 +163,7 @@ vec3 ScreenSpaceDither( vec2 vScreenPos )
     return ( vDither.rgb / 255.0 ) * 0.375;
 }
 
-float ShadowCalculation(in sampler2D shadowMap, vec4 fragPosLightSpace, vec3 lightDir, float cascade_size)
+float ShadowCalculation(in sampler2D shadowMap, vec4 fragPosLightSpace, vec3 lightDir, float cascade_size, float bias)
 {
     // perform perspective divide
     vec3 projCoords = fragPosLightSpace.xyz / fragPosLightSpace.w;
@@ -175,21 +175,21 @@ float ShadowCalculation(in sampler2D shadowMap, vec4 fragPosLightSpace, vec3 lig
     float currentDepth = projCoords.z;
 
    // These lines are screwed up, but should be fixed to reduce peter-panning.
-    vec3 normal = normalize(Normal);
+    //vec3 normal = normalize(Normal);
   //  float bias = max(0.005 * (1.0 - dot(normal, -lightDir)), 0.0005);
     // float bias = max(0.05 * (1.0 - dot(normal, lightDir)), 0.005);
 
     // check whether d frag pos is in shadow
    // float shadow = currentDepth - 0.002 > closestDepth  ? 1.0 : 0.0;
 
-    float bias = 0.0001;
+  //  float bias = 0.0001;
     float shadow = 0.0;
     vec2 texelSize = 1.0 / vec2(textureSize(shadowMap, 0));
 
 
     // Percentage-close filtering (PCF)
     // This could be improved in the future by taking fewer dithered samples.
-    int shadow_samples = 4;
+    int shadow_samples = 3;
     for(int x = -shadow_samples; x <= shadow_samples; ++x)
     {
         for(int y = -shadow_samples; y <= shadow_samples; ++y)
@@ -207,6 +207,8 @@ float ShadowCalculation(in sampler2D shadowMap, vec4 fragPosLightSpace, vec3 lig
 }
 
 const float cascade_depths[4] = float[4](5., 15., 30., 60.);
+const float biases[4] = float[4](0.0001, 0.0001, 0.0002, 0.0004);
+
 
 void main()
 {
@@ -327,19 +329,19 @@ void main()
                 vec4 offset_world_position = vec4(WorldPosition + normal * 0.1, 1.0);
                 if (z > cascade_depths[2]) {
                     vec4 light_space_position = p_world_to_light_space_3 * offset_world_position;
-                    shadow = ShadowCalculation(p_light_shadow_maps_3, light_space_position, L, cascade_depths[3] - cascade_depths[2]);
+                    shadow = ShadowCalculation(p_light_shadow_maps_3, light_space_position, L, cascade_depths[3] - cascade_depths[2], biases[3]);
                     //debug_color = vec3(1.0, 0.0, 0.0);
                 } else if (z > cascade_depths[1]) {
                     vec4 light_space_position = p_world_to_light_space_2 * offset_world_position;
-                    shadow = ShadowCalculation(p_light_shadow_maps_2, light_space_position, L, cascade_depths[2] - cascade_depths[1]);
+                    shadow = ShadowCalculation(p_light_shadow_maps_2, light_space_position, L, cascade_depths[2] - cascade_depths[1], biases[2]);
                     //debug_color = vec3(0.0, 1.0, 0.0);
                 } else if (z > cascade_depths[0]) {
                     vec4 light_space_position = p_world_to_light_space_1 * offset_world_position;
-                    shadow = ShadowCalculation(p_light_shadow_maps_1, light_space_position, L, cascade_depths[1] - cascade_depths[0]);
+                    shadow = ShadowCalculation(p_light_shadow_maps_1, light_space_position, L, cascade_depths[1] - cascade_depths[0], biases[1]);
                     //debug_color = vec3(0.0, 0.0, 1.0);
                 } else {
                     vec4 light_space_position = p_world_to_light_space_0 * offset_world_position;
-                    shadow = ShadowCalculation(p_light_shadow_maps_0, light_space_position, L, cascade_depths[0] - near_plane_depth);
+                    shadow = ShadowCalculation(p_light_shadow_maps_0, light_space_position, L, cascade_depths[0] - near_plane_depth, biases[0]);
                 }
             }
 
