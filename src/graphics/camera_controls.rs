@@ -91,11 +91,13 @@ pub fn update_camera_controls(
             direction += transform.down();
         }
 
+        /*
         // Switch quickly to top
         if input.key(Key::Digit1) {
             transform.rotation =
                 Quaternion::from_angle_axis(-std::f32::consts::TAU * 0.25, Vec3::X);
         }
+        */
 
         if direction != Vec3::ZERO {
             controls.velocity = direction.normalized() * controls.max_speed;
