@@ -109,8 +109,8 @@ var gl_web_object = {
             // Some Android devices don't support linear filtering of float textures.
             // In those cases fall back to NEAREST filtering.
             if (!linear_float_filtering_supported) {
-                min = gl.NEAEREST;
-                mag = gl.NEAEREST;
+                min = gl.NEAREST;
+                mag = gl.NEAREST;
             }
         }
 
