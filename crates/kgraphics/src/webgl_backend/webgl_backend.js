@@ -1,5 +1,6 @@
 var gl = null;
 var canvas = null;
+var linear_float_filtering_supported = false;
 
 var gl_web_object = {
     new(antialias) {
@@ -26,9 +27,12 @@ var gl_web_object = {
         function enable_extension(gl, extension) {
             if (!gl.getExtension(extension)) {
                 console.log("COULD NOT ENABLE EXTENSION: " + extension);
+                return false;
             }
+            return true;
         }
 
+        linear_float_filtering_supported = enable_extension(gl, 'OES_texture_float_linear');
         enable_extension(gl, 'OES_texture_float_linear');
         //enable_extension(gl, 'EXT_color_buffer_half_float');
         enable_extension(gl, 'EXT_color_buffer_float');
@@ -98,6 +102,15 @@ var gl_web_object = {
                 data = new Float32Array(self.kwasm_memory.buffer, data_ptr, data_length / 4);
             } else {
                 data = new Uint8Array(self.kwasm_memory.buffer, data_ptr, data_length);
+            }
+        }
+
+        if (type_ == gl.FLOAT) {
+            // Some Android devices don't support linear filtering of float textures.
+            // In those cases fall back to NEAREST filtering.
+            if (!linear_float_filtering_supported) {
+                min = gl.NEAEREST;
+                mag = gl.NEAEREST;
             }
         }
 
