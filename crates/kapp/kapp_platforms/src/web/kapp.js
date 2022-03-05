@@ -29,6 +29,27 @@ function check_resize() {
 }
 
 function request_animation_frame_callback(time) {
+    let now = Date.now() - start_timestamp;
+    for (const [key, time_stamp] of key_down_map) {
+        if ((now - time_stamp) > 1000) {
+            if (key != "OSLeft" &&
+                key != "OSRight" &&
+                key != "MetaLeft" &&
+                key != "MetaRight" &&
+                key != "ShiftLeft" &&
+                key != "ShiftRight" &&
+                key != "AltLeft" &&
+                key != "AltRight" &&
+                key != "ControlLeft" &&
+                key != "ControlRight") {
+                // Synthesize a keyup event when a keydown event hasn't occurred for one second.
+                // Keydown events repeat for all the character keys.
+                key_down_map.delete(key);
+                self.kwasm_pass_string_to_client(key);
+                self.kwasm_exports.kapp_on_key_up(now);
+            }
+        }
+    }
     animation_frame_requested = false;
     check_resize();
     self.kwasm_exports.kapp_on_animation_frame(self.kwasm_exports.kapp_on_animation_frame);
@@ -52,6 +73,49 @@ var canvas = document
 
 let previous_mouse_x;
 let previous_mouse_y;
+
+let start_timestamp = Date.now();
+let key_down_map = new Map();
+
+// When the window loses focus send a key up for all events.
+window.addEventListener('blur', function () {
+    let now = Date.now() - start_timestamp;
+    for (const [key, time_stamp] of key_down_map) {
+        key_down_map.delete(key);
+        self.kwasm_pass_string_to_client(key);
+        self.kwasm_exports.kapp_on_key_up(now);
+    }
+});
+
+function check_for_synthetic_key_up(code) {
+    if (key_down_map.has(code)) {
+        let now = Date.now() - start_timestamp;
+        key_down_map.delete(code);
+        self.kwasm_pass_string_to_client(code);
+        self.kwasm_exports.kapp_on_key_up(now);
+    }
+}
+
+function check_special_key_status(event) {
+    if (!event.shiftKey) {
+        check_for_synthetic_key_up("ShiftRight");
+        check_for_synthetic_key_up("ShiftLeft");
+    }
+    if (!event.metaKey) {
+        check_for_synthetic_key_up("MetaLeft");
+        check_for_synthetic_key_up("MetaRight");
+        check_for_synthetic_key_up("OSRight");
+        check_for_synthetic_key_up("OSLeft");
+    }
+    if (!event.ctrlKey) {
+        check_for_synthetic_key_up("ControlLeft");
+        check_for_synthetic_key_up("ControlRight");
+    }
+    if (!event.altKey) {
+        check_for_synthetic_key_up("AltLeft");
+        check_for_synthetic_key_up("AltRight");
+    }
+}
 
 function receive_message(command, data) {
 
@@ -77,10 +141,12 @@ function receive_message(command, data) {
                 check_resize();
             }
             canvas.onpointermove = function (event) {
+                check_special_key_status(event);
                 let pointer_type = get_pointer_type(event);
                 self.kwasm_exports.kapp_on_pointer_move(event.clientX * window.devicePixelRatio, event.clientY * window.devicePixelRatio, pointer_type, event.timeStamp, event.pointerId);
             }
             canvas.onmousemove = function (event) {
+                check_special_key_status(event);
                 // Calculate delta instead to make it more consistent between browsers. 
                 let movement_x = (previous_mouse_x ? event.screenX - previous_mouse_x : 0)
                 let movement_y = (previous_mouse_y ? event.screenY - previous_mouse_y : 0)
@@ -89,15 +155,18 @@ function receive_message(command, data) {
                 self.kwasm_exports.kapp_on_mouse_move(movement_x * window.devicePixelRatio, movement_y * window.devicePixelRatio, event.timeStamp);
             }
             canvas.onpointerdown = function (event) {
+                check_special_key_status(event);
                 canvas.setPointerCapture(event.pointerId);
                 let pointer_type = get_pointer_type(event);
                 self.kwasm_exports.kapp_on_pointer_down(event.clientX * window.devicePixelRatio, event.clientY * window.devicePixelRatio, pointer_type, event.button, event.timeStamp, event.pointerId);
             }
             canvas.onpointerup = function (event) {
+                check_special_key_status(event);
                 let pointer_type = get_pointer_type(event);
                 self.kwasm_exports.kapp_on_pointer_up(event.clientX * window.devicePixelRatio, event.clientY * window.devicePixelRatio, pointer_type, event.button, event.timeStamp, event.pointerId);
             }
             canvas.onpointercancel = function (event) {
+                check_special_key_status(event);
                 let pointer_type = get_pointer_type(event);
                 self.kwasm_exports.kapp_on_pointer_up(event.clientX * window.devicePixelRatio, event.clientY * window.devicePixelRatio, pointer_type, event.button, event.timeStamp, event.pointerId);
             }
@@ -113,6 +182,10 @@ function receive_message(command, data) {
             }
 
             document.onkeydown = function (event) {
+                check_special_key_status(event);
+
+                key_down_map.set(event.code, event.timeStamp);
+
                 self.kwasm_pass_string_to_client(event.code);
                 if (event.repeat) {
                     self.kwasm_exports.kapp_on_key_repeat(event.timeStamp);
@@ -139,8 +212,12 @@ function receive_message(command, data) {
             }
 
             document.onkeyup = function (event) {
-                self.kwasm_pass_string_to_client(event.code);
-                self.kwasm_exports.kapp_on_key_up(event.timeStamp);
+                if (key_down_map.has(event.code)) {
+                    key_down_map.delete(event.code);
+                    self.kwasm_pass_string_to_client(event.code);
+                    self.kwasm_exports.kapp_on_key_up(event.timeStamp);
+                    check_special_key_status(event);
+                }
             }
 
             canvas.onwheel = function (event) {
