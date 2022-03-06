@@ -42,6 +42,12 @@ pub use not_enough_space::*;
 mod center;
 pub use center::*;
 
+mod ignore_dimension;
+pub use ignore_dimension::*;
+
+mod max_size;
+pub use max_size::*;
+
 /// Just a colored rectangle for debug purposes
 pub struct Rectangle {
     pub size: Vec3,
