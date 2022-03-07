@@ -1,16 +1,18 @@
 use crate::*;
 
 /// A trait used to define things that produce children for widgets that can accept multiple children.
-pub trait WidgetChildren<Data, Context>: for<'a> GetConstraintsIter<'a> {
+pub trait WidgetChildren<Data, Context, ExtraState>: for<'a> GetConstraintsIter<'a> {
     fn create_children_and_layout(
         &mut self,
         state: &mut Data,
+        extra_state: &mut ExtraState,
         context: &mut Context,
         min_and_max_size: MinAndMaxSize,
     );
     fn draw<F: FnMut(&Vec3) -> Box3>(
         &mut self,
         state: &mut Data,
+        extra_state: &mut ExtraState,
         context: &mut Context,
         drawer: &mut Drawer,
         f: F,
@@ -23,13 +25,14 @@ pub trait GetConstraintsIter<'a> {
     fn constraints_iter(&'a self) -> Self::ConstraintsIter;
 }
 
-pub trait IntoWidgetChildren<Data, Context> {
-    type WidgetChildren: WidgetChildren<Data, Context>;
+pub trait IntoWidgetChildren<Data, Context, ExtraState> {
+    type WidgetChildren: WidgetChildren<Data, Context, ExtraState>;
     fn into_widget_children(self) -> Self::WidgetChildren;
 }
 
-impl<Data, Context, Child: Widget<Data, Context>> IntoWidgetChildren<Data, Context>
-    for ChildForEach<Data, Context, Child>
+impl<Data, Context, ExtraState, ChildExtraState, Child: Widget<Data, Context, ChildExtraState>>
+    IntoWidgetChildren<Data, Context, ExtraState>
+    for ChildForEach<Data, Context, ExtraState, ChildExtraState, Child>
 {
     type WidgetChildren = Self;
     fn into_widget_children(self) -> Self::WidgetChildren {
@@ -37,30 +40,58 @@ impl<Data, Context, Child: Widget<Data, Context>> IntoWidgetChildren<Data, Conte
     }
 }
 
-pub struct ChildCreator<'a, Child> {
+pub struct ChildCreator<'a, Child, State, ExtraState> {
     current_child_index: usize,
     children: &'a mut Vec<Child>,
+    call_per_child: &'a mut dyn FnMut(&mut Child, &mut State, &mut ExtraState),
 }
 
-impl<'a, Child> ChildCreator<'a, Child> {
-    pub fn add_child(&mut self, f: impl Fn() -> Child) {
+impl<'a, Child, State, ExtraState> ChildCreator<'a, Child, State, ExtraState> {
+    pub fn add_child(
+        &mut self,
+        state: &mut State,
+        extra_state: &mut ExtraState,
+        f: impl Fn() -> Child,
+    ) {
         if self.current_child_index >= self.children.len() {
             self.children.push(f())
         }
+        (self.call_per_child)(
+            &mut self.children[self.current_child_index],
+            state,
+            extra_state,
+        );
         self.current_child_index += 1;
     }
 }
 
-pub struct ChildForEach<Data, Context, Child: Widget<Data, Context>> {
+pub struct ChildForEach<
+    Data,
+    Context,
+    ExtraState,
+    ChildExtraState,
+    Child: Widget<Data, Context, ChildExtraState>,
+> {
     constraints: Vec<Vec3>,
     children: Vec<Child>,
-    create_children: fn(&mut Data, &mut ChildCreator<Child>),
-    phantom: std::marker::PhantomData<fn() -> (Context, Drawer)>,
+    create_children:
+        fn(&mut Data, &mut ExtraState, &mut ChildCreator<Child, Data, ChildExtraState>),
+    phantom: std::marker::PhantomData<fn() -> (Context, Drawer, ChildExtraState)>,
 }
 
-pub fn for_each<Data, Context, Child: Widget<Data, Context>>(
-    create_children: fn(&mut Data, &mut ChildCreator<Child>),
-) -> ChildForEach<Data, Context, Child> {
+pub fn for_each<
+    Data,
+    Context,
+    ExtraState,
+    ChildExtraState,
+    Child: Widget<Data, Context, ChildExtraState>,
+>(
+    create_children: fn(
+        &mut Data,
+        &mut ExtraState,
+        &mut ChildCreator<Child, Data, ChildExtraState>,
+    ),
+) -> ChildForEach<Data, Context, ExtraState, ChildExtraState, Child> {
     ChildForEach {
         constraints: Vec::new(),
         children: Vec::new(),
@@ -69,51 +100,82 @@ pub fn for_each<Data, Context, Child: Widget<Data, Context>>(
     }
 }
 
-impl<Data, Context, Child: Widget<Data, Context>> WidgetChildren<Data, Context>
-    for ChildForEach<Data, Context, Child>
+impl<Data, Context, ExtraState, ChildExtraState, Child: Widget<Data, Context, ChildExtraState>>
+    WidgetChildren<Data, Context, ExtraState>
+    for ChildForEach<Data, Context, ExtraState, ChildExtraState, Child>
 {
     fn create_children_and_layout(
         &mut self,
         state: &mut Data,
+        extra_state: &mut ExtraState,
         context: &mut Context,
         min_and_max_size: MinAndMaxSize,
     ) {
         let Self {
             children,
             create_children,
+            constraints,
             ..
         } = self;
+
+        let mut constraint_index = 0;
         let mut child_creator = ChildCreator {
             current_child_index: 0,
             children,
+            call_per_child:
+                &mut |child: &mut Child, state: &mut Data, extra_state: &mut ChildExtraState| {
+                    if constraint_index <= constraints.len() {
+                        constraints.push(Vec3::ZERO);
+                    }
+                    constraints[constraint_index] =
+                        child.layout(state, extra_state, context, min_and_max_size);
+                    constraint_index += 1;
+                },
         };
-        (create_children)(state, &mut child_creator);
-        self.constraints.resize(self.children.len(), Vec3::ZERO);
-
-        for (child, constraint) in self.children.iter_mut().zip(self.constraints.iter_mut()) {
-            *constraint = (child).layout(state, context, min_and_max_size);
-        }
+        (create_children)(state, extra_state, &mut child_creator);
     }
 
     fn draw<F: FnMut(&Vec3) -> Box3>(
         &mut self,
         state: &mut Data,
+        extra_state: &mut ExtraState,
         context: &mut Context,
         drawer: &mut Drawer,
         mut f: F,
     ) {
-        for (child, child_constraints) in self.children.iter_mut().zip(self.constraints.iter()) {
-            let child_constraints = f(child_constraints);
-            child.draw(state, context, drawer, child_constraints);
-        }
+        let Self {
+            children,
+            create_children,
+            constraints,
+            ..
+        } = self;
+
+        let mut index = 0;
+        let mut child_creator = ChildCreator {
+            current_child_index: 0,
+            children,
+            call_per_child:
+                &mut |child: &mut Child, state: &mut Data, extra_state: &mut ChildExtraState| {
+                    let child_constraints = f(&constraints[index]);
+                    child.draw(state, extra_state, context, drawer, child_constraints);
+                    index += 1;
+                },
+        };
+        (create_children)(state, extra_state, &mut child_creator);
     }
     fn len(&self) -> usize {
         self.children.len()
     }
 }
 
-impl<'a, Data, Context, Child: Widget<Data, Context>> GetConstraintsIter<'a>
-    for ChildForEach<Data, Context, Child>
+impl<
+        'a,
+        Data,
+        Context,
+        ExtraState,
+        ChildExtraState,
+        Child: Widget<Data, Context, ChildExtraState>,
+    > GetConstraintsIter<'a> for ChildForEach<Data, Context, ExtraState, ChildExtraState, Child>
 {
     type ConstraintsIter = std::slice::Iter<'a, Vec3>;
     fn constraints_iter(&'a self) -> Self::ConstraintsIter {
@@ -140,8 +202,9 @@ macro_rules! tuple_impls {
             impl<
                 Data,
                 Context,
-                $( $tuple: Widget<Data, Context>,)*
-            > IntoWidgetChildren<Data, Context> for ($( $tuple,)*)
+                ExtraState,
+                $( $tuple: Widget<Data, Context, ExtraState>,)*
+            > IntoWidgetChildren<Data, Context, ExtraState> for ($( $tuple,)*)
         {
             type WidgetChildren = TupleChildren<($( $tuple,)*), $count>;
             fn into_widget_children(self) -> Self::WidgetChildren {
@@ -155,25 +218,27 @@ macro_rules! tuple_impls {
         impl<
             Data,
             Context,
-            $( $tuple: Widget<Data, Context>,)*
-         > WidgetChildren<Data, Context>
+            ExtraState,
+            $( $tuple: Widget<Data, Context, ExtraState>,)*
+         > WidgetChildren<Data, Context, ExtraState>
             for TupleChildren<($( $tuple,)*), $count>
         {
 
             #[allow(unused)]
-            fn create_children_and_layout(&mut self, state: &mut Data, context: &mut Context, min_and_max_size: MinAndMaxSize) {
-                $(self.constraints[$index] = self.children.$index.layout(state, context, min_and_max_size);)*
+            fn create_children_and_layout(&mut self, state: &mut Data, extra_state: &mut ExtraState, context: &mut Context, min_and_max_size: MinAndMaxSize) {
+                $(self.constraints[$index] = self.children.$index.layout(state, extra_state, context, min_and_max_size);)*
             }
 
             #[allow(unused)]
             fn draw<FUNCTION: FnMut(&Vec3) -> Box3>(
                 &mut self,
                 state: &mut Data,
+                extra_state: &mut ExtraState,
                 context: &mut Context,
                 drawer: &mut Drawer,
                 mut f: FUNCTION,
             ) {
-                $(self.children.$index.draw(state, context, drawer, f(&self.constraints[$index]));)*
+                $(self.children.$index.draw(state, extra_state, context, drawer, f(&self.constraints[$index]));)*
             }
 
             fn len(&self) -> usize {

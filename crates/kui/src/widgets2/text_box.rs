@@ -1,8 +1,8 @@
 use crate::*;
 
-pub fn text_field<Data, Context: GetStandardStyle + GetFonts + GetStandardInput>(
+pub fn text_field<Data, Context: GetStandardStyle + GetFonts + GetStandardInput, ExtraState>(
     get_text: fn(&mut Data) -> &mut String,
-) -> impl Widget<Data, Context> {
+) -> impl Widget<Data, Context, ExtraState> {
     fit(stack((
         outlined_rounded_fill(
             |_, c: &Context| c.standard_style().primary_variant_color,
@@ -12,9 +12,9 @@ pub fn text_field<Data, Context: GetStandardStyle + GetFonts + GetStandardInput>
         padding(|c: &Context| c.standard_style().padding, text_box(get_text)),
     )))
 }
-pub fn text_box<Data, Context: GetStandardStyle + GetFonts + GetStandardInput>(
+pub fn text_box<Data, Context: GetStandardStyle + GetFonts + GetStandardInput, ExtraState>(
     get_text: fn(&mut Data) -> &mut String,
-) -> impl Widget<Data, Context> {
+) -> impl Widget<Data, Context, ExtraState> {
     TextBox {
         get_text,
         cursor_offset_from_end: 0,
@@ -24,17 +24,19 @@ pub fn text_box<Data, Context: GetStandardStyle + GetFonts + GetStandardInput>(
         selected_area: None,
     }
 }
-pub struct TextBox<Data, Context: GetStandardStyle + GetFonts> {
+pub struct TextBox<Data, Context: GetStandardStyle + GetFonts, ExtraState> {
     get_text: fn(&mut Data) -> &mut String,
     /// The offset from the end of the string in numbers of characters.
     /// This points to a character. The cursor should go *before* the character.
     cursor_offset_from_end: usize,
-    child_text: Text<Data, Context>,
+    child_text: Text<Data, Context, ExtraState>,
     cursor_animation: f32,
     cursor_on: bool,
     selected_area: Option<(usize, usize)>,
 }
-impl<Data, Context: GetStandardStyle + GetFonts + GetStandardInput> TextBox<Data, Context> {
+impl<Data, Context: GetStandardStyle + GetFonts + GetStandardInput, ExtraState>
+    TextBox<Data, Context, ExtraState>
+{
     pub fn select_all(&mut self) {
         let character_count = self.child_text.get_character_count();
         self.reset_cursor_animation();
@@ -48,8 +50,8 @@ impl<Data, Context: GetStandardStyle + GetFonts + GetStandardInput> TextBox<Data
     }
 }
 
-impl<Data, Context: GetStandardStyle + GetFonts + GetStandardInput> Widget<Data, Context>
-    for TextBox<Data, Context>
+impl<Data, Context: GetStandardStyle + GetFonts + GetStandardInput, ExtraState>
+    Widget<Data, Context, ExtraState> for TextBox<Data, Context, ExtraState>
 {
     /*
     fn update(&mut self, data: &mut Data, context: &mut Context) {
@@ -121,13 +123,22 @@ impl<Data, Context: GetStandardStyle + GetFonts + GetStandardInput> Widget<Data,
     fn layout(
         &mut self,
         data: &mut Data,
+        extra_state: &mut ExtraState,
         context: &mut Context,
         min_and_max_size: MinAndMaxSize,
     ) -> Vec3 {
-        self.child_text.layout(data, context, min_and_max_size)
+        self.child_text
+            .layout(data, extra_state, context, min_and_max_size)
     }
-    fn draw(&mut self, data: &mut Data, context: &mut Context, drawer: &mut Drawer, bounds: Box3) {
-        let line_height = self.child_text.get_line_height(data, context);
+    fn draw(
+        &mut self,
+        data: &mut Data,
+        extra_state: &mut ExtraState,
+        context: &mut Context,
+        drawer: &mut Drawer,
+        bounds: Box3,
+    ) {
+        let line_height = self.child_text.get_line_height(data, extra_state, context);
 
         // Draw selected area highlight. Notably it's drawn before the child to ensure it's drawn underneath.
         if let Some((start, end)) = self.selected_area {
@@ -137,9 +148,12 @@ impl<Data, Context: GetStandardStyle + GetFonts + GetStandardInput> Widget<Data,
                 .min
                 .x;
             let end_bounds = bounds.min.x
-                + self
-                    .child_text
-                    .get_glyph_advance_width_position(data, context, end - 1);
+                + self.child_text.get_glyph_advance_width_position(
+                    data,
+                    extra_state,
+                    context,
+                    end - 1,
+                );
             drawer.rectangle(
                 Box3 {
                     min: Vec3::new(start_bounds, bounds.min.y, bounds.min.z),
@@ -149,7 +163,8 @@ impl<Data, Context: GetStandardStyle + GetFonts + GetStandardInput> Widget<Data,
             );
         }
 
-        self.child_text.draw(data, context, drawer, bounds);
+        self.child_text
+            .draw(data, extra_state, context, drawer, bounds);
 
         self.cursor_animation += context.standard_input().delta_time;
 
@@ -166,6 +181,7 @@ impl<Data, Context: GetStandardStyle + GetFonts + GetStandardInput> Widget<Data,
                 bounds.min.x
                     + self.child_text.get_glyph_advance_width_position(
                         data,
+                        extra_state,
                         context,
                         glyph_count - self.cursor_offset_from_end - 1,
                     )

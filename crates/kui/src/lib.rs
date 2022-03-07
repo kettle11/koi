@@ -1,4 +1,4 @@
-use std::{any, borrow::Borrow, rc::Rc};
+use std::{borrow::Borrow, rc::Rc};
 
 use kcolor::*;
 use kmath::*;
@@ -23,18 +23,26 @@ pub struct MinAndMaxSize {
     pub max: Vec3,
 }
 
-pub trait Widget<State, Context> {
+pub trait Widget<State, Context, ExtraState = ()> {
     /// Perform any layout work required and let the parent widget know the Constraints this child requires.
     /// Note that while 'data' is mutable it should not be edited during `layout`.
     fn layout(
         &mut self,
         state: &mut State,
+        extra_state: &mut ExtraState,
         context: &mut Context,
         min_and_max_size: MinAndMaxSize,
     ) -> Vec3;
 
     /// Note that while 'data' is mutable it should not be edited during `draw`.
-    fn draw(&mut self, state: &mut State, context: &mut Context, drawer: &mut Drawer, bounds: Box3);
+    fn draw(
+        &mut self,
+        state: &mut State,
+        extra_state: &mut ExtraState,
+        context: &mut Context,
+        drawer: &mut Drawer,
+        bounds: Box3,
+    );
 }
 
 pub trait GetStandardDrawer {

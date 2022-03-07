@@ -143,7 +143,7 @@ impl UIManager {
         &mut self,
         data: &mut Data,
         context: &mut StandardContext<Data>,
-        root_widget: &mut impl kui::Widget<Data, StandardContext<Data>>,
+        root_widget: &mut impl kui::Widget<Data, StandardContext<Data>, ()>,
     ) {
         context.event_handlers.clear();
 
@@ -152,13 +152,20 @@ impl UIManager {
 
         root_widget.layout(
             data,
+            &mut (),
             context,
             MinAndMaxSize {
                 min: Vec3::ZERO,
                 max: self.initial_constraints.size(),
             },
         );
-        root_widget.draw(data, context, &mut self.drawer, self.initial_constraints);
+        root_widget.draw(
+            data,
+            &mut (),
+            context,
+            &mut self.drawer,
+            self.initial_constraints,
+        );
     }
 
     pub fn render_ui(&mut self, world: &mut World) {
@@ -169,12 +176,13 @@ impl UIManager {
         &mut self,
         world: &mut World,
         context: &mut StandardContext<World>,
-        root_widget: &mut impl kui::Widget<World, StandardContext<World>>,
+        root_widget: &mut impl kui::Widget<World, StandardContext<World>, ()>,
     ) {
         context.event_handlers.clear();
 
         root_widget.layout(
             world,
+            &mut (),
             context,
             MinAndMaxSize {
                 min: Vec3::ZERO,
@@ -183,7 +191,13 @@ impl UIManager {
         );
         let (width, height, _) = self.initial_constraints.size().into();
         self.drawer.set_view_width_height(width, height);
-        root_widget.draw(world, context, &mut self.drawer, self.initial_constraints);
+        root_widget.draw(
+            world,
+            &mut (),
+            context,
+            &mut self.drawer,
+            self.initial_constraints,
+        );
         render_ui(world, self.entity, &mut self.drawer);
     }
 }
@@ -232,7 +246,7 @@ pub fn run_simple_ui<Data: 'static>(
     data: Data,
     style: StandardStyle,
     fonts: kui::Fonts,
-    root: impl kui::Widget<Data, StandardContext<Data>> + 'static,
+    root: impl kui::Widget<Data, StandardContext<Data>, ()> + 'static,
 ) {
     App::new().setup_and_run(|world| {
         world.spawn((Transform::new(), Camera::new_for_user_interface()));

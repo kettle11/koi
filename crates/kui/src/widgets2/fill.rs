@@ -1,8 +1,8 @@
 use crate::*;
 
-pub fn fill<State, Context: GetStandardInput>(
+pub fn fill<State, Context: GetStandardInput, ExtraState>(
     color: impl Fn(&mut State, &Context) -> Color,
-) -> impl Widget<State, Context> {
+) -> impl Widget<State, Context, ExtraState> {
     Fill {
         color,
         rounding: |_, _| 0.0,
@@ -12,9 +12,9 @@ pub fn fill<State, Context: GetStandardInput>(
     }
 }
 
-pub fn fill_pass_through<State, Context: GetStandardInput>(
+pub fn fill_pass_through<State, Context: GetStandardInput, ExtraState>(
     color: impl Fn(&mut State, &Context) -> Color,
-) -> impl Widget<State, Context> {
+) -> impl Widget<State, Context, ExtraState> {
     Fill {
         color,
         rounding: |_, _| 0.0,
@@ -24,10 +24,10 @@ pub fn fill_pass_through<State, Context: GetStandardInput>(
     }
 }
 
-pub fn rounded_fill<State, Context: GetStandardInput>(
+pub fn rounded_fill<State, Context: GetStandardInput, ExtraState>(
     color: impl Fn(&mut State, &Context) -> Color,
     rounding: impl Fn(&mut State, &Context) -> f32,
-) -> impl Widget<State, Context> {
+) -> impl Widget<State, Context, ExtraState> {
     Fill {
         color,
         rounding,
@@ -40,6 +40,7 @@ pub fn rounded_fill<State, Context: GetStandardInput>(
 pub struct Fill<
     State,
     Context,
+    ExtraState,
     GetColor: Fn(&mut State, &Context) -> Color,
     GetRounding: Fn(&mut State, &Context) -> f32,
 > {
@@ -47,15 +48,16 @@ pub struct Fill<
     pub rounding: GetRounding,
     pub bounding_rect: Box2,
     pub consume_pointer_events: bool,
-    phantom: std::marker::PhantomData<fn() -> (State, Context)>,
+    phantom: std::marker::PhantomData<fn() -> (State, Context, ExtraState)>,
 }
 
 impl<
         State,
         Context: GetStandardInput,
+        ExtraState,
         GetColor: Fn(&mut State, &Context) -> Color,
         GetRounding: Fn(&mut State, &Context) -> f32,
-    > Fill<State, Context, GetColor, GetRounding>
+    > Fill<State, Context, ExtraState, GetColor, GetRounding>
 {
     pub fn pass_through_events(mut self) -> Self {
         self.consume_pointer_events = false;
@@ -66,13 +68,16 @@ impl<
 impl<
         State,
         Context: GetStandardInput,
+        ExtraState,
         GetColor: Fn(&mut State, &Context) -> Color,
         GetRounding: Fn(&mut State, &Context) -> f32,
-    > Widget<State, Context> for Fill<State, Context, GetColor, GetRounding>
+    > Widget<State, Context, ExtraState>
+    for Fill<State, Context, ExtraState, GetColor, GetRounding>
 {
     fn layout(
         &mut self,
         _data: &mut State,
+        _extra_state: &mut ExtraState,
         _context: &mut Context,
         _min_and_max_size: MinAndMaxSize,
     ) -> Vec3 {
@@ -81,6 +86,7 @@ impl<
     fn draw(
         &mut self,
         state: &mut State,
+        _extra_state: &mut ExtraState,
         context: &mut Context,
         drawer: &mut Drawer,
         bounds: Box3,
