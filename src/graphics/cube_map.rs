@@ -284,6 +284,7 @@ pub fn bind_view(
 }
 
 struct CubeMapLoadMessage {
+    handle: Handle<CubeMap>,
     texture_load_data: TextureLoadData,
     texture_settings: TextureSettings,
     diffuse_and_specular_irradiance_cubemaps: Option<(Handle<CubeMap>, Handle<CubeMap>)>,
@@ -311,6 +312,7 @@ pub fn load_reflection_probe_immediate(
 
     let new_handle = cube_maps.new_handle();
     let cube_map_load_message = CubeMapLoadMessage {
+        handle: new_handle.clone(),
         texture_load_data,
         texture_settings: options.texture_settings,
         diffuse_and_specular_irradiance_cubemaps: options.diffuse_and_specular_irradiance_cubemaps,
@@ -440,6 +442,7 @@ fn load_cube_map_immediate(
 
         cube_maps.replace_placeholder(&specular_handle, specular_irradiance_cubemap);
     }
+    cube_maps.replace_placeholder(&message.handle, cube_map);
 }
 
 /// A system that loads textures onto the GPU
@@ -498,7 +501,7 @@ impl AssetLoader<CubeMap> for NotSendSync<CubeMapAssetLoader> {
     fn load_with_options(
         &mut self,
         path: &str,
-        _handle: Handle<CubeMap>,
+        handle: Handle<CubeMap>,
         mut options: <CubeMap as LoadableAssetTrait>::Options,
     ) {
         let path = path.to_owned();
@@ -509,6 +512,7 @@ impl AssetLoader<CubeMap> for NotSendSync<CubeMapAssetLoader> {
                 texture_data_from_path(&path, &mut options.texture_settings).await;
 
             let _ = sender.send(CubeMapLoadMessage {
+                handle,
                 texture_load_data,
                 texture_settings: options.texture_settings,
                 diffuse_and_specular_irradiance_cubemaps: options
