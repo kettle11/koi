@@ -171,6 +171,17 @@ impl Color {
         self.alpha = alpha;
         self
     }
+
+    /// Returns this color's lightness, chroma, and hue as defiend in OKLCH color space.
+    pub fn get_lightness_chroma_hue(self) -> (f32, f32, f32) {
+        let to_space = kolor::ColorConversion::new(kolor::spaces::CIE_XYZ, kolor::spaces::OKLCH);
+        let mut in_space = to_space.convert(kolor::Vec3::new(self.x, self.y, self.z));
+        in_space.z /= std::f32::consts::TAU;
+        if in_space.z < 0.0 {
+            in_space.z += 1.0;
+        }
+        (in_space.x, in_space.y, in_space.z)
+    }
 }
 
 impl From<(f32, f32, f32, f32)> for Color {
