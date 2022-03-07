@@ -7,6 +7,19 @@ pub fn fill<State, Context: GetStandardInput>(
         color,
         rounding: |_, _| 0.0,
         bounding_rect: Box2::ZERO,
+        consume_pointer_events: true,
+        phantom: std::marker::PhantomData,
+    }
+}
+
+pub fn fill_pass_through<State, Context: GetStandardInput>(
+    color: impl Fn(&mut State, &Context) -> Color,
+) -> impl Widget<State, Context> {
+    Fill {
+        color,
+        rounding: |_, _| 0.0,
+        bounding_rect: Box2::ZERO,
+        consume_pointer_events: false,
         phantom: std::marker::PhantomData,
     }
 }
@@ -19,6 +32,7 @@ pub fn rounded_fill<State, Context: GetStandardInput>(
         color,
         rounding,
         bounding_rect: Box2::ZERO,
+        consume_pointer_events: true,
         phantom: std::marker::PhantomData,
     }
 }
@@ -32,7 +46,21 @@ pub struct Fill<
     pub color: GetColor,
     pub rounding: GetRounding,
     pub bounding_rect: Box2,
+    pub consume_pointer_events: bool,
     phantom: std::marker::PhantomData<fn() -> (State, Context)>,
+}
+
+impl<
+        State,
+        Context: GetStandardInput,
+        GetColor: Fn(&mut State, &Context) -> Color,
+        GetRounding: Fn(&mut State, &Context) -> f32,
+    > Fill<State, Context, GetColor, GetRounding>
+{
+    pub fn pass_through_events(mut self) -> Self {
+        self.consume_pointer_events = false;
+        self
+    }
 }
 
 impl<
@@ -63,15 +91,15 @@ impl<
             (self.color)(state, context),
         );
         self.bounding_rect = Box2 {
-            min: Vec2::ZERO,
-            max: bounds.size().xy(),
+            min: bounds.min.xy(),
+            max: bounds.max.xy(),
         };
     }
-    fn update(&mut self, _: &mut State, _context: &mut Context) {
-        /*
+    fn update(&mut self, _: &mut State, context: &mut Context) {
         // If this fill is inside a button (which clones Context) it won't be able to access the standard context mutably.
         // Just don't consume events in that case.
-        if let Some(standard_input) = context.try_standard_input_mut() {
+        if self.consume_pointer_events {
+            let standard_input = context.standard_input_mut();
             for (handled, event) in standard_input.input_events_iter() {
                 match event {
                     kapp_platform_common::Event::PointerDown { x, y, .. }
@@ -80,6 +108,7 @@ impl<
                             .bounding_rect
                             .contains_point(Vec2::new(x as f32, y as f32))
                         {
+                            println!("CONSUMED EVENT: {:?}", self.bounding_rect);
                             *handled = true;
                         }
                     }
@@ -88,6 +117,5 @@ impl<
                 }
             }
         }
-        */
     }
 }

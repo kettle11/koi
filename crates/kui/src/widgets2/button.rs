@@ -39,53 +39,30 @@ impl<Data, OuterContext, InnerContext, Child: Widget<Data, InnerContext>> Widget
         self.child.draw(state, context, drawer, constraints)
     }
 }
-pub struct ButtonContext<Context> {
-    pub context: Context,
-    pub clicked: bool,
-}
-
-impl<Context: GetStandardInput> GetStandardInput for ButtonContext<Context> {
-    fn standard_input(&self) -> &StandardInput {
-        self.context.standard_input()
-    }
-    fn standard_input_mut(&mut self) -> &mut StandardInput {
-        self.context.standard_input_mut()
-    }
-    fn try_standard_input_mut(&mut self) -> Option<&mut StandardInput> {
-        self.context.try_standard_input_mut()
-    }
-}
-
-pub fn button<State, Context: GetStandardInput + GetStandardStyle + Clone + GetFonts>(
+pub fn button<State, Context: GetStandardInput + GetStandardStyle + GetFonts>(
     text: impl Into<TextSource<State>>,
     on_click: fn(&mut State),
 ) -> impl Widget<State, Context> {
     button_with_child(crate::text(text), on_click)
 }
 
-pub fn button_with_child<State, Context: GetStandardInput + GetStandardStyle + Clone>(
+pub fn button_with_child<State, Context: GetStandardInput + GetStandardStyle>(
     child_widget: impl Widget<State, Context>,
     on_click: fn(&mut State),
 ) -> impl Widget<State, Context> {
     ButtonBase {
         child_widget: fit(stack((
             rounded_fill(
-                |_, c: &ButtonContext<Context>| {
-                    if c.clicked {
-                        c.context.standard_style().disabled_color
+                |_, c: &Context| {
+                    if c.standard_input().button_clicked {
+                        c.standard_style().disabled_color
                     } else {
-                        c.context.standard_style().primary_color
+                        c.standard_style().primary_color
                     }
                 },
-                |_, c| c.context.standard_style().rounding,
+                |_, c| c.standard_style().rounding,
             ),
-            padding(
-                |c: &ButtonContext<Context>| c.context.standard_style().padding,
-                narrow_context(
-                    |c: &mut ButtonContext<Context>| &mut c.context,
-                    child_widget,
-                ),
-            ),
+            padding(|c: &Context| c.standard_style().padding, child_widget),
         ))),
         bounding_rect: Box2::ZERO,
         on_click,
@@ -96,7 +73,7 @@ pub fn button_with_child<State, Context: GetStandardInput + GetStandardStyle + C
 
 pub fn toggle_button<
     State,
-    Context: GetStandardInput + GetStandardStyle + Clone,
+    Context: GetStandardInput + GetStandardStyle,
     EditState: 'static + Copy + PartialEq,
 >(
     child: impl Widget<State, Context>,
@@ -107,21 +84,18 @@ pub fn toggle_button<
     button_base(
         fit(stack((
             rounded_fill(
-                move |state, c: &ButtonContext<Context>| {
+                move |state, c: &Context| {
                     let current_state = (state_value_0)(state);
                     let selected = *get_state(state) == current_state;
-                    if c.clicked || selected {
-                        c.context.standard_style().disabled_color
+                    if c.standard_input().button_clicked || selected {
+                        c.standard_style().disabled_color
                     } else {
-                        c.context.standard_style().primary_color
+                        c.standard_style().primary_color
                     }
                 },
-                |_, c| c.context.standard_style().rounding,
+                |_, c| c.standard_style().rounding,
             ),
-            padding(
-                |c: &ButtonContext<Context>| c.context.standard_style().padding,
-                narrow_context(|c: &mut ButtonContext<Context>| &mut c.context, child),
-            ),
+            padding(|c: &Context| c.standard_style().padding, child),
         ))),
         move |state| {
             let new_value = (state_value)(state);
@@ -131,8 +105,8 @@ pub fn toggle_button<
     )
 }
 
-pub fn button_base<State, Context: GetStandardInput + GetStandardStyle + Clone>(
-    child_widget: impl Widget<State, ButtonContext<Context>>,
+pub fn button_base<State, Context: GetStandardInput + GetStandardStyle>(
+    child_widget: impl Widget<State, Context>,
     on_click: impl Fn(&mut State),
 ) -> impl Widget<State, Context> {
     ButtonBase {
@@ -144,12 +118,7 @@ pub fn button_base<State, Context: GetStandardInput + GetStandardStyle + Clone>(
     }
 }
 
-pub struct ButtonBase<
-    State,
-    Context,
-    Child: Widget<State, ButtonContext<Context>>,
-    OnClick: Fn(&mut State),
-> {
+pub struct ButtonBase<State, Context, Child: Widget<State, Context>, OnClick: Fn(&mut State)> {
     child_widget: Child,
     bounding_rect: Box2,
     on_click: OnClick,
@@ -157,12 +126,8 @@ pub struct ButtonBase<
     phantom: std::marker::PhantomData<fn() -> (Context, State)>,
 }
 
-impl<
-        State,
-        Context: GetStandardInput + Clone,
-        Child: Widget<State, ButtonContext<Context>>,
-        OnClick: Fn(&mut State),
-    > Widget<State, Context> for ButtonBase<State, Context, Child, OnClick>
+impl<State, Context: GetStandardInput, Child: Widget<State, Context>, OnClick: Fn(&mut State)>
+    Widget<State, Context> for ButtonBase<State, Context, Child, OnClick>
 {
     fn update(&mut self, state: &mut State, context: &mut Context) {
         let standard_input = context.standard_input_mut();
@@ -207,12 +172,8 @@ impl<
             }
         }
 
-        let mut context = ButtonContext {
-            context: context.clone(),
-            clicked: self.clicked,
-        };
         // Todo: Check for input here and handle click event.
-        self.child_widget.update(state, &mut context);
+        self.child_widget.update(state, context);
     }
     fn layout(
         &mut self,
@@ -220,13 +181,8 @@ impl<
         context: &mut Context,
         min_and_max_size: MinAndMaxSize,
     ) -> Vec3 {
-        let mut context = ButtonContext {
-            context: context.clone(),
-            clicked: self.clicked,
-        };
-        let child_size = self
-            .child_widget
-            .layout(state, &mut context, min_and_max_size);
+        context.standard_input_mut().button_clicked = self.clicked;
+        let child_size = self.child_widget.layout(state, context, min_and_max_size);
         self.bounding_rect = Box2 {
             min: Vec2::ZERO,
             max: child_size.xy().min(min_and_max_size.max.xy()),
@@ -240,13 +196,9 @@ impl<
         drawer: &mut Drawer,
         constraints: Box3,
     ) {
-        let mut context = ButtonContext {
-            context: context.clone(),
-            clicked: self.clicked,
-        };
+        context.standard_input_mut().button_clicked = self.clicked;
         let size = self.bounding_rect.size().min(constraints.size().xy());
         self.bounding_rect = Box2::new_with_min_corner_and_size(constraints.min.xy(), size);
-        self.child_widget
-            .draw(state, &mut context, drawer, constraints);
+        self.child_widget.draw(state, context, drawer, constraints);
     }
 }

@@ -74,6 +74,17 @@ pub fn min_height<Data, Context>(
     }
 }
 
+pub fn min_size<Data, Context>(
+    min_size: Vec3,
+    child: impl Widget<Data, Context>,
+) -> impl Widget<Data, Context> {
+    MinSize {
+        child,
+        min_size,
+        phantom: std::marker::PhantomData,
+    }
+}
+
 pub struct MinSize<Data, Context, Child: Widget<Data, Context>> {
     child: Child,
     min_size: Vec3,

@@ -26,10 +26,10 @@ impl UIManager {
         }
     }
 
-    fn update_size<Style: GetStandardStyle, Input: GetStandardInput>(
+    fn update_size<State>(
         &mut self,
         world: &mut World,
-        standard_context: &mut StandardContext<Style, Input>,
+        standard_context: &mut StandardContext<State>,
     ) {
         let ((window_width, window_height), ui_scale) =
             (|window: &NotSendSync<kapp::Window>| (window.size(), window.scale())).run(world);
@@ -112,11 +112,7 @@ impl UIManager {
         standard_input.delta_time = world.get_singleton::<Time>().delta_seconds_f64 as f32;
     }
 
-    fn prepare<Style: GetStandardStyle>(
-        &mut self,
-        world: &mut World,
-        standard_context: &mut StandardContext<Style, StandardInput>,
-    ) {
+    fn prepare<Data>(&mut self, world: &mut World, standard_context: &mut StandardContext<Data>) {
         if standard_context.input.text_input_rect.is_some() {
             world
                 .get_singleton::<NotSendSync<kapp::Application>>()
@@ -198,11 +194,11 @@ impl UIManager {
         input.0.set_with_events(new_events);
     }
 
-    fn update_layout_draw<Data, Style: GetStandardStyle>(
+    fn update_layout_draw<Data>(
         &mut self,
         data: &mut Data,
-        context: &mut StandardContext<Style, StandardInput>,
-        root_widget: &mut impl kui::Widget<Data, StandardContext<Style, StandardInput>>,
+        context: &mut StandardContext<Data>,
+        root_widget: &mut impl kui::Widget<Data, StandardContext<Data>>,
     ) {
         let (width, height, _) = self.initial_constraints.size().into();
         self.drawer.set_view_width_height(width, height);
@@ -222,22 +218,22 @@ impl UIManager {
     pub fn render_ui(&mut self, world: &mut World) {
         render_ui(world, self.entity, &mut self.drawer);
     }
-    pub fn update<Style: GetStandardStyle>(
+    pub fn update(
         &mut self,
         world: &mut World,
-        context: &mut StandardContext<Style, StandardInput>,
-        root_widget: &mut impl kui::Widget<World, StandardContext<Style, StandardInput>>,
+        context: &mut StandardContext<World>,
+        root_widget: &mut impl kui::Widget<World, StandardContext<World>>,
     ) {
         self.prepare(world, context);
         root_widget.update(world, context);
         self.remove_handled_events_from_world(context.standard_input_mut(), world);
     }
 
-    pub fn layout_and_draw<Style: GetStandardStyle>(
+    pub fn layout_and_draw(
         &mut self,
         world: &mut World,
-        context: &mut StandardContext<Style, StandardInput>,
-        root_widget: &mut impl kui::Widget<World, StandardContext<Style, StandardInput>>,
+        context: &mut StandardContext<World>,
+        root_widget: &mut impl kui::Widget<World, StandardContext<World>>,
     ) {
         root_widget.layout(
             world,
@@ -298,7 +294,7 @@ pub fn run_simple_ui<Data: 'static>(
     data: Data,
     style: StandardStyle,
     fonts: kui::Fonts,
-    root: impl kui::Widget<Data, StandardContext<kui::StandardStyle, kui::StandardInput>> + 'static,
+    root: impl kui::Widget<Data, StandardContext<Data>> + 'static,
 ) {
     App::new().setup_and_run(|world| {
         world.spawn((Transform::new(), Camera::new_for_user_interface()));

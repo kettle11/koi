@@ -498,7 +498,7 @@ impl AssetLoader<CubeMap> for NotSendSync<CubeMapAssetLoader> {
     fn load_with_options(
         &mut self,
         path: &str,
-        handle: Handle<CubeMap>,
+        _handle: Handle<CubeMap>,
         mut options: <CubeMap as LoadableAssetTrait>::Options,
     ) {
         let path = path.to_owned();

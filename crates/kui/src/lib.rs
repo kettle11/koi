@@ -87,10 +87,9 @@ pub trait GetStandardStyle {
 pub trait GetStandardInput {
     fn standard_input(&self) -> &StandardInput;
     fn standard_input_mut(&mut self) -> &mut StandardInput;
-
-    /// This can be used in scenarios where the Context internals have been cloned
-    /// This is mostly a workaround, there's almost certainly a better design.
-    fn try_standard_input_mut(&mut self) -> Option<&mut StandardInput>;
+}
+pub trait GetEventHandlers<State> {
+    fn event_handlers_mut(&mut self) -> &mut EventHandlers<State>;
 }
 
 pub struct StandardInput {
@@ -99,6 +98,7 @@ pub struct StandardInput {
     pub input_events: Vec<kapp_platform_common::Event>,
     pub input_events_handled: Vec<bool>,
     pub view_size: Vec2,
+    pub button_clicked: bool,
 }
 
 impl StandardInput {
@@ -118,79 +118,59 @@ impl Default for StandardInput {
             input_events: Vec::new(),
             input_events_handled: Vec::new(),
             view_size: Vec2::ZERO,
+            button_clicked: false,
         }
     }
 }
 
-impl GetStandardInput for StandardInput {
-    fn standard_input(&self) -> &StandardInput {
-        self
-    }
-    fn standard_input_mut(&mut self) -> &mut StandardInput {
-        self
-    }
-    fn try_standard_input_mut(&mut self) -> Option<&mut StandardInput> {
-        Some(self)
-    }
+pub struct EventHandlers<State> {
+    click_handlers: Vec<(Box3, Option<Box<dyn Fn(&mut State)>>)>,
+}
+pub struct StandardContext<State> {
+    pub style: StandardStyle,
+    pub input: StandardInput,
+    pub fonts: Fonts,
+    pub event_handlers: EventHandlers<State>,
 }
 
-pub struct StandardContext<Style, Input> {
-    pub style: std::rc::Rc<Style>,
-    pub input: std::rc::Rc<Input>,
-    pub fonts: std::rc::Rc<Fonts>,
-}
-
-impl<Style, Input> Clone for StandardContext<Style, Input> {
-    fn clone(&self) -> Self {
+impl<State> StandardContext<State> {
+    pub fn new(style: StandardStyle, input: StandardInput, fonts: Fonts) -> Self {
         Self {
-            style: self.style.clone(),
-            input: self.input.clone(),
-            fonts: self.fonts.clone(),
+            style,
+            input,
+            fonts,
+            event_handlers: EventHandlers {
+                click_handlers: Vec::new(),
+            },
         }
     }
 }
 
-impl<Style, Input> StandardContext<Style, Input> {
-    pub fn new(style: Style, input: Input, fonts: Fonts) -> Self {
-        Self {
-            style: std::rc::Rc::new(style),
-            input: std::rc::Rc::new(input),
-            fonts: std::rc::Rc::new(fonts),
-        }
-    }
-}
-
-impl<Style: GetStandardStyle, Input> GetStandardStyle for StandardContext<Style, Input> {
+impl<State> GetStandardStyle for StandardContext<State> {
     fn standard_style(&self) -> &StandardStyle {
         self.style.standard_style()
     }
 
     fn standard_style_mut(&mut self) -> &mut StandardStyle {
-        std::rc::Rc::get_mut(&mut self.style)
-            .unwrap()
-            .standard_style_mut()
+        &mut self.style
     }
 }
-impl<Style, Input: GetStandardInput> GetStandardInput for StandardContext<Style, Input> {
+impl<State> GetStandardInput for StandardContext<State> {
     fn standard_input(&self) -> &StandardInput {
-        self.input.standard_input()
+        self.input.borrow()
     }
 
     fn standard_input_mut(&mut self) -> &mut StandardInput {
-        std::rc::Rc::get_mut(&mut self.input)
-            .unwrap()
-            .standard_input_mut()
-    }
-    fn try_standard_input_mut(&mut self) -> Option<&mut StandardInput> {
-        std::rc::Rc::get_mut(&mut self.input).map(|i| i.standard_input_mut())
+        &mut self.input
     }
 }
 
-impl<Style, Input: GetStandardInput> GetFonts for StandardContext<Style, Input> {
+impl<State> GetFonts for StandardContext<State> {
     fn get_fonts(&self) -> &Fonts {
-        self.fonts.borrow()
+        &self.fonts
     }
+
     fn get_fonts_mut(&mut self) -> &Fonts {
-        std::rc::Rc::get_mut(&mut self.fonts).unwrap()
+        &mut self.fonts
     }
 }

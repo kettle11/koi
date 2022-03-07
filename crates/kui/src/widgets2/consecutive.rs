@@ -96,13 +96,17 @@ impl<
         let mut other_dimension_size = Vec3::ZERO;
         self.children
             .create_children_and_layout(data, context, min_and_max_size);
+        let mut sized_children: usize = 0;
         for &child_size in self.children.constraints_iter() {
             let amount_in_directon = child_size.dot(self.direction);
+            if amount_in_directon > 0.0 {
+                sized_children += 1;
+            }
             let non_direction_size = child_size - (amount_in_directon * self.direction);
             other_dimension_size = other_dimension_size.max(non_direction_size);
             offset_in_direction += amount_in_directon;
         }
-        offset_in_direction += spacing * self.children.len().saturating_sub(1) as f32;
+        offset_in_direction += spacing * sized_children.saturating_sub(1) as f32;
         other_dimension_size + self.direction * offset_in_direction
     }
 
@@ -112,10 +116,6 @@ impl<
         let constraint_size = bounds.size();
         let mut offset = bounds.min;
 
-        // Simple logic for now, but could be more general.
-        if self.direction.x < 0.0 {
-            offset.x = bounds.max.x;
-        }
         let size_not_along_direction =
             constraint_size - (constraint_size.dot(self.direction) * self.direction);
         self.children.draw(data, context, drawer, |constraints| {
