@@ -40,6 +40,7 @@ impl<
         context: &mut Context,
         min_and_max_size: MinAndMaxSize,
     ) -> Vec3 {
+        self.child_visible = (self.get_condition)(state, context);
         let child_size = if self.child_visible {
             self.child.layout(state, context, min_and_max_size)
         } else {

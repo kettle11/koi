@@ -23,18 +23,18 @@ pub struct MinAndMaxSize {
     pub max: Vec3,
 }
 
-pub trait Widget<Data, Context> {
+pub trait Widget<State, Context> {
     /// Perform any layout work required and let the parent widget know the Constraints this child requires.
     /// Note that while 'data' is mutable it should not be edited during `layout`.
     fn layout(
         &mut self,
-        data: &mut Data,
+        state: &mut State,
         context: &mut Context,
         min_and_max_size: MinAndMaxSize,
     ) -> Vec3;
 
     /// Note that while 'data' is mutable it should not be edited during `draw`.
-    fn draw(&mut self, data: &mut Data, context: &mut Context, drawer: &mut Drawer, bounds: Box3);
+    fn draw(&mut self, state: &mut State, context: &mut Context, drawer: &mut Drawer, bounds: Box3);
 }
 
 pub trait GetStandardDrawer {

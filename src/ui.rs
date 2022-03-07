@@ -121,7 +121,11 @@ impl UIManager {
         }
     }
 
-    fn prepare<Data>(&mut self, world: &mut World, standard_context: &mut StandardContext<Data>) {
+    pub fn prepare<Data>(
+        &mut self,
+        world: &mut World,
+        standard_context: &mut StandardContext<Data>,
+    ) {
         if standard_context.input.text_input_rect.is_some() {
             world
                 .get_singleton::<NotSendSync<kapp::Application>>()
@@ -167,6 +171,8 @@ impl UIManager {
         context: &mut StandardContext<World>,
         root_widget: &mut impl kui::Widget<World, StandardContext<World>>,
     ) {
+        context.event_handlers.clear();
+
         root_widget.layout(
             world,
             context,
