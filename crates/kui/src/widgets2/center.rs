@@ -43,9 +43,6 @@ impl<Data, Context, Child: Widget<Data, Context>> Widget<Data, Context>
 
         self.child.draw(state, context, drawer, constraints)
     }
-    fn update(&mut self, state: &mut Data, context: &mut Context) {
-        self.child.update(state, context)
-    }
 }
 
 /// Set a child element to a fixed position in relation to the view.
@@ -94,8 +91,5 @@ impl<Data, Context, Child: Widget<Data, Context>> Widget<Data, Context>
         _constraints: Box3,
     ) {
         self.child.draw(state, context, drawer, self.bounds)
-    }
-    fn update(&mut self, state: &mut Data, context: &mut Context) {
-        self.child.update(state, context)
     }
 }

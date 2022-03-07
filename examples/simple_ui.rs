@@ -1,5 +1,4 @@
 use koi::*;
-use kui::*;
 
 fn standard_frame<Data, Context: GetStandardStyle + GetStandardInput>(
     child: impl Widget<Data, Context>,
@@ -10,27 +9,13 @@ fn standard_frame<Data, Context: GetStandardStyle + GetStandardInput>(
     ))
 }
 
-fn dark_authoratative_style() -> StandardStyle {
-    StandardStyle {
-        heading_text_size: 100.,
-        heading_font: Font::from_index(1),
-        primary_text_color: Color::WHITE,
-        primary_color: Color::new_from_bytes(20, 20, 20, 255),
-        background_color: Color::new_from_bytes(20, 20, 20, 255),
-        ..Default::default()
-    }
-}
-
 fn main() {
     let ui = standard_frame(column((
-        heading("Application"),
-        button("Hello", |_| println!("CLICKED")),
+        heading("Counter App"),
+        row((text("Count:"), text(|count: &mut i64| count.to_string()))),
+        button("Increment", |count| *count += 1),
+        button("Decrement", |count| *count -= 1),
     )));
 
-    let mut fonts = Fonts::empty();
-    fonts.load_default_fonts();
-
-    let style = StandardStyle::default();
-
-    run_simple_ui((), style, fonts, ui)
+    run_simple_ui(0, StandardStyle::default(), Fonts::default(), ui)
 }

@@ -67,10 +67,4 @@ impl<
             self.child.draw(state, context, drawer, constraints);
         }
     }
-    fn update(&mut self, state: &mut State, context: &mut Context) {
-        self.child_visible = (self.get_condition)(state, context);
-        //   if self.child_visible {
-        self.child.update(state, context)
-        // }
-    }
 }

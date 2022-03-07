@@ -63,11 +63,4 @@ impl<State, Context, Child: Widget<State, Context>, FallbackChild: Widget<State,
                 .draw(state, context, drawer, constraints)
         }
     }
-    fn update(&mut self, state: &mut State, context: &mut Context) {
-        if self.render_first_child {
-            self.child.update(state, context)
-        } else {
-            self.fallback_child.update(state, context)
-        }
-    }
 }

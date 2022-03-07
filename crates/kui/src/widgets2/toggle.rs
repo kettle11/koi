@@ -24,6 +24,7 @@ pub struct Toggle<Data, Context, ChildA: Widget<Data, Context>, ChildB: Widget<D
 impl<Data, Context, ChildA: Widget<Data, Context>, ChildB: Widget<Data, Context>>
     Widget<Data, Context> for Toggle<Data, Context, ChildA, ChildB>
 {
+    /*
     fn update(&mut self, data: &mut Data, context: &mut Context) {
         let select = (self.select)(data);
         if select {
@@ -32,6 +33,7 @@ impl<Data, Context, ChildA: Widget<Data, Context>, ChildB: Widget<Data, Context>
             self.child_b.update(data, context)
         }
     }
+    */
 
     fn layout(
         &mut self,

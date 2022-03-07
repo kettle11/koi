@@ -1,3 +1,5 @@
+use std::cell::RefCell;
+
 use crate::*;
 
 pub fn narrow_context<Data, OuterContext, InnerContext>(
@@ -39,46 +41,47 @@ impl<Data, OuterContext, InnerContext, Child: Widget<Data, InnerContext>> Widget
         self.child.draw(state, context, drawer, constraints)
     }
 }
-pub fn button<State, Context: GetStandardInput + GetStandardStyle + GetFonts>(
+pub fn button<
+    State: 'static,
+    Context: GetStandardInput + GetStandardStyle + GetFonts + GetEventHandlers<State>,
+>(
     text: impl Into<TextSource<State>>,
     on_click: fn(&mut State),
 ) -> impl Widget<State, Context> {
     button_with_child(crate::text(text), on_click)
 }
 
-pub fn button_with_child<State, Context: GetStandardInput + GetStandardStyle>(
+pub fn button_with_child<
+    State: 'static,
+    Context: GetStandardInput + GetStandardStyle + GetEventHandlers<State>,
+>(
     child_widget: impl Widget<State, Context>,
     on_click: fn(&mut State),
 ) -> impl Widget<State, Context> {
-    ButtonBase {
-        child_widget: fit(stack((
-            rounded_fill(
-                |_, c: &Context| {
-                    if c.standard_input().button_clicked {
-                        c.standard_style().disabled_color
-                    } else {
-                        c.standard_style().primary_color
-                    }
-                },
-                |_, c| c.standard_style().rounding,
-            ),
-            padding(|c: &Context| c.standard_style().padding, child_widget),
-        ))),
-        bounding_rect: Box2::ZERO,
-        on_click,
-        clicked: false,
-        phantom: std::marker::PhantomData,
-    }
+    let child_widget = fit(stack((
+        rounded_fill(
+            |_, c: &Context| {
+                if c.standard_input().button_clicked {
+                    c.standard_style().disabled_color
+                } else {
+                    c.standard_style().primary_color
+                }
+            },
+            |_, c| c.standard_style().rounding,
+        ),
+        padding(|c: &Context| c.standard_style().padding, child_widget),
+    )));
+    button_base(child_widget, on_click)
 }
 
 pub fn toggle_button<
-    State,
-    Context: GetStandardInput + GetStandardStyle,
+    State: 'static,
+    Context: GetStandardInput + GetStandardStyle + GetEventHandlers<State>,
     EditState: 'static + Copy + PartialEq,
 >(
     child: impl Widget<State, Context>,
     get_state: fn(&mut State) -> &mut EditState,
-    state_value: impl Fn(&mut State) -> EditState + Clone,
+    state_value: impl Fn(&mut State) -> EditState + Clone + 'static,
 ) -> impl Widget<State, Context> {
     let state_value_0 = state_value.clone();
     button_base(
@@ -105,83 +108,57 @@ pub fn toggle_button<
     )
 }
 
-pub fn button_base<State, Context: GetStandardInput + GetStandardStyle>(
+pub fn button_base<
+    State,
+    Context: GetStandardInput + GetStandardStyle + GetEventHandlers<State>,
+>(
     child_widget: impl Widget<State, Context>,
-    on_click: impl Fn(&mut State),
+    on_click: impl Fn(&mut State) + 'static,
 ) -> impl Widget<State, Context> {
+    let clicked = Rc::new(RefCell::new(false));
+
     ButtonBase {
         child_widget,
         bounding_rect: Box2::ZERO,
-        on_click,
-        clicked: false,
+        clicked: clicked.clone(),
+        on_click: Rc::new(
+            move |event: &kapp_platform_common::Event,
+                  pointer_event_info: PointerEventInfo,
+                  state: &mut State| match event {
+                kapp_platform_common::Event::PointerDown { .. } => {
+                    if pointer_event_info.in_hitbox {
+                        *clicked.borrow_mut() = true;
+                        on_click(state);
+                    }
+                }
+                kapp_platform_common::Event::PointerUp { .. } => {
+                    *clicked.borrow_mut() = false;
+                }
+                _ => {}
+            },
+        ),
         phantom: std::marker::PhantomData,
     }
 }
 
-pub struct ButtonBase<State, Context, Child: Widget<State, Context>, OnClick: Fn(&mut State)> {
+pub struct ButtonBase<State, Context, Child: Widget<State, Context>> {
     child_widget: Child,
     bounding_rect: Box2,
-    on_click: OnClick,
-    clicked: bool,
+    on_click: Rc<dyn Fn(&kapp_platform_common::Event, PointerEventInfo, &mut State) + 'static>,
+    clicked: Rc<RefCell<bool>>,
     phantom: std::marker::PhantomData<fn() -> (Context, State)>,
 }
 
-impl<State, Context: GetStandardInput, Child: Widget<State, Context>, OnClick: Fn(&mut State)>
-    Widget<State, Context> for ButtonBase<State, Context, Child, OnClick>
+impl<State, Context: GetStandardInput + GetEventHandlers<State>, Child: Widget<State, Context>>
+    Widget<State, Context> for ButtonBase<State, Context, Child>
 {
-    fn update(&mut self, state: &mut State, context: &mut Context) {
-        let standard_input = context.standard_input_mut();
-
-        for (handled, event) in standard_input.input_events_iter() {
-            if *handled {
-                continue;
-            }
-            match event {
-                kapp_platform_common::Event::PointerDown {
-                    x,
-                    y,
-                    button: kapp_platform_common::PointerButton::Primary,
-                    ..
-                } => {
-                    if self
-                        .bounding_rect
-                        .contains_point(Vec2::new(x as f32, y as f32))
-                    {
-                        if !self.clicked {
-                            self.clicked = true;
-                            (self.on_click)(state)
-                        }
-                        *handled = true;
-                    }
-                }
-                kapp_platform_common::Event::PointerMoved { x, y, .. } => {
-                    if self
-                        .bounding_rect
-                        .contains_point(Vec2::new(x as f32, y as f32))
-                    {
-                        *handled = true;
-                    }
-                }
-                kapp_platform_common::Event::PointerUp {
-                    button: kapp_platform_common::PointerButton::Primary,
-                    ..
-                } => {
-                    self.clicked = false;
-                }
-                _ => {}
-            }
-        }
-
-        // Todo: Check for input here and handle click event.
-        self.child_widget.update(state, context);
-    }
     fn layout(
         &mut self,
         state: &mut State,
         context: &mut Context,
         min_and_max_size: MinAndMaxSize,
     ) -> Vec3 {
-        context.standard_input_mut().button_clicked = self.clicked;
+        context.standard_input_mut().button_clicked = *self.clicked.borrow_mut();
         let child_size = self.child_widget.layout(state, context, min_and_max_size);
         self.bounding_rect = Box2 {
             min: Vec2::ZERO,
@@ -196,9 +173,12 @@ impl<State, Context: GetStandardInput, Child: Widget<State, Context>, OnClick: F
         drawer: &mut Drawer,
         constraints: Box3,
     ) {
-        context.standard_input_mut().button_clicked = self.clicked;
+        context.standard_input_mut().button_clicked = *self.clicked.borrow_mut();
         let size = self.bounding_rect.size().min(constraints.size().xy());
         self.bounding_rect = Box2::new_with_min_corner_and_size(constraints.min.xy(), size);
         self.child_widget.draw(state, context, drawer, constraints);
+        context
+            .event_handlers_mut()
+            .add_pointer_event_handler(constraints, self.on_click.clone())
     }
 }

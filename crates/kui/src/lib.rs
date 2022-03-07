@@ -1,4 +1,4 @@
-use std::borrow::Borrow;
+use std::{any, borrow::Borrow, rc::Rc};
 
 use kcolor::*;
 use kmath::*;
@@ -24,8 +24,6 @@ pub struct MinAndMaxSize {
 }
 
 pub trait Widget<Data, Context> {
-    #[allow(unused)]
-    fn update(&mut self, data: &mut Data, context: &mut Context) {}
     /// Perform any layout work required and let the parent widget know the Constraints this child requires.
     /// Note that while 'data' is mutable it should not be edited during `layout`.
     fn layout(
@@ -123,8 +121,61 @@ impl Default for StandardInput {
     }
 }
 
+struct ClickHandler<State> {
+    hit_box: Box3,
+    handler: Option<Rc<dyn Fn(&kapp_platform_common::Event, PointerEventInfo, &mut State)>>,
+}
 pub struct EventHandlers<State> {
-    click_handlers: Vec<(Box3, Option<Box<dyn Fn(&mut State)>>)>,
+    click_handlers: Vec<ClickHandler<State>>,
+}
+
+#[derive(Clone, Copy)]
+pub struct PointerEventInfo {
+    pub in_hitbox: bool,
+}
+
+impl<State> EventHandlers<State> {
+    pub fn new() -> Self {
+        Self {
+            click_handlers: Vec::new(),
+        }
+    }
+
+    pub fn add_pointer_event_handler(
+        &mut self,
+        hit_box: Box3,
+        handler: Rc<dyn Fn(&kapp_platform_common::Event, PointerEventInfo, &mut State)>,
+    ) {
+        self.click_handlers.push(ClickHandler {
+            hit_box,
+            handler: Some(handler),
+        });
+    }
+
+    pub fn clear(&mut self) {
+        self.click_handlers.clear()
+    }
+
+    pub fn handle_pointer_event(
+        &mut self,
+        event: &kapp_platform_common::Event,
+        state: &mut State,
+        point: Vec2,
+    ) -> bool {
+        let mut any_hitbox_hit = false;
+        for click_handler in self.click_handlers.iter() {
+            if let Some(handler) = click_handler.handler.as_ref() {
+                let hitbox = Box2 {
+                    min: click_handler.hit_box.min.xy(),
+                    max: click_handler.hit_box.max.xy(),
+                };
+                let in_hitbox = hitbox.contains_point(point);
+                (handler)(event, PointerEventInfo { in_hitbox }, state);
+                any_hitbox_hit |= in_hitbox;
+            }
+        }
+        any_hitbox_hit
+    }
 }
 pub struct StandardContext<State> {
     pub style: StandardStyle,
@@ -139,9 +190,7 @@ impl<State> StandardContext<State> {
             style,
             input,
             fonts,
-            event_handlers: EventHandlers {
-                click_handlers: Vec::new(),
-            },
+            event_handlers: EventHandlers::new(),
         }
     }
 }
@@ -162,6 +211,12 @@ impl<State> GetStandardInput for StandardContext<State> {
 
     fn standard_input_mut(&mut self) -> &mut StandardInput {
         &mut self.input
+    }
+}
+
+impl<State> GetEventHandlers<State> for StandardContext<State> {
+    fn event_handlers_mut(&mut self) -> &mut EventHandlers<State> {
+        &mut self.event_handlers
     }
 }
 

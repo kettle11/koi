@@ -34,7 +34,4 @@ impl<Data, Context, Child: Widget<Data, Context>> Widget<Data, Context>
     ) {
         self.child.draw(state, context, drawer, constraints)
     }
-    fn update(&mut self, state: &mut Data, context: &mut Context) {
-        self.child.update(state, context)
-    }
 }

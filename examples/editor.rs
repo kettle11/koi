@@ -101,8 +101,9 @@ impl<Data, Context, ChildData, Child: Widget<ChildData, Context>, ChildKey: Eq +
     }
 }
 
-fn entity_column<Context: GetStandardStyle + GetFonts + GetStandardInput + Clone>(
-) -> impl Widget<World, Context> {
+fn entity_column<
+    Context: GetStandardStyle + GetFonts + GetStandardInput + GetEventHandlers<World>,
+>() -> impl Widget<World, Context> {
     fit(stack((
         fill(|_, _| Color::WHITE),
         column(for_each(

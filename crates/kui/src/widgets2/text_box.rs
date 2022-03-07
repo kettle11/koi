@@ -51,6 +51,7 @@ impl<Data, Context: GetStandardStyle + GetFonts + GetStandardInput> TextBox<Data
 impl<Data, Context: GetStandardStyle + GetFonts + GetStandardInput> Widget<Data, Context>
     for TextBox<Data, Context>
 {
+    /*
     fn update(&mut self, data: &mut Data, context: &mut Context) {
         context.standard_input_mut().text_input_rect = Some(Box2::ZERO);
         let string = (self.get_text)(data);
@@ -115,6 +116,7 @@ impl<Data, Context: GetStandardStyle + GetFonts + GetStandardInput> Widget<Data,
             self.selected_area = None;
         }
     }
+    */
 
     fn layout(
         &mut self,

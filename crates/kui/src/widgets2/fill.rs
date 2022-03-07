@@ -95,27 +95,4 @@ impl<
             max: bounds.max.xy(),
         };
     }
-    fn update(&mut self, _: &mut State, context: &mut Context) {
-        // If this fill is inside a button (which clones Context) it won't be able to access the standard context mutably.
-        // Just don't consume events in that case.
-        if self.consume_pointer_events {
-            let standard_input = context.standard_input_mut();
-            for (handled, event) in standard_input.input_events_iter() {
-                match event {
-                    kapp_platform_common::Event::PointerDown { x, y, .. }
-                    | kapp_platform_common::Event::PointerUp { x, y, .. } => {
-                        if self
-                            .bounding_rect
-                            .contains_point(Vec2::new(x as f32, y as f32))
-                        {
-                            println!("CONSUMED EVENT: {:?}", self.bounding_rect);
-                            *handled = true;
-                        }
-                    }
-
-                    _ => {}
-                }
-            }
-        }
-    }
 }

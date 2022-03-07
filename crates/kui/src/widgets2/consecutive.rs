@@ -80,10 +80,6 @@ impl<
         GetSpacing: Fn(&mut State, &Context) -> f32,
     > Widget<State, Context> for Consecutive<State, Context, Children, GetSpacing>
 {
-    fn update(&mut self, data: &mut State, context: &mut Context) {
-        self.children.update(data, context)
-    }
-
     fn layout(
         &mut self,
         data: &mut State,

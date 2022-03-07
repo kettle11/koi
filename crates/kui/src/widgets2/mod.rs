@@ -107,7 +107,6 @@ pub fn empty() -> Empty {
 }
 
 impl<State, Context> Widget<State, Context> for Empty {
-    fn update(&mut self, _data: &mut State, _context: &mut Context) {}
     fn layout(
         &mut self,
         _data: &mut State,

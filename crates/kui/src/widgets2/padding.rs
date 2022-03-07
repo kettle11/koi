@@ -44,7 +44,4 @@ impl<Data, Context, Child: Widget<Data, Context>> Widget<Data, Context>
         constraints.max -= Vec2::fill(amount).extend(0.1);
         self.child.draw(state, context, drawer, constraints)
     }
-    fn update(&mut self, state: &mut Data, context: &mut Context) {
-        self.child.update(state, context)
-    }
 }
