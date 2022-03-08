@@ -145,6 +145,27 @@ impl Transform {
     */
 }
 
+impl InterpolateTrait for Transform {
+    /// Linearly interpolate transform and scale. Spherically interpolate rotation.
+    fn interpolate(&self, other: &Self, amount: f32) -> Self {
+        let position = self.position.lerp(other.position, amount);
+        let rotation = self.rotation.slerp(other.rotation, amount);
+        let scale = self.scale.lerp(other.scale, amount);
+        Transform {
+            position,
+            rotation,
+            scale,
+        }
+    }
+}
+
+#[test]
+fn lerp_test() {
+    let v0 = Vec3::ZERO;
+    let v1 = Vec3::X;
+    println!("VALUE: {:?}", v0.lerp(v1, 0.5));
+}
+
 impl Mul<Transform> for Transform {
     type Output = Transform;
     fn mul(self, rhs: Transform) -> Self::Output {

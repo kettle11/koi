@@ -38,6 +38,9 @@ pub use world_assets::*;
 mod ecs_components;
 pub use ecs_components::*;
 
+mod interpolate;
+pub use interpolate::*;
+
 #[cfg(feature = "graphics")]
 mod graphics;
 #[cfg(feature = "graphics")]
