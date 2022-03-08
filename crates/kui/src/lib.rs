@@ -196,6 +196,9 @@ impl<State> EventHandlers<State> {
                 );
             }
         }
+        if let kapp_platform_common::Event::PointerUp { .. } = event {
+            any_hitbox_hit = false;
+        }
         any_hitbox_hit
     }
 }

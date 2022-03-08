@@ -47,7 +47,9 @@ pub trait NumericFloat:
     fn powf_numeric(self, other: Self) -> Self;
     fn floor_numeric(self) -> Self;
     fn atan2(self, other: Self) -> Self;
+    fn acos(self) -> Self;
     fn round_numeric(self) -> Self;
+    fn from_f32(f: f32) -> Self;
 }
 
 impl NumericFloat for f32 {
@@ -84,8 +86,14 @@ impl NumericFloat for f32 {
     fn atan2(self, other: Self) -> Self {
         Self::atan2(self, other)
     }
+    fn acos(self) -> Self {
+        Self::acos(self)
+    }
     fn round_numeric(self) -> Self {
         self.round()
+    }
+    fn from_f32(f: f32) -> Self {
+        f
     }
 }
 
@@ -122,8 +130,14 @@ impl NumericFloat for f64 {
     fn atan2(self, other: Self) -> Self {
         Self::atan2(self, other)
     }
+    fn acos(self) -> Self {
+        Self::acos(self)
+    }
     fn round_numeric(self) -> Self {
         self.round()
+    }
+    fn from_f32(f: f32) -> Self {
+        f as f64
     }
 }
 

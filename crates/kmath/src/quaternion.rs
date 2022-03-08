@@ -26,7 +26,7 @@ impl<
     }
 }
 
-impl<T: NumericFloat> Quaternion<T> {
+impl<T: NumericFloat + std::fmt::Debug> Quaternion<T> {
     pub const IDENTITY: Self = Quaternion(Vector::<T, 4>::new(T::ZERO, T::ZERO, T::ZERO, T::ONE));
 
     pub fn from_xyzw(x: T, y: T, z: T, w: T) -> Self {
@@ -64,6 +64,35 @@ impl<T: NumericFloat> Quaternion<T> {
         let looking_at_matrix =
             <Matrix<T, 4, 4>>::looking_at(<Vector<T, 3>>::ZERO, forward, up).inversed();
         looking_at_matrix.extract_rotation()
+    }
+
+    pub fn lerp(self, other: Self, amount: T) -> Self {
+        Self(self.0 + (other.0 - self.0) * amount).normalized()
+    }
+
+    /// Spherically interpolate quaternions.
+    /// Not commutative, constant velocity, minimal torque.
+    /// See this article for details:
+    /// http://number-none.com/product/Understanding%20Slerp,%20Then%20Not%20Using%20It/
+    pub fn slerp(self, mut other: Self, amount: T) -> Self {
+        let mut dot = self.0.dot(other.0);
+        if dot < T::ZERO {
+            other = other * -T::ONE;
+            dot = -dot;
+        };
+        let dot_threshold = T::from_f32(0.9995);
+        if dot > dot_threshold {
+            // If these Quaternions are too similar linear interpolate instead.
+            self.lerp(other, amount)
+        } else {
+            // Clamp dot to the range of acos.
+            let dot = dot.numeric_clamp(-T::ONE, T::ONE);
+            let theta_0 = dot.acos();
+            let theta = theta_0 * amount;
+            let v2 = (other.0 - self.0 * dot).normalized();
+            let (sin, cos) = theta.sin_cos_numeric();
+            Self(self.0 * cos + v2 * sin)
+        }
     }
 }
 

@@ -332,6 +332,19 @@ impl<T: Numeric, const R: usize, const C: usize> Matrix<T, R, C> {
         v
     }
 
+    pub fn lerp(self, other: Self, amount: T) -> Self
+    where
+        T: NumericFloat,
+    {
+        let mut v = Self::ZERO;
+        for i in 0..C {
+            for j in 0..R {
+                v.0[i][j] = self.0[i][j] + (other.0[i][j] - self.0[i][j]) * amount;
+            }
+        }
+        v
+    }
+
     pub fn is_nan(&self) -> bool
     where
         T: NumericFloat,
@@ -608,10 +621,16 @@ impl<T: NumericFloat> Matrix<T, 4, 4> {
         )
     }
 
+    /// This defines a *CAMERA* view matrix.
+    /// If used for a non-camera it will be the inverse of what is expected.
     pub fn looking_at(from: Vector<T, 3>, target: Vector<T, 3>, mut up: Vector<T, 3>) -> Self
     where
         T: NumericSqrt + Neg<Output = T>,
     {
+        // r: right
+        // u: up
+        // f: forward
+
         let f = (target - from).normalized();
 
         if up == f || -up == f {
@@ -623,6 +642,51 @@ impl<T: NumericFloat> Matrix<T, 4, 4> {
         }
 
         let r = f.cross(up).normalized();
+
+        let u = r.cross(f);
+        Self([
+            [r[0], u[0], -f[0], T::ZERO],
+            [r[1], u[1], -f[1], T::ZERO],
+            [r[2], u[2], -f[2], T::ZERO],
+            [-r.dot(from), -u.dot(from), f.dot(from), T::ONE],
+        ])
+    }
+
+    /// If forward and up might be nearly the same direction use a fallback right direction.
+    /// This defines a *CAMERA* view matrix.
+    /// If used for a non-camera it will be the inverse of what is expected.
+    pub fn looking_at_with_fallback_right(
+        from: Vector<T, 3>,
+        target: Vector<T, 3>,
+        mut up: Vector<T, 3>,
+        fallback_right: Vector<T, 3>,
+        threshold: T,
+    ) -> Self
+    where
+        T: NumericSqrt + Neg<Output = T> + std::fmt::Debug,
+    {
+        // r: right
+        // u: up
+        // f: forward
+
+        let f = (target - from).normalized();
+
+        let r = if f.abs().dot(up) > (T::ONE - threshold) {
+            up = if up != Vector::<T, 3>::Y {
+                Vector::<T, 3>::Y
+            } else {
+                Vector::<T, 3>::X
+            };
+            fallback_right
+        } else {
+            f.cross(up).normalized()
+        };
+
+        println!("F: {:?}", f);
+        println!("UP: {:?}", up);
+
+        println!("F DOT UP: {:?}", (f.abs()).dot(up));
+
         let u = r.cross(f);
         Self([
             [r[0], u[0], -f[0], T::ZERO],
