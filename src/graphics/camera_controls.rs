@@ -26,6 +26,7 @@ pub struct CameraControls {
     pub panning_mouse_button: Option<PointerButton>,
     pub panning_scale: f32,
     pub touch_rotate_enabled: bool,
+    pub enabled: bool,
 }
 
 impl Default for CameraControls {
@@ -45,6 +46,7 @@ impl CameraControls {
             panning_mouse_button: Some(PointerButton::Auxillary),
             panning_scale: 1.0,
             touch_rotate_enabled: true,
+            enabled: true,
         }
     }
 
@@ -61,6 +63,9 @@ pub fn update_camera_controls(
     mut query: Query<(&mut CameraControls, &mut Camera, &mut Transform)>,
 ) {
     for (controls, camera, transform) in &mut query {
+        if !controls.enabled {
+            continue;
+        }
         let (x, y) = input.mouse_motion();
         let difference: Vec2 = Vec2::new(x as f32, y as f32) / 1000.;
 
