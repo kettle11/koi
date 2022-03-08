@@ -47,6 +47,7 @@ pub enum Token<'a> {
     FloatLiteral(f64),
     BoolLiteral(bool),
     Identifier(Cow<'a, str>),
+    RArrow,
 }
 
 // Convert TokenStream into a more generic format.
@@ -119,6 +120,7 @@ pub fn token_stream_to_rust_tokens(
                                     ('<', '=') => Token::LessThanOrEqual,
                                     ('>', '=') => Token::GreaterThanOrEqual,
                                     (':', ':') => Token::Colon2,
+                                    ('-', '>') => Token::RArrow,
                                     (a, b) => {
                                         rust_tokens.push(char_to_token(a));
                                         char_to_token(b)
@@ -269,6 +271,10 @@ pub enum Type<'a> {
         mutability: Mutability,
         _type: Box<Type<'a>>,
     },
+    FunctionPointer {
+        parameters: Vec<Type<'a>>,
+        _return: Option<Box<Type<'a>>>,
+    },
 }
 
 impl<'a> Type<'a> {
@@ -285,6 +291,21 @@ impl<'a> Type<'a> {
                     string.push(',');
                 }
                 string.push(')');
+            }
+            Type::FunctionPointer {
+                parameters,
+                _return,
+            } => {
+                string += "fn (";
+                for _type in parameters {
+                    string += &_type.as_string();
+                    string.push(',');
+                }
+                string.push(')');
+                if let Some(_return) = _return {
+                    string += "-> ";
+                    string += &_return.as_string();
+                }
             }
             Type::Array { _type, size } => {
                 string.push('[');
@@ -689,6 +710,30 @@ impl<'a> Parser<'a> {
                 Type::RawPointer {
                     mutability,
                     _type: Box::new(_type),
+                }
+            }
+            Token::Fn => {
+                // A function pointer
+                self.advance();
+                self.check_for_token(Token::OpenParentheses)?;
+                let mut parameters = Vec::new();
+                loop {
+                    if let Some(Token::CloseParentheses) = self.peek() {
+                        self.advance();
+                        break;
+                    }
+
+                    let _type = self._type()?;
+                    parameters.push(_type);
+                    self.check_for_token(Token::Comma);
+                }
+                let mut _return = None;
+                if self.check_for_token(Token::RArrow).is_some() {
+                    _return = self._type().map(Box::new);
+                }
+                Type::FunctionPointer {
+                    parameters,
+                    _return,
                 }
             }
             _ => None?,
