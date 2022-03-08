@@ -147,15 +147,16 @@ impl<
             constraint_size - (constraint_size.dot(self.direction) * self.direction);
         self.children
             .draw(data, extra_state, context, drawer, |constraints| {
-                let child_size_along_direction =
-                    constraints.dot(self.direction).abs() * self.direction;
+                let amount_along_direction = constraints.dot(self.direction).abs();
+                let child_size_along_direction = amount_along_direction * self.direction;
 
                 let corner0 = offset;
                 let corner1 = offset + child_size_along_direction + size_not_along_direction;
                 let child_constraints = Box3::new(corner0.min(corner1), corner0.max(corner1));
 
-                offset += child_size_along_direction + spacing * self.direction;
-
+                if amount_along_direction > 0.0 {
+                    offset += child_size_along_direction + spacing * self.direction;
+                }
                 child_constraints
             })
     }
