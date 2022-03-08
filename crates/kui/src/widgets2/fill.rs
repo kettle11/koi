@@ -1,7 +1,7 @@
 use crate::*;
 
 pub fn fill<State, Context: GetStandardInput, ExtraState>(
-    color: impl Fn(&mut State, &Context) -> Color,
+    color: impl Fn(&mut State, &mut ExtraState, &Context) -> Color,
 ) -> impl Widget<State, Context, ExtraState> {
     Fill {
         color,
@@ -13,7 +13,7 @@ pub fn fill<State, Context: GetStandardInput, ExtraState>(
 }
 
 pub fn fill_pass_through<State, Context: GetStandardInput, ExtraState>(
-    color: impl Fn(&mut State, &Context) -> Color,
+    color: impl Fn(&mut State, &mut ExtraState, &Context) -> Color,
 ) -> impl Widget<State, Context, ExtraState> {
     Fill {
         color,
@@ -25,7 +25,7 @@ pub fn fill_pass_through<State, Context: GetStandardInput, ExtraState>(
 }
 
 pub fn rounded_fill<State, Context: GetStandardInput, ExtraState>(
-    color: impl Fn(&mut State, &Context) -> Color,
+    color: impl Fn(&mut State, &mut ExtraState, &Context) -> Color,
     rounding: impl Fn(&mut State, &Context) -> f32,
 ) -> impl Widget<State, Context, ExtraState> {
     Fill {
@@ -41,7 +41,7 @@ pub struct Fill<
     State,
     Context,
     ExtraState,
-    GetColor: Fn(&mut State, &Context) -> Color,
+    GetColor: Fn(&mut State, &mut ExtraState, &Context) -> Color,
     GetRounding: Fn(&mut State, &Context) -> f32,
 > {
     pub color: GetColor,
@@ -55,7 +55,7 @@ impl<
         State,
         Context: GetStandardInput,
         ExtraState,
-        GetColor: Fn(&mut State, &Context) -> Color,
+        GetColor: Fn(&mut State, &mut ExtraState, &Context) -> Color,
         GetRounding: Fn(&mut State, &Context) -> f32,
     > Fill<State, Context, ExtraState, GetColor, GetRounding>
 {
@@ -69,7 +69,7 @@ impl<
         State,
         Context: GetStandardInput,
         ExtraState,
-        GetColor: Fn(&mut State, &Context) -> Color,
+        GetColor: Fn(&mut State, &mut ExtraState, &Context) -> Color,
         GetRounding: Fn(&mut State, &Context) -> f32,
     > Widget<State, Context, ExtraState>
     for Fill<State, Context, ExtraState, GetColor, GetRounding>
@@ -86,7 +86,7 @@ impl<
     fn draw(
         &mut self,
         state: &mut State,
-        _extra_state: &mut ExtraState,
+        extra_state: &mut ExtraState,
         context: &mut Context,
         drawer: &mut Drawer,
         bounds: Box3,
@@ -94,7 +94,7 @@ impl<
         drawer.standard().rounded_rectangle(
             bounds,
             Vec4::fill((self.rounding)(state, context)),
-            (self.color)(state, context),
+            (self.color)(state, extra_state, context),
         );
         self.bounding_rect = Box2 {
             min: bounds.min.xy(),

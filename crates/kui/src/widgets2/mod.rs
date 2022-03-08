@@ -61,7 +61,7 @@ pub fn rectangle(size: Vec2) -> Rectangle {
 
 pub fn colored_rectangle<State, Context: GetStandardInput, ExtraState>(
     size: Vec2,
-    color: impl Fn(&mut State, &Context) -> Color,
+    color: impl Fn(&mut State, &mut ExtraState, &Context) -> Color,
 ) -> impl Widget<State, Context, ExtraState> {
     stack((
         Rectangle {
@@ -93,8 +93,8 @@ impl<State, Context, ExtraState> Widget<State, Context, ExtraState> for Rectangl
 }
 
 pub fn outlined_rounded_fill<State, Context: GetStandardInput, ExtraState>(
-    outline_color: impl Fn(&mut State, &Context) -> Color,
-    inner_color: impl Fn(&mut State, &Context) -> Color,
+    outline_color: impl Fn(&mut State, &mut ExtraState, &Context) -> Color,
+    inner_color: impl Fn(&mut State, &mut ExtraState, &Context) -> Color,
     rounding: impl Fn(&mut State, &Context) -> f32,
 ) -> impl Widget<State, Context, ExtraState> {
     stack((

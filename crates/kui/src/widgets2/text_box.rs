@@ -5,8 +5,8 @@ pub fn text_field<Data, Context: GetStandardStyle + GetFonts + GetStandardInput,
 ) -> impl Widget<Data, Context, ExtraState> {
     fit(stack((
         outlined_rounded_fill(
-            |_, c: &Context| c.standard_style().primary_variant_color,
-            |_, c| c.standard_style().primary_color,
+            |_, _, c: &Context| c.standard_style().primary_variant_color,
+            |_, _, c| c.standard_style().primary_color,
             |_, c| c.standard_style().rounding,
         ),
         padding(|c: &Context| c.standard_style().padding, text_box(get_text)),
