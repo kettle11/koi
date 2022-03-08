@@ -194,6 +194,6 @@ impl<
             .draw(state, extra_state, context, drawer, constraints);
         context
             .event_handlers_mut()
-            .add_pointer_event_handler(constraints, self.on_click.clone())
+            .add_pointer_event_handler(constraints, Some(self.on_click.clone()))
     }
 }

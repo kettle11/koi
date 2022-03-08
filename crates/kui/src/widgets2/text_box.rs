@@ -1,6 +1,10 @@
 use crate::*;
 
-pub fn text_field<Data, Context: GetStandardStyle + GetFonts + GetStandardInput, ExtraState>(
+pub fn text_field<
+    Data,
+    Context: GetStandardStyle + GetFonts + GetStandardInput + GetEventHandlers<Data>,
+    ExtraState,
+>(
     get_text: fn(&mut Data) -> &mut String,
 ) -> impl Widget<Data, Context, ExtraState> {
     fit(stack((

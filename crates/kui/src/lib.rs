@@ -152,12 +152,9 @@ impl<State> EventHandlers<State> {
     pub fn add_pointer_event_handler(
         &mut self,
         hit_box: Box3,
-        handler: Rc<dyn Fn(&kapp_platform_common::Event, PointerEventInfo, &mut State)>,
+        handler: Option<Rc<dyn Fn(&kapp_platform_common::Event, PointerEventInfo, &mut State)>>,
     ) {
-        self.click_handlers.push(ClickHandler {
-            hit_box,
-            handler: Some(handler),
-        });
+        self.click_handlers.push(ClickHandler { hit_box, handler });
     }
 
     pub fn clear(&mut self) {
@@ -170,16 +167,33 @@ impl<State> EventHandlers<State> {
         state: &mut State,
         point: Vec2,
     ) -> bool {
+        let mut z_value = f32::MIN;
+        let mut index_clicked = None;
         let mut any_hitbox_hit = false;
-        for click_handler in self.click_handlers.iter() {
+
+        // Find the closest hitbox that was clicked.
+        for (i, click_handler) in self.click_handlers.iter().enumerate() {
+            let hitbox = Box2 {
+                min: click_handler.hit_box.min.xy(),
+                max: click_handler.hit_box.max.xy(),
+            };
+            let in_hitbox = hitbox.contains_point(point);
+            if in_hitbox && click_handler.hit_box.max.z > z_value {
+                index_clicked = Some(i);
+                z_value = click_handler.hit_box.max.z;
+            }
+            any_hitbox_hit |= in_hitbox;
+        }
+
+        for (i, click_handler) in self.click_handlers.iter().enumerate() {
             if let Some(handler) = click_handler.handler.as_ref() {
-                let hitbox = Box2 {
-                    min: click_handler.hit_box.min.xy(),
-                    max: click_handler.hit_box.max.xy(),
-                };
-                let in_hitbox = hitbox.contains_point(point);
-                (handler)(event, PointerEventInfo { in_hitbox }, state);
-                any_hitbox_hit |= in_hitbox;
+                (handler)(
+                    event,
+                    PointerEventInfo {
+                        in_hitbox: index_clicked == Some(i),
+                    },
+                    state,
+                );
             }
         }
         any_hitbox_hit
