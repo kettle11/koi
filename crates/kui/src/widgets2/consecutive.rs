@@ -1,8 +1,8 @@
 use crate::*;
 
-pub fn stack<State, Context, I: IntoWidgetChildren<State, Context>>(
+pub fn stack<State, Context, ExtraState, I: IntoWidgetChildren<State, Context, ExtraState>>(
     children: I,
-) -> Consecutive<State, Context, I::WidgetChildren, fn(&mut State, &Context) -> f32> {
+) -> Consecutive<State, Context, ExtraState, I::WidgetChildren, fn(&mut State, &Context) -> f32> {
     Consecutive {
         // This should be reversed for right-to-left.
         direction: Vec3::Z,
@@ -12,9 +12,14 @@ pub fn stack<State, Context, I: IntoWidgetChildren<State, Context>>(
     }
 }
 
-pub fn column<State, Context: GetStandardStyle, I: IntoWidgetChildren<State, Context>>(
+pub fn column<
+    State,
+    Context: GetStandardStyle,
+    ExtraState,
+    I: IntoWidgetChildren<State, Context, ExtraState>,
+>(
     children: I,
-) -> Consecutive<State, Context, I::WidgetChildren, fn(&mut State, &Context) -> f32> {
+) -> Consecutive<State, Context, ExtraState, I::WidgetChildren, fn(&mut State, &Context) -> f32> {
     Consecutive {
         // This should be reversed for right-to-left.
         direction: Vec3::Y,
@@ -24,9 +29,14 @@ pub fn column<State, Context: GetStandardStyle, I: IntoWidgetChildren<State, Con
     }
 }
 
-pub fn row<State, Context: GetStandardStyle, I: IntoWidgetChildren<State, Context>>(
+pub fn row<
+    State,
+    Context: GetStandardStyle,
+    ExtraState,
+    I: IntoWidgetChildren<State, Context, ExtraState>,
+>(
     children: I,
-) -> Consecutive<State, Context, I::WidgetChildren, fn(&mut State, &Context) -> f32> {
+) -> Consecutive<State, Context, ExtraState, I::WidgetChildren, fn(&mut State, &Context) -> f32> {
     Consecutive {
         // This should be reversed for right-to-left.
         direction: Vec3::X,
@@ -36,9 +46,14 @@ pub fn row<State, Context: GetStandardStyle, I: IntoWidgetChildren<State, Contex
     }
 }
 
-pub fn row_unspaced<State, Context, I: IntoWidgetChildren<State, Context>>(
+pub fn row_unspaced<
+    State,
+    Context,
+    ExtraState,
+    I: IntoWidgetChildren<State, Context, ExtraState>,
+>(
     children: I,
-) -> impl Widget<State, Context> {
+) -> impl Widget<State, Context, ExtraState> {
     Consecutive {
         // This should be reversed for right-to-left.
         direction: Vec3::X,
@@ -48,9 +63,14 @@ pub fn row_unspaced<State, Context, I: IntoWidgetChildren<State, Context>>(
     }
 }
 
-pub fn column_unspaced<State, Context, I: IntoWidgetChildren<State, Context>>(
+pub fn column_unspaced<
+    State,
+    Context,
+    ExtraState,
+    I: IntoWidgetChildren<State, Context, ExtraState>,
+>(
     children: I,
-) -> impl Widget<State, Context> {
+) -> impl Widget<State, Context, ExtraState> {
     Consecutive {
         direction: Vec3::Y,
         children: children.into_widget_children(),
@@ -62,13 +82,14 @@ pub fn column_unspaced<State, Context, I: IntoWidgetChildren<State, Context>>(
 pub struct Consecutive<
     State,
     Context,
-    Children: WidgetChildren<State, Context>,
+    ExtraState,
+    Children: WidgetChildren<State, Context, ExtraState>,
     GetSpacing: Fn(&mut State, &Context) -> f32,
 > {
     direction: Vec3,
     children: Children,
     get_spacing: GetSpacing,
-    phantom: std::marker::PhantomData<(State, Context)>,
+    phantom: std::marker::PhantomData<(State, Context, ExtraState)>,
 }
 
 // This is written a bit more verbosely and less efficiently than necessary to accomodate rows, columns,
@@ -76,17 +97,16 @@ pub struct Consecutive<
 impl<
         State,
         Context,
-        Children: WidgetChildren<State, Context>,
+        ExtraState,
+        Children: WidgetChildren<State, Context, ExtraState>,
         GetSpacing: Fn(&mut State, &Context) -> f32,
-    > Widget<State, Context> for Consecutive<State, Context, Children, GetSpacing>
+    > Widget<State, Context, ExtraState>
+    for Consecutive<State, Context, ExtraState, Children, GetSpacing>
 {
-    fn update(&mut self, data: &mut State, context: &mut Context) {
-        self.children.update(data, context)
-    }
-
     fn layout(
         &mut self,
         data: &mut State,
+        extra_state: &mut ExtraState,
         context: &mut Context,
         min_and_max_size: MinAndMaxSize,
     ) -> Vec3 {
@@ -95,7 +115,7 @@ impl<
         let mut offset_in_direction = 0.;
         let mut other_dimension_size = Vec3::ZERO;
         self.children
-            .create_children_and_layout(data, context, min_and_max_size);
+            .create_children_and_layout(data, extra_state, context, min_and_max_size);
         let mut sized_children: usize = 0;
         for &child_size in self.children.constraints_iter() {
             let amount_in_directon = child_size.dot(self.direction);
@@ -110,7 +130,14 @@ impl<
         other_dimension_size + self.direction * offset_in_direction
     }
 
-    fn draw(&mut self, data: &mut State, context: &mut Context, drawer: &mut Drawer, bounds: Box3) {
+    fn draw(
+        &mut self,
+        data: &mut State,
+        extra_state: &mut ExtraState,
+        context: &mut Context,
+        drawer: &mut Drawer,
+        bounds: Box3,
+    ) {
         let spacing = (self.get_spacing)(data, context);
 
         let constraint_size = bounds.size();
@@ -118,16 +145,18 @@ impl<
 
         let size_not_along_direction =
             constraint_size - (constraint_size.dot(self.direction) * self.direction);
-        self.children.draw(data, context, drawer, |constraints| {
-            let child_size_along_direction = constraints.dot(self.direction).abs() * self.direction;
+        self.children
+            .draw(data, extra_state, context, drawer, |constraints| {
+                let child_size_along_direction =
+                    constraints.dot(self.direction).abs() * self.direction;
 
-            let corner0 = offset;
-            let corner1 = offset + child_size_along_direction + size_not_along_direction;
-            let child_constraints = Box3::new(corner0.min(corner1), corner0.max(corner1));
+                let corner0 = offset;
+                let corner1 = offset + child_size_along_direction + size_not_along_direction;
+                let child_constraints = Box3::new(corner0.min(corner1), corner0.max(corner1));
 
-            offset += child_size_along_direction + spacing * self.direction;
+                offset += child_size_along_direction + spacing * self.direction;
 
-            child_constraints
-        })
+                child_constraints
+            })
     }
 }

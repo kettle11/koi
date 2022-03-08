@@ -319,23 +319,9 @@ impl KoiState {
             return;
         }
 
-        let input = self
-            .world
-            .get_component_mut::<Input>(self.input_entity)
-            .unwrap();
-        input.0.handle_event(&event);
-
-        self.world
-            .get_component_mut::<KappEvents>(self.kapp_events_entity)
-            .unwrap()
-            .push(event.clone());
-
-        for system in &mut self.systems.on_kapp_events {
-            system.run(&mut self.world)
-        }
-
         // Run additional control flow.
         // This is used by things like XR that need to control overall program flow.
+        // This is also used by the UI which might consume events.
         let mut consumed_event = false;
         let mut swap = Vec::new();
         std::mem::swap(&mut self.systems.additional_control_flow, &mut swap);
@@ -345,9 +331,25 @@ impl KoiState {
                 break;
             }
         }
-        std::mem::swap(&mut self.systems.additional_control_flow, &mut swap);
 
         if !consumed_event {
+            let input = self
+                .world
+                .get_component_mut::<Input>(self.input_entity)
+                .unwrap();
+            input.0.handle_event(&event);
+
+            self.world
+                .get_component_mut::<KappEvents>(self.kapp_events_entity)
+                .unwrap()
+                .push(event.clone());
+
+            for system in &mut self.systems.on_kapp_events {
+                system.run(&mut self.world)
+            }
+
+            std::mem::swap(&mut self.systems.additional_control_flow, &mut swap);
+
             if let KappEvent::Draw { .. } = event {
                 self.draw()
             }

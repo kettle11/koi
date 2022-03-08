@@ -59,10 +59,10 @@ pub fn rectangle(size: Vec2) -> Rectangle {
     }
 }
 
-pub fn colored_rectangle<State, Context: GetStandardInput>(
+pub fn colored_rectangle<State, Context: GetStandardInput, ExtraState>(
     size: Vec2,
-    color: impl Fn(&mut State, &Context) -> Color,
-) -> impl Widget<State, Context> {
+    color: impl Fn(&mut State, &mut ExtraState, &Context) -> Color,
+) -> impl Widget<State, Context, ExtraState> {
     stack((
         Rectangle {
             size: size.extend(0.1),
@@ -71,10 +71,11 @@ pub fn colored_rectangle<State, Context: GetStandardInput>(
     ))
 }
 
-impl<State, Context> Widget<State, Context> for Rectangle {
+impl<State, Context, ExtraState> Widget<State, Context, ExtraState> for Rectangle {
     fn layout(
         &mut self,
         _state: &mut State,
+        _extra_state: &mut ExtraState,
         _context: &mut Context,
         _min_and_max_size: MinAndMaxSize,
     ) -> Vec3 {
@@ -83,6 +84,7 @@ impl<State, Context> Widget<State, Context> for Rectangle {
     fn draw(
         &mut self,
         _state: &mut State,
+        _extra_state: &mut ExtraState,
         _context: &mut Context,
         _drawer: &mut Drawer,
         _bounds: Box3,
@@ -90,11 +92,11 @@ impl<State, Context> Widget<State, Context> for Rectangle {
     }
 }
 
-pub fn outlined_rounded_fill<State, Context: GetStandardInput>(
-    outline_color: impl Fn(&mut State, &Context) -> Color,
-    inner_color: impl Fn(&mut State, &Context) -> Color,
+pub fn outlined_rounded_fill<State, Context: GetStandardInput, ExtraState>(
+    outline_color: impl Fn(&mut State, &mut ExtraState, &Context) -> Color,
+    inner_color: impl Fn(&mut State, &mut ExtraState, &Context) -> Color,
     rounding: impl Fn(&mut State, &Context) -> f32,
-) -> impl Widget<State, Context> {
+) -> impl Widget<State, Context, ExtraState> {
     stack((
         rounded_fill(outline_color, rounding),
         padding(|_| 2.0, rounded_fill(inner_color, |_, _| 0.0)),
@@ -106,11 +108,11 @@ pub fn empty() -> Empty {
     Empty
 }
 
-impl<State, Context> Widget<State, Context> for Empty {
-    fn update(&mut self, _data: &mut State, _context: &mut Context) {}
+impl<State, Context, ExtraState> Widget<State, Context, ExtraState> for Empty {
     fn layout(
         &mut self,
         _data: &mut State,
+        _extra_state: &mut ExtraState,
         _context: &mut Context,
         _min_and_max_size: MinAndMaxSize,
     ) -> Vec3 {
@@ -119,6 +121,8 @@ impl<State, Context> Widget<State, Context> for Empty {
     fn draw(
         &mut self,
         _data: &mut State,
+        _extra_state: &mut ExtraState,
+
         _context: &mut Context,
         _drawer: &mut Drawer,
         _bounds: Box3,

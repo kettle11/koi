@@ -21,7 +21,7 @@ pub struct NodeState {
 fn tree<Data, ChildData, Context, Child: Widget<ChildData, Context>, ChildKey: Eq + Hash>(
     build_tree: fn(&mut Data, &mut dyn FnMut(NodeState, &mut ChildData, ChildKey) -> bool),
     create_node: fn() -> Child,
-) -> impl Widget<Data, Context> {
+) -> impl Widget<Data, Context, ExtraState, ExtraState> {
     Tree {
         create_node,
         build_tree,
@@ -30,7 +30,14 @@ fn tree<Data, ChildData, Context, Child: Widget<ChildData, Context>, ChildKey: E
     }
 }
 
-pub struct Tree<Data, Context, ChildData, Child: Widget<ChildData, Context>, ChildKey: Eq + Hash> {
+pub struct Tree<
+    Data,
+    Context,
+    ExtraState,
+    ChildData,
+    Child: Widget<ChildData, Context>,
+    ChildKey: Eq + Hash,
+> {
     create_node: fn() -> Child,
     build_tree: fn(&mut Data, &mut dyn FnMut(NodeState, &mut ChildData, ChildKey) -> bool),
     children: HashMap<ChildKey, (Child, f32, bool)>,
@@ -39,8 +46,15 @@ pub struct Tree<Data, Context, ChildData, Child: Widget<ChildData, Context>, Chi
 
 const INDENTATION_AMOUNT: f32 = 20.;
 
-impl<Data, Context, ChildData, Child: Widget<ChildData, Context>, ChildKey: Eq + Hash>
-    Widget<Data, Context> for Tree<Data, Context, ChildData, Child, ChildKey>
+impl<
+        Data,
+        Context,
+        ExtraState,
+        ChildData,
+        Child: Widget<ChildData, Context>,
+        ChildKey: Eq + Hash,
+    > Widget<Data, Context, ExtraState, ExtraState>
+    for Tree<Data, Context, ExtraState, ChildData, Child, ChildKey>
 {
     fn update(&mut self, data: &mut Data, context: &mut Context) {
         // Because children can only be added and not removed the memory consumed by this will grow as the entities in the scene increases.
@@ -101,8 +115,9 @@ impl<Data, Context, ChildData, Child: Widget<ChildData, Context>, ChildKey: Eq +
     }
 }
 
-fn entity_column<Context: GetStandardStyle + GetFonts + GetStandardInput + Clone>(
-) -> impl Widget<World, Context> {
+fn entity_column<
+    Context: GetStandardStyle + GetFonts + GetStandardInput + GetEventHandlers<World>,
+>() -> impl Widget<World, Context> {
     fit(stack((
         fill(|_, _| Color::WHITE),
         column(for_each(
