@@ -53,7 +53,7 @@ impl<'a, Child, State, ExtraState> ChildCreator<'a, Child, State, ExtraState> {
         extra_state: &mut ExtraState,
         f: impl Fn() -> Child,
     ) {
-        if self.current_child_index >= self.children.len() {
+        if self.current_child_index == self.children.len() {
             self.children.push(f())
         }
         (self.call_per_child)(
@@ -124,7 +124,7 @@ impl<Data, Context, ExtraState, ChildExtraState, Child: Widget<Data, Context, Ch
             children,
             call_per_child:
                 &mut |child: &mut Child, state: &mut Data, extra_state: &mut ChildExtraState| {
-                    if constraint_index <= constraints.len() {
+                    if constraint_index == constraints.len() {
                         constraints.push(Vec3::ZERO);
                     }
                     constraints[constraint_index] =
