@@ -1,6 +1,10 @@
 use koi::*;
 
-fn standard_frame<Data, Context: GetStandardStyle + GetStandardInput, ExtraState>(
+fn standard_frame<
+    Data,
+    Context: GetStandardStyle + GetStandardInput + GetEventHandlers<Data>,
+    ExtraState,
+>(
     child: impl Widget<Data, Context, ExtraState>,
 ) -> impl Widget<Data, Context, ExtraState> {
     stack((
