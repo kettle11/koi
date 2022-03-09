@@ -597,7 +597,7 @@ pub fn create_mesh_data<F: NumericFloat + GJKEpsilon + OneDividedBy12>(
 
     // Use bounding box to approximate tensor
     // Using the tensor for a cuboid.
-    let bounds = BoundingBox::from_points(positions);
+    let bounds = BoundingBox::from_points(positions.iter().cloned());
     let size = bounds.size();
     let size2 = size.mul_by_component(size);
 
