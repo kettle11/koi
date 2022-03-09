@@ -1009,7 +1009,7 @@ pub fn render_shadow_pass(
                 ];
 
                 // Clamp the shadow map bounding box to texel edges to reduce shimmering
-                let bounding_box = Box3::from_points(&corners);
+                let bounding_box = Box3::from_points(corners);
                 let world_units_per_texel = bounding_box.size() / shadow_caster.texture_size as f32;
                 let min = (bounding_box.min.div_by_component(world_units_per_texel))
                     .floor()

@@ -180,6 +180,10 @@ impl Camera {
         self.update_projection_matrix();
     }
 
+    pub fn get_vertical_field_of_view(&self) -> f32 {
+        self.vertical_field_of_view_radians
+    }
+
     pub fn set_projection_mode(&mut self, projection_mode: ProjectionMode) {
         self.projection_mode = projection_mode;
         self.update_projection_matrix();

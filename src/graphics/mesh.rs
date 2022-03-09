@@ -10,7 +10,7 @@ pub struct Mesh {
 impl Mesh {
     pub fn new(graphics: &mut Graphics, mesh_data: MeshData) -> Self {
         let gpu_mesh = graphics.new_gpu_mesh(&mesh_data).unwrap();
-        let bounding_box = Box3::from_points(&mesh_data.positions);
+        let bounding_box = Box3::from_points(mesh_data.positions.iter().cloned());
         Mesh {
             gpu_mesh: Some(gpu_mesh),
             mesh_data: Some(mesh_data),
