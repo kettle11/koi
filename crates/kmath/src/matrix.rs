@@ -11,7 +11,7 @@ use kserde::Serialize;
 
 use crate::*;
 
-#[derive(Copy, Clone, Debug, PartialEq, PartialOrd, Hash)]
+#[derive(Copy, Clone, Debug, PartialEq, PartialOrd, Hash, Eq)]
 #[repr(C)]
 pub struct Matrix<T, const ROWS: usize, const COLUMNS: usize>(pub(crate) [[T; ROWS]; COLUMNS]);
 

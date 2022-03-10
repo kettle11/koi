@@ -21,30 +21,29 @@ fn main() {
                 scale: Vec3::ONE,
             },
             Light::new(LightMode::Directional, Color::WHITE, 0.0),
-            //  ShadowCaster::new().with_ibl_shadowing(0.8),
+            ShadowCaster::new().with_ibl_shadowing(0.8),
         ));
 
         world.spawn((
             Transform::new()
-                .with_position(Vec3::new(0., -50.0, 0.))
-                .with_scale(Vec3::fill(100.)),
-            Mesh::SPHERE,
+                .with_position(Vec3::new(0., -20.0, 0.))
+                .with_scale(Vec3::fill(40.)),
+            Mesh::CUBE,
             Material::PHYSICALLY_BASED,
         ));
 
         spawn_skybox(world, "assets/venice_sunset_1k.hdr");
 
-        /*
         let worlds = world.get_single_component_mut::<Assets<World>>().unwrap();
-        let gltf_world = worlds.load("assets/huge_medieval_battle_scene/scene.gltf");
+        let gltf_world = worlds.load("assets/silent_ash/scene.gltf");
 
         // Spawn a Handle<World> that will be replaced with the GlTf when it's loaded.
         let gltf_hierarchy = world.spawn(gltf_world);
         let scaled_down = world.spawn(Transform::new().with_scale(Vec3::fill(5.0)));
         set_parent(world, Some(scaled_down), gltf_hierarchy);
-        */
+
         // Spawn a series of balls with different material properties.
-        // Up is more metallaic
+        // Up is more metallic
         // Right is more more rough
         let spacing = 2.0;
         let mut commands = Commands::new();
