@@ -20,7 +20,7 @@ pub fn text_box<Data, Context: GetStandardStyle + GetFonts + GetStandardInput, E
     get_text: fn(&mut Data) -> &mut String,
 ) -> impl Widget<Data, Context, ExtraState> {
     TextBox {
-        get_text,
+        _get_text: get_text,
         cursor_offset_from_end: 0,
         child_text: text(get_text),
         cursor_animation: 0.0,
@@ -29,7 +29,7 @@ pub fn text_box<Data, Context: GetStandardStyle + GetFonts + GetStandardInput, E
     }
 }
 pub struct TextBox<Data, Context: GetStandardStyle + GetFonts, ExtraState> {
-    get_text: fn(&mut Data) -> &mut String,
+    _get_text: fn(&mut Data) -> &mut String,
     /// The offset from the end of the string in numbers of characters.
     /// This points to a character. The cursor should go *before* the character.
     cursor_offset_from_end: usize,
