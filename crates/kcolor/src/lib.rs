@@ -84,6 +84,19 @@ impl Color {
         self.to_rgb_color(color_spaces::LINEAR_SRGB)
     }
 
+    pub fn from_linear_srgb(red: FType, green: FType, blue: FType, alpha: FType) -> Self {
+        // Internally colors are stored in CIE_XYZ color space.
+        let converter =
+            kolor::ColorConversion::new(kolor::spaces::LINEAR_SRGB, kolor::spaces::CIE_XYZ);
+        let result = converter.convert(kolor::Vec3::new(red, green, blue));
+        Self {
+            x: result.x,
+            y: result.y,
+            z: result.z,
+            alpha,
+        }
+    }
+
     /// Convert this color to a [RGBColor] in a specified [ColorSpace]
     /// The red, green, and blue components may not actually correspond to red, green, and blue depending on the color space.
     pub fn to_rgb_color(self, color_space: ColorSpace) -> kmath::Vec4 {
