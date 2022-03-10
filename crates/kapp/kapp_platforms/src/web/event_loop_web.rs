@@ -111,6 +111,16 @@ pub extern "C" fn kapp_on_pointer_up(
 }
 
 #[no_mangle]
+pub extern "C" fn kapp_on_double_click(x: f64, y: f64, button: f64, time_stamp: f64) {
+    send_event(Event::DoubleClick {
+        button: button_from_f64(button), // This is incorrect
+        x,
+        y,
+        timestamp: Duration::from_secs_f64(time_stamp * 1000.0),
+    });
+}
+
+#[no_mangle]
 pub extern "C" fn kapp_on_key_down(time_stamp: f64) {
     let key = kwasm::DATA_FROM_HOST.with(|d| {
         let d = d.borrow();
