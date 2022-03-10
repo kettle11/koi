@@ -78,6 +78,8 @@ pub use kwasm;
 
 pub use klog;
 
+pub use ktasks;
+
 #[cfg(feature = "tracing_allocator")]
 pub use ktracing_allocator::*;
 
@@ -226,16 +228,19 @@ impl App {
         ktasks::create_workers();
 
         let mut world = World::new();
-        world.spawn((Name("Commands"), Commands::new()));
+        world.spawn((Name("Commands".into()), Commands::new()));
         // Setup input
-        let input_entity = world.spawn((Name("Input"), Input::new()));
+        let input_entity = world.spawn((Name("Input".into()), Input::new()));
 
-        let kapp_events_entity = world.spawn((Name("KappEvents"), KappEvents(Vec::new())));
+        let kapp_events_entity = world.spawn((Name("KappEvents".into()), KappEvents(Vec::new())));
 
         // For now `kapp` is integrated directly into `koi`
         let (kapp_app, kapp_event_loop) = kapp::initialize();
 
-        world.spawn((Name("Kapp Application"), NotSendSync::new(kapp_app.clone())));
+        world.spawn((
+            Name("Kapp Application".into()),
+            NotSendSync::new(kapp_app.clone()),
+        ));
 
         let window_width = 1600;
         let window_height = 1200;
@@ -250,7 +255,7 @@ impl App {
 
         window.request_redraw();
 
-        let window_entity = world.spawn((Name("Window"), NotSendSync::new(window)));
+        let window_entity = world.spawn((Name("Window".into()), NotSendSync::new(window)));
 
         for setup_system in &mut self.systems.setup_systems {
             setup_system.run(&mut world)
@@ -264,7 +269,7 @@ impl App {
         let fixed_time_step = 1.0 / 60.0;
 
         world.spawn((
-            Name("Time"),
+            Name("Time".into()),
             Time {
                 // Set the delta_time to fixed_time_delta so that a fixed update runs for the first frame.
                 delta_seconds_f64: fixed_time_step,

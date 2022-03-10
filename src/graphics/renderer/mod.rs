@@ -41,7 +41,7 @@ pub fn setup_renderer(world: &mut World) {
     let default_material = new_pbr_material(Shader::PHYSICALLY_BASED, PBRProperties::default());
     let mut materials = Assets::<Material>::new(default_material, MaterialAssetLoader::new());
     Material::initialize_static_materials(&mut materials);
-    world.spawn((Name("Assets<Material>"), materials));
+    world.spawn((Name("Assets<Material>".into()), materials));
     let brdf_lookup_table = brdf_lookup::generate_brdf_lookup.run(world);
     let brdf_lookup_table = world
         .get_single_component_mut::<Assets<Texture>>()
@@ -57,7 +57,7 @@ pub fn setup_renderer(world: &mut World) {
             2048,
         )),
     };
-    world.spawn((Name("RendererInfo"), renderer_info));
+    world.spawn((Name("RendererInfo".into()), renderer_info));
 }
 
 pub struct ViewInfo {

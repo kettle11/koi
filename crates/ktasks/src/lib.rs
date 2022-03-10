@@ -236,8 +236,12 @@ pub struct JoinHandle<'a, T> {
 unsafe impl<'a, T> Send for JoinHandle<'a, T> {}
 
 impl<T: 'static> JoinHandle<'static, T> {
-    pub fn is_complete(&self) -> Poll<T> {
-        self.inner_poll()
+    /// Returns None if still Pending or already complete.
+    pub fn get_result(&self) -> Option<T> {
+        match self.inner_poll() {
+            Poll::Ready(t) => Some(t),
+            Poll::Pending => None,
+        }
     }
 
     /// Runs the task if it's not going to be directly awaited

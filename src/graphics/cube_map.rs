@@ -566,7 +566,7 @@ pub fn spawn_skybox(world: &mut World, path: &str) {
         .run(world);
 
     world.spawn((
-        Name("Sky box"),
+        Name("Sky box".into()),
         Transform::new(),
         Mesh::CUBE_MAP_CUBE,
         Color::WHITE,
@@ -596,7 +596,7 @@ pub fn spawn_skybox_without_image_based_lighting(world: &mut World, path: &str) 
     .run(world);
 
     world.spawn((
-        Name("Sky box"),
+        Name("Sky box".into()),
         Transform::new(),
         Mesh::CUBE_MAP_CUBE,
         Color::WHITE,

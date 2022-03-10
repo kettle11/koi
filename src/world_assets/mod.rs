@@ -18,7 +18,7 @@ pub fn world_assets_plugin() -> Plugin {
 
 fn setup_prefabs(world: &mut World) {
     let assets = Assets::<World>::new(World::new(), WorldLoader::new());
-    world.spawn((Name("Assets<World>"), assets));
+    world.spawn((Name("Assets<World>".into()), assets));
 }
 
 #[allow(dead_code, unused_variables, unreachable_code)]

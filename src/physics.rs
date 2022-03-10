@@ -16,7 +16,7 @@ pub fn physics_plguin() -> Plugin {
 
 pub fn setup_physics(world: &mut World) {
     world.spawn((
-        Name("PhysicsWorld"),
+        Name("PhysicsWorld".into()),
         PhysicsWorld {
             world: kphysics::PhysicsWorld::new(),
             paused: false,

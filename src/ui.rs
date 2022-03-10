@@ -12,7 +12,7 @@ pub struct UIManager {
 impl UIManager {
     pub fn new(world: &mut World) -> Self {
         let entity = world.spawn((
-            Name("User Interface Visuals"),
+            Name("User Interface Visuals".into()),
             Transform::new(),
             Material::UI,
             RenderFlags::USER_INTERFACE,

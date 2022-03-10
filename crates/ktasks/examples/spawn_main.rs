@@ -25,7 +25,7 @@ fn main() {
     run_current_thread_tasks();
     std::thread::sleep(std::time::Duration::from_millis(50));
 
-    if let Poll::Ready(result) = task0.is_complete() {
+    if let Some(result) = task0.get_result() {
         println!("RESULT: {:?}", result);
     }
 }

@@ -160,13 +160,19 @@ pub(super) fn load_gltf_as_world(
         )
     }
 
+    let commands_entity = gltf_world.spawn(Commands::new());
+    let mut commands = gltf_world
+        .remove_component::<Commands>(commands_entity)
+        .unwrap();
+    commands.apply(&mut gltf_world);
+    commands.clear();
+
     // Flatten world. This should be made an option later.
     // This updates all transform hierarchies, sets local transforms to `GlobalTransforms, and then removes `HierarchyNodes`
     // Doing this makes sense for static geometry like level objects, but doesn't make sense for GlTfs which would have
     // individual animated components.
     /*
     let commands_entity = gltf_world.spawn(Commands::new());
-    crate::transform::update_global_transforms.run(&gltf_world);
     let mut commands = gltf_world
         .remove_component::<Commands>(commands_entity)
         .unwrap();
@@ -421,6 +427,12 @@ fn initialize_nodes(
     } else {
         gltf_world.spawn((transform,))
     };
+
+    if let Some(name) = &node.name {
+        gltf_world
+            .add_component(entity, Name(name.clone()))
+            .unwrap();
+    }
 
     if let Some(parent) = parent {
         HierarchyNode::set_parent(gltf_world, Some(parent), entity).unwrap();

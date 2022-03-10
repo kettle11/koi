@@ -3,4 +3,4 @@ use kecs::Component;
 use crate::*;
 
 #[derive(Component, Clone)]
-pub struct Name(pub &'static str);
+pub struct Name(pub String);

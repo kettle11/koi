@@ -25,6 +25,7 @@ pub struct MeshData {
     pub indices: Vec<[u32; 3]>,
     pub normals: Vec<Vec3>,
     pub texture_coordinates: Vec<Vec2>,
+    /// Colors are linear sRGB
     pub colors: Vec<Vec4>,
 }
 
