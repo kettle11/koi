@@ -164,6 +164,12 @@ function receive_message(command, data) {
                 check_special_key_status(event);
                 let pointer_type = get_pointer_type(event);
                 self.kwasm_exports.kapp_on_pointer_up(event.clientX * window.devicePixelRatio, event.clientY * window.devicePixelRatio, pointer_type, event.button, event.timeStamp, event.pointerId);
+
+            }
+            canvas.onmouseup = function (event) {
+                if (event.detail == 2) {
+                    self.kwasm_exports.kapp_on_double_click(event.clientX * window.devicePixelRatio, event.clientY * window.devicePixelRatio, event.button, event.timeStamp);
+                }
             }
             canvas.onpointercancel = function (event) {
                 check_special_key_status(event);
