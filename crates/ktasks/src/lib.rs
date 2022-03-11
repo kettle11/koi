@@ -17,7 +17,7 @@
 // It may be worth replacing some very short mutex locks with spinlocks.
 // This would allow the code to work properly on the main thread on Wasm.
 
-use std::cell::{Cell, RefCell};
+use std::cell::RefCell;
 use std::collections::VecDeque;
 use std::future::Future;
 use std::pin::Pin;
@@ -224,9 +224,10 @@ enum JoinHandleInnerTask<'a> {
     Local(LocalTask<'a>, LocalTaskQueue<'static>),
     NonLocal(Task<'a>),
 }
+
 pub struct JoinHandle<'a, T> {
     shared_state: Arc<SharedState<T>>,
-    task: Cell<Option<JoinHandleInnerTask<'a>>>,
+    task: RefCell<Option<JoinHandleInnerTask<'a>>>,
     worker_waker: WorkerWaker,
     phantom: std::marker::PhantomData<T>,
 }
@@ -234,6 +235,9 @@ pub struct JoinHandle<'a, T> {
 // Safety: JoinHandle contains an inner function that will only be invoked on the thread that originated it.
 // But other threads can enqueue that task to wake it elsewhere.
 unsafe impl<'a, T> Send for JoinHandle<'a, T> {}
+
+// The inner RefCell ensures that it is safe to access a JoinHandle from multiple threads.
+unsafe impl<'a, T> Sync for JoinHandle<'a, T> {}
 
 impl<T: 'static> JoinHandle<'static, T> {
     /// Returns None if still Pending or already complete.
@@ -246,14 +250,16 @@ impl<T: 'static> JoinHandle<'static, T> {
 
     /// Runs the task if it's not going to be directly awaited
     pub fn run(&self) {
-        if let Some(task) = self.task.take() {
-            match task {
-                JoinHandleInnerTask::Local(task, local_task_queue) => {
-                    local_task_queue.0.lock().unwrap().push_back(Arc::new(task));
-                }
-                JoinHandleInnerTask::NonLocal(task) => {
-                    WORKER.with(|w| w.borrow().enqueue_task(task));
-                    self.worker_waker.wake_one();
+        if let Ok(mut task) = self.task.try_borrow_mut() {
+            if let Some(task) = task.take() {
+                match task {
+                    JoinHandleInnerTask::Local(task, local_task_queue) => {
+                        local_task_queue.0.lock().unwrap().push_back(Arc::new(task));
+                    }
+                    JoinHandleInnerTask::NonLocal(task) => {
+                        WORKER.with(|w| w.borrow().enqueue_task(task));
+                        self.worker_waker.wake_one();
+                    }
                 }
             }
         }
@@ -441,7 +447,7 @@ impl<'a> Worker<'a> {
 
         JoinHandle {
             shared_state,
-            task: Cell::new(Some(JoinHandleInnerTask::NonLocal(task))),
+            task: RefCell::new(Some(JoinHandleInnerTask::NonLocal(task))),
             worker_waker: self.new_task.clone(),
             phantom: std::marker::PhantomData,
         }
@@ -480,7 +486,7 @@ impl<'a> Worker<'a> {
         JoinHandle {
             shared_state,
             worker_waker: self.new_task.clone(),
-            task: Cell::new(Some(JoinHandleInnerTask::Local(task, main_thread_queue))),
+            task: RefCell::new(Some(JoinHandleInnerTask::Local(task, main_thread_queue))),
             phantom: std::marker::PhantomData,
         }
     }
@@ -515,7 +521,7 @@ impl<'a> Worker<'a> {
         JoinHandle {
             shared_state,
             worker_waker: self.new_task.clone(),
-            task: Cell::new(Some(JoinHandleInnerTask::Local(task, local_task_queue))),
+            task: RefCell::new(Some(JoinHandleInnerTask::Local(task, local_task_queue))),
             phantom: std::marker::PhantomData,
         }
     }

@@ -154,33 +154,43 @@ impl AssetLoader<World> for WorldLoader {
             .extension()
             .and_then(std::ffi::OsStr::to_str)
             .unwrap();
-        match extension {
-            #[cfg(feature = "gltf")]
-            "glb" | "gltf" => {
-                ktasks::spawn(async move {
-                    let world_load_message_data = load_world(&path).await.unwrap();
-                    sender.send(PrefabLoadMessage {
-                        handle,
-                        world_load_message_data,
-                    })
-                })
-                .run();
-            }
-            _ => {
-                panic!("Unsupported world file format")
-            }
-        }
+
+        ktasks::spawn(async move {
+            let world_load_message_data = load_world(&path).await.unwrap();
+            sender.send(PrefabLoadMessage {
+                handle,
+                world_load_message_data,
+            })
+        })
+        .run();
+    }
+    fn load_with_data_and_options_and_extension(
+        &mut self,
+        data: Vec<u8>,
+        extension: String,
+        handle: crate::Handle<World>,
+        _options: <World as LoadableAssetTrait>::Options,
+    ) {
+        let sender = self.sender.inner().clone();
+        ktasks::spawn(async move {
+            let world_load_message_data =
+                load_world_from_bytes_and_extension(&data, &"", &extension)
+                    .await
+                    .unwrap();
+            sender.send(PrefabLoadMessage {
+                handle,
+                world_load_message_data,
+            })
+        })
+        .run();
     }
 }
 
-#[allow(dead_code, unused_variables)]
-async fn load_world(path: &str) -> Option<PrefabLoadMessageData> {
-    let extension = std::path::Path::new(&path)
-        .extension()
-        .and_then(std::ffi::OsStr::to_str)?;
-
-    let bytes = crate::fetch_bytes(path).await.ok()?;
-
+async fn load_world_from_bytes_and_extension(
+    bytes: &[u8],
+    path: &str,
+    extension: &str,
+) -> Option<PrefabLoadMessageData> {
     #[allow(unreachable_code)]
     Some(match extension {
         #[cfg(feature = "gltf")]
@@ -221,4 +231,13 @@ async fn load_world(path: &str) -> Option<PrefabLoadMessageData> {
             return None;
         }
     })
+}
+#[allow(dead_code, unused_variables)]
+async fn load_world(path: &str) -> Option<PrefabLoadMessageData> {
+    let extension = std::path::Path::new(&path)
+        .extension()
+        .and_then(std::ffi::OsStr::to_str)?;
+
+    let bytes = crate::fetch_bytes(path).await.ok()?;
+    load_world_from_bytes_and_extension(&bytes, &path, &extension).await
 }

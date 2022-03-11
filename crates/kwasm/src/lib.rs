@@ -18,12 +18,14 @@ pub mod libraries {
     pub mod fetch;
     pub mod instant;
     pub mod load_image;
+    pub mod open_file;
     pub use console::*;
     pub use download::*;
     pub use eval::*;
     pub use fetch::*;
     pub use instant::*;
     pub use load_image::*;
+    pub use open_file::*;
 }
 
 mod js_object;

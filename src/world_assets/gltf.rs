@@ -161,6 +161,14 @@ pub(super) fn load_gltf_as_world(
     }
 
     let commands_entity = gltf_world.spawn(Commands::new());
+    crate::transform::update_root_global_transforms.run(&gltf_world);
+    let mut commands = gltf_world
+        .remove_component::<Commands>(commands_entity)
+        .unwrap();
+    commands.apply(&mut gltf_world);
+    commands.clear();
+
+    let commands_entity = gltf_world.spawn(commands);
     crate::transform::update_global_transforms.run(&gltf_world);
     let mut commands = gltf_world
         .remove_component::<Commands>(commands_entity)

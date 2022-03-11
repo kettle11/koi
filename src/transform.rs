@@ -174,7 +174,7 @@ impl Mul<Transform> for Transform {
 }
 
 /// Add [GlobalTransform]s to all root nodes without them.
-fn update_root_global_transforms(
+pub fn update_root_global_transforms(
     commands: &mut Commands,
     mut query: Query<(
         &Transform,
