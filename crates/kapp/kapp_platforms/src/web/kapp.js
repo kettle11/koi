@@ -73,6 +73,7 @@ var canvas = document
 
 let previous_mouse_x;
 let previous_mouse_y;
+let previous_mouse_up_button;
 
 let start_timestamp = Date.now();
 let key_down_map = new Map();
@@ -167,9 +168,10 @@ function receive_message(command, data) {
 
             }
             canvas.onmouseup = function (event) {
-                if (event.detail == 2) {
+                if (event.detail == 2 && previous_mouse_up_button == event.button) {
                     self.kwasm_exports.kapp_on_double_click(event.clientX * window.devicePixelRatio, event.clientY * window.devicePixelRatio, event.button, event.timeStamp);
                 }
+                previous_mouse_up_button = event.button;
             }
             canvas.onpointercancel = function (event) {
                 check_special_key_status(event);
