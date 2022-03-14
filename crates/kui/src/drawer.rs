@@ -123,6 +123,10 @@ impl Drawer {
             max: rectangle.max.xy(),
         };
         let rectangle = self.clip_rectangle(rectangle);
+
+        if color.alpha == 0.0 {
+            return rectangle;
+        }
         if rectangle.area() != 0.0 {
             let color = color.to_linear_srgb();
             let (width, height) = rectangle.size().xy().into();
@@ -225,6 +229,11 @@ impl Drawer {
         };
 
         let clipped_rectangle = self.clip_rectangle(rectangle);
+
+        if color.alpha == 0.0 {
+            return clipped_rectangle;
+        }
+
         if clipped_rectangle.area() != 0.0 {
             let color = color.to_linear_srgb();
 

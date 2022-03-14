@@ -196,7 +196,10 @@ impl<State> EventHandlers<State> {
                 );
             }
         }
-        if let kapp_platform_common::Event::PointerUp { .. } = event {
+        // Don't prevent pointer up events from percolating, for now.
+        if let kapp_platform_common::Event::PointerUp { .. }
+        | kapp_platform_common::Event::PointerMoved { .. } = event
+        {
             any_hitbox_hit = false;
         }
         any_hitbox_hit

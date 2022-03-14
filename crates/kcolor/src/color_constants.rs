@@ -10,6 +10,14 @@ impl Color {
         alpha: 1.0,
     };
 
+    /// A fully transparent color with red, green, and blue values set to 0.0
+    pub const TRANSPARENT: Color = Color {
+        x: 0.0,
+        y: 0.0,
+        z: 0.0,
+        alpha: 0.0,
+    };
+
     /// Black in sRGB
     pub const BLACK: Color = Color {
         x: 0.0,
