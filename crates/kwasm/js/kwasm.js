@@ -16,6 +16,9 @@ function kwasm_stuff() {
     }
 
     self.kwasm_new_js_object = function (item) {
+        if (item == null || item == undefined) {
+            return 0;
+        }
         let index = kwasm_js_objects_free_indices.pop();
         if (!index) {
             return kwasm_js_objects.push(item) - 1;
@@ -57,12 +60,7 @@ function kwasm_stuff() {
             const args = new Uint32Array(self.kwasm_memory.buffer, arg_data_ptr, args_length);
             let f = kwasm_js_objects[function_object];
             let result = f.apply(self, args);
-            if (result == undefined) {
-                return 0;
-            } else {
-                return self.kwasm_new_js_object(result);
-            }
-            result
+            return self.kwasm_new_js_object(result);
         },
         kwasm_call_js_with_args: function (function_object, arg_data_ptr, args_length) {
             const args = new Uint32Array(self.kwasm_memory.buffer, arg_data_ptr, args_length);
@@ -72,11 +70,9 @@ function kwasm_stuff() {
             let args0 = Array.from(args);
             let args1 = args0.map(a => kwasm_js_objects[a]);
             let result = f.apply(self, args1);
-            if (result == undefined) {
-                return 0;
-            } else {
-                return self.kwasm_new_js_object(result);
-            }
+
+            return self.kwasm_new_js_object(result);
+
         },
         kwasm_js_object_property: function (object_index, property_name_index) {
             let object = kwasm_js_objects[object_index];

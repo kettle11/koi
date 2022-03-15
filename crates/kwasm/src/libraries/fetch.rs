@@ -15,7 +15,6 @@ thread_local! {
 
     pub(crate) static READY_DATA_FOR_TRANSFER: JSObjectFromString = JSObjectFromString::new(r#"
         function f(result) {
-            console.log("READY DATA FOR TRANSFER");
             let pointer = self.kwasm_exports.kwasm_reserve_space(result.byteLength);
             let destination = new Uint8Array(kwasm_memory.buffer, pointer, result.byteLength);
             destination.set(new Uint8Array(result));

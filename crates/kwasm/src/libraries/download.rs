@@ -10,7 +10,7 @@ thread_local! {
         a.style.display = 'none'
         a.click()
         a.remove()
-      }
+    }
       
       function downloadBlob (data_ptr, data_len, fileName_index, mimeType_index) {
         let fileName =  self.kwasm_get_object(fileName_index);

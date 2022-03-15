@@ -6,7 +6,6 @@ thread_local! {
     static CHOOSE_FILE: JSObjectFromString = JSObjectFromString::new(r#"
         function f() {
             let promise = new Promise(function(resolve, reject) {
-                console.log("INPUT CHANGE PROMISE CREATED");
                 this.kwasm_input.onchange = function(e) {
                     resolve(e);
                 };

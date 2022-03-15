@@ -19,6 +19,7 @@ pub mod libraries {
     pub mod instant;
     pub mod load_image;
     pub mod open_file;
+    pub mod store_data;
     pub use console::*;
     pub use download::*;
     pub use eval::*;
@@ -26,6 +27,7 @@ pub mod libraries {
     pub use instant::*;
     pub use load_image::*;
     pub use open_file::*;
+    pub use store_data::*;
 }
 
 mod js_object;

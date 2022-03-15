@@ -296,7 +296,6 @@ impl<T: LoadableAssetTrait> Assets<T> {
         // Check first if we've already loaded this path.
         // The weak handle upgrade may fail, but if that happens proceed to load a new instance of the asset.
         if let Some(weak_handle) = self.path_to_handle.get(path) {
-            println!("AVOIDING EXTRA LOAD");
             if let Some(handle) = weak_handle.upgrade() {
                 return handle;
             }
