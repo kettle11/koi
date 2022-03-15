@@ -288,12 +288,14 @@ struct CubeMapLoadMessage {
     texture_load_data: TextureLoadData,
     texture_settings: TextureSettings,
     diffuse_and_specular_irradiance_cubemaps: Option<(Handle<CubeMap>, Handle<CubeMap>)>,
+    spawn_light: bool,
 }
 
 pub fn load_reflection_probe_immediate(
     cube_maps: &mut Assets<CubeMap>,
     graphics: &mut Graphics,
     meshes: &Assets<Mesh>,
+    commands: &mut Commands,
     data: &[u8],
 ) -> ReflectionProbe {
     let diffuse_irradiance_map = cube_maps.new_handle();
@@ -316,9 +318,10 @@ pub fn load_reflection_probe_immediate(
         texture_load_data,
         texture_settings: options.texture_settings,
         diffuse_and_specular_irradiance_cubemaps: options.diffuse_and_specular_irradiance_cubemaps,
+        spawn_light: true,
     };
 
-    load_cube_map_immediate(cube_maps, graphics, meshes, cube_map_load_message);
+    load_cube_map_immediate(cube_maps, graphics, meshes, cube_map_load_message, commands);
     ReflectionProbe {
         source: new_handle,
         diffuse_irradiance_map,
@@ -330,7 +333,8 @@ fn load_cube_map_immediate(
     cube_maps: &mut Assets<CubeMap>,
     graphics: &mut Graphics,
     meshes: &Assets<Mesh>,
-    message: CubeMapLoadMessage,
+    mut message: CubeMapLoadMessage,
+    commands: &mut Commands,
 ) {
     // Force ClampToEdge because other WrappingModes create a seam for CubeMaps.
 
@@ -343,6 +347,16 @@ fn load_cube_map_immediate(
         ..message.texture_settings
     };
 
+    if message.spawn_light {
+        let direction = find_brightest_direction(&mut message.texture_load_data);
+        commands.spawn((
+            Transform::new()
+                .with_position(direction)
+                .looking_at(Vec3::ZERO, Vec3::Y),
+            Light::new(LightMode::Directional, Color::WHITE, 0.0),
+            ShadowCaster::new().with_ibl_shadowing(0.3),
+        ))
+    }
     let pixel_format = message.texture_load_data.pixel_format;
     // Create a GPU texture to process into the CubeMap
     let texture =
@@ -450,6 +464,7 @@ pub fn load_cube_maps(
     cube_maps: &mut Assets<CubeMap>,
     graphics: &mut Graphics,
     meshes: &Assets<Mesh>,
+    commands: &mut Commands,
 ) {
     // A Vec doesn't need to be allocated here.
     // This is just a way to not borrow the TextureAssetLoader and Textures at
@@ -457,7 +472,7 @@ pub fn load_cube_maps(
     let messages: Vec<CubeMapLoadMessage> =
         cube_maps.asset_loader.receiver.inner().try_iter().collect();
     for message in messages.into_iter() {
-        load_cube_map_immediate(cube_maps, graphics, meshes, message)
+        load_cube_map_immediate(cube_maps, graphics, meshes, message, commands)
     }
 }
 
@@ -497,6 +512,40 @@ impl CubeMapAssetLoader {
     }
 }
 
+fn find_brightest_direction(texture_load_data: &mut TextureLoadData) -> Vec3 {
+    #[allow(irrefutable_let_patterns)]
+    if let TextureData::Bytes(bytes) = &mut texture_load_data.data {
+        let mut brightest_pixel_index = 0;
+        let mut brightes_pixel = f32::MIN;
+        let bytes = bytes.as_u8_array_mut();
+
+        println!("BYTES LEN: {:?}", bytes.len());
+        let f32_array: &mut [[f32; 4]] = bytemuck::try_cast_slice_mut(bytes).unwrap();
+        for (i, [p0, p1, p2, _p3]) in f32_array.iter().enumerate() {
+            let v = p0 + p1 + p2;
+            if v > brightes_pixel {
+                brightest_pixel_index = i;
+                brightes_pixel = v;
+            }
+        }
+
+        f32_array[brightest_pixel_index] = [0.0, 0.0, 0.0, 1.0];
+        let pixel_x = (brightest_pixel_index % texture_load_data.width as usize) as f32;
+        let pixel_y = (brightest_pixel_index / texture_load_data.width as usize) as f32;
+
+        println!("PIXEL X, Y: {:?}", (pixel_x, pixel_y));
+        // TODO: Convert to a direction
+        let (z, x) = (pixel_x / texture_load_data.width as f32 * std::f32::consts::TAU).sin_cos();
+        let y = (pixel_y / texture_load_data.height as f32 * std::f32::consts::PI).sin();
+
+        let dir = Vec3::new(x, -y, z);
+        println!("BRIGHTEST PIXEL DIR: {:?}", -dir);
+        -dir
+    } else {
+        unreachable!()
+    }
+}
+
 impl AssetLoader<CubeMap> for NotSendSync<CubeMapAssetLoader> {
     fn load_with_options(
         &mut self,
@@ -517,6 +566,7 @@ impl AssetLoader<CubeMap> for NotSendSync<CubeMapAssetLoader> {
                 texture_settings: options.texture_settings,
                 diffuse_and_specular_irradiance_cubemaps: options
                     .diffuse_and_specular_irradiance_cubemaps,
+                spawn_light: true,
             });
         })
         .run();
@@ -623,19 +673,20 @@ pub fn spawn_reflection_probe(world: &mut World, path: &str) {
 }
 
 pub fn spawn_reflection_probe_immediate(world: &mut World, data: &[u8]) {
-    let (reflection_probe, _) =
-        (|cube_maps: &mut Assets<CubeMap>,
-          graphics: &mut Graphics,
-          meshes: &mut Assets<Mesh>,
-          materials: &mut Assets<Material>| {
-            let reflection_probe =
-                load_reflection_probe_immediate(cube_maps, graphics, meshes, data);
+    let (reflection_probe, _) = (|cube_maps: &mut Assets<CubeMap>,
+                                  graphics: &mut Graphics,
+                                  meshes: &mut Assets<Mesh>,
+                                  materials: &mut Assets<Material>,
+                                  commands: &mut Commands| {
+        let reflection_probe =
+            load_reflection_probe_immediate(cube_maps, graphics, meshes, commands, data);
 
-            let mut material = Material::new(Shader::SKY_BOX);
-            material.set_cube_map("p_environment_map", reflection_probe.source.clone());
-            (reflection_probe, materials.add(material))
-        })
-        .run(world);
+        let mut material = Material::new(Shader::SKY_BOX);
+        material.set_cube_map("p_environment_map", reflection_probe.source.clone());
+        (reflection_probe, materials.add(material))
+    })
+    .run(world);
 
+    apply_commands(world);
     world.spawn((Transform::new(), reflection_probe));
 }

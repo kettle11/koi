@@ -23,11 +23,15 @@ struct TextureLoadMessage {
 /// Used in texture loading to upload data to the GPU.
 pub trait AsU8Array: 'static + Send + Sync {
     fn as_u8_array(&self) -> &[u8];
+    fn as_u8_array_mut(&mut self) -> &mut [u8];
 }
 
 impl<T: Pod + Send + Sync + 'static> AsU8Array for Vec<T> {
     fn as_u8_array(&self) -> &[u8] {
         bytemuck::cast_slice(self)
+    }
+    fn as_u8_array_mut(&mut self) -> &mut [u8] {
+        bytemuck::cast_slice_mut(self)
     }
 }
 
