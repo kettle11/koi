@@ -38,17 +38,15 @@ impl<Data, Context, ExtraState, Child: Widget<Data, Context, ExtraState>>
         extra_state: &mut ExtraState,
         context: &mut Context,
         drawer: &mut Drawer,
-        mut constraints: Box3,
+        constraints: Box3,
     ) {
-        if self.child_size.y == 5.3 {
-            println!("CHILD SIZE: {:?}", self.child_size);
-            println!("CONSTRAINTS: {:?}", constraints);
-        }
-        constraints.min = constraints.center() - self.child_size / 2.0;
-        constraints.max = constraints.center() + self.child_size / 2.0;
+        let child_constraints = Box3 {
+            min: constraints.center() - self.child_size / 2.0,
+            max: constraints.center() + self.child_size / 2.0,
+        };
 
         self.child
-            .draw(state, extra_state, context, drawer, constraints)
+            .draw(state, extra_state, context, drawer, child_constraints)
     }
 }
 

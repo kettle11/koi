@@ -118,11 +118,6 @@ impl<Data, Context, ExtraState, Child: Widget<Data, Context, ExtraState>>
         drawer: &mut Drawer,
         constraints: Box3,
     ) {
-        let box_size = constraints.size().max(self.min_size);
-        let constraints = Box3 {
-            min: constraints.min,
-            max: constraints.min + box_size,
-        };
         self.child
             .draw(state, extra_state, context, drawer, constraints)
     }
