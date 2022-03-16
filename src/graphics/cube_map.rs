@@ -519,7 +519,6 @@ fn find_brightest_direction(texture_load_data: &mut TextureLoadData) -> Vec3 {
         let mut brightes_pixel = f32::MIN;
         let bytes = bytes.as_u8_array_mut();
 
-        println!("BYTES LEN: {:?}", bytes.len());
         let f32_array: &mut [[f32; 4]] = bytemuck::try_cast_slice_mut(bytes).unwrap();
         for (i, [p0, p1, p2, _p3]) in f32_array.iter().enumerate() {
             let v = p0 + p1 + p2;
@@ -533,13 +532,10 @@ fn find_brightest_direction(texture_load_data: &mut TextureLoadData) -> Vec3 {
         let pixel_x = (brightest_pixel_index % texture_load_data.width as usize) as f32;
         let pixel_y = (brightest_pixel_index / texture_load_data.width as usize) as f32;
 
-        println!("PIXEL X, Y: {:?}", (pixel_x, pixel_y));
-        // TODO: Convert to a direction
         let (z, x) = (pixel_x / texture_load_data.width as f32 * std::f32::consts::TAU).sin_cos();
         let y = (pixel_y / texture_load_data.height as f32 * std::f32::consts::PI).sin();
 
         let dir = Vec3::new(x, -y, z);
-        println!("BRIGHTEST PIXEL DIR: {:?}", -dir);
         -dir
     } else {
         unreachable!()
