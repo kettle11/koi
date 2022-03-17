@@ -8,8 +8,12 @@ pub fn derive_component(item: proc_macro::TokenStream) -> proc_macro::TokenStrea
     let mut parser = Parser::new(&rust_tokens);
     let parse_result = parser.parse().expect("Could not parse");
     let mut output_string = String::new();
-    output_string += &kserde_derive_impl::kserde_serialize_impl(&parse_result);
-    output_string += &kserde_derive_impl::kserde_deserialize_impl(&parse_result);
+
+    let serialize_impl = kserde_derive_impl::kserde_serialize_impl(&parse_result);
+    let deserialize_impl = kserde_derive_impl::kserde_deserialize_impl(&parse_result);
+
+    output_string += &serialize_impl;
+    output_string += &deserialize_impl;
 
     output_string.parse().unwrap()
 }

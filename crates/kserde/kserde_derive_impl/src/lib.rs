@@ -46,6 +46,8 @@ pub fn kserde_serialize_impl(value: &Value) -> String {
     let generic_consts;
     let name;
     let generic_args;
+
+    let mut where_clause = String::new();
     let mut properties;
 
     match value {
@@ -59,6 +61,13 @@ pub fn kserde_serialize_impl(value: &Value) -> String {
             generic_types += "KSer: kserde::Serializer, ";
             name = &_struct.name;
             generic_args = _struct.generic_parameters.as_args();
+
+            if !_struct.generic_parameters.0.is_empty() {
+                where_clause += &"where ";
+                for generic_arg in _struct.generic_parameters.0.iter() {
+                    where_clause += &format!("{}: Serialize<KSer>, \n", generic_arg.as_string());
+                }
+            }
 
             properties = String::new();
             match &_struct.fields {
@@ -81,6 +90,13 @@ pub fn kserde_serialize_impl(value: &Value) -> String {
             generic_types += "KSer: kserde::Serializer, ";
             name = &_enum.name;
             generic_args = _enum.generic_parameters.as_args();
+
+            if !_enum.generic_parameters.0.is_empty() {
+                where_clause += &"where ";
+                for generic_arg in _enum.generic_parameters.0.iter() {
+                    where_clause += &format!("{}: Serialize<KSer>, \n", generic_arg.as_string());
+                }
+            }
 
             let mut variants = String::new();
             for variant in &_enum.variants {
@@ -144,14 +160,20 @@ pub fn kserde_serialize_impl(value: &Value) -> String {
     }
 
     format!(
-        r#"impl<{}{}{}> kserde::Serialize<KSer> for {}<{}> {{
+        r#"impl<{}{}{}> kserde::Serialize<KSer> for {}{} {} {{
         fn serialize(&self, serializer: &mut KSer) {{
         serializer.begin_object();
         {}
         serializer.end_object();
     }}
 }}"#,
-        generic_lifetimes, generic_types, &generic_consts, name, generic_args, properties
+        generic_lifetimes,
+        generic_types,
+        &generic_consts,
+        name,
+        generic_args,
+        where_clause,
+        properties
     )
 }
 
@@ -210,6 +232,7 @@ pub fn kserde_deserialize_impl(value: &Value) -> String {
     let body;
 
     let generic_parameters;
+    let mut where_clause = String::new();
 
     match value {
         Value::Struct(_struct) => {
@@ -219,6 +242,16 @@ pub fn kserde_deserialize_impl(value: &Value) -> String {
             let mut deserialize_match = String::new();
             let mut properties_declaration = String::new();
             let mut property_assignment = String::new();
+
+            if !_struct.generic_parameters.0.is_empty() {
+                where_clause += &"where ";
+                for generic_arg in _struct.generic_parameters.0.iter() {
+                    where_clause += &format!(
+                        "{}: Deserialize<'kserde, KDes>, \n",
+                        generic_arg.as_string()
+                    );
+                }
+            }
 
             deserialize_fields(
                 &_struct.fields,
@@ -251,6 +284,16 @@ pub fn kserde_deserialize_impl(value: &Value) -> String {
                 let mut deserialize_match = String::new();
                 let mut properties_declaration = String::new();
                 let mut property_assignment = String::new();
+
+                if !enum_.generic_parameters.0.is_empty() {
+                    where_clause += &"where ";
+                    for generic_arg in enum_.generic_parameters.0.iter() {
+                        where_clause += &format!(
+                            "{}: Deserialize<'kserde, KDes>, \n",
+                            generic_arg.as_string()
+                        );
+                    }
+                }
 
                 deserialize_fields(
                     &variant.fields,
@@ -331,7 +374,7 @@ pub fn kserde_deserialize_impl(value: &Value) -> String {
     let generic_args = generic_parameters.as_args();
 
     format!(
-        r#"impl<{generic_lifetimes}{generic_types}{generic_consts}> kserde::Deserialize<'kserde, KDes> for {name}<{generic_args}> {{
+        r#"impl<{generic_lifetimes}{generic_types}{generic_consts}> kserde::Deserialize<'kserde, KDes> for {name}{generic_args} {where_clause} {{
     fn deserialize(deserializer: &mut KDes) -> Option<Self> {{
         deserializer.begin_object().then(|| {{}})?;
         {body}

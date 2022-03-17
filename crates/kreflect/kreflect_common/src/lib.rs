@@ -851,8 +851,8 @@ impl<'a> Parser<'a> {
                 }
                 Fields::Tuple(members)
             }
-            _ => {
-                panic!("Unexpected token")
+            v => {
+                panic!("Unexpected token: {:?}", v)
             }
         })
     }
@@ -1025,7 +1025,12 @@ impl<'a> GenericParam<'a> {
                 identifier,
                 type_bounds,
             } => {
-                format!("{}: {}", identifier, type_bounds.as_string())
+                let type_bounds = type_bounds.as_string();
+                if type_bounds.is_empty() {
+                    identifier.to_string()
+                } else {
+                    format!("{}: {}", identifier, type_bounds)
+                }
             }
             Self::Lifetime { identifier } => {
                 format!("{}", identifier)
