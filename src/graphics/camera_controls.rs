@@ -115,12 +115,11 @@ pub fn update_camera_controls(
         }
 
         // Rotation
-        let (mut pitch, mut yaw) = if input.pointer_button(controls.rotate_button) {
+        let (mut pitch, mut yaw, rotating) = if input.pointer_button(controls.rotate_button) {
             let scale = 4.0;
-
-            (-difference[1] * scale, -difference[0] * scale)
+            (-difference[1] * scale, -difference[0] * scale, true)
         } else {
-            (0.0, 0.0)
+            (0.0, 0.0, false)
         };
 
         let mut pan = Vec2::ZERO;
@@ -155,6 +154,12 @@ pub fn update_camera_controls(
 
         pan += input.two_finger_pan();
 
+        // On Macs there are sometimes extra large-ish scroll events sent when ending a pan with a two finger click.
+        // This would result in the camera jerking. This check avoids that.
+        if rotating {
+            pan = Vec2::ZERO;
+        }
+
         let left = transform.left();
         let up = transform.up();
         let offset = left * pan.x + up * pan.y;
@@ -168,10 +173,6 @@ pub fn update_camera_controls(
                 transform.position += offset;
             }
         };
-
-        if input.key(Key::Space) {
-            println!("TRANSFORM: {:#?}", transform);
-        }
 
         let pinch = input.pinch();
 
