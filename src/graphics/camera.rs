@@ -208,10 +208,17 @@ impl Camera {
         let world_space_near = world_space_near.xyz() / world_space_near.w;
         let world_space_far = world_space_far.xyz() / world_space_far.w;
 
-        Ray3::new(
-            world_space_near,
-            -(world_space_far - world_space_near).normalized(),
-        )
+        let mut direction = -(world_space_far - world_space_near).normalized();
+
+        match self.projection_mode {
+            ProjectionMode::Orthographic => {
+                // HACK: Orthographic doesn't need the negation. This is probably covering for a mistake somewhere else.
+                direction *= -1.0;
+            }
+            _ => {}
+        }
+
+        Ray3::new(world_space_near, direction)
     }
 }
 pub fn resize_camera(mut cameras: Query<(&mut Camera,)>, window: &NotSendSync<kapp::Window>) {
