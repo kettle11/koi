@@ -195,7 +195,16 @@ pub fn update_camera_controls(
             CameraControlsMode::Orbit { target } => {
                 let diff_here = transform.position - *target;
 
-                transform.position += transform.forward() * (pinch * 3.).min(diff_here.length());
+                match camera.get_projection_mode() {
+                    ProjectionMode::Orthographic => {
+                        let new_height = camera.get_orthographic_height() - pinch * 3.0;
+                        camera.set_orthographic_height(new_height);
+                    }
+                    _ => {
+                        transform.position +=
+                            transform.forward() * (pinch * 3.).min(diff_here.length());
+                    }
+                }
 
                 let rotation_pitch = Quat::from_yaw_pitch_roll(0., pitch, 0.);
                 let rotation_yaw = Quat::from_yaw_pitch_roll(yaw, 0., 0.);

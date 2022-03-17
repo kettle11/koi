@@ -37,7 +37,7 @@ pub enum CameraTarget {
     XRDevice(usize),
 }
 
-#[derive(Clone, Debug, SerializeDeserialize)]
+#[derive(Copy, Clone, Debug, SerializeDeserialize)]
 pub enum ProjectionMode {
     Perspective,
     Orthographic,
@@ -68,6 +68,10 @@ impl Camera {
         };
         camera.update_projection_matrix();
         camera
+    }
+
+    pub fn get_projection_mode(&self) -> ProjectionMode {
+        self.projection_mode
     }
 
     /// Creates a new [Camera] with an orthographic projection matrix.
@@ -173,6 +177,10 @@ impl Camera {
     pub fn set_orthographic_height(&mut self, height: f32) {
         self.orthographic_height = height;
         self.update_projection_matrix();
+    }
+
+    pub fn get_orthographic_height(&mut self) -> f32 {
+        self.orthographic_height
     }
 
     pub fn set_vertical_field_of_view(&mut self, vertical_field_of_view_radians: f32) {
