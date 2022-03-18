@@ -209,8 +209,7 @@ pub enum Event {
 }
 
 #[derive(PartialEq, Eq, Hash, Debug, Copy, Clone)]
-#[cfg(feature = "kserde")]
-#[derive(kserde::SerializeDeserialize)]
+#[cfg_attr(feature = "kserde", derive(kserde::SerializeDeserialize))]
 pub enum PointerSource {
     Mouse,
     Touch,
@@ -219,8 +218,7 @@ pub enum PointerSource {
 }
 
 #[derive(PartialEq, Eq, Hash, Debug, Copy, Clone)]
-#[cfg(feature = "kserde")]
-#[derive(kserde::SerializeDeserialize)]
+#[cfg_attr(feature = "kserde", derive(kserde::SerializeDeserialize))]
 pub enum PointerButton {
     None,
     Primary,

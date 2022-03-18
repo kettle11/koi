@@ -1,9 +1,8 @@
 /// A unique ID associated with a Window.
 #[derive(Debug, Hash, Eq, PartialEq, Clone, Copy)]
-#[cfg(feature = "kserde")]
-#[derive(kserde::SerializeDeserialize)]
+#[cfg_attr(feature = "kserde", derive(kserde::SerializeDeserialize))]
 pub struct WindowId {
-    #[skip]
+    #[cfg_attr(feature = "kserde", skip)]
     raw_id: usize,
 }
 

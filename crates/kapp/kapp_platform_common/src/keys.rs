@@ -1,6 +1,5 @@
 #[derive(PartialEq, Eq, Hash, Debug, Copy, Clone)]
-#[cfg(feature = "kserde")]
-#[derive(kserde::SerializeDeserialize)]
+#[cfg_attr(feature = "kserde", derive(kserde::SerializeDeserialize))]
 #[non_exhaustive]
 pub enum Key {
     Unknown,
