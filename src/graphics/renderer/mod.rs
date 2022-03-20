@@ -172,6 +172,7 @@ impl<'a, 'b: 'a> Renderer<'a, 'b> {
             &pipeline.get_int_property("p_light_count").unwrap(),
             lights.iter().count() as i32,
         );
+
         for (i, (transform, light, shadow_caster)) in lights.iter().enumerate() {
             if transform.position.is_nan() {
                 dbg!("Light position is NaN");
@@ -378,6 +379,15 @@ impl<'a, 'b: 'a> Renderer<'a, 'b> {
                 // Bind light and shadow info.
                 self.bind_light_info(pipeline, lights, max_texture_unit + 4);
 
+                // Set fog values
+                self.render_pass
+                    .set_float_property(&pipeline.get_float_property("p_fog_start").unwrap(), 20.);
+                self.render_pass
+                    .set_float_property(&pipeline.get_float_property("p_fog_end").unwrap(), 8000.);
+                self.render_pass.set_vec3_property(
+                    &pipeline.get_vec3_property("p_fog_color").unwrap(),
+                    (1.0, 1.0, 1.0),
+                );
                 // Bind the reflection probe
                 let (reflection_probe_diffuse, reflection_probe_specular) =
                     if let Some((_, reflection_probe)) = reflection_probes.iter().next() {

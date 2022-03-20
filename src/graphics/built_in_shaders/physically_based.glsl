@@ -217,7 +217,6 @@ void main()
     float z = gl_FragCoord.z / gl_FragCoord.w;
     float fog_factor = (z - p_fog_start) / (p_fog_end - p_fog_start);
     fog_factor = clamp(fog_factor, 0.0, 1.0 );
-    fog_factor = 0.0;
     
     vec3 color = p_fog_color;
     float alpha = 1.0;
@@ -326,7 +325,7 @@ void main()
             float near_plane_depth = 0.3;
             if (p_lights[i].shadows_enabled == 1) {
                 // Todo: his offset needs to be scaled with cascade otherwise acne is introduced at far distances.
-                vec4 offset_world_position = vec4(WorldPosition + normal * 0.1, 1.0);
+                vec4 offset_world_position = vec4(WorldPosition + N * 0.1, 1.0);
                 if (z > cascade_depths[2]) {
                     vec4 light_space_position = p_world_to_light_space_3 * offset_world_position;
                     shadow = ShadowCalculation(p_light_shadow_maps_3, light_space_position, L, cascade_depths[3] - cascade_depths[2], biases[3]);
@@ -380,7 +379,7 @@ void main()
     
     
     // This should be applied before the shader instead.
-  //  color = mix(color, p_fog_color, fog_factor );
+    color = mix(color, p_fog_color, fog_factor );
     color += emissive;
 
     // HDR tonemapping
