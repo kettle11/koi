@@ -73,7 +73,7 @@ pub fn colored_rectangle<State, Context: GetStandardInput + GetEventHandlers<Sta
         Rectangle {
             size: size.extend(0.1),
         },
-        fill(color),
+        fill_pass_through(color),
     ))
 }
 
