@@ -67,7 +67,7 @@ pub fn slider<
         backdrop_child: center(expand_horizontal(height(
             10.,
             rounded_fill_pass_through(
-                |_, _, c: &Context| c.standard_style().primary_color,
+                |_, _, c: &Context| c.standard_style().primary_variant_color,
                 |_, c| c.standard_style().rounding,
             ),
         ))),
@@ -155,15 +155,14 @@ impl<
         context: &mut Context,
         min_and_max_size: MinAndMaxSize,
     ) -> Vec3 {
-        //   context.standard_input_mut().button_clicked = self.clicked.borrow_mut().is_some();
-        let backdrop_size =
-            self.backdrop_child
-                .layout(state, extra_state, context, min_and_max_size);
+        // let backdrop_size =
+        self.backdrop_child
+            .layout(state, extra_state, context, min_and_max_size);
         let handle_size = self
             .handle_child
             .layout(state, extra_state, context, min_and_max_size);
         self.child_handle_width = handle_size.x;
-        backdrop_size.max(handle_size)
+        handle_size
     }
     fn draw(
         &mut self,

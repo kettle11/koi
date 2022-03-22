@@ -41,8 +41,8 @@ impl<Data, Context, ExtraState, Child: Widget<Data, Context, ExtraState>>
         constraints: Box3,
     ) {
         let child_constraints = Box3 {
-            min: constraints.center() - self.child_size / 2.0,
-            max: constraints.center() + self.child_size / 2.0,
+            min: (constraints.center() - self.child_size / 2.0).max(constraints.min),
+            max: (constraints.center() + self.child_size / 2.0).min(constraints.max),
         };
 
         self.child
