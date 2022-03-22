@@ -1215,6 +1215,24 @@ impl<const R: usize, const C: usize> Matrix<f32, R, C> {
         }
         output
     }
+    pub fn as_u32(&self) -> Matrix<u32, R, C> {
+        let mut output = Matrix::<u32, R, C>::ZERO;
+        for i in 0..C {
+            for j in 0..R {
+                output.0[i][j] = self.0[i][j] as u32;
+            }
+        }
+        output
+    }
+    pub fn as_usize(&self) -> Matrix<usize, R, C> {
+        let mut output = Matrix::<usize, R, C>::ZERO;
+        for i in 0..C {
+            for j in 0..R {
+                output.0[i][j] = self.0[i][j] as usize;
+            }
+        }
+        output
+    }
 }
 
 impl<const R: usize, const C: usize> Matrix<i32, R, C> {
@@ -1223,6 +1241,104 @@ impl<const R: usize, const C: usize> Matrix<i32, R, C> {
         for i in 0..C {
             for j in 0..R {
                 output.0[i][j] = self.0[i][j] as f32;
+            }
+        }
+        output
+    }
+    pub fn as_u32(&self) -> Matrix<u32, R, C> {
+        let mut output = Matrix::<u32, R, C>::ZERO;
+        for i in 0..C {
+            for j in 0..R {
+                output.0[i][j] = self.0[i][j] as u32;
+            }
+        }
+        output
+    }
+    pub fn as_usize(&self) -> Matrix<usize, R, C> {
+        let mut output = Matrix::<usize, R, C>::ZERO;
+        for i in 0..C {
+            for j in 0..R {
+                output.0[i][j] = self.0[i][j] as usize;
+            }
+        }
+        output
+    }
+}
+
+impl<const R: usize, const C: usize> Matrix<u32, R, C> {
+    pub fn as_f32(&self) -> Matrix<f32, R, C> {
+        let mut output = Matrix::<f32, R, C>::ZERO;
+        for i in 0..C {
+            for j in 0..R {
+                output.0[i][j] = self.0[i][j] as f32;
+            }
+        }
+        output
+    }
+    pub fn as_i32(&self) -> Matrix<i32, R, C> {
+        let mut output = Matrix::<i32, R, C>::ZERO;
+        for i in 0..C {
+            for j in 0..R {
+                output.0[i][j] = self.0[i][j] as i32;
+            }
+        }
+        output
+    }
+    pub fn as_usize(&self) -> Matrix<usize, R, C> {
+        let mut output = Matrix::<usize, R, C>::ZERO;
+        for i in 0..C {
+            for j in 0..R {
+                output.0[i][j] = self.0[i][j] as usize;
+            }
+        }
+        output
+    }
+}
+impl<const R: usize, const C: usize> Matrix<u64, R, C> {
+    pub fn as_f32(&self) -> Matrix<f32, R, C> {
+        let mut output = Matrix::<f32, R, C>::ZERO;
+        for i in 0..C {
+            for j in 0..R {
+                output.0[i][j] = self.0[i][j] as f32;
+            }
+        }
+        output
+    }
+    pub fn as_i32(&self) -> Matrix<i32, R, C> {
+        let mut output = Matrix::<i32, R, C>::ZERO;
+        for i in 0..C {
+            for j in 0..R {
+                output.0[i][j] = self.0[i][j] as i32;
+            }
+        }
+        output
+    }
+    pub fn as_usize(&self) -> Matrix<usize, R, C> {
+        let mut output = Matrix::<usize, R, C>::ZERO;
+        for i in 0..C {
+            for j in 0..R {
+                output.0[i][j] = self.0[i][j] as usize;
+            }
+        }
+        output
+    }
+}
+
+impl<const R: usize, const C: usize> Matrix<usize, R, C> {
+    pub fn as_f32(&self) -> Matrix<f32, R, C> {
+        let mut output = Matrix::<f32, R, C>::ZERO;
+        for i in 0..C {
+            for j in 0..R {
+                output.0[i][j] = self.0[i][j] as f32;
+            }
+        }
+        output
+    }
+    pub fn as_i32(&self) -> Matrix<i32, R, C> {
+        let mut output = Matrix::<i32, R, C>::ZERO;
+        for i in 0..C {
+            for j in 0..R {
+                output.0[i][j] = self.0[i][j] as i32;
             }
         }
         output
