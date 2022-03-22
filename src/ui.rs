@@ -139,19 +139,20 @@ impl UIManager {
         self.update_size(world, standard_context);
     }
 
-    fn update_layout_draw<Data>(
+    pub fn render_ui(&mut self, world: &mut World) {
+        render_ui(world, self.entity, &mut self.drawer);
+    }
+
+    pub fn layout<State>(
         &mut self,
-        data: &mut Data,
-        context: &mut StandardContext<Data>,
-        root_widget: &mut impl kui::Widget<Data, StandardContext<Data>, ()>,
+        state: &mut State,
+        context: &mut StandardContext<State>,
+        root_widget: &mut impl kui::Widget<State, StandardContext<State>, ()>,
     ) {
         context.event_handlers.clear();
 
-        let (width, height, _) = self.initial_constraints.size().into();
-        self.drawer.set_view_width_height(width, height);
-
         root_widget.layout(
-            data,
+            state,
             &mut (),
             context,
             MinAndMaxSize {
@@ -159,8 +160,10 @@ impl UIManager {
                 max: self.initial_constraints.size(),
             },
         );
+        let (width, height, _) = self.initial_constraints.size().into();
+        self.drawer.set_view_width_height(width, height);
         root_widget.draw(
-            data,
+            state,
             &mut (),
             context,
             &mut self.drawer,
@@ -168,37 +171,15 @@ impl UIManager {
         );
     }
 
-    pub fn render_ui(&mut self, world: &mut World) {
-        render_ui(world, self.entity, &mut self.drawer);
-    }
-
-    pub fn layout_and_draw(
+    pub fn layout_and_draw_with_world(
         &mut self,
         world: &mut World,
         context: &mut StandardContext<World>,
         root_widget: &mut impl kui::Widget<World, StandardContext<World>, ()>,
     ) {
-        context.event_handlers.clear();
-
-        root_widget.layout(
-            world,
-            &mut (),
-            context,
-            MinAndMaxSize {
-                min: Vec3::ZERO,
-                max: self.initial_constraints.size(),
-            },
-        );
-        let (width, height, _) = self.initial_constraints.size().into();
-        self.drawer.set_view_width_height(width, height);
-        root_widget.draw(
-            world,
-            &mut (),
-            context,
-            &mut self.drawer,
-            self.initial_constraints,
-        );
-        render_ui(world, self.entity, &mut self.drawer);
+        self.prepare(world, context);
+        self.layout(world, context, root_widget);
+        self.render_ui(world)
     }
 }
 
@@ -248,6 +229,7 @@ pub fn run_simple_ui<Data: 'static>(
     fonts: kui::Fonts,
     root: impl kui::Widget<Data, StandardContext<Data>, ()> + 'static,
 ) {
+    let root = stack((fill(|_, _, _| Color::WHITE), root));
     App::new().setup_and_run(|world| {
         world.spawn((Transform::new(), Camera::new_for_user_interface()));
 
@@ -264,7 +246,7 @@ pub fn run_simple_ui<Data: 'static>(
             }
             Event::Draw => {
                 ui_manager.prepare(world, &mut standard_context);
-                ui_manager.update_layout_draw(&mut data, &mut standard_context, &mut root);
+                ui_manager.layout(&mut data, &mut standard_context, &mut root);
                 ui_manager.render_ui(world);
                 false
             }

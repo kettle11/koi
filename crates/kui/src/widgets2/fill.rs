@@ -37,6 +37,23 @@ pub fn rounded_fill<State, Context: GetStandardInput + GetEventHandlers<State>, 
     }
 }
 
+pub fn rounded_fill_pass_through<
+    State,
+    Context: GetStandardInput + GetEventHandlers<State>,
+    ExtraState,
+>(
+    color: impl Fn(&mut State, &mut ExtraState, &Context) -> Color,
+    rounding: impl Fn(&mut State, &Context) -> f32,
+) -> impl Widget<State, Context, ExtraState> {
+    Fill {
+        color,
+        rounding,
+        bounding_rect: Box2::ZERO,
+        consume_pointer_events: false,
+        phantom: std::marker::PhantomData,
+    }
+}
+
 pub struct Fill<
     State,
     Context,

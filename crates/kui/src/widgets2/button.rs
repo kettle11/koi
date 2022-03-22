@@ -2,47 +2,6 @@ use std::cell::RefCell;
 
 use crate::*;
 
-/*
-pub fn narrow_context<Data, OuterContext, InnerContext>(
-    narrow_context: fn(&mut OuterContext) -> &mut InnerContext,
-    child: impl Widget<Data, InnerContext>,
-) -> impl Widget<Data, OuterContext> {
-    NarrowContext {
-        narrow_context,
-        child,
-        phantom: std::marker::PhantomData,
-    }
-}
-
-pub struct NarrowContext<Data, OuterContext, InnerContext, Child: Widget<Data, InnerContext>> {
-    narrow_context: fn(&mut OuterContext) -> &mut InnerContext,
-    child: Child,
-    phantom: std::marker::PhantomData<Data>,
-}
-impl<Data, OuterContext, InnerContext, Child: Widget<Data, InnerContext>> Widget<Data, OuterContext>
-    for NarrowContext<Data, OuterContext, InnerContext, Child>
-{
-    fn layout(
-        &mut self,
-        state: &mut Data,
-        context: &mut OuterContext,
-        min_and_max_size: MinAndMaxSize,
-    ) -> Vec3 {
-        let context = (self.narrow_context)(context);
-        self.child.layout(state, context, min_and_max_size)
-    }
-    fn draw(
-        &mut self,
-        state: &mut Data,
-        context: &mut OuterContext,
-        drawer: &mut Drawer,
-        constraints: Box3,
-    ) {
-        let context = (self.narrow_context)(context);
-        self.child.draw(state, context, drawer, constraints)
-    }
-}
-*/
 pub fn button<
     State: 'static,
     Context: GetStandardInput + GetStandardStyle + GetFonts + GetEventHandlers<State>,
@@ -125,7 +84,7 @@ pub fn button_base<
 
     ButtonBase {
         child_widget,
-        bounding_rect: Box2::ZERO,
+        bounding_rect: Box3::ZERO,
         clicked: clicked.clone(),
         on_click: Rc::new(
             move |event: &kapp_platform_common::Event,
@@ -149,7 +108,7 @@ pub fn button_base<
 
 pub struct ButtonBase<State, Context, ExtraState, Child: Widget<State, Context, ExtraState>> {
     child_widget: Child,
-    bounding_rect: Box2,
+    bounding_rect: Box3,
     on_click: Rc<dyn Fn(&kapp_platform_common::Event, PointerEventInfo, &mut State) + 'static>,
     clicked: Rc<RefCell<bool>>,
     phantom: std::marker::PhantomData<fn() -> (Context, State, ExtraState)>,
@@ -173,9 +132,9 @@ impl<
         let child_size = self
             .child_widget
             .layout(state, extra_state, context, min_and_max_size);
-        self.bounding_rect = Box2 {
-            min: Vec2::ZERO,
-            max: child_size.xy().min(min_and_max_size.max.xy()),
+        self.bounding_rect = Box3 {
+            min: Vec3::ZERO,
+            max: child_size.min(min_and_max_size.max),
         };
         child_size
     }
@@ -188,12 +147,12 @@ impl<
         constraints: Box3,
     ) {
         context.standard_input_mut().button_clicked = *self.clicked.borrow_mut();
-        let size = self.bounding_rect.size().min(constraints.size().xy());
-        self.bounding_rect = Box2::new_with_min_corner_and_size(constraints.min.xy(), size);
+        let size = self.bounding_rect.size().min(constraints.size());
+        self.bounding_rect = Box3::new_with_min_corner_and_size(constraints.min, size);
         self.child_widget
             .draw(state, extra_state, context, drawer, constraints);
         context
             .event_handlers_mut()
-            .add_pointer_event_handler(constraints, Some(self.on_click.clone()))
+            .add_pointer_event_handler(self.bounding_rect, Some(self.on_click.clone()))
     }
 }

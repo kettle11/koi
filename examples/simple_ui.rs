@@ -16,10 +16,11 @@ fn standard_frame<
 fn main() {
     let ui = standard_frame(column((
         heading("Counter App"),
-        row((text("Count:"), text(|count: &mut i64| count.to_string()))),
-        button("Increment", |count| *count += 1),
-        button("Decrement", |count| *count -= 1),
+        row((text("Count:"), text(|count: &mut f32| count.to_string()))),
+        button("Increment", |count| *count += 1.0),
+        button("Decrement", |count| *count -= 1.0),
+        slider(|count| count, 0.0, 100.0),
     )));
 
-    run_simple_ui(0, StandardStyle::default(), Fonts::default(), ui)
+    run_simple_ui(0.0_f32, StandardStyle::default(), Fonts::default(), ui)
 }

@@ -9,6 +9,9 @@ pub use text::*;
 mod button;
 pub use button::*;
 
+mod slider;
+pub use slider::*;
+
 mod consecutive;
 pub use consecutive::*;
 
@@ -45,8 +48,11 @@ pub use center::*;
 mod ignore_dimension;
 pub use ignore_dimension::*;
 
-mod max_size;
-pub use max_size::*;
+mod constrain_size;
+pub use constrain_size::*;
+
+mod expand;
+pub use expand::*;
 
 /// Just a colored rectangle for debug purposes
 pub struct Rectangle {
