@@ -36,7 +36,7 @@ uniform int p_light_count;
 
 uniform float p_dither_scale;
 
-uniform vec3 p_fog_color;
+uniform vec4 p_fog_color;
 uniform float p_fog_start;
 uniform float p_fog_end;
 
@@ -218,7 +218,6 @@ void main()
     float fog_factor = (z - p_fog_start) / (p_fog_end - p_fog_start);
     fog_factor = clamp(fog_factor, 0.0, 1.0 );
     
-    vec3 color = p_fog_color;
     float alpha = 1.0;
 
     // reflectance equation
@@ -326,7 +325,11 @@ void main()
             if (p_lights[i].shadows_enabled == 1) {
                 // Todo: his offset needs to be scaled with cascade otherwise acne is introduced at far distances.
                 vec4 offset_world_position = vec4(WorldPosition + N * 0.1, 1.0);
-                if (z > cascade_depths[2]) {
+                
+                if (z > cascade_depths[3]) {
+                    shadow = 0.0;
+                }
+                else if (z > cascade_depths[2]) {
                     vec4 light_space_position = p_world_to_light_space_3 * offset_world_position;
                     shadow = ShadowCalculation(p_light_shadow_maps_3, light_space_position, L, cascade_depths[3] - cascade_depths[2], biases[3]);
                     //debug_color = vec3(1.0, 0.0, 0.0);
@@ -375,11 +378,11 @@ void main()
 
         vec3 ambient = (kD * diffuse + specular) * ambient_amount * ibl_scale; 
 
-        color = ambient + Lo;
+        vec3 color = ambient + Lo;
     
     
     // This should be applied before the shader instead.
-    color = mix(color, p_fog_color, fog_factor );
+    color = mix(color, p_fog_color.rgb, fog_factor );
     color += emissive;
 
     // HDR tonemapping

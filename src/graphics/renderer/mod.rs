@@ -384,9 +384,9 @@ impl<'a, 'b: 'a> Renderer<'a, 'b> {
                     .set_float_property(&pipeline.get_float_property("p_fog_start").unwrap(), 20.);
                 self.render_pass
                     .set_float_property(&pipeline.get_float_property("p_fog_end").unwrap(), 8000.);
-                self.render_pass.set_vec3_property(
-                    &pipeline.get_vec3_property("p_fog_color").unwrap(),
-                    (1.0, 1.0, 1.0),
+                self.render_pass.set_vec4_property(
+                    &pipeline.get_vec4_property("p_fog_color").unwrap(),
+                    (1.0, 1.0, 1.0, 1.0),
                 );
                 // Bind the reflection probe
                 let (reflection_probe_diffuse, reflection_probe_specular) =
