@@ -13,7 +13,7 @@ pub fn text_field<
             |_, _, c| c.standard_style().primary_color,
             |_, c| c.standard_style().rounding,
         ),
-        padding(|c: &Context| c.standard_style().padding, text_box(get_text)),
+        padding(text_box(get_text)),
     )))
 }
 pub fn text_box<Data, Context: GetStandardStyle + GetFonts + GetStandardInput, ExtraState>(

@@ -51,6 +51,18 @@ pub fn min_size<Data, Context, ExtraState>(
     }
 }
 
+pub fn width<Data, Context, ExtraState>(
+    width: f32,
+    child: impl Widget<Data, Context, ExtraState>,
+) -> impl Widget<Data, Context, ExtraState> {
+    ConstrainSize {
+        child,
+        min_size: Vec3::new(width, 0.0, 0.0),
+        max_size: Vec3::new(width, f32::MAX, f32::MAX),
+        phantom: std::marker::PhantomData,
+    }
+}
+
 pub fn height<Data, Context, ExtraState>(
     height: f32,
     child: impl Widget<Data, Context, ExtraState>,

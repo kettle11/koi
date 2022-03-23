@@ -106,6 +106,13 @@ impl<T: Numeric, const N: usize> Vector<T, N> {
         Vector::<T, 2>::new(self.0[0][0], if N > 1 { self.0[0][1] } else { T::ZERO })
     }
 
+    /// Returns a `Vector<T, 2>` with x and z components.
+    /// If this `Vector` has fewer than 2 components then the extra
+    /// components are set to 0.
+    pub fn xz(&self) -> Vector<T, 2> {
+        Vector::<T, 2>::new(self.0[0][0], if N > 2 { self.0[0][2] } else { T::ZERO })
+    }
+
     /// Returns a `Vector<T, 3>` with x, y, and z components.
     /// If this `Vector` has fewer than 3 components then the extra
     /// components are set to 0.

@@ -1,6 +1,16 @@
 use crate::*;
 
-pub fn padding<Data, Context, ExtraState>(
+pub fn padding<Data, Context: GetStandardStyle, ExtraState>(
+    child: impl Widget<Data, Context, ExtraState>,
+) -> impl Widget<Data, Context, ExtraState> {
+    Padding {
+        child,
+        amount: |c| c.standard_style().padding,
+        phantom: std::marker::PhantomData,
+    }
+}
+
+pub fn padding_with_amount<Data, Context, ExtraState>(
     amount: fn(&Context) -> f32,
     child: impl Widget<Data, Context, ExtraState>,
 ) -> impl Widget<Data, Context, ExtraState> {

@@ -32,7 +32,7 @@ pub fn button_with_child<
             },
             |_, c| c.standard_style().rounding,
         ),
-        padding(|c: &Context| c.standard_style().padding, child_widget),
+        padding(child_widget),
     )));
     button_base(child_widget, on_click)
 }
@@ -62,7 +62,7 @@ pub fn toggle_button<
                 },
                 |_, c| c.standard_style().rounding,
             ),
-            padding(|c: &Context| c.standard_style().padding, child),
+            padding(child),
         ))),
         move |state| {
             let new_value = (state_value)(state);

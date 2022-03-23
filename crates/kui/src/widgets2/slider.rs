@@ -44,6 +44,18 @@ impl Slideable for i64 {
     }
 }
 
+impl Slideable for usize {
+    fn slide(min: Self, max: Self, v: f32) -> Self {
+        ((max - min) as f32 * v) as Self
+    }
+    fn get_percent(self, min: Self, max: Self) -> f32 {
+        (self as f32 - min as f32) / (max - min) as f32
+    }
+    fn clamp_slideable(self, min: Self, max: Self) -> Self {
+        self.clamp(min, max)
+    }
+}
+
 pub fn slider<
     State: 'static,
     ExtraState,
@@ -71,13 +83,13 @@ pub fn slider<
                 |_, c| c.standard_style().rounding,
             ),
         ))),
-        handle_child: exact_size(
+        handle_child: center(exact_size(
             Vec3::new(24., 24., 1.0),
             rounded_fill_pass_through(
                 |_, _, c: &Context| c.standard_style().disabled_color,
                 |_, _| 12.,
             ),
-        ),
+        )),
         clicked: clicked.clone(),
         on_click: Rc::new(
             move |event: &kapp_platform_common::Event,

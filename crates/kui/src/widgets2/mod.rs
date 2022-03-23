@@ -109,7 +109,7 @@ pub fn outlined_rounded_fill<
 ) -> impl Widget<State, Context, ExtraState> {
     stack((
         rounded_fill(outline_color, rounding),
-        padding(|_| 2.0, rounded_fill(inner_color, |_, _| 0.0)),
+        padding_with_amount(|_| 2.0, rounded_fill(inner_color, |_, _| 0.0)),
     ))
 }
 
