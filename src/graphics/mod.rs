@@ -454,6 +454,29 @@ impl GraphicsInner {
         })
     }
 
+    pub fn delete_gpu_mesh(&mut self, gpu_mesh: GPUMesh) {
+        let GPUMesh {
+            positions,
+            normals,
+            index_buffer,
+            texture_coordinates,
+            colors,
+            triangle_count: _,
+        } = gpu_mesh;
+        self.context.delete_data_buffer(positions);
+        self.context.delete_index_buffer(index_buffer);
+
+        if let Some(d) = normals {
+            self.context.delete_data_buffer(d);
+        }
+        if let Some(d) = texture_coordinates {
+            self.context.delete_data_buffer(d);
+        }
+        if let Some(d) = colors {
+            self.context.delete_data_buffer(d);
+        }
+    }
+
     pub fn register_shader_snippet(&mut self, name: &'static str, snippet: &'static str) {
         self.shader_snippets.insert(name, snippet);
     }
@@ -479,27 +502,7 @@ fn check_for_dropped_graphics_assets(
 ) {
     meshes.drop_items(|mesh| {
         if let Some(gpu_mesh) = mesh.gpu_mesh {
-            //println!("DELETING MESH!");
-            let GPUMesh {
-                positions,
-                normals,
-                index_buffer,
-                texture_coordinates,
-                colors,
-                triangle_count: _,
-            } = gpu_mesh;
-            graphics.context.delete_data_buffer(positions);
-            graphics.context.delete_index_buffer(index_buffer);
-
-            if let Some(d) = normals {
-                graphics.context.delete_data_buffer(d);
-            }
-            if let Some(d) = texture_coordinates {
-                graphics.context.delete_data_buffer(d);
-            }
-            if let Some(d) = colors {
-                graphics.context.delete_data_buffer(d);
-            }
+            graphics.delete_gpu_mesh(gpu_mesh);
         }
     });
 

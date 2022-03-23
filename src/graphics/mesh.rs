@@ -2,7 +2,7 @@ use crate::*;
 use kgraphics::*;
 
 pub struct Mesh {
-    pub gpu_mesh: Option<GPUMesh>,
+    pub(crate) gpu_mesh: Option<GPUMesh>,
     pub mesh_data: Option<MeshData>,
     pub bounding_box: Option<Box3>,
 }
@@ -15,6 +15,15 @@ impl Mesh {
             gpu_mesh: Some(gpu_mesh),
             mesh_data: Some(mesh_data),
             bounding_box: Some(bounding_box),
+        }
+    }
+
+    pub fn update_mesh_on_gpu(&mut self, graphics: &mut Graphics) {
+        if let Some(gpu_mesh) = self.gpu_mesh.take() {
+            graphics.delete_gpu_mesh(gpu_mesh)
+        }
+        if let Some(mesh_data) = self.mesh_data.as_ref() {
+            self.gpu_mesh = Some(graphics.new_gpu_mesh(mesh_data).unwrap())
         }
     }
 }
