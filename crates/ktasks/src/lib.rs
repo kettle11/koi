@@ -672,6 +672,15 @@ pub fn run_current_thread_tasks() {
     WORKER.with(|w| w.borrow().run_current_thread_tasks())
 }
 
+fn run_current_thread_tasks_unless_main() {
+    WORKER.with(|w| {
+        let w = w.borrow();
+        if w.id != 0 || w.other_task_queues.is_empty() {
+            run_current_thread_tasks()
+        }
+    });
+}
+
 /// Runs only tasks that *must* be run on the local thread.
 /// This is useful to avoid doing much work on the main thread.
 pub fn run_only_local_tasks() {
@@ -739,7 +748,8 @@ mod worker_enqueue_waker {
         // Run current thread tasks here to run the awoken task.
         // This also means that single-threaded systems will run the task without
         // needing to be woken up.
-        run_current_thread_tasks();
+
+        run_current_thread_tasks_unless_main();
 
         worker_data.worker_waker.wake_all();
     }
@@ -761,7 +771,7 @@ mod worker_enqueue_waker {
         // Run current thread tasks here to run the awoken task.
         // This also means that single-threaded systems will run the task without
         // needing to be workn up.
-        run_current_thread_tasks();
+        run_current_thread_tasks_unless_main();
 
         worker_data.worker_waker.wake_all();
 
