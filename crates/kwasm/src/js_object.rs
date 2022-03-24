@@ -29,29 +29,55 @@ fn kwasm_call_js_with_args_raw0(function_object: u32, args: &[u32]) -> u32 {
 /// https://developer.mozilla.org/en-US/docs/Web/API/Window/self
 pub const JS_SELF: JSObject = JSObject(Cell::new(1));
 
+// This is used to avoid the Rc for the many cases where null is returned.
 #[derive(Debug)]
-pub struct JSObjectDynamicInner(JSObject);
+enum JSObjectDynamicInner {
+    Weak(JSObject),
+    Strong(Rc<JSObject>),
+}
 
+impl Clone for JSObjectDynamicInner {
+    fn clone(&self) -> Self {
+        match self {
+            JSObjectDynamicInner::Weak(js_object) => {
+                JSObjectDynamicInner::Weak(JSObject(js_object.0.clone()))
+            }
+            JSObjectDynamicInner::Strong(js_object) => {
+                JSObjectDynamicInner::Strong(js_object.clone())
+            }
+        }
+    }
+}
 #[derive(Debug, Clone)]
-pub struct JSObjectDynamic(Rc<JSObjectDynamicInner>);
+pub struct JSObjectDynamic(JSObjectDynamicInner);
 
 impl JSObjectDynamic {
+    pub const NULL: Self = JSObjectDynamic(JSObjectDynamicInner::Weak(JSObject::NULL));
+
     /// Leaks the value if there's only one reference to it, otherwise panics.
     pub unsafe fn leak(self) -> u32 {
         let index = self.index();
-        let inner = Rc::try_unwrap(self.0).unwrap();
-        std::mem::forget(inner);
+        match self.0 {
+            JSObjectDynamicInner::Strong(js_object) => {
+                std::mem::forget(Rc::try_unwrap(js_object).unwrap())
+            }
+            _ => {}
+        }
         index
     }
 }
+
 impl Deref for JSObjectDynamic {
     type Target = JSObject;
     fn deref(&self) -> &Self::Target {
-        &self.0 .0
+        match &self.0 {
+            JSObjectDynamicInner::Weak(js_object) => js_object,
+            JSObjectDynamicInner::Strong(js_object) => js_object,
+        }
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct JSObject(Cell<u32>);
 
 #[derive(Debug, Clone)]
@@ -60,17 +86,28 @@ pub struct JSObjectInner(u32);
 impl JSObject {
     pub const NULL: Self = JSObject(Cell::new(0));
 
-    pub fn get_property(&self, string: &str) -> JSObjectDynamic {
+    pub unsafe fn leak(self) -> u32 {
+        let inner = self.index();
+        std::mem::forget(self);
+        inner
+    }
+
+    pub fn get_property(&self, string: &str) -> JSObject {
         let string = JSString::new(string);
         unsafe {
-            JSObjectDynamic(Rc::new(JSObjectDynamicInner(JSObject(Cell::new(
-                kwasm_js_object_property(self.index(), string.index()),
-            )))))
+            JSObject(Cell::new(kwasm_js_object_property(
+                self.index(),
+                string.index(),
+            )))
         }
     }
 
-    pub fn null() -> JSObjectDynamic {
-        JSObjectDynamic(Rc::new(JSObjectDynamicInner(JSObject(Cell::new(0)))))
+    pub fn to_dynamic(self) -> JSObjectDynamic {
+        JSObjectDynamic(JSObjectDynamicInner::Strong(Rc::new(self)))
+    }
+
+    pub fn null() -> JSObject {
+        JSObject(Cell::new(0))
     }
 
     pub fn is_null(&self) -> bool {
@@ -96,59 +133,57 @@ impl JSObject {
         self.0.swap(&object.0)
     }
 
-    pub unsafe fn new_raw(index: u32) -> JSObjectDynamic {
-        JSObjectDynamic(Rc::new(JSObjectDynamicInner(JSObject(Cell::new(index)))))
+    pub unsafe fn new_raw(index: u32) -> JSObject {
+        JSObject(Cell::new(index))
     }
 
     #[inline]
-    fn check_result(result: u32) -> Option<JSObjectDynamic> {
+    fn check_result(result: u32) -> Option<JSObject> {
         if result == 0 {
             None
         } else {
-            Some(JSObjectDynamic(Rc::new(JSObjectDynamicInner(JSObject(
-                Cell::new(result),
-            )))))
+            Some(JSObject(Cell::new(result)))
         }
     }
 
     /// Call a function with each u32 passed as a separate argument to the JavaScript side.
-    pub fn call_raw(&self, args: &[u32]) -> Option<JSObjectDynamic> {
+    pub fn call_raw(&self, args: &[u32]) -> Option<JSObject> {
         let result = kwasm_call_js_with_args_raw0(self.index(), args);
         Self::check_result(result)
     }
 
     /// Call this as a function with one arg.
-    pub fn call(&self) -> Option<JSObjectDynamic> {
+    pub fn call(&self) -> Option<JSObject> {
         let result = kwasm_call_js_with_args0(self.index(), &[]);
         Self::check_result(result)
     }
 
     /// Call this as a function with one arg.
-    pub fn call_1_arg(&self, argument: &JSObject) -> Option<JSObjectDynamic> {
+    pub fn call_1_arg(&self, argument: &JSObject) -> Option<JSObject> {
         let result = kwasm_call_js_with_args0(self.index(), &[argument.index()]);
 
         Self::check_result(result)
     }
 
     /// Call this as a function with one arg.
-    pub fn call_2_arg(&self, arg0: &JSObject, arg1: &JSObject) -> Option<JSObjectDynamic> {
+    pub fn call_2_arg(&self, arg0: &JSObject, arg1: &JSObject) -> Option<JSObject> {
         let result = kwasm_call_js_with_args0(self.index(), &[arg0.index(), arg1.index()]);
 
         Self::check_result(result)
     }
 }
 
-impl Drop for JSObjectDynamicInner {
+impl Drop for JSObject {
     fn drop(&mut self) {
-        if !self.0.is_null() {
-            unsafe { kwasm_free_js_object(self.0.index()) }
+        if !self.is_null() {
+            unsafe { kwasm_free_js_object(self.index()) }
         }
     }
 }
 
 pub struct JSString {
     // string: &'a str,
-    js_object: JSObjectDynamic,
+    js_object: JSObject,
 }
 
 impl JSString {

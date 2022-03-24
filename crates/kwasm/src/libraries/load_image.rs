@@ -15,7 +15,7 @@ thread_local! {
 }
 
 pub struct ImageLoadResult {
-    pub image_js_object: JSObjectDynamic,
+    pub image_js_object: JSObject,
     pub width: u32,
     pub height: u32,
 }

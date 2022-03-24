@@ -92,11 +92,11 @@ struct Uniform {
 }
 #[derive(Debug)]
 pub struct FragmentFunction {
-    js_object: JSObjectDynamic,
+    js_object: JSObject,
 }
 #[derive(Debug)]
 pub struct VertexFunction {
-    js_object: JSObjectDynamic,
+    js_object: JSObject,
 }
 #[derive(Debug, Clone)]
 pub struct DataBuffer<T> {
@@ -203,7 +203,7 @@ impl Pipeline {
                 Err(())
             }
         } else {
-            Ok(JSObject::null())
+            Ok(JSObjectDynamic::NULL)
         }
     }
 }
@@ -592,29 +592,29 @@ impl CommandBufferTrait for CommandBuffer {
 }
 
 struct WebGLJS {
-    new: JSObjectDynamic,
-    resize: JSObjectDynamic,
-    new_vertex_function: JSObjectDynamic,
-    new_fragment_function: JSObjectDynamic,
-    new_data_buffer: JSObjectDynamic,
-    new_index_buffer: JSObjectDynamic,
-    delete_buffer: JSObjectDynamic,
-    new_texture: JSObjectDynamic,
-    update_texture: JSObjectDynamic,
-    delete_texture: JSObjectDynamic,
-    new_program: JSObjectDynamic,
-    get_uniform_name_and_type: JSObjectDynamic,
-    get_uniform_location: JSObjectDynamic,
-    get_program_parameter: JSObjectDynamic,
-    get_attribute_name_and_type: JSObjectDynamic,
-    run_command_buffer: JSObjectDynamic,
-    get_attribute_location: JSObjectDynamic,
-    get_multiview_supported: JSObjectDynamic,
-    generate_mip_map: JSObjectDynamic,
-    framebuffer_texture_2d: JSObjectDynamic,
-    bind_framebuffer: JSObjectDynamic,
-    create_framebuffer: JSObjectDynamic,
-    delete_framebuffer: JSObjectDynamic,
+    new: JSObject,
+    resize: JSObject,
+    new_vertex_function: JSObject,
+    new_fragment_function: JSObject,
+    new_data_buffer: JSObject,
+    new_index_buffer: JSObject,
+    delete_buffer: JSObject,
+    new_texture: JSObject,
+    update_texture: JSObject,
+    delete_texture: JSObject,
+    new_program: JSObject,
+    get_uniform_name_and_type: JSObject,
+    get_uniform_location: JSObject,
+    get_program_parameter: JSObject,
+    get_attribute_name_and_type: JSObject,
+    run_command_buffer: JSObject,
+    get_attribute_location: JSObject,
+    get_multiview_supported: JSObject,
+    generate_mip_map: JSObject,
+    framebuffer_texture_2d: JSObject,
+    bind_framebuffer: JSObject,
+    create_framebuffer: JSObject,
+    delete_framebuffer: JSObject,
 }
 
 impl WebGLJS {
@@ -658,7 +658,7 @@ impl GraphicsContext {
         pixel_format: PixelFormat,
         texture_settings: TextureSettings,
     ) -> Result<Texture, ()> {
-        let js_texture_object = self.js.new_texture.call().unwrap();
+        let js_texture_object = self.js.new_texture.call().unwrap().to_dynamic();
 
         let texture = Texture {
             texture_type: TextureType::Texture(js_texture_object),
@@ -681,7 +681,7 @@ impl GraphicsContext {
         texture: &Texture,
         width: u32,
         height: u32,
-        js_object_data: &kwasm::JSObjectDynamic,
+        js_object_data: &kwasm::JSObject,
         data: Option<&[u8]>,
         pixel_format: PixelFormat,
         texture_settings: TextureSettings,
@@ -799,7 +799,7 @@ impl GraphicsContextTrait for GraphicsContext {
             .unwrap();
 
         Ok(DataBuffer {
-            js_object,
+            js_object: js_object.to_dynamic(),
             phantom: std::marker::PhantomData,
         })
     }
@@ -814,7 +814,7 @@ impl GraphicsContextTrait for GraphicsContext {
             .new_index_buffer
             .call_raw(&[data.as_ptr() as u32, data.len() as u32])
             .unwrap();
-        Ok(IndexBuffer(js_object))
+        Ok(IndexBuffer(js_object.to_dynamic()))
     }
     fn delete_index_buffer(&mut self, index_buffer: IndexBuffer) {
         self.js.delete_buffer.call_1_arg(&index_buffer.0);
@@ -828,7 +828,7 @@ impl GraphicsContextTrait for GraphicsContext {
         pixel_format: PixelFormat,
         texture_settings: TextureSettings,
     ) -> Result<Texture, ()> {
-        let js_object = self.js.new_texture.call().unwrap();
+        let js_object = self.js.new_texture.call().unwrap().to_dynamic();
 
         let texture = Texture {
             texture_type: TextureType::Texture(js_object),
@@ -925,7 +925,7 @@ impl GraphicsContextTrait for GraphicsContext {
         pixel_format: PixelFormat,
         texture_settings: TextureSettings,
     ) -> Result<CubeMap, ()> {
-        let texture = self.js.new_texture.call().unwrap();
+        let texture = self.js.new_texture.call().unwrap().to_dynamic();
 
         let cube_map = CubeMap { texture };
         self.update_cube_map(
@@ -1064,7 +1064,7 @@ impl GraphicsContextTrait for GraphicsContext {
         self.js
             .framebuffer_texture_2d
             .call_raw(&[STENCIL_ATTACHMENT, target, texture, level]);
-        Framebuffer(Some(framebuffer))
+        Framebuffer(Some(framebuffer.to_dynamic()))
     }
 
     fn delete_framebuffer(&mut self, framebuffer: Framebuffer) {
@@ -1133,7 +1133,7 @@ impl<'a> PipelineBuilderTrait for PipelineBuilder<'a> {
                     uniform_name,
                     Uniform {
                         uniform_type,
-                        location: uniform_location,
+                        location: uniform_location.to_dynamic(),
                     },
                 );
             }
@@ -1189,7 +1189,7 @@ impl<'a> PipelineBuilderTrait for PipelineBuilder<'a> {
         }
 
         Ok(Pipeline {
-            program,
+            program: program.to_dynamic(),
             vertex_attributes,
             uniforms,
             depth_test: self.depth_test,
