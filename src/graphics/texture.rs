@@ -316,7 +316,7 @@ impl AssetLoader<Texture> for TextureAssetLoader {
                     .await
                     .unwrap_or_else(|_| panic!("Failed to open file: {}", path));
                 TextureLoadData {
-                    data: TextureData::JSObject(image_js_object),
+                    data: TextureData::JSObject(image_js_object.to_dynamic()),
                     width,
                     height,
                     pixel_format: PixelFormat::RGBA8Unorm,
