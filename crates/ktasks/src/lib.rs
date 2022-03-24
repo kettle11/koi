@@ -678,6 +678,17 @@ pub fn run_only_local_tasks() {
     WORKER.with(|w| w.borrow().run_only_local_tasks())
 }
 
+/// Runs tasks unless there are other worker threads to handle it.
+/// This is useful for the main thread to avoid doing work.
+pub fn run_tasks_unless_there_are_workers() {
+    WORKER.with(|w| {
+        let w = w.borrow();
+        if w.other_task_queues.is_empty() {
+            w.run_only_local_tasks()
+        }
+    })
+}
+
 // This needs to store the TaskQueue to push to and the parent task to wake.
 // In what scenarios would a waker be cloned?
 // Does the parent task need to be stored in an option that's taken when waking the parent?

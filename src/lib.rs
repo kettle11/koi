@@ -320,7 +320,7 @@ pub struct KoiState {
 
 impl KoiState {
     fn handle_event(&mut self, event: KappEvent) {
-        ktasks::run_only_local_tasks();
+        ktasks::run_tasks_unless_there_are_workers();
 
         // Run user callback and give it a chance to consume the event.
         if (self.run_system)(crate::Event::KappEvent(event.clone()), &mut self.world) {
