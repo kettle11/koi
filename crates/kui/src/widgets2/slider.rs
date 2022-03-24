@@ -22,7 +22,7 @@ impl Slideable for f32 {
 
 impl Slideable for i32 {
     fn slide(min: Self, max: Self, v: f32) -> Self {
-        ((max - min) as f32 * v) as Self
+        ((max - min) as f32 * v).round() as Self
     }
     fn get_percent(self, min: Self, max: Self) -> f32 {
         (self as f32 - min as f32) / (max - min) as f32
@@ -46,7 +46,7 @@ impl Slideable for i64 {
 
 impl Slideable for usize {
     fn slide(min: Self, max: Self, v: f32) -> Self {
-        ((max - min) as f32 * v) as Self
+        ((max - min) as f32 * v).round() as Self
     }
     fn get_percent(self, min: Self, max: Self) -> f32 {
         (self as f32 - min as f32) / (max - min) as f32
