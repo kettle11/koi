@@ -48,6 +48,13 @@ fn single_query() {
 }
 
 #[test]
+fn multicomponent_singleton_query() {
+    let mut world = World::new();
+    world.spawn((A, B));
+    (|(a, b): (&A, &B)| {}).run(&world);
+}
+
+#[test]
 fn multi_query() {
     let mut world = World::new();
     world.spawn(A);

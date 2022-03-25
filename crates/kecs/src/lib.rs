@@ -22,6 +22,7 @@ pub(crate) use storage_lookup::*;
 mod systems;
 pub use systems::*;
 
+#[macro_use]
 mod singleton_queries;
 pub use singleton_queries::*;
 
@@ -98,6 +99,7 @@ macro_rules! tuple_impls {
         multi_iterator_impl! { $count, $( ($index, $tuple) ),*}
         query_impls! { $count, $( ($index, $tuple) ),*}
         query_iterator_impls! { $count, $( ($index, $tuple) ),*}
+        singleton_impls! { $count, $( ($index, $tuple) ),*}
     };
 }
 
