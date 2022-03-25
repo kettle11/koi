@@ -9,9 +9,14 @@ rect_packer = "0.2.1"
 kmath = {path = "../kmath"}
 kapp_platform_common = {path = "../kapp/kapp_platform_common"}
 kcolor = {path = "../kcolor"}
+kwasm = {path = "../kwasm"}
 
 [target.'cfg(not(target_arch="wasm32"))'.dependencies]
 fontdb = "0.7.0"
+
+[target.'cfg(target_arch="wasm32")'.dependencies]
+kwasm = {path = "../kwasm"}
+
 
 [profile.dev.package."*"]
 opt-level = 3

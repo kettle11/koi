@@ -7,20 +7,30 @@ pub fn link<
     Context: GetStandardStyle + GetFonts + GetStandardInput + GetEventHandlers<State>,
     ExtraState,
 >(
+    get_url: impl Fn(&mut State) -> &str + 'static,
     child: impl Widget<State, Context, ExtraState>,
 ) -> impl Widget<State, Context, ExtraState> {
-    set_cursor_on_hover(
-        kapp_platform_common::Cursor::PointingHand,
-        fit(column_unspaced((
-            child,
-            conditional(
-                |_, context| context.standard_input().element_hovered,
-                height(
-                    1.0,
-                    fill(|_, _, context: &Context| context.standard_style().primary_text_color),
+    on_click(
+        move |state| {
+            let url = (get_url)(state);
+            println!("CLICKED URL: {:?}", url);
+
+            #[cfg(target_arch = "wasm32")]
+            kwasm::libraries::eval(&format!("window.open(\"{}\")", url));
+        },
+        set_cursor_on_hover(
+            kapp_platform_common::Cursor::PointingHand,
+            fit(column_unspaced((
+                child,
+                conditional(
+                    |_, context| context.standard_input().element_hovered,
+                    height(
+                        1.0,
+                        fill(|_, _, context: &Context| context.standard_style().primary_text_color),
+                    ),
                 ),
-            ),
-        ))),
+            ))),
+        ),
     )
 }
 
@@ -57,6 +67,47 @@ pub fn track_hover<
             }
         }),
         cursor_event_state: state_value_0,
+        handle_event: false,
+        phantom: std::marker::PhantomData,
+    }
+}
+
+pub fn on_click<
+    State,
+    Context: GetStandardStyle + GetStandardInput + GetEventHandlers<State>,
+    ExtraState,
+>(
+    on_click: impl Fn(&mut State) + 'static,
+    child: impl Widget<State, Context, ExtraState>,
+) -> impl Widget<State, Context, ExtraState> {
+    let cursor_event_state = Rc::new(RefCell::new(CursorEventState {
+        hovered: false,
+        clicked: false,
+    }));
+
+    let state_value_0 = cursor_event_state.clone();
+
+    OnCursorEvent {
+        handle_event: true,
+        child_widget: child,
+        bounding_rect: Box3::ZERO,
+        on_event: Rc::new(move |event, pointer_event_info, state| {
+            cursor_event_state.borrow_mut().hovered = pointer_event_info.in_hitbox;
+
+            match event {
+                kapp_platform_common::Event::PointerDown { .. } => {
+                    if pointer_event_info.in_hitbox {
+                        cursor_event_state.borrow_mut().clicked = true;
+                        (on_click)(state)
+                    }
+                }
+                kapp_platform_common::Event::PointerUp { .. } => {
+                    cursor_event_state.borrow_mut().clicked = false
+                }
+                _ => {}
+            }
+        }),
+        cursor_event_state: state_value_0,
         phantom: std::marker::PhantomData,
     }
 }
@@ -70,6 +121,7 @@ pub struct OnCursorEvent<State, Context, ExtraState, Child: Widget<State, Contex
     bounding_rect: Box3,
     on_event: Rc<dyn Fn(&kapp_platform_common::Event, PointerEventInfo, &mut State) + 'static>,
     cursor_event_state: Rc<RefCell<CursorEventState>>,
+    handle_event: bool,
     phantom: std::marker::PhantomData<fn() -> (Context, State, ExtraState)>,
 }
 
@@ -120,7 +172,7 @@ impl<
             .draw(state, extra_state, context, drawer, constraints);
         context.event_handlers_mut().add_pointer_event_handler(
             self.bounding_rect,
-            false,
+            self.handle_event,
             Some(self.on_event.clone()),
         )
     }
