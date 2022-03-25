@@ -282,6 +282,27 @@ function receive_message(command, data) {
             // UnlockCursor
             document.exitPointerLock();
             break;
+        case 7:
+            // SetCursor
+            switch (data) {
+                case 0:
+                    canvas.style.cursor = "default";
+                    break;
+                case 1:
+                    canvas.style.cursor = "text";
+                    break;
+                case 2:
+                    canvas.style.cursor = "pointer";
+                    break;
+                case 3:
+                    canvas.style.cursor = "grab";
+                    break;
+                case 4:
+                    canvas.style.cursor = "grabbing";
+                    break;
+            }
+            break;
+
     }
     return 0;
 }

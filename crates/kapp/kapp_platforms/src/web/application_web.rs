@@ -10,6 +10,10 @@ fn call_js_function(command: HostCommands) {
     KAPP_JS_FUNCTION.with(|f| f.call_raw(&[command as u32]));
 }
 
+fn call_js_function_with_data(command: HostCommands, data: u32) {
+    KAPP_JS_FUNCTION.with(|f| f.call_raw(&[command as u32, data]));
+}
+
 pub struct PlatformApplication {}
 
 impl PlatformApplicationTrait for PlatformApplication {
@@ -77,16 +81,23 @@ impl PlatformApplicationTrait for PlatformApplication {
         // Does nothing on web
     }
 
-    fn set_cursor(&mut self, _cursor: Cursor) {
-        klog::log!("kapp: SET CURSOR NOT IMPLEMENTED YET");
-        //  todo!()
+    fn set_cursor(&mut self, cursor: Cursor) {
+        let cursor = match cursor {
+            Cursor::Arrow => 0,
+            Cursor::IBeam => 1,
+            Cursor::PointingHand => 2,
+            Cursor::ClosedHand => 3,
+            Cursor::OpenHand => 4,
+        };
+        call_js_function_with_data(HostCommands::SetCursor, cursor);
     }
+
     fn hide_cursor(&mut self) {
-        klog::log!("kapp: SET CURSOR NOT IMPLEMENTED YET");
+        klog::log!("kapp: HIDE CURSOR NOT IMPLEMENTED YET");
         //  todo!()
     }
     fn show_cursor(&mut self) {
-        klog::log!("kapp: SET CURSOR NOT IMPLEMENTED YET");
+        klog::log!("kapp: SHOW CURSOR NOT IMPLEMENTED YET");
         //  todo!()
     }
 
@@ -138,6 +149,7 @@ pub(crate) enum HostCommands {
     GetWindowSize = 4,
     LockCursor = 5,
     UnlockCursor = 6,
+    SetCursor = 7,
 }
 
 #[derive(Clone)]
