@@ -235,6 +235,10 @@ pub fn run_simple_ui<Data: 'static>(
 ) {
     let root = stack((fill(|_, _, _| Color::WHITE), root));
     App::new().setup_and_run(|world| {
+        world
+            .get_singleton::<Graphics>()
+            .set_automatic_redraw(false);
+
         world.spawn((Transform::new(), Camera::new_for_user_interface()));
 
         let mut data = data;
@@ -246,6 +250,7 @@ pub fn run_simple_ui<Data: 'static>(
 
         move |event, world| match event {
             Event::KappEvent(event) => {
+                request_window_redraw(world);
                 ui_manager.handle_event(&event, &mut data, &mut standard_context)
             }
             Event::Draw => {
