@@ -188,6 +188,10 @@ function kwasm_stuff() {
 
     // If we're a worker thread we'll use this to setup.
     onmessage = function (e) {
+        if (!e.data.kwasm_module) {
+            console.log("Ignoring invalid setup message sent to worker: ", e);
+            return;
+        }
         self.kwasm_is_worker = true;
         self.kwasm_base_uri = e.data.kwasm_base_uri;
         let imports = {
