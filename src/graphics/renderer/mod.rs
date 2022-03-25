@@ -80,14 +80,6 @@ struct PipelineInfo {
     sprite_texture_unit: Option<u8>,
 }
 
-pub type RendererQuery<'a> = (
-    &'a mut Graphics,
-    &'a Assets<Shader>,
-    &'a Assets<Material>,
-    &'a Assets<Mesh>,
-    &'a Assets<Texture>,
-);
-
 struct Renderer<'a, 'b: 'a> {
     render_pass: &'a mut RenderPass<'b>,
     camera_info: &'a [ViewInfo],
