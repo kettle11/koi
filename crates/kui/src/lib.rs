@@ -105,6 +105,8 @@ pub struct StandardInput {
     pub input_events_handled: Vec<bool>,
     pub view_size: Vec2,
     pub button_clicked: bool,
+    pub element_hovered: bool,
+    pub cursor: kapp_platform_common::Cursor,
 }
 
 impl StandardInput {
@@ -125,12 +127,16 @@ impl Default for StandardInput {
             input_events_handled: Vec::new(),
             view_size: Vec2::ZERO,
             button_clicked: false,
+            element_hovered: false,
+            cursor: kapp_platform_common::Cursor::Arrow,
         }
     }
 }
 
 struct ClickHandler<State> {
     hit_box: Box3,
+    // Different rules apply to click handlers that do not consume events
+    consume_event: bool,
     handler: Option<Rc<dyn Fn(&kapp_platform_common::Event, PointerEventInfo, &mut State)>>,
 }
 pub struct EventHandlers<State> {
@@ -152,9 +158,14 @@ impl<State> EventHandlers<State> {
     pub fn add_pointer_event_handler(
         &mut self,
         hit_box: Box3,
+        consume_event: bool,
         handler: Option<Rc<dyn Fn(&kapp_platform_common::Event, PointerEventInfo, &mut State)>>,
     ) {
-        self.click_handlers.push(ClickHandler { hit_box, handler });
+        self.click_handlers.push(ClickHandler {
+            hit_box,
+            consume_event,
+            handler,
+        });
     }
 
     pub fn clear(&mut self) {
@@ -172,28 +183,37 @@ impl<State> EventHandlers<State> {
         let mut any_hitbox_hit = false;
 
         // Find the closest hitbox that was clicked.
-        for (i, click_handler) in self.click_handlers.iter().enumerate() {
+        for (i, click_handler) in self.click_handlers.iter_mut().enumerate() {
             let hitbox = Box2 {
                 min: click_handler.hit_box.min.xy(),
                 max: click_handler.hit_box.max.xy(),
             };
             let in_hitbox = hitbox.contains_point(point);
-            if in_hitbox && click_handler.hit_box.max.z > z_value {
-                index_clicked = Some(i);
-                z_value = click_handler.hit_box.max.z;
+            if click_handler.consume_event {
+                if in_hitbox && click_handler.hit_box.max.z > z_value {
+                    index_clicked = Some(i);
+                    z_value = click_handler.hit_box.max.z;
+                }
+            } else {
+                if let Some(handler) = click_handler.handler.as_ref() {
+                    (handler)(event, PointerEventInfo { in_hitbox }, state);
+                }
             }
+
             any_hitbox_hit |= in_hitbox;
         }
 
         for (i, click_handler) in self.click_handlers.iter().enumerate() {
-            if let Some(handler) = click_handler.handler.as_ref() {
-                (handler)(
-                    event,
-                    PointerEventInfo {
-                        in_hitbox: index_clicked == Some(i),
-                    },
-                    state,
-                );
+            if click_handler.consume_event {
+                if let Some(handler) = click_handler.handler.as_ref() {
+                    (handler)(
+                        event,
+                        PointerEventInfo {
+                            in_hitbox: index_clicked == Some(i),
+                        },
+                        state,
+                    );
+                }
             }
         }
         // Don't prevent pointer up events from percolating, for now.

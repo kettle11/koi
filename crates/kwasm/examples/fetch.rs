@@ -3,7 +3,7 @@ use kwasm::*;
 
 fn main() {
     setup_panic_hook();
-    ktasks::create_workers(kwasm::available_threads());
+    ktasks::create_workers();
     ktasks::spawn(async {
         log("Made it here!0");
         let result = kwasm::libraries::fetch::fetch("README.md").await.unwrap();

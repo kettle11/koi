@@ -83,13 +83,16 @@ pub fn slider<
                 |_, c| c.standard_style().rounding,
             ),
         ))),
-        handle_child: center(exact_size(
-            Vec3::new(24., 24., 1.0),
-            rounded_fill_pass_through(
-                |_, _, c: &Context| c.standard_style().disabled_color,
-                |_, _| 12.,
-            ),
-        )),
+        handle_child: set_cursor_on_hover(
+            kapp_platform_common::Cursor::PointingHand,
+            center(exact_size(
+                Vec3::new(24., 24., 1.0),
+                rounded_fill_pass_through(
+                    |_, _, c: &Context| c.standard_style().disabled_color,
+                    |_, _| 12.,
+                ),
+            )),
+        ),
         clicked: clicked.clone(),
         on_click: Rc::new(
             move |event: &kapp_platform_common::Event,
@@ -205,8 +208,10 @@ impl<
         };
         self.handle_child
             .draw(state, extra_state, context, drawer, handle_constraints);
-        context
-            .event_handlers_mut()
-            .add_pointer_event_handler(constraints, Some(self.on_click.clone()))
+        context.event_handlers_mut().add_pointer_event_handler(
+            constraints,
+            true,
+            Some(self.on_click.clone()),
+        )
     }
 }

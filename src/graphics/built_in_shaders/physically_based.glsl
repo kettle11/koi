@@ -382,7 +382,7 @@ void main()
     
     
     // This should be applied before the shader instead.
-    color = mix(color, p_fog_color.rgb, fog_factor );
+    //color = mix(color, p_fog_color.rgb, fog_factor );
     color += emissive;
 
     // HDR tonemapping

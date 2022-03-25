@@ -54,6 +54,9 @@ pub use constrain_size::*;
 mod expand;
 pub use expand::*;
 
+mod link;
+pub use link::*;
+
 /// Just a colored rectangle for debug purposes
 pub struct Rectangle {
     pub size: Vec3,

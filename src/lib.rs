@@ -95,6 +95,8 @@ pub struct App {
     title: String,
 }
 
+pub type KappApplication = NotSendSync<kapp::Application>;
+
 #[derive(Default)]
 pub struct Plugin {
     pub setup_systems: Vec<System>,

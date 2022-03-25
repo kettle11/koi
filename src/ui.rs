@@ -1,3 +1,4 @@
+use kapp::Cursor;
 pub use kui::*;
 
 use crate::*;
@@ -7,6 +8,7 @@ pub struct UIManager {
     pub drawer: kui::Drawer,
     pub initial_constraints: Box3,
     pub ui_scale: f32,
+    pub cursor: Cursor,
 }
 
 impl UIManager {
@@ -23,6 +25,7 @@ impl UIManager {
             drawer,
             initial_constraints: Box3::ZERO,
             ui_scale: 1.0,
+            cursor: Cursor::Arrow,
         }
     }
 
@@ -140,7 +143,46 @@ impl UIManager {
     }
 
     pub fn render_ui(&mut self, world: &mut World) {
-        render_ui(world, self.entity, &mut self.drawer);
+        let mut commands = Commands::new();
+        (|graphics: &mut Graphics,
+          meshes: &mut Assets<Mesh>,
+          textures: &mut Assets<Texture>,
+          kapp_application: &mut KappApplication| {
+            let mesh_data = MeshData {
+                positions: self.drawer.positions.clone(),
+                indices: self.drawer.indices.clone(),
+                colors: self.drawer.colors.clone(),
+                texture_coordinates: self.drawer.texture_coordinates.clone(),
+                ..Default::default()
+            };
+
+            let new_mesh_handle = meshes.add(Mesh::new(graphics, mesh_data));
+
+            if self.drawer.texture_atlas.changed {
+                self.drawer.texture_atlas.changed = false;
+                let new_texture = graphics
+                    .new_texture(
+                        Some(&self.drawer.texture_atlas.data),
+                        self.drawer.texture_atlas.width as u32,
+                        self.drawer.texture_atlas.height as u32,
+                        kgraphics::PixelFormat::R8Unorm,
+                        TextureSettings {
+                            srgb: false,
+                            ..Default::default()
+                        },
+                    )
+                    .unwrap();
+                let new_texture_handle = textures.add(new_texture);
+                let new_sprite = Sprite::new(new_texture_handle, Box2::new(Vec2::ZERO, Vec2::ONE));
+                commands.add_component(self.entity, new_sprite)
+            }
+
+            commands.add_component(self.entity, new_mesh_handle);
+            kapp_application.set_cursor(self.cursor);
+        })
+        .run(world);
+        commands.apply(world);
+        self.drawer.reset();
     }
 
     pub fn layout<State>(
@@ -150,6 +192,7 @@ impl UIManager {
         root_widget: &mut impl kui::Widget<State, StandardContext<State>, ()>,
     ) {
         context.event_handlers.clear();
+        context.standard_input_mut().cursor = Cursor::Arrow;
 
         root_widget.layout(
             state,
@@ -169,6 +212,7 @@ impl UIManager {
             &mut self.drawer,
             self.initial_constraints,
         );
+        self.cursor = context.standard_input().cursor;
     }
 
     pub fn layout_and_draw_with_world(
@@ -181,46 +225,6 @@ impl UIManager {
         self.layout(world, context, root_widget);
         self.render_ui(world)
     }
-}
-
-/// Update's the UI's mesh and texture so that it can be rendered.
-pub fn render_ui(world: &mut World, ui_entity: Entity, drawer: &mut kui::Drawer) {
-    let mut commands = Commands::new();
-    (|graphics: &mut Graphics, meshes: &mut Assets<Mesh>, textures: &mut Assets<Texture>| {
-        let mesh_data = MeshData {
-            positions: drawer.positions.clone(),
-            indices: drawer.indices.clone(),
-            colors: drawer.colors.clone(),
-            texture_coordinates: drawer.texture_coordinates.clone(),
-            ..Default::default()
-        };
-
-        let new_mesh_handle = meshes.add(Mesh::new(graphics, mesh_data));
-
-        if drawer.texture_atlas.changed {
-            drawer.texture_atlas.changed = false;
-            let new_texture = graphics
-                .new_texture(
-                    Some(&drawer.texture_atlas.data),
-                    drawer.texture_atlas.width as u32,
-                    drawer.texture_atlas.height as u32,
-                    kgraphics::PixelFormat::R8Unorm,
-                    TextureSettings {
-                        srgb: false,
-                        ..Default::default()
-                    },
-                )
-                .unwrap();
-            let new_texture_handle = textures.add(new_texture);
-            let new_sprite = Sprite::new(new_texture_handle, Box2::new(Vec2::ZERO, Vec2::ONE));
-            commands.add_component(ui_entity, new_sprite)
-        }
-
-        commands.add_component(ui_entity, new_mesh_handle)
-    })
-    .run(world);
-    commands.apply(world);
-    drawer.reset();
 }
 
 pub fn run_simple_ui<Data: 'static>(

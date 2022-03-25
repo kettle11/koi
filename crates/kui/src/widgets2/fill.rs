@@ -111,7 +111,7 @@ impl<
         if self.consume_pointer_events {
             context
                 .event_handlers_mut()
-                .add_pointer_event_handler(bounds, None);
+                .add_pointer_event_handler(bounds, true, None);
         }
         drawer.standard().rounded_rectangle(
             bounds,

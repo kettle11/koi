@@ -48,6 +48,7 @@ pub fn toggle_button<
     state_value: impl Fn(&mut State) -> EditState + Clone + 'static,
 ) -> impl Widget<State, Context, ExtraState> {
     let state_value_0 = state_value.clone();
+
     button_base(
         fit(stack((
             rounded_fill(
@@ -83,7 +84,7 @@ pub fn button_base<
     let clicked = Rc::new(RefCell::new(false));
 
     ButtonBase {
-        child_widget,
+        child_widget: set_cursor_on_hover(kapp_platform_common::Cursor::PointingHand, child_widget),
         bounding_rect: Box3::ZERO,
         clicked: clicked.clone(),
         on_click: Rc::new(
@@ -151,8 +152,10 @@ impl<
         self.bounding_rect = Box3::new_with_min_corner_and_size(constraints.min, size);
         self.child_widget
             .draw(state, extra_state, context, drawer, constraints);
-        context
-            .event_handlers_mut()
-            .add_pointer_event_handler(self.bounding_rect, Some(self.on_click.clone()))
+        context.event_handlers_mut().add_pointer_event_handler(
+            self.bounding_rect,
+            true,
+            Some(self.on_click.clone()),
+        )
     }
 }
