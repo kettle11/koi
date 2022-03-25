@@ -6,6 +6,7 @@ mod gltf;
 #[cfg(feature = "gltf")]
 use gltf::*;
 
+#[cfg(feature = "gltf")]
 pub use kgltf;
 
 pub fn world_assets_plugin() -> Plugin {
