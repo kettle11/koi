@@ -337,11 +337,13 @@ impl PlatformApplicationTrait for PlatformApplication {
     }
 
     fn start_text_input(&mut self) {
-        todo!()
+        // Irrelevant for now
+        // todo!()
     }
 
     fn end_text_input(&mut self) {
-        todo!()
+        // Irrelevant for now
+        // todo!()
     }
 
     fn set_text_input_rectangle(
