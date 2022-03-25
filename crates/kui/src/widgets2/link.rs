@@ -22,12 +22,9 @@ pub fn link<
             kapp_platform_common::Cursor::PointingHand,
             fit(column_unspaced((
                 child,
-                conditional(
-                    |_, context| context.standard_input().element_hovered,
-                    height(
-                        1.0,
-                        fill(|_, _, context: &Context| context.standard_style().primary_text_color),
-                    ),
+                height(
+                    1.0,
+                    fill(|_, _, context: &Context| context.standard_style().primary_text_color),
                 ),
             ))),
         ),
