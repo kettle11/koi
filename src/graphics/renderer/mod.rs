@@ -52,6 +52,8 @@ impl RenderTargetTexture {
         }
     }
 }
+
+// Todo: Framebuffer is leaked when this is dropped.
 pub struct OffscreenRenderTarget {
     framebuffer: Option<NotSendSync<Framebuffer>>,
     color_texture: Option<RenderTargetTexture>,
@@ -64,7 +66,8 @@ pub struct OffscreenRenderTarget {
 
 impl OffscreenRenderTarget {
     pub fn new(
-        world: &mut World,
+        graphics: &mut Graphics,
+        textures: &mut Assets<Texture>,
         initial_size: Vec2u,
         color_pixel_format_and_texture_settings: Option<(PixelFormat, TextureSettings)>,
         depth_pixel_format_and_texture_settings: Option<(PixelFormat, TextureSettings)>,
@@ -111,57 +114,54 @@ impl OffscreenRenderTarget {
                 .as_ref()
                 .map_or(false, |f| f.1.msaa_samples != 0),
         };
-        s.resize(world, initial_size);
+        s.resize(graphics, textures, initial_size);
         s
     }
-    pub fn resize(&mut self, world: &mut World, size: Vec2u) {
-        (|graphics: &mut Graphics, textures: &mut Assets<Texture>| {
-            // Resize
-            if size > self.inner_texture_size {
-                self.color_texture
-                    .as_mut()
-                    .map(|c| c.resize(size, graphics, textures));
-                self.depth_texture
-                    .as_mut()
-                    .map(|c| c.resize(size, graphics, textures));
+    pub fn resize(&mut self, graphics: &mut Graphics, textures: &mut Assets<Texture>, size: Vec2u) {
+        // Resize
+        if size > self.inner_texture_size {
+            self.color_texture
+                .as_mut()
+                .map(|c| c.resize(size, graphics, textures));
+            self.depth_texture
+                .as_mut()
+                .map(|c| c.resize(size, graphics, textures));
 
-                if let Some(framebuffer) = self.framebuffer.take() {
+            if let Some(framebuffer) = self.framebuffer.take() {
+                graphics.context.delete_framebuffer(*framebuffer)
+            }
+            self.framebuffer = Some(NotSendSync::new(
+                graphics.context.new_framebuffer(
+                    self.color_texture
+                        .as_ref()
+                        .map(|t| &textures.get(&t.texture).0),
+                    self.depth_texture
+                        .as_ref()
+                        .map(|t| &textures.get(&t.texture).0),
+                    None,
+                ),
+            ));
+
+            if self.needs_resolve {
+                if let Some(framebuffer) = self.resolve_framebuffer.take() {
                     graphics.context.delete_framebuffer(*framebuffer)
                 }
                 self.framebuffer = Some(NotSendSync::new(
                     graphics.context.new_framebuffer(
                         self.color_texture
                             .as_ref()
-                            .map(|t| &textures.get(&t.texture).0),
+                            .map(|t| &textures.get(t.resolve_texture.as_ref().unwrap()).0),
                         self.depth_texture
                             .as_ref()
-                            .map(|t| &textures.get(&t.texture).0),
+                            .map(|t| &textures.get(t.resolve_texture.as_ref().unwrap()).0),
                         None,
                     ),
                 ));
-
-                if self.needs_resolve {
-                    if let Some(framebuffer) = self.resolve_framebuffer.take() {
-                        graphics.context.delete_framebuffer(*framebuffer)
-                    }
-                    self.framebuffer = Some(NotSendSync::new(
-                        graphics.context.new_framebuffer(
-                            self.color_texture
-                                .as_ref()
-                                .map(|t| &textures.get(t.resolve_texture.as_ref().unwrap()).0),
-                            self.depth_texture
-                                .as_ref()
-                                .map(|t| &textures.get(t.resolve_texture.as_ref().unwrap()).0),
-                            None,
-                        ),
-                    ));
-                }
-
-                self.inner_texture_size = size;
             }
-            self.used_size = size;
-        })
-        .run(world);
+
+            self.inner_texture_size = size;
+        }
+        self.used_size = size;
     }
 
     /// This assumes that the framebuffer is currently bound.
@@ -179,6 +179,10 @@ impl OffscreenRenderTarget {
                 self.inner_texture_size.y as _,
             )
         }
+    }
+
+    pub fn framebuffer(&self) -> &Framebuffer {
+        &*self.framebuffer.as_ref().unwrap()
     }
 
     /// Gets the readable color texture.
@@ -238,26 +242,30 @@ pub fn setup_renderer(world: &mut World) {
     let initial_size = world.get_singleton::<NotSendSync<kapp::Window>>().size();
     let renderer_info = RendererInfo {
         brdf_lookup_table,
-        offscreen_render_target: OffscreenRenderTarget::new(
-            world,
-            Vec2u::new(initial_size.0 as usize, initial_size.1 as usize),
-            Some((
-                PixelFormat::RGBA32F,
-                TextureSettings {
-                    msaa_samples: 4,
-                    srgb: false,
-                    ..Default::default()
-                },
-            )),
-            Some((
-                PixelFormat::Depth32F,
-                TextureSettings {
-                    srgb: false,
-                    msaa_samples: 4,
-                    ..Default::default()
-                },
-            )),
-        ),
+        offscreen_render_target: (|graphics: &mut Graphics, textures: &mut Assets<Texture>| {
+            OffscreenRenderTarget::new(
+                graphics,
+                textures,
+                Vec2u::new(initial_size.0 as usize, initial_size.1 as usize),
+                Some((
+                    PixelFormat::RGBA32F,
+                    TextureSettings {
+                        msaa_samples: 4,
+                        srgb: false,
+                        ..Default::default()
+                    },
+                )),
+                Some((
+                    PixelFormat::Depth32F,
+                    TextureSettings {
+                        srgb: false,
+                        msaa_samples: 4,
+                        ..Default::default()
+                    },
+                )),
+            )
+        })
+        .run(world),
     };
     world.spawn((Name("RendererInfo".into()), renderer_info));
 }
@@ -449,7 +457,9 @@ impl<'a, 'b: 'a> Renderer<'a, 'b> {
             if let Some(shadow_caster) = shadow_caster {
                 let mut texture_unit_offset = max_texture_unit;
                 for (index, cascade) in shadow_caster.shadow_cascades.iter().enumerate() {
-                    let depth_texture = self.texture_assets.get(&cascade.texture);
+                    let depth_texture = self
+                        .texture_assets
+                        .get(&cascade.offscreen_render_target.depth_texture());
 
                     self.render_pass.set_texture_property(
                         &pipeline
@@ -934,7 +944,7 @@ pub fn render_scene<'a, 'b>(
                 &mut lights,
                 &renderables,
             );
-            
+
             clear_color = camera.clear_color;
             break;
         }
@@ -1114,9 +1124,7 @@ impl ShadowCaster {
 }
 
 pub(crate) struct ShadowCascadeInfo {
-    pub(crate) texture: Handle<Texture>,
-    // Todo: this framebuffer leaks when ShadowCascadeInfo is dropped.
-    pub(crate) framebuffer: NotSendSync<Framebuffer>,
+    offscreen_render_target: OffscreenRenderTarget,
     pub(crate) world_to_light_space: Mat4,
 }
 
@@ -1125,11 +1133,12 @@ impl ShadowCaster {
         if self.shadow_cascades.is_empty() {
             // Setup shadow textures
             for _ in 0..4 {
-                let shadow_texture = graphics
-                    .new_texture(
-                        None,
-                        self.texture_size,
-                        self.texture_size,
+                let offscreen_render_target = OffscreenRenderTarget::new(
+                    graphics,
+                    textures,
+                    Vec2u::new(self.texture_size as _, self.texture_size as _),
+                    None,
+                    Some((
                         kgraphics::PixelFormat::Depth32F,
                         TextureSettings {
                             // Nearest because this will not have mipmaps generated
@@ -1141,18 +1150,11 @@ impl ShadowCaster {
                             generate_mipmaps: false,
                             ..Default::default()
                         },
-                    )
-                    .unwrap();
+                    )),
+                );
 
-                let framebuffer =
-                    graphics
-                        .context
-                        .new_framebuffer(None, Some(&shadow_texture), None);
-
-                let shadow_texture = textures.add(shadow_texture);
                 self.shadow_cascades.push(ShadowCascadeInfo {
-                    framebuffer: NotSendSync::new(framebuffer),
-                    texture: shadow_texture,
+                    offscreen_render_target,
                     world_to_light_space: Mat4::ZERO, // This gets set later.
                 });
             }
@@ -1246,7 +1248,7 @@ pub fn render_shadow_pass(
                     shaders,
                     meshes,
                     command_buffer,
-                    &cascade.framebuffer,
+                    cascade.offscreen_render_target.framebuffer(),
                     &view_matrix,
                     &projection_matrix,
                     shadow_caster.texture_size,
