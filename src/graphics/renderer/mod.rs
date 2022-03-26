@@ -15,10 +15,197 @@ mod brdf_lookup;
 
 use crate::graphics::texture::Texture;
 
+struct RenderTargetTexture {
+    texture: Handle<Texture>,
+    pixel_format: PixelFormat,
+    texture_settings: TextureSettings,
+    resolve_texture: Option<Handle<Texture>>,
+}
+
+impl RenderTargetTexture {
+    pub fn resize(&mut self, size: Vec2u, graphics: &mut Graphics, textures: &mut Assets<Texture>) {
+        self.texture = textures.add(
+            graphics
+                .new_texture(
+                    None,
+                    size.x as u32,
+                    size.y as u32,
+                    self.pixel_format,
+                    self.texture_settings,
+                )
+                .unwrap(),
+        );
+        if let Some(resolve_texture) = self.resolve_texture.as_mut() {
+            *resolve_texture = textures.add(
+                graphics
+                    .new_texture(
+                        None,
+                        size.x as u32,
+                        size.y as u32,
+                        self.pixel_format,
+                        TextureSettings {
+                            ..self.texture_settings
+                        },
+                    )
+                    .unwrap(),
+            )
+        }
+    }
+}
+pub struct OffscreenRenderTarget {
+    framebuffer: Option<NotSendSync<Framebuffer>>,
+    color_texture: Option<RenderTargetTexture>,
+    depth_texture: Option<RenderTargetTexture>,
+    resolve_framebuffer: Option<NotSendSync<Framebuffer>>,
+    inner_texture_size: Vec2u,
+    used_size: Vec2u,
+    needs_resolve: bool,
+}
+
+impl OffscreenRenderTarget {
+    pub fn new(
+        world: &mut World,
+        initial_size: Vec2u,
+        color_pixel_format_and_texture_settings: Option<(PixelFormat, TextureSettings)>,
+        depth_pixel_format_and_texture_settings: Option<(PixelFormat, TextureSettings)>,
+    ) -> Self {
+        // If both color and depth are defined check that they have the same msaa properties.
+        debug_assert!(
+            (color_pixel_format_and_texture_settings.is_none()
+                || depth_pixel_format_and_texture_settings.is_none())
+                || color_pixel_format_and_texture_settings.map(|(_, s)| s.msaa_samples)
+                    == depth_pixel_format_and_texture_settings.map(|(_, s)| s.msaa_samples)
+        );
+        let needs_resolve =
+            color_pixel_format_and_texture_settings.map_or(false, |(_, s)| s.msaa_samples != 0);
+        let mut s = OffscreenRenderTarget {
+            framebuffer: None,
+            color_texture: color_pixel_format_and_texture_settings.map(|(p, s)| {
+                RenderTargetTexture {
+                    texture: Handle::default(),
+                    pixel_format: p,
+                    texture_settings: s,
+                    resolve_texture: if needs_resolve {
+                        Some(Handle::default())
+                    } else {
+                        None
+                    },
+                }
+            }),
+            depth_texture: depth_pixel_format_and_texture_settings.map(|(p, s)| {
+                RenderTargetTexture {
+                    texture: Handle::default(),
+                    pixel_format: p,
+                    texture_settings: s,
+                    resolve_texture: if needs_resolve {
+                        Some(Handle::default())
+                    } else {
+                        None
+                    },
+                }
+            }),
+            resolve_framebuffer: None,
+            inner_texture_size: Vec2u::ZERO,
+            used_size: Vec2u::ZERO,
+            needs_resolve: color_pixel_format_and_texture_settings
+                .as_ref()
+                .map_or(false, |f| f.1.msaa_samples != 0),
+        };
+        s.resize(world, initial_size);
+        s
+    }
+    pub fn resize(&mut self, world: &mut World, size: Vec2u) {
+        (|graphics: &mut Graphics, textures: &mut Assets<Texture>| {
+            // Resize
+            if size > self.inner_texture_size {
+                self.color_texture
+                    .as_mut()
+                    .map(|c| c.resize(size, graphics, textures));
+                self.depth_texture
+                    .as_mut()
+                    .map(|c| c.resize(size, graphics, textures));
+
+                if let Some(framebuffer) = self.framebuffer.take() {
+                    graphics.context.delete_framebuffer(*framebuffer)
+                }
+                self.framebuffer = Some(NotSendSync::new(
+                    graphics.context.new_framebuffer(
+                        self.color_texture
+                            .as_ref()
+                            .map(|t| &textures.get(&t.texture).0),
+                        self.depth_texture
+                            .as_ref()
+                            .map(|t| &textures.get(&t.texture).0),
+                        None,
+                    ),
+                ));
+
+                if self.needs_resolve {
+                    if let Some(framebuffer) = self.resolve_framebuffer.take() {
+                        graphics.context.delete_framebuffer(*framebuffer)
+                    }
+                    self.framebuffer = Some(NotSendSync::new(
+                        graphics.context.new_framebuffer(
+                            self.color_texture
+                                .as_ref()
+                                .map(|t| &textures.get(t.resolve_texture.as_ref().unwrap()).0),
+                            self.depth_texture
+                                .as_ref()
+                                .map(|t| &textures.get(t.resolve_texture.as_ref().unwrap()).0),
+                            None,
+                        ),
+                    ));
+                }
+
+                self.inner_texture_size = size;
+            }
+            self.used_size = size;
+        })
+        .run(world);
+    }
+
+    /// This assumes that the framebuffer is currently bound.
+    pub fn resolve(&self, render_pass: RenderPass) {
+        if let Some(resolve_framebuffer) = self.resolve_framebuffer.as_ref() {
+            render_pass.blit_framebuffer(
+                **resolve_framebuffer,
+                0,
+                0,
+                self.inner_texture_size.x as _,
+                self.inner_texture_size.y as _,
+                0,
+                0,
+                self.inner_texture_size.x as _,
+                self.inner_texture_size.y as _,
+            )
+        }
+    }
+
+    /// Gets the readable color texture.
+    pub fn color_texture(&self) -> &Handle<Texture> {
+        let color_texture = self.color_texture.as_ref().unwrap();
+        if let Some(texture) = color_texture.resolve_texture.as_ref() {
+            texture
+        } else {
+            &color_texture.texture
+        }
+    }
+
+    /// Gets the readable depth texture.
+    pub fn depth_texture(&self) -> &Handle<Texture> {
+        let depth_texture = self.depth_texture.as_ref().unwrap();
+        if let Some(texture) = depth_texture.resolve_texture.as_ref() {
+            texture
+        } else {
+            &depth_texture.texture
+        }
+    }
+}
+
 #[derive(NotCloneComponent)]
 pub struct RendererInfo {
     pub brdf_lookup_table: Handle<Texture>,
-    pub triple_buffered_framebuffer: NotSendSync<TripleBufferedFramebuffer>,
+    offscreen_render_target: OffscreenRenderTarget,
 }
 
 pub fn renderer_plugin() -> Plugin {
@@ -48,14 +235,29 @@ pub fn setup_renderer(world: &mut World) {
         .unwrap()
         .add(brdf_lookup_table);
 
+    let initial_size = world.get_singleton::<NotSendSync<kapp::Window>>().size();
     let renderer_info = RendererInfo {
         brdf_lookup_table,
-        triple_buffered_framebuffer: NotSendSync::new(TripleBufferedFramebuffer::new(
-            world.get_single_component_mut::<Graphics>().unwrap(),
-            // Default to 2048 x 2048, which is the largest power of 2 that contains 1080p
-            2048,
-            2048,
-        )),
+        offscreen_render_target: OffscreenRenderTarget::new(
+            world,
+            Vec2u::new(initial_size.0 as usize, initial_size.1 as usize),
+            Some((
+                PixelFormat::RGBA32F,
+                TextureSettings {
+                    msaa_samples: 4,
+                    srgb: false,
+                    ..Default::default()
+                },
+            )),
+            Some((
+                PixelFormat::Depth32F,
+                TextureSettings {
+                    srgb: false,
+                    msaa_samples: 4,
+                    ..Default::default()
+                },
+            )),
+        ),
     };
     world.spawn((Name("RendererInfo".into()), renderer_info));
 }
@@ -717,12 +919,12 @@ pub fn render_scene<'a, 'b>(
     // For now only render shadows from the primary camera's perspective.
     // This would make splitscreen shadows really messed up.
     for (camera_global_transform, camera) in &cameras {
-        let render_shadows_for_this_camera = ((graphics.current_camera_target.is_some()
+        let is_primary_camera = ((graphics.current_camera_target.is_some()
             && graphics.current_camera_target == camera.camera_target)
             || (is_primary_camera_target && camera.camera_target == Some(CameraTarget::Primary)))
             && camera.render_flags.includes_layer(RenderFlags::DEFAULT);
 
-        if render_shadows_for_this_camera {
+        if is_primary_camera {
             render_shadow_pass(
                 shader_assets,
                 mesh_assets,
@@ -732,6 +934,7 @@ pub fn render_scene<'a, 'b>(
                 &mut lights,
                 &renderables,
             );
+            
             clear_color = camera.clear_color;
             break;
         }
@@ -1051,97 +1254,5 @@ pub fn render_shadow_pass(
                 );
             }
         }
-    }
-}
-
-/// A triple buffered framebuffer abstraction to avoid OpenGL stalls
-pub struct TripleBufferedFramebuffer {
-    framebuffers: [(Framebuffer, Texture, Texture); 3],
-    width: u32,
-    height: u32,
-    viewport_size: (u32, u32),
-    current: usize,
-}
-
-impl TripleBufferedFramebuffer {
-    pub fn new(graphics: &mut Graphics, width: u32, height: u32) -> Self {
-        fn new_frambuffer(
-            graphics: &mut Graphics,
-            width: u32,
-            height: u32,
-        ) -> (Framebuffer, Texture, Texture) {
-            let color_texture = graphics
-                .new_texture(
-                    None,
-                    width,
-                    height,
-                    PixelFormat::RGBA32F,
-                    TextureSettings {
-                        srgb: false,
-                        generate_mipmaps: false,
-                        ..TextureSettings::default()
-                    },
-                )
-                .unwrap();
-
-            let depth_texture = graphics
-                .new_texture(
-                    None,
-                    width,
-                    height,
-                    PixelFormat::Depth16,
-                    TextureSettings {
-                        srgb: false,
-                        generate_mipmaps: false,
-                        ..TextureSettings::default()
-                    },
-                )
-                .unwrap();
-
-            (
-                graphics
-                    .context
-                    .new_framebuffer(Some(&color_texture), Some(&depth_texture), None),
-                color_texture,
-                depth_texture,
-            )
-        }
-
-        Self {
-            framebuffers: [
-                new_frambuffer(graphics, width, height),
-                new_frambuffer(graphics, width, height),
-                new_frambuffer(graphics, width, height),
-            ],
-            width,
-            height,
-            viewport_size: (width, height),
-            current: 0,
-        }
-    }
-
-    pub fn resize(&mut self, graphics: &mut Graphics, width: u32, height: u32) {
-        if width > self.width || height > self.height {
-            let mut old_self = Self::new(graphics, width, height);
-            std::mem::swap(self, &mut old_self);
-
-            // This should be done automatically by `kgraphics` instead.
-            for (framebuffer, color_texture, depth_texture) in old_self.framebuffers {
-                graphics.context.delete_framebuffer(framebuffer);
-                graphics.context.delete_texture(color_texture.0);
-                graphics.context.delete_texture(depth_texture.0);
-            }
-            *self = Self::new(graphics, width, height);
-        } else {
-            self.viewport_size = (width, height);
-        }
-    }
-
-    pub fn get_next(&mut self) -> &Framebuffer {
-        self.current += 1;
-        if self.current > 2 {
-            self.current = 0;
-        }
-        &self.framebuffers[self.current].0
     }
 }

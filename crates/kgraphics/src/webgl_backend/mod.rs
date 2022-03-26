@@ -126,6 +126,7 @@ enum Command {
     // Present = 14,
     SetCubeMapUniform = 15,
     SetDepthMask = 16,
+    BlitFramebuffer = 17,
 }
 
 pub struct CommandBuffer {
@@ -470,17 +471,28 @@ impl RenderPassTrait for RenderPass<'_> {
 
     fn blit_framebuffer(
         self,
-        _target: Framebuffer,
-        _source_x: u32,
-        _source_y: u32,
-        _source_width: u32,
-        _source_height: u32,
-        _dest_x: u32,
-        _dest_y: u32,
-        _dest_width: u32,
-        _dest_height: u32,
+        target: Framebuffer,
+        source_x: u32,
+        source_y: u32,
+        source_width: u32,
+        source_height: u32,
+        dest_x: u32,
+        dest_y: u32,
+        dest_width: u32,
+        dest_height: u32,
     ) {
-        todo!()
+        self.command_buffer.commands.push(Command::BlitFramebuffer);
+        self.command_buffer.u32_data.extend_from_slice(&[
+            target.0.map_or(0, |f| f.index()),
+            source_x,
+            source_y,
+            source_width,
+            source_height,
+            dest_x,
+            dest_y,
+            dest_width,
+            dest_height,
+        ]);
     }
 }
 
