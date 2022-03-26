@@ -195,6 +195,10 @@ impl GL {
         self.gl.BindTexture(target, texture.map_or(0, |v| v.0));
     }
 
+    pub unsafe fn bind_renderbuffer(&self, target: GLenum, texture: Option<RenderBufferNative>) {
+        self.gl.BindRenderbuffer(target, texture.map_or(0, |v| v.0));
+    }
+
     pub unsafe fn tex_parameter_i32(&self, target: GLenum, parameter: GLenum, value: i32) {
         self.gl.TexParameteri(target, parameter, value);
     }

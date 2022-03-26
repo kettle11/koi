@@ -551,6 +551,8 @@ impl GraphicsContextTrait for GraphicsContext {
                 Ok(texture)
             } else {
                 let renderbuffer = self.gl.create_renderbuffer();
+                self.gl
+                    .bind_renderbuffer(GL_RENDERBUFFER, Some(renderbuffer));
 
                 let (_pixel_format, inner_pixel_format, _type_) =
                     crate::gl_shared::pixel_format_to_gl_format_and_inner_format_and_type(

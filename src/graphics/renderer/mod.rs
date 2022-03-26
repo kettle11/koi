@@ -151,7 +151,7 @@ impl OffscreenRenderTarget {
                 if let Some(framebuffer) = self.resolve_framebuffer.take() {
                     graphics.context.delete_framebuffer(framebuffer.take())
                 }
-                self.framebuffer = Some(NotSendSync::new(
+                self.resolve_framebuffer = Some(NotSendSync::new(
                     graphics.context.new_framebuffer(
                         self.color_texture
                             .as_ref()
@@ -177,12 +177,12 @@ impl OffscreenRenderTarget {
                 &**resolve_framebuffer,
                 0,
                 0,
-                self.inner_texture_size.x as _,
-                self.inner_texture_size.y as _,
+                self.used_size.x as _,
+                self.used_size.y as _,
                 0,
                 0,
-                self.inner_texture_size.x as _,
-                self.inner_texture_size.y as _,
+                self.used_size.x as _,
+                self.used_size.y as _,
             )
         }
     }
