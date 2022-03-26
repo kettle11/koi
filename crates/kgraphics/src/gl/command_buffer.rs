@@ -358,7 +358,7 @@ impl<'a> RenderPassTrait for RenderPass<'a> {
     }
     fn blit_framebuffer(
         self,
-        target: Framebuffer,
+        target: &Framebuffer,
         source_x: u32,
         source_y: u32,
         source_width: u32,
@@ -371,7 +371,7 @@ impl<'a> RenderPassTrait for RenderPass<'a> {
         self.command_buffer
             .actions
             .push(CommandBufferAction::BlitFramebuffer {
-                target,
+                target: target.clone(),
                 source_x,
                 source_y,
                 source_width,

@@ -70,7 +70,7 @@ pub trait RenderPassTrait {
     fn set_depth_mask(&mut self, depth_mask: bool);
     fn blit_framebuffer(
         self,
-        target: Framebuffer,
+        target: &Framebuffer,
         source_x: u32,
         source_y: u32,
         source_width: u32,

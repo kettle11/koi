@@ -44,6 +44,7 @@ impl RenderTargetTexture {
                         size.y as u32,
                         self.pixel_format,
                         TextureSettings {
+                            msaa_samples: 0,
                             ..self.texture_settings
                         },
                     )
@@ -119,7 +120,11 @@ impl OffscreenRenderTarget {
     }
     pub fn resize(&mut self, graphics: &mut Graphics, textures: &mut Assets<Texture>, size: Vec2u) {
         // Resize
-        if size > self.inner_texture_size {
+        if size
+            .greater_than_per_component(self.inner_texture_size)
+            .any()
+        {
+            let size = size.max(self.inner_texture_size);
             self.color_texture
                 .as_mut()
                 .map(|c| c.resize(size, graphics, textures));
@@ -128,7 +133,7 @@ impl OffscreenRenderTarget {
                 .map(|c| c.resize(size, graphics, textures));
 
             if let Some(framebuffer) = self.framebuffer.take() {
-                graphics.context.delete_framebuffer(*framebuffer)
+                graphics.context.delete_framebuffer(framebuffer.take())
             }
             self.framebuffer = Some(NotSendSync::new(
                 graphics.context.new_framebuffer(
@@ -144,7 +149,7 @@ impl OffscreenRenderTarget {
 
             if self.needs_resolve {
                 if let Some(framebuffer) = self.resolve_framebuffer.take() {
-                    graphics.context.delete_framebuffer(*framebuffer)
+                    graphics.context.delete_framebuffer(framebuffer.take())
                 }
                 self.framebuffer = Some(NotSendSync::new(
                     graphics.context.new_framebuffer(
@@ -161,6 +166,7 @@ impl OffscreenRenderTarget {
 
             self.inner_texture_size = size;
         }
+
         self.used_size = size;
     }
 
@@ -168,7 +174,7 @@ impl OffscreenRenderTarget {
     pub fn resolve(&self, render_pass: RenderPass) {
         if let Some(resolve_framebuffer) = self.resolve_framebuffer.as_ref() {
             render_pass.blit_framebuffer(
-                **resolve_framebuffer,
+                &**resolve_framebuffer,
                 0,
                 0,
                 self.inner_texture_size.x as _,
@@ -203,6 +209,12 @@ impl OffscreenRenderTarget {
         } else {
             &depth_texture.texture
         }
+    }
+
+    pub fn inner_texture_scale(&self) -> Vec2 {
+        self.used_size
+            .as_f32()
+            .div_by_component(self.inner_texture_size.as_f32())
     }
 }
 
@@ -240,6 +252,7 @@ pub fn setup_renderer(world: &mut World) {
         .add(brdf_lookup_table);
 
     let initial_size = world.get_singleton::<NotSendSync<kapp::Window>>().size();
+
     let renderer_info = RendererInfo {
         brdf_lookup_table,
         offscreen_render_target: (|graphics: &mut Graphics, textures: &mut Assets<Texture>| {
@@ -250,8 +263,9 @@ pub fn setup_renderer(world: &mut World) {
                 Some((
                     PixelFormat::RGBA32F,
                     TextureSettings {
-                        msaa_samples: 4,
+                        msaa_samples: 8,
                         srgb: false,
+                        generate_mipmaps: false,
                         ..Default::default()
                     },
                 )),
@@ -259,7 +273,8 @@ pub fn setup_renderer(world: &mut World) {
                     PixelFormat::Depth32F,
                     TextureSettings {
                         srgb: false,
-                        msaa_samples: 4,
+                        msaa_samples: 8,
+                        generate_mipmaps: false,
                         ..Default::default()
                     },
                 )),
@@ -911,13 +926,13 @@ pub fn render_scene<'a, 'b>(
     shader_assets: &Assets<Shader>,
     material_assets: &Assets<Material>,
     mesh_assets: &Assets<Mesh>,
-    texture_assets: &Assets<Texture>,
+    texture_assets: &mut Assets<Texture>,
     cube_map_assets: &Assets<CubeMap>,
     cameras: Query<(&GlobalTransform, &Camera)>,
     renderables: Renderables<'a>,
     mut lights: Lights<'b>,
     reflection_probes: Query<(&'static GlobalTransform, &'static ReflectionProbe)>,
-    renderer_info: &RendererInfo,
+    renderer_info: &mut RendererInfo,
 ) {
     let mut command_buffer = graphics.context.new_command_buffer();
 
@@ -945,6 +960,14 @@ pub fn render_scene<'a, 'b>(
                 &renderables,
             );
 
+            // Resize of the offscreen render target to match the view size.
+            renderer_info
+                .offscreen_render_target
+                .resize(graphics, texture_assets, {
+                    let view_size = camera.get_view_size();
+                    Vec2u::new(view_size.0 as _, view_size.1 as _)
+                });
+
             clear_color = camera.clear_color;
             break;
         }
@@ -959,8 +982,10 @@ pub fn render_scene<'a, 'b>(
     });
 
     {
-        let mut render_pass = command_buffer
-            .begin_render_pass_with_framebuffer(&graphics.current_target_framebuffer, clear_color);
+        let mut render_pass = command_buffer.begin_render_pass_with_framebuffer(
+            renderer_info.offscreen_render_target.framebuffer(),
+            clear_color,
+        );
 
         for (camera_global_transform, camera) in &cameras {
             // Check that the camera is setup to render to the current CameraTarget.
@@ -1028,6 +1053,32 @@ pub fn render_scene<'a, 'b>(
                 );
             }
         }
+
+        renderer_info.offscreen_render_target.resolve(render_pass);
+
+        let mut render_pass = command_buffer
+            .begin_render_pass_with_framebuffer(&graphics.current_target_framebuffer, clear_color);
+
+        let shader = shader_assets.get(&Shader::FULLSCREEN_QUAD);
+        render_pass.set_pipeline(&shader.pipeline);
+
+        render_pass.set_texture_property(
+            &shader.pipeline.get_texture_property("p_texture").unwrap(),
+            Some(texture_assets.get(renderer_info.offscreen_render_target.color_texture())),
+            0,
+        );
+        render_pass.set_vec2_property(
+            &shader
+                .pipeline
+                .get_vec2_property("p_texture_coordinate_scale")
+                .unwrap(),
+            renderer_info
+                .offscreen_render_target
+                .inner_texture_scale()
+                .into(),
+        );
+
+        render_pass.draw_triangles_without_buffer(1);
     }
 
     command_buffer.present();

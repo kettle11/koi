@@ -84,6 +84,7 @@ impl Shader {
         Handle::<Shader>::new_with_just_index(8);
     pub const PHYSICALLY_BASED_TRANSPARENT_DOUBLE_SIDED: Handle<Shader> =
         Handle::<Shader>::new_with_just_index(9);
+    pub const FULLSCREEN_QUAD: Handle<Shader> = Handle::<Shader>::new_with_just_index(10);
 }
 
 pub(crate) fn initialize_static_shaders(graphics: &mut Graphics, shaders: &mut Assets<Shader>) {
@@ -209,5 +210,19 @@ pub(crate) fn initialize_static_shaders(graphics: &mut Graphics, shaders: &mut A
             )
             .unwrap(),
         &Shader::PHYSICALLY_BASED_TRANSPARENT_DOUBLE_SIDED,
+    );
+
+    shaders.add_and_leak(
+        graphics
+            .new_shader(
+                include_str!("built_in_shaders/fullscreen_quad.glsl"),
+                PipelineSettings {
+                    faces_to_render: FacesToRender::Front,
+                    depth_test: DepthTest::AlwaysPass,
+                    ..Default::default()
+                },
+            )
+            .unwrap(),
+        &Shader::FULLSCREEN_QUAD,
     );
 }

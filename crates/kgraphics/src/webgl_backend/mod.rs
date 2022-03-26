@@ -471,7 +471,7 @@ impl RenderPassTrait for RenderPass<'_> {
 
     fn blit_framebuffer(
         self,
-        target: Framebuffer,
+        target: &Framebuffer,
         source_x: u32,
         source_y: u32,
         source_width: u32,
@@ -483,7 +483,7 @@ impl RenderPassTrait for RenderPass<'_> {
     ) {
         self.command_buffer.commands.push(Command::BlitFramebuffer);
         self.command_buffer.u32_data.extend_from_slice(&[
-            target.0.map_or(0, |f| f.index()),
+            target.0.as_ref().map_or(0, |f| f.index()),
             source_x,
             source_y,
             source_width,

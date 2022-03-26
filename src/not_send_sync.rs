@@ -26,6 +26,11 @@ impl<T> NotSendSync<T> {
         assert!(std::thread::current().id() == self.thread_id);
         &self.value
     }
+
+    pub fn take(self) -> T {
+        assert!(std::thread::current().id() == self.thread_id);
+        self.value
+    }
 }
 
 impl<T> Deref for NotSendSync<T> {
