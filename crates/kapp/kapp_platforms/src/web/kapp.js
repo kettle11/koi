@@ -29,6 +29,8 @@ function check_resize() {
 }
 
 function request_animation_frame_callback(time) {
+    // Do not synthesize these events for now. It was too unrelable and didn't work for multiple key presses.
+    /*
     let now = Date.now() - start_timestamp;
     for (const [key, time_stamp] of key_down_map) {
         if ((now - time_stamp) > 1000) {
@@ -42,6 +44,7 @@ function request_animation_frame_callback(time) {
                 key != "AltRight" &&
                 key != "ControlLeft" &&
                 key != "ControlRight") {
+                console.log("SYNTHETIC KEY UP EVENT: ", key);
                 // Synthesize a keyup event when a keydown event hasn't occurred for one second.
                 // Keydown events repeat for all the character keys.
                 key_down_map.delete(key);
@@ -50,6 +53,7 @@ function request_animation_frame_callback(time) {
             }
         }
     }
+    */
     animation_frame_requested = false;
     check_resize();
     self.kwasm_exports.kapp_on_animation_frame(self.kwasm_exports.kapp_on_animation_frame);
@@ -78,13 +82,19 @@ let previous_mouse_up_button;
 let start_timestamp = Date.now();
 let key_down_map = new Map();
 
-// When the window loses focus send a key up for all events.
-window.addEventListener('blur', function () {
+function focus_lost() {
     let now = Date.now() - start_timestamp;
     for (const [key, time_stamp] of key_down_map) {
         key_down_map.delete(key);
         self.kwasm_pass_string_to_client(key);
         self.kwasm_exports.kapp_on_key_up(now);
+    }
+}
+
+// When the window loses focus send a key up for all events.
+document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === "hidden") {
+        focus_lost();
     }
 });
 
