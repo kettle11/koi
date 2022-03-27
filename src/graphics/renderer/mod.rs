@@ -261,19 +261,19 @@ pub fn setup_renderer(world: &mut World) {
                 textures,
                 Vec2u::new(initial_size.0 as usize, initial_size.1 as usize),
                 Some((
-                    PixelFormat::RGBA32F,
+                    PixelFormat::RGBA16F,
                     TextureSettings {
-                        msaa_samples: 8,
+                        msaa_samples: 4,
                         srgb: false,
                         generate_mipmaps: false,
                         ..Default::default()
                     },
                 )),
                 Some((
-                    PixelFormat::Depth32F,
+                    PixelFormat::Depth16,
                     TextureSettings {
                         srgb: false,
-                        msaa_samples: 8,
+                        msaa_samples: 4,
                         generate_mipmaps: false,
                         ..Default::default()
                     },
