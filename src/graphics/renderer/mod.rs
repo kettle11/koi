@@ -263,7 +263,7 @@ pub fn setup_renderer(world: &mut World) {
                 Some((
                     PixelFormat::RGBA16F,
                     TextureSettings {
-                        msaa_samples: 4,
+                        msaa_samples: 2,
                         srgb: false,
                         generate_mipmaps: false,
                         ..Default::default()
@@ -273,7 +273,7 @@ pub fn setup_renderer(world: &mut World) {
                     PixelFormat::Depth16,
                     TextureSettings {
                         srgb: false,
-                        msaa_samples: 4,
+                        msaa_samples: 2,
                         generate_mipmaps: false,
                         ..Default::default()
                     },
