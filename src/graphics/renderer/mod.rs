@@ -973,6 +973,14 @@ pub fn render_scene<'a, 'b>(
         }
     }
 
+    let post_processing = true;
+
+    let render_framebuffer = if post_processing {
+        renderer_info.offscreen_render_target.framebuffer()
+    } else {
+        &graphics.current_target_framebuffer
+    };
+
     let clear_color = clear_color.map(|c| {
         // Presently the output needs to be in non-linear sRGB.
         // However that means that blending with the clear-color will be incorrect.
@@ -982,10 +990,8 @@ pub fn render_scene<'a, 'b>(
     });
 
     {
-        let mut render_pass = command_buffer.begin_render_pass_with_framebuffer(
-            renderer_info.offscreen_render_target.framebuffer(),
-            clear_color,
-        );
+        let mut render_pass =
+            command_buffer.begin_render_pass_with_framebuffer(&render_framebuffer, clear_color);
 
         for (camera_global_transform, camera) in &cameras {
             // Check that the camera is setup to render to the current CameraTarget.
@@ -1054,31 +1060,35 @@ pub fn render_scene<'a, 'b>(
             }
         }
 
-        renderer_info.offscreen_render_target.resolve(render_pass);
+        if post_processing {
+            renderer_info.offscreen_render_target.resolve(render_pass);
 
-        let mut render_pass = command_buffer
-            .begin_render_pass_with_framebuffer(&graphics.current_target_framebuffer, clear_color);
+            let mut render_pass = command_buffer.begin_render_pass_with_framebuffer(
+                &graphics.current_target_framebuffer,
+                clear_color,
+            );
 
-        let shader = shader_assets.get(&Shader::FULLSCREEN_QUAD);
-        render_pass.set_pipeline(&shader.pipeline);
+            let shader = shader_assets.get(&Shader::FULLSCREEN_QUAD);
+            render_pass.set_pipeline(&shader.pipeline);
 
-        render_pass.set_texture_property(
-            &shader.pipeline.get_texture_property("p_texture").unwrap(),
-            Some(texture_assets.get(renderer_info.offscreen_render_target.color_texture())),
-            0,
-        );
-        render_pass.set_vec2_property(
-            &shader
-                .pipeline
-                .get_vec2_property("p_texture_coordinate_scale")
-                .unwrap(),
-            renderer_info
-                .offscreen_render_target
-                .inner_texture_scale()
-                .into(),
-        );
+            render_pass.set_texture_property(
+                &shader.pipeline.get_texture_property("p_texture").unwrap(),
+                Some(texture_assets.get(renderer_info.offscreen_render_target.color_texture())),
+                0,
+            );
+            render_pass.set_vec2_property(
+                &shader
+                    .pipeline
+                    .get_vec2_property("p_texture_coordinate_scale")
+                    .unwrap(),
+                renderer_info
+                    .offscreen_render_target
+                    .inner_texture_scale()
+                    .into(),
+            );
 
-        render_pass.draw_triangles_without_buffer(1);
+            render_pass.draw_triangles_without_buffer(1);
+        }
     }
 
     command_buffer.present();
