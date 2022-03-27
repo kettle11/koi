@@ -71,6 +71,7 @@ pub const TEXTURE0: c_uint = 0x84C0;
 pub const TEXTURE_2D: c_uint = 0x0DE1;
 pub const TEXTURE_CUBE_MAP: c_uint = 0x8513;
 pub const TEXTURE_CUBE_MAP_POSITIVE_X: c_uint = 0x8515;
+pub const FRAMEBUFFER: c_uint = 0x8d40;
 
 pub const COLOR_ATTACHMENT0: c_uint = 0x8CE0;
 pub const DEPTH_ATTACHMENT: c_uint = 0x8D00;

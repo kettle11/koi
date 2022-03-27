@@ -30,6 +30,7 @@ impl Default for Framebuffer {
 #[derive(Debug, Clone)]
 enum TextureType {
     Texture(JSObjectDynamic),
+    Renderbuffer(JSObjectDynamic),
     CubeMap {
         face: u8,
         texture_native: JSObjectDynamic,
@@ -411,6 +412,9 @@ impl RenderPassTrait for RenderPass<'_> {
                 TextureType::CubeMap { .. } => {
                     todo!()
                 }
+                TextureType::Renderbuffer { .. } => {
+                    panic!("Cannot set texture property to RenderBuffer")
+                }
                 TextureType::DefaultFramebuffer => panic!("Cannot update default framebuffer"),
             });
             self.command_buffer.u32_data.extend_from_slice(&[
@@ -614,6 +618,8 @@ struct WebGLJS {
     new_texture: JSObject,
     update_texture: JSObject,
     delete_texture: JSObject,
+    new_renderbuffer: JSObject,
+    delete_renderbuffer: JSObject,
     new_program: JSObject,
     get_uniform_name_and_type: JSObject,
     get_uniform_location: JSObject,
@@ -624,6 +630,7 @@ struct WebGLJS {
     get_multiview_supported: JSObject,
     generate_mip_map: JSObject,
     framebuffer_texture_2d: JSObject,
+    framebuffer_renderbuffer: JSObject,
     bind_framebuffer: JSObject,
     create_framebuffer: JSObject,
     delete_framebuffer: JSObject,
@@ -643,6 +650,8 @@ impl WebGLJS {
             new_texture: o.get_property("new_texture"),
             update_texture: o.get_property("update_texture"),
             delete_texture: o.get_property("delete_texture"),
+            new_renderbuffer: o.get_property("new_renderbuffer"),
+            delete_renderbuffer: o.get_property("delete_renderbuffer"),
             new_program: o.get_property("new_program"),
             get_uniform_name_and_type: o.get_property("get_uniform_name_and_type"),
             get_uniform_location: o.get_property("get_uniform_location"),
@@ -653,6 +662,7 @@ impl WebGLJS {
             get_multiview_supported: o.get_property("get_multiview_supported"),
             generate_mip_map: o.get_property("generate_mip_map"),
             framebuffer_texture_2d: o.get_property("framebuffer_texture_2d"),
+            framebuffer_renderbuffer: o.get_property("framebuffer_renderbuffer"),
             bind_framebuffer: o.get_property("bind_framebuffer"),
             create_framebuffer: o.get_property("create_framebuffer"),
             delete_framebuffer: o.get_property("delete_framebuffer"),
@@ -713,6 +723,9 @@ impl GraphicsContext {
                 TEXTURE_CUBE_MAP_POSITIVE_X + *face as u32,
                 texture_native.index(),
             ),
+            TextureType::Renderbuffer { .. } => {
+                panic!("For now textures with MSAA cannot be updated by a call to `update_texture`")
+            }
             TextureType::DefaultFramebuffer => panic!("Cannot update default framebuffer"),
         };
 
@@ -840,21 +853,46 @@ impl GraphicsContextTrait for GraphicsContext {
         pixel_format: PixelFormat,
         texture_settings: TextureSettings,
     ) -> Result<Texture, ()> {
-        let js_object = self.js.new_texture.call().unwrap().to_dynamic();
+        if texture_settings.msaa_samples == 0 {
+            let js_object = self.js.new_texture.call().unwrap().to_dynamic();
 
-        let texture = Texture {
-            texture_type: TextureType::Texture(js_object),
-            mip: 0,
-        };
-        self.update_texture(
-            &texture,
-            width,
-            height,
-            data,
-            pixel_format,
-            texture_settings,
-        );
-        Ok(texture)
+            let texture = Texture {
+                texture_type: TextureType::Texture(js_object),
+                mip: 0,
+            };
+            self.update_texture(
+                &texture,
+                width,
+                height,
+                data,
+                pixel_format,
+                texture_settings,
+            );
+            Ok(texture)
+        } else {
+            let (_pixel_format, inner_pixel_format, _type_) =
+                crate::gl_shared::pixel_format_to_gl_format_and_inner_format_and_type(
+                    pixel_format,
+                    texture_settings.srgb,
+                );
+
+            let js_object = self
+                .js
+                .new_renderbuffer
+                .call_raw(&[
+                    texture_settings.msaa_samples as u32,
+                    inner_pixel_format as u32,
+                    width as u32,
+                    height as u32,
+                ])
+                .unwrap()
+                .to_dynamic();
+
+            Ok(Texture {
+                texture_type: TextureType::Renderbuffer(js_object),
+                mip: 0,
+            })
+        }
     }
 
     fn update_texture(
@@ -881,6 +919,9 @@ impl GraphicsContextTrait for GraphicsContext {
         match texture.texture_type {
             TextureType::Texture(js_object) => {
                 self.js.delete_texture.call_1_arg(&js_object);
+            }
+            TextureType::Renderbuffer(js_object) => {
+                self.js.delete_renderbuffer.call_1_arg(&js_object);
             }
             TextureType::CubeMap { .. } => {}
             TextureType::DefaultFramebuffer => {
@@ -1023,6 +1064,9 @@ impl GraphicsContextTrait for GraphicsContext {
                 TEXTURE_CUBE_MAP_POSITIVE_X + *face as u32,
                 texture_native.index(),
             ),
+            TextureType::Renderbuffer { .. } => {
+                panic!("Cannot generate mipmaps for textures with MSAA samples")
+            }
             TextureType::DefaultFramebuffer => panic!("Cannot update default framebuffer"),
         };
         self.js.generate_mip_map.call_raw(&[texture, target]);
@@ -1040,42 +1084,53 @@ impl GraphicsContextTrait for GraphicsContext {
         depth_texture: Option<&Texture>,
         stencil_texture: Option<&Texture>,
     ) -> Framebuffer {
-        fn get_target_and_native_texture(texture: Option<&Texture>) -> (u32, u32, u32) {
+        fn bind_target_and_native_texture(
+            g: &GraphicsContext,
+            attachment: c_uint,
+            texture: Option<&Texture>,
+        ) {
             let texture_type = texture.map(|t| &t.texture_type);
             let level = texture.map_or(0, |t| t.mip as u32);
             match texture_type {
-                Some(TextureType::Texture(t)) => (TEXTURE_2D, t.index(), level),
+                Some(TextureType::Texture(t)) => {
+                    g.js.framebuffer_texture_2d.call_raw(&[
+                        attachment,
+                        TEXTURE_2D,
+                        t.index(),
+                        level,
+                    ]);
+                }
+                Some(TextureType::Renderbuffer(r)) => {
+                    g.js.framebuffer_renderbuffer
+                        .call_raw(&[attachment, r.index()]);
+                }
                 Some(TextureType::CubeMap {
                     face,
                     texture_native,
-                }) => (
-                    TEXTURE_CUBE_MAP_POSITIVE_X + *face as u32,
-                    texture_native.index(),
-                    level,
-                ),
+                }) => {
+                    g.js.framebuffer_texture_2d.call_raw(&[
+                        attachment,
+                        TEXTURE_CUBE_MAP_POSITIVE_X + *face as u32,
+                        texture_native.index(),
+                        level,
+                    ]);
+                }
                 Some(TextureType::DefaultFramebuffer) => {
                     panic!("Cannot update default framebuffer")
                 }
-                None => (TEXTURE_2D, 0, 0),
+                None => {
+                    g.js.framebuffer_texture_2d
+                        .call_raw(&[attachment, TEXTURE_2D, 0, level]);
+                }
             }
         }
         let framebuffer = self.js.create_framebuffer.call().unwrap();
-
         self.js.bind_framebuffer.call_1_arg(&framebuffer);
 
-        let (target, texture, level) = get_target_and_native_texture(color_texture);
-        self.js
-            .framebuffer_texture_2d
-            .call_raw(&[COLOR_ATTACHMENT0, target, texture, level]);
+        bind_target_and_native_texture(self, COLOR_ATTACHMENT0, color_texture);
+        bind_target_and_native_texture(self, DEPTH_ATTACHMENT, depth_texture);
+        bind_target_and_native_texture(self, STENCIL_ATTACHMENT, stencil_texture);
 
-        let (target, texture, level) = get_target_and_native_texture(depth_texture);
-        self.js
-            .framebuffer_texture_2d
-            .call_raw(&[DEPTH_ATTACHMENT, target, texture, level]);
-        let (target, texture, level) = get_target_and_native_texture(stencil_texture);
-        self.js
-            .framebuffer_texture_2d
-            .call_raw(&[STENCIL_ATTACHMENT, target, texture, level]);
         Framebuffer(Some(framebuffer.to_dynamic()))
     }
 

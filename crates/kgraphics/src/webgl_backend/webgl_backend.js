@@ -162,6 +162,21 @@ var gl_web_object = {
     delete_texture(texture) {
         gl.deleteTexture(texture);
     },
+    new_renderbuffer(msaa_samples, inner_pixel_format, width, height) {
+        let renderbuffer = gl.createRenderbuffer();
+        gl.bindRenderbuffer(gl.RENDERBUFFER, renderbuffer);
+        gl.renderbufferStorageMultisample(
+            gl.RENDERBUFFER,
+            msaa_samples,
+            inner_pixel_format,
+            width,
+            height,
+        );
+        return renderbuffer;
+    },
+    delete_renderbuffer(renderbuffer) {
+        gl.deleteRenderbuffer(renderbuffer);
+    },
     new_cube_map() {
         let texture = gl.createTexture();
         return texture;
@@ -244,6 +259,16 @@ var gl_web_object = {
             target,
             texture,
             level,
+        );
+    },
+    framebuffer_renderbuffer(attachment, texture_index) {
+        let renderbuffer = self.kwasm_get_object(texture_index);
+
+        gl.framebufferRenderbuffer(
+            gl.FRAMEBUFFER,
+            attachment,
+            gl.RENDERBUFFER,
+            renderbuffer,
         );
     },
     create_framebuffer() {
