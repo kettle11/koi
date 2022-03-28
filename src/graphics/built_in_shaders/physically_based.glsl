@@ -209,7 +209,6 @@ float ShadowCalculation(in sampler2D shadowMap, vec4 fragPosLightSpace, vec3 lig
 const float cascade_depths[4] = float[4](5., 15., 30., 60.);
 const float biases[4] = float[4](0.0001, 0.0001, 0.0002, 0.0004);
 
-
 void main()
 {
     vec3 normal = gl_FrontFacing ? Normal : Normal * -1.0;
@@ -240,8 +239,8 @@ void main()
     //  float roughness = p_roughness;
 
     // When interpolating between face normals the normal can get shorted, so renormalize here.
-      vec3 N = normalize(normal);
-   // vec3 N = getNormalFromMap();
+     // vec3 N = normalize(normal);
+    vec3 N = getNormalFromMap();
     vec3 V = normalize(p_camera_positions[0] - WorldPosition);
 
     // calculate reflectance at normal incidence; if dia-electric (like plastic) use F0 
@@ -388,10 +387,10 @@ void main()
     // HDR tonemapping
    // color = color / (color + vec3(1.0));
 
-    vec3 dither = ScreenSpaceDither(gl_FragCoord.xy) * p_dither_scale;
+    //vec3 dither = ScreenSpaceDither(gl_FragCoord.xy) * p_dither_scale;
     
     // Convert color to sRGB space for output
-    color = pow(color, vec3(1.0/2.2)) + dither; 
+   // color = pow(color, vec3(1.0/2.2)) + dither; 
         
     color_out = vec4(color, alpha);
 

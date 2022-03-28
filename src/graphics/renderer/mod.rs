@@ -13,7 +13,11 @@ pub use sprite::*;
 
 mod brdf_lookup;
 
+mod blur_calculator;
+
 use crate::graphics::texture::Texture;
+
+use self::blur_calculator::BlurCalculator;
 
 struct RenderTargetTexture {
     texture: Handle<Texture>,
@@ -222,6 +226,8 @@ impl OffscreenRenderTarget {
 pub struct RendererInfo {
     pub brdf_lookup_table: Handle<Texture>,
     offscreen_render_target: OffscreenRenderTarget,
+    blur_calculator: BlurCalculator,
+    final_postprocess_shader: Shader,
 }
 
 pub fn renderer_plugin() -> Plugin {
@@ -253,7 +259,20 @@ pub fn setup_renderer(world: &mut World) {
 
     let initial_size = world.get_singleton::<NotSendSync<kapp::Window>>().size();
 
+    let blur_calculator = BlurCalculator::new.run(world);
     let renderer_info = RendererInfo {
+        final_postprocess_shader: world
+            .get_singleton::<Graphics>()
+            .new_shader(
+                include_str!("../built_in_shaders/final_postprocess.glsl"),
+                PipelineSettings {
+                    faces_to_render: FacesToRender::Front,
+                    blending: None,
+                    depth_test: DepthTest::AlwaysPass,
+                },
+            )
+            .unwrap(),
+        blur_calculator,
         brdf_lookup_table,
         offscreen_render_target: (|graphics: &mut Graphics, textures: &mut Assets<Texture>| {
             OffscreenRenderTarget::new(
@@ -940,6 +959,7 @@ pub fn render_scene<'a, 'b>(
         graphics.current_camera_target == Some(graphics.primary_camera_target);
 
     let mut clear_color = None;
+    let mut view_size = (0, 0);
 
     // For now only render shadows from the primary camera's perspective.
     // This would make splitscreen shadows really messed up.
@@ -964,7 +984,7 @@ pub fn render_scene<'a, 'b>(
             renderer_info
                 .offscreen_render_target
                 .resize(graphics, texture_assets, {
-                    let view_size = camera.get_view_size();
+                    view_size = camera.get_view_size();
                     Vec2u::new(view_size.0 as _, view_size.1 as _)
                 });
 
@@ -973,9 +993,9 @@ pub fn render_scene<'a, 'b>(
         }
     }
 
-    let post_processing = true;
+    let post_processing_enabled = true;
 
-    let render_framebuffer = if post_processing {
+    let render_framebuffer = if post_processing_enabled {
         renderer_info.offscreen_render_target.framebuffer()
     } else {
         &graphics.current_target_framebuffer
@@ -1060,39 +1080,108 @@ pub fn render_scene<'a, 'b>(
             }
         }
 
-        if post_processing {
+        if post_processing_enabled {
             renderer_info.offscreen_render_target.resolve(render_pass);
 
+            let blurred_texture = renderer_info.blur_calculator.blur_texture(
+                graphics,
+                texture_assets,
+                &mut command_buffer,
+                renderer_info.offscreen_render_target.color_texture(),
+                Vec2u::new(view_size.0 as _, view_size.0 as _),
+            );
+
+            // Drawn to the screen
             let mut render_pass = command_buffer.begin_render_pass_with_framebuffer(
                 &graphics.current_target_framebuffer,
                 clear_color,
             );
 
-            let shader = shader_assets.get(&Shader::FULLSCREEN_QUAD);
-            render_pass.set_pipeline(&shader.pipeline);
+            // Bloom, linear -> sRGB, and Dither
+            {
+                let shader = &renderer_info.final_postprocess_shader;
+                let texture = renderer_info.offscreen_render_target.color_texture();
+                let output_viewport = Box2::new(
+                    Vec2::ZERO,
+                    Vec2::new(view_size.0 as f32, view_size.1 as f32),
+                );
+                let texture_scale = renderer_info.offscreen_render_target.inner_texture_scale();
+                let min = output_viewport.min.as_u32();
+                let size = output_viewport.size().as_u32();
 
-            render_pass.set_texture_property(
-                &shader.pipeline.get_texture_property("p_texture").unwrap(),
-                Some(texture_assets.get(renderer_info.offscreen_render_target.color_texture())),
-                0,
-            );
-            render_pass.set_vec2_property(
-                &shader
-                    .pipeline
-                    .get_vec2_property("p_texture_coordinate_scale")
-                    .unwrap(),
-                renderer_info
-                    .offscreen_render_target
-                    .inner_texture_scale()
-                    .into(),
-            );
+                render_pass.set_pipeline(&shader.pipeline);
+                render_pass.set_viewport(min.x, min.y, size.x, size.y);
 
-            render_pass.draw_triangles_without_buffer(1);
+                render_pass.set_texture_property(
+                    &shader.pipeline.get_texture_property("p_texture").unwrap(),
+                    Some(texture_assets.get(texture)),
+                    0,
+                );
+                render_pass.set_texture_property(
+                    &shader
+                        .pipeline
+                        .get_texture_property("p_blurred_texture")
+                        .unwrap(),
+                    Some(texture_assets.get(blurred_texture)),
+                    1,
+                );
+                render_pass.set_vec2_property(
+                    &shader
+                        .pipeline
+                        .get_vec2_property("p_texture_coordinate_scale")
+                        .unwrap(),
+                    texture_scale.into(),
+                );
+
+                render_pass.draw_triangles_without_buffer(1);
+            }
+
+            // Debug render of intermediate bloom texture
+            /*
+            render_texture_to_screen(
+                shader_assets.get(&Shader::FULLSCREEN_QUAD),
+                texture_assets,
+                &mut render_pass,
+                Box2::new(Vec2::ZERO, Vec2::new(600., 600.)),
+                blurred_texture,
+                Vec2::fill(1.0),
+            );
+            */
         }
     }
 
     command_buffer.present();
     graphics.context.commit_command_buffer(command_buffer);
+}
+
+pub fn render_texture_to_screen(
+    shader: &Shader,
+    textures: &Assets<Texture>,
+    render_pass: &mut RenderPass,
+    output_viewport: Box2,
+    texture: &Handle<Texture>,
+    texture_scale: Vec2,
+) {
+    let min = output_viewport.min.as_u32();
+    let size = output_viewport.size().as_u32();
+
+    render_pass.set_pipeline(&shader.pipeline);
+    render_pass.set_viewport(min.x, min.y, size.x, size.y);
+
+    render_pass.set_texture_property(
+        &shader.pipeline.get_texture_property("p_texture").unwrap(),
+        Some(textures.get(texture)),
+        0,
+    );
+    render_pass.set_vec2_property(
+        &shader
+            .pipeline
+            .get_vec2_property("p_texture_coordinate_scale")
+            .unwrap(),
+        texture_scale.into(),
+    );
+
+    render_pass.draw_triangles_without_buffer(1);
 }
 
 pub fn render_depth_only(

@@ -8,7 +8,7 @@ in vec2 TexCoords;
 
 uniform sampler2D p_texture;
 
-layout(location = 0) out vec4 color_out;
+out vec4 color_out;
 
 void main()
 {

@@ -803,6 +803,8 @@ impl GraphicsContextTrait for GraphicsContext {
     }
 
     fn commit_command_buffer(&mut self, mut command_buffer: CommandBuffer) {
+        let mut current_program = None;
+
         unsafe {
             use CommandBufferAction::*;
 
@@ -817,8 +819,12 @@ impl GraphicsContextTrait for GraphicsContext {
                         self.gl.bind_framebuffer(GL_FRAMEBUFFER, framebuffer);
                     }
                     ChangePipeline(pipeline) => {
-                        // Requiring a clone of the pipeline all over the place is not good.
-                        self.gl.use_program(Some(pipeline.program));
+                        // A small optimization to ensure that the program is only changed when needed.
+                        if current_program != Some(pipeline.program) {
+                            // Requiring a clone of the pipeline all over the place is not good.
+                            self.gl.use_program(Some(pipeline.program));
+                            current_program = Some(pipeline.program);
+                        }
 
                         // GL_ALWAYS will still write to the depth buffer, just the value is ignored.
                         // So depth testing is enabled even for always.

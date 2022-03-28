@@ -9,7 +9,7 @@ pub struct PBRProperties {
     pub metallic_roughness_texture: Option<Handle<Texture>>,
     pub ambient: f32,
     pub ambient_texture: Option<Handle<Texture>>,
-    pub emissive: Color,
+    pub emissive: Vec3,
     pub emissive_texture: Option<Handle<Texture>>,
     pub normal_texture: Option<Handle<Texture>>,
     pub blending: Option<(BlendFactor, BlendFactor)>,
@@ -27,7 +27,7 @@ impl Default for PBRProperties {
             ambient_texture: Some(Texture::WHITE),
             normal_texture: Some(Texture::NORMAL),
             emissive_texture: Some(Texture::WHITE),
-            emissive: Color::BLACK,
+            emissive: Vec3::ZERO,
             blending: None,
         }
     }
@@ -65,9 +65,7 @@ pub fn new_pbr_material(shader: Handle<Shader>, pbr_properties: PBRProperties) -
     material.set_texture("p_normal_texture", normal_texture);
 
     material.set_vec3("p_emissive", {
-        let rgb_color = pbr_properties
-            .emissive
-            .to_rgb_color(color_spaces::LINEAR_SRGB);
+        let rgb_color = pbr_properties.emissive;
         rgb_color.xyz()
     });
     let p_emissive_texture = pbr_properties.emissive_texture.unwrap_or(Texture::WHITE);

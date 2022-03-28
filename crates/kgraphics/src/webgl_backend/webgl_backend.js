@@ -584,6 +584,7 @@ var gl_web_object = {
                     let framebuffer = kwasm_get_object(framebuffer_index);
                     gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, framebuffer)
                     gl.blitFramebuffer(source_x, source_y, source_w, source_h, dest_x, dest_y, dest_w, dest_h, gl.COLOR_BUFFER_BIT, gl.LINEAR);
+                    gl.invalidateFramebuffer(gl.READ_FRAMEBUFFER, [gl.COLOR_ATTACHMENT0, gl.DEPTH_ATTACHMENT]);
                     break;
                 }
             }

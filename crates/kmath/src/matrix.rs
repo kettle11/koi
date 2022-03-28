@@ -1295,6 +1295,15 @@ impl<const R: usize, const C: usize> Matrix<u32, R, C> {
     }
 }
 impl<const R: usize, const C: usize> Matrix<u64, R, C> {
+    pub fn as_u32(&self) -> Matrix<u32, R, C> {
+        let mut output = Matrix::<u32, R, C>::ZERO;
+        for i in 0..C {
+            for j in 0..R {
+                output.0[i][j] = self.0[i][j] as u32;
+            }
+        }
+        output
+    }
     pub fn as_f32(&self) -> Matrix<f32, R, C> {
         let mut output = Matrix::<f32, R, C>::ZERO;
         for i in 0..C {
@@ -1325,6 +1334,15 @@ impl<const R: usize, const C: usize> Matrix<u64, R, C> {
 }
 
 impl<const R: usize, const C: usize> Matrix<usize, R, C> {
+    pub fn as_u32(&self) -> Matrix<u32, R, C> {
+        let mut output = Matrix::<u32, R, C>::ZERO;
+        for i in 0..C {
+            for j in 0..R {
+                output.0[i][j] = self.0[i][j] as u32;
+            }
+        }
+        output
+    }
     pub fn as_f32(&self) -> Matrix<f32, R, C> {
         let mut output = Matrix::<f32, R, C>::ZERO;
         for i in 0..C {

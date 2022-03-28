@@ -89,11 +89,10 @@ pub(super) fn load_gltf_as_world(
             });
 
             // Is this correct?
-            pbr_properties.emissive = Color::new(
+            pbr_properties.emissive = Vec3::new(
                 material.emissive_factor[0],
                 material.emissive_factor[1],
                 material.emissive_factor[2],
-                1.0,
             );
 
             pbr_properties.emissive_texture = material.emissive_texture.as_ref().map(|t| {

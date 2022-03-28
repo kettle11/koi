@@ -34,12 +34,14 @@ vec3 ScreenSpaceDither( vec2 vScreenPos )
 
 void main()
 {
-    vec3 envColor = texture(p_environment_map, local_position).rgb;
-    
-    envColor = envColor / (envColor + vec3(1.0));
-    envColor = pow(envColor, vec3(1.0/2.2)); 
-  
-    vec3 dither = ScreenSpaceDither(gl_FragCoord.xy) * 4.0;
-
-    color_out = vec4(envColor + dither, 1.0);
+    //vec3 envColor = texture(p_environment_map, local_position).rgb;
+    //
+    //envColor = envColor / (envColor + vec3(1.0));
+    //envColor = pow(envColor, vec3(1.0/2.2)); 
+  //
+    //vec3 dither = ScreenSpaceDither(gl_FragCoord.xy) * 4.0;
+//
+    //color_out = vec4(envColor + dither, 1.0);
+    color_out.rgb = texture(p_environment_map, local_position).rgb;
+    color_out.a = 1.0;
 }
