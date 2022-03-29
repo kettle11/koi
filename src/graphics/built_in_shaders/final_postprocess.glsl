@@ -9,6 +9,7 @@ in vec2 TexCoords;
 uniform sampler2D p_texture;
 uniform sampler2D p_blurred_texture;
 
+uniform float p_bloom_strength;
 out vec4 color_out;
 
 // Portal 2 Screenspace dithering (modified for VR):
@@ -27,7 +28,7 @@ void main()
     color_out = texture(p_texture, TexCoords);
 
     // Bloom 
-    color_out = mix(color_out, texture(p_blurred_texture, TexCoords), 0.1);
+    color_out = mix(color_out, texture(p_blurred_texture, TexCoords), p_bloom_strength);
 
     // Reinhard tonehamp
    // color_out.rgb = color_out.rgb / (color_out.rgb + vec3(1.0));

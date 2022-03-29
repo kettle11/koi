@@ -1,7 +1,7 @@
 use crate::*;
 use kgraphics::{CommandBuffer, CommandBufferTrait, PipelineTrait, RenderPassTrait};
 
-pub struct BlurCalculator {
+pub struct BloomCalculator {
     passes: usize,
     downscale_targets: Vec<OffscreenRenderTarget>,
     upscale_targets: Vec<OffscreenRenderTarget>,
@@ -9,9 +9,9 @@ pub struct BlurCalculator {
     upscale_shader: Shader,
 }
 
-impl BlurCalculator {
+impl BloomCalculator {
     pub fn new(graphics: &mut Graphics, textures: &mut Assets<Texture>) -> Self {
-        let passes = 5;
+        let passes = 6;
         let settings = Some((
             kgraphics::PixelFormat::RGBA16F,
             TextureSettings {
@@ -148,10 +148,8 @@ impl BlurCalculator {
         for i in 0..self.passes {
             let current_target = &self.downscale_targets[i];
             // For some reason not clearing the target is significantly faster.
-            let mut render_pass = command_buffer.begin_render_pass_with_framebuffer(
-                current_target.framebuffer(),
-                Some((0.0, 0.0, 0.0, 0.0)),
-            );
+            let mut render_pass = command_buffer
+                .begin_render_pass_with_framebuffer(current_target.framebuffer(), None);
 
             render_pass.set_viewport(
                 0,
@@ -181,10 +179,8 @@ impl BlurCalculator {
 
         for i in (0..self.passes).rev() {
             let current_target = &self.upscale_targets[i];
-            let mut render_pass = command_buffer.begin_render_pass_with_framebuffer(
-                current_target.framebuffer(),
-                Some((0.0, 0.0, 0.0, 0.0)),
-            );
+            let mut render_pass = command_buffer
+                .begin_render_pass_with_framebuffer(current_target.framebuffer(), None);
 
             render_pass.set_viewport(
                 0,
@@ -204,7 +200,11 @@ impl BlurCalculator {
             );
             render_pass.set_texture_property(
                 p_corresponding_downsample_texture,
-                Some(textures.get(self.downscale_targets[i].color_texture())),
+                Some(textures.get(if i != 0 {
+                    self.downscale_targets[i - 1].color_texture()
+                } else {
+                    starting_texture
+                })),
                 1,
             );
             render_pass.set_vec2_property(p_half_pixel_upsample, last_half_pixel_size.into());

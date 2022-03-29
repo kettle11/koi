@@ -27,5 +27,5 @@ vec4 dual_kawase() {
 
 void main() {
     vec4 p = texture(p_corresponding_downsample_texture, TexCoords);
-    color_out = mix(dual_kawase(), p, 0.5);
+    color_out = mix(dual_kawase(), p, 0.1);
 }
