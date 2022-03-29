@@ -2,13 +2,16 @@ use crate::*;
 use kgraphics::{CommandBuffer, CommandBufferTrait, PipelineTrait, RenderPassTrait};
 
 pub struct BlurCalculator {
-    targets: [OffscreenRenderTarget; 2],
+    passes: usize,
+    downscale_targets: Vec<OffscreenRenderTarget>,
+    upscale_targets: Vec<OffscreenRenderTarget>,
     downsample_shader: Shader,
     upscale_shader: Shader,
 }
 
 impl BlurCalculator {
     pub fn new(graphics: &mut Graphics, textures: &mut Assets<Texture>) -> Self {
+        let passes = 5;
         let settings = Some((
             kgraphics::PixelFormat::RGBA16F,
             TextureSettings {
@@ -33,26 +36,60 @@ impl BlurCalculator {
             .unwrap();
         let upscale_shader = graphics
             .new_shader(
-                include_str!("../built_in_shaders/dual_kawase_upsample.glsl"),
+                include_str!("../built_in_shaders/bloom_upsample.glsl"),
                 PipelineSettings {
                     depth_test: kgraphics::DepthTest::AlwaysPass,
                     ..Default::default()
                 },
             )
             .unwrap();
+        let mut downscale_targets = Vec::new();
+        let mut upscale_targets = Vec::new();
+
+        for _ in 0..passes {
+            downscale_targets.push(OffscreenRenderTarget::new(
+                graphics,
+                textures,
+                Vec2u::ZERO,
+                settings,
+                None,
+            ));
+            upscale_targets.push(OffscreenRenderTarget::new(
+                graphics,
+                textures,
+                Vec2u::ZERO,
+                settings,
+                None,
+            ));
+        }
         Self {
+            passes,
             downsample_shader,
             upscale_shader,
-            targets: [
-                OffscreenRenderTarget::new(graphics, textures, Vec2u::ZERO, settings, None),
-                OffscreenRenderTarget::new(graphics, textures, Vec2u::ZERO, settings, None),
-            ],
+            downscale_targets,
+            upscale_targets,
         }
     }
 
-    fn resize(&mut self, size: Vec2u, graphics: &mut Graphics, textures: &mut Assets<Texture>) {
-        self.targets[0].resize(graphics, textures, size);
-        self.targets[1].resize(graphics, textures, size);
+    fn resize(&mut self, mut size: Vec2u, graphics: &mut Graphics, textures: &mut Assets<Texture>) {
+        let mut steps = 0;
+        for (upscale_target, downscale_target) in self
+            .upscale_targets
+            .iter_mut()
+            .zip(self.downscale_targets.iter_mut())
+        {
+            if size.x <= 2 || size.y <= 2 {
+                break;
+            }
+            steps += 1;
+
+            upscale_target.resize_exact(graphics, textures, size);
+            size /= 2;
+
+            // The first texture in the downscale chain is the incoming color buffer.
+            downscale_target.resize_exact(graphics, textures, size);
+        }
+        self.passes = steps;
     }
 
     pub fn blur_texture(
@@ -65,14 +102,6 @@ impl BlurCalculator {
     ) -> &Handle<Texture> {
         self.resize(starting_size, graphics, textures);
 
-        let mut size = starting_size.as_u32();
-
-        let mut scale = self.targets[0].inner_texture_scale();
-
-        let mut last_texture = starting_texture;
-        let mut target = 0;
-        let passes = 4;
-
         let p_texture_downsample = &self
             .downsample_shader
             .pipeline
@@ -82,17 +111,6 @@ impl BlurCalculator {
             .upscale_shader
             .pipeline
             .get_texture_property("p_texture")
-            .unwrap();
-
-        let p_texture_coordinate_scale_downsample = &self
-            .downsample_shader
-            .pipeline
-            .get_vec2_property("p_texture_coordinate_scale")
-            .unwrap();
-        let p_texture_coordinate_scale_upsample = &self
-            .upscale_shader
-            .pipeline
-            .get_vec2_property("p_texture_coordinate_scale")
             .unwrap();
 
         let p_half_pixel_downsample = &self
@@ -105,61 +123,99 @@ impl BlurCalculator {
             .pipeline
             .get_vec2_property("p_half_pixel")
             .unwrap();
+        let p_texture_coordinate_scale_downsample = &self
+            .downsample_shader
+            .pipeline
+            .get_vec2_property("p_texture_coordinate_scale")
+            .unwrap();
+        let p_texture_coordinate_scale_upsample = &self
+            .upscale_shader
+            .pipeline
+            .get_vec2_property("p_texture_coordinate_scale")
+            .unwrap();
 
-        // This is consistent because the underlying texture doesn't change size.
-        let half_pixel_size = Vec2::fill(0.5).div_by_component(size.as_f32());
+        let p_corresponding_downsample_texture = &self
+            .upscale_shader
+            .pipeline
+            .get_texture_property("p_corresponding_downsample_texture")
+            .unwrap();
 
-        println!("STARTING BLUR WITH SIZE: {:?}", size);
-        for _ in 0..passes {
-            // For some reason not clearing the screen is significantly faster.
-            let mut render_pass = command_buffer
-                .begin_render_pass_with_framebuffer(self.targets[target].framebuffer(), None);
+        let mut last_half_pixel_size = Vec2::fill(0.5).div_by_component(starting_size.as_f32());
+        let mut last_texture = starting_texture;
 
-            let new_size = size / 2;
-            println!("DOWNSCALE SIZE: {:?}", new_size);
-            render_pass.set_viewport(0, 0, new_size.x, new_size.y);
+        // println!("STARTING SIZE: {:?}", starting_size);
+
+        for i in 0..self.passes {
+            let current_target = &self.downscale_targets[i];
+            // For some reason not clearing the target is significantly faster.
+            let mut render_pass = command_buffer.begin_render_pass_with_framebuffer(
+                current_target.framebuffer(),
+                Some((0.0, 0.0, 0.0, 0.0)),
+            );
+
+            render_pass.set_viewport(
+                0,
+                0,
+                current_target.size().x as _,
+                current_target.size().y as _,
+            );
+
+            // println!(
+            //     "DOWNSAMPLE CURRENT TARGET SIZE: {:?}",
+            //     current_target.inner_texture_size
+            // );
             render_pass.set_pipeline(&self.downsample_shader.pipeline);
             render_pass.set_texture_property(
                 p_texture_downsample,
                 Some(textures.get(last_texture)),
                 0,
             );
-            render_pass.set_vec2_property(p_texture_coordinate_scale_downsample, scale.into());
-            render_pass.set_vec2_property(p_half_pixel_downsample, half_pixel_size.into());
+            render_pass.set_vec2_property(p_half_pixel_downsample, last_half_pixel_size.into());
+            render_pass.set_vec2_property(p_texture_coordinate_scale_downsample, Vec2::ONE.into());
 
             render_pass.draw_triangles_without_buffer(1);
 
-            last_texture = self.targets[target].color_texture();
-            target ^= 1;
-            let new_size = size / 2;
-            size = new_size;
-            scale /= 2.0;
+            last_texture = current_target.color_texture();
+            last_half_pixel_size = Vec2::fill(0.5).div_by_component(current_target.size().as_f32())
         }
 
-        for _ in 0..passes {
-            let mut render_pass = command_buffer
-                .begin_render_pass_with_framebuffer(self.targets[target].framebuffer(), None);
-            let new_size = size * 2;
-            println!("UPSCALE SIZE: {:?}", new_size);
-            render_pass.set_viewport(0, 0, new_size.x, new_size.y);
+        for i in (0..self.passes).rev() {
+            let current_target = &self.upscale_targets[i];
+            let mut render_pass = command_buffer.begin_render_pass_with_framebuffer(
+                current_target.framebuffer(),
+                Some((0.0, 0.0, 0.0, 0.0)),
+            );
+
+            render_pass.set_viewport(
+                0,
+                0,
+                current_target.size().x as _,
+                current_target.size().y as _,
+            );
+            // println!(
+            //     "UPSCALE CURRENT TARGET SIZE: {:?}",
+            //     current_target.inner_texture_size
+            // );
             render_pass.set_pipeline(&self.upscale_shader.pipeline);
             render_pass.set_texture_property(
                 p_texture_upsample,
                 Some(textures.get(last_texture)),
                 0,
             );
-            render_pass.set_vec2_property(p_texture_coordinate_scale_upsample, scale.into());
-            render_pass.set_vec2_property(p_half_pixel_upsample, half_pixel_size.into());
+            render_pass.set_texture_property(
+                p_corresponding_downsample_texture,
+                Some(textures.get(self.downscale_targets[i].color_texture())),
+                1,
+            );
+            render_pass.set_vec2_property(p_half_pixel_upsample, last_half_pixel_size.into());
+            render_pass.set_vec2_property(p_texture_coordinate_scale_upsample, Vec2::ONE.into());
 
             render_pass.draw_triangles_without_buffer(1);
 
-            last_texture = self.targets[target].color_texture();
-            target ^= 1;
-
-            size = new_size;
-            scale *= 2.0;
+            last_texture = current_target.color_texture();
+            last_half_pixel_size = Vec2::fill(0.5).div_by_component(current_target.size().as_f32())
         }
 
-        self.targets[target ^ 1].color_texture()
+        self.upscale_targets[0].color_texture()
     }
 }
