@@ -1083,22 +1083,22 @@ pub fn render_scene<'a, 'b>(
         if post_processing_enabled {
             renderer_info.offscreen_render_target.resolve(render_pass);
 
-            let blurred_texture = renderer_info.blur_calculator.blur_texture(
-                graphics,
-                texture_assets,
-                &mut command_buffer,
-                renderer_info.offscreen_render_target.color_texture(),
-                Vec2u::new(view_size.0 as _, view_size.0 as _),
-            );
-
-            // Drawn to the screen
-            let mut render_pass = command_buffer.begin_render_pass_with_framebuffer(
-                &graphics.current_target_framebuffer,
-                clear_color,
-            );
-
             // Bloom, linear -> sRGB, and Dither
             {
+                let blurred_texture = renderer_info.blur_calculator.blur_texture(
+                    graphics,
+                    texture_assets,
+                    &mut command_buffer,
+                    renderer_info.offscreen_render_target.color_texture(),
+                    Vec2u::new(view_size.0 as _, view_size.1 as _),
+                );
+
+                // Drawn to the screen
+                let mut render_pass = command_buffer.begin_render_pass_with_framebuffer(
+                    &graphics.current_target_framebuffer,
+                    clear_color,
+                );
+
                 let shader = &renderer_info.final_postprocess_shader;
                 let texture = renderer_info.offscreen_render_target.color_texture();
                 let output_viewport = Box2::new(
@@ -1134,19 +1134,23 @@ pub fn render_scene<'a, 'b>(
                 );
 
                 render_pass.draw_triangles_without_buffer(1);
-            }
 
-            // Debug render of intermediate bloom texture
-            /*
-            render_texture_to_screen(
-                shader_assets.get(&Shader::FULLSCREEN_QUAD),
-                texture_assets,
-                &mut render_pass,
-                Box2::new(Vec2::ZERO, Vec2::new(600., 600.)),
-                blurred_texture,
-                Vec2::fill(1.0),
-            );
-            */
+                // Debug render of intermediate bloom texture
+
+                /*
+                render_texture_to_screen(
+                    shader_assets.get(&Shader::FULLSCREEN_QUAD),
+                    texture_assets,
+                    &mut render_pass,
+                    Box2::new(
+                        Vec2::ZERO,
+                        Vec2::new(view_size.0 as f32, view_size.1 as f32),
+                    ),
+                    blurred_texture,
+                    texture_scale,
+                );
+                */
+            }
         }
     }
 

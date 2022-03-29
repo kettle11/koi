@@ -24,12 +24,15 @@ const float DITHER_SCALE = 4.0;
 
 void main()
 {
-    vec3 dither = ScreenSpaceDither(gl_FragCoord.xy) * DITHER_SCALE;
-    color_out = mix(texture(p_texture, TexCoords), texture(p_blurred_texture, TexCoords), 0.1);
+    color_out = texture(p_texture, TexCoords);
+
+    // Bloom 
+    color_out = mix(color_out, texture(p_blurred_texture, TexCoords), 0.1);
 
     // Reinhard tonehamp
-    color_out.rgb = color_out.rgb / (color_out.rgb + vec3(1.0));
+   // color_out.rgb = color_out.rgb / (color_out.rgb + vec3(1.0));
     
-    color_out.rgb = pow(color_out.rgb, vec3(1.0/2.2)) + dither; 
+    color_out.rgb = pow(color_out.rgb, vec3(1.0/2.2)); 
+    color_out.rgb += ScreenSpaceDither(gl_FragCoord.xy) * DITHER_SCALE;
     color_out.a = 1.0;
 }

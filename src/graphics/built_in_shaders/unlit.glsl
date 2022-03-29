@@ -37,10 +37,9 @@ vec3 ScreenSpaceDither( vec2 vScreenPos )
 void main()
 {
     vec4 base_color = (VertexColor * p_base_color * texture(p_base_color_texture, TexCoords * p_texture_coordinate_scale + p_texture_coordinate_offset));
-  
-    vec3 dither = ScreenSpaceDither(gl_FragCoord.xy) * p_dither_scale;
-    vec3 color = base_color.rgb + dither; 
-    color = pow(color, vec3(1.0/2.2)) + dither; 
+      //color = pow(color, vec3(1.0/2.2)); 
 
-    color_out = vec4(color.rgb, base_color.a);
+    color_out = base_color;
+
+   // color_out += ScreenSpaceDither(gl_FragCoord.xy) * p_dither_scale;
 }

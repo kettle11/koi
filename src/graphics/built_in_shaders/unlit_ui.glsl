@@ -20,5 +20,5 @@ void main()
     } else {
         color_out = VertexColor;
     }
-    color_out.rgb = pow(color_out.rgb, vec3(1.0/2.2));
+   // color_out.rgb = pow(color_out.rgb, vec3(1.0/2.2));
 }

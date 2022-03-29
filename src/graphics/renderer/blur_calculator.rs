@@ -67,11 +67,11 @@ impl BlurCalculator {
 
         let mut size = starting_size.as_u32();
 
-        let mut scale = Vec2::ONE;
+        let mut scale = self.targets[0].inner_texture_scale();
 
         let mut last_texture = starting_texture;
         let mut target = 0;
-        let passes = 6;
+        let passes = 4;
 
         let p_texture_downsample = &self
             .downsample_shader
@@ -109,14 +109,14 @@ impl BlurCalculator {
         // This is consistent because the underlying texture doesn't change size.
         let half_pixel_size = Vec2::fill(0.5).div_by_component(size.as_f32());
 
-        // println!("STARTING BLUR");
+        println!("STARTING BLUR WITH SIZE: {:?}", size);
         for _ in 0..passes {
             // For some reason not clearing the screen is significantly faster.
             let mut render_pass = command_buffer
                 .begin_render_pass_with_framebuffer(self.targets[target].framebuffer(), None);
 
             let new_size = size / 2;
-            // println!("DOWNSCALE SIZE: {:?}", new_size);
+            println!("DOWNSCALE SIZE: {:?}", new_size);
             render_pass.set_viewport(0, 0, new_size.x, new_size.y);
             render_pass.set_pipeline(&self.downsample_shader.pipeline);
             render_pass.set_texture_property(
@@ -140,7 +140,7 @@ impl BlurCalculator {
             let mut render_pass = command_buffer
                 .begin_render_pass_with_framebuffer(self.targets[target].framebuffer(), None);
             let new_size = size * 2;
-            // println!("UPSCALE SIZE: {:?}", new_size);
+            println!("UPSCALE SIZE: {:?}", new_size);
             render_pass.set_viewport(0, 0, new_size.x, new_size.y);
             render_pass.set_pipeline(&self.upscale_shader.pipeline);
             render_pass.set_texture_property(
