@@ -106,7 +106,7 @@ pub fn setup_renderer(world: &mut World) {
 
     let blur_calculator = BloomCalculator::new.run(world);
     let renderer_info = RendererInfo {
-        bloom_enabled: true,
+        bloom_enabled: false,
         bloom_strength: 0.1,
         final_postprocess_shader: world
             .get_singleton::<Graphics>()
@@ -129,7 +129,7 @@ pub fn setup_renderer(world: &mut World) {
                 Some((
                     PixelFormat::RGBA16F,
                     TextureSettings {
-                        msaa_samples: 2,
+                        msaa_samples: 4,
                         srgb: false,
                         generate_mipmaps: false,
                         ..Default::default()
@@ -139,7 +139,7 @@ pub fn setup_renderer(world: &mut World) {
                     PixelFormat::Depth32F,
                     TextureSettings {
                         srgb: false,
-                        msaa_samples: 2,
+                        msaa_samples: 4,
                         generate_mipmaps: false,
                         ..Default::default()
                     },
@@ -808,6 +808,8 @@ pub fn render_scene<'a, 'b>(
     let mut clear_color = None;
     let mut view_size = (0, 0);
 
+    let camera_inner_scale = 2.0;
+
     // For now only render shadows from the primary camera's perspective.
     // This would make splitscreen shadows really messed up.
     for (camera_global_transform, camera) in &cameras {
@@ -827,12 +829,15 @@ pub fn render_scene<'a, 'b>(
                 &renderables,
             );
 
+            view_size = camera.get_view_size();
+            view_size.0 /= camera_inner_scale as u32;
+            view_size.1 /= camera_inner_scale as u32;
+
             // Resize of the offscreen render target to match the view size.
             renderer_info
                 .offscreen_render_target
                 .resize(graphics, texture_assets, {
-                    view_size = camera.get_view_size();
-                    Vec2u::new(view_size.0 as _, view_size.1 as _)
+                    Vec2u::new(view_size.0 as usize, view_size.1 as usize)
                 });
 
             clear_color = camera.clear_color;
@@ -865,7 +870,10 @@ pub fn render_scene<'a, 'b>(
             let camera_should_render = (graphics.current_camera_target.is_some()
                 && graphics.current_camera_target == camera.camera_target)
                 || (is_primary_camera_target
-                    && camera.camera_target == Some(CameraTarget::Primary));
+                    && camera.camera_target == Some(CameraTarget::Primary))
+                    && !camera
+                        .render_flags
+                        .includes_layer(RenderFlags::USER_INTERFACE);
 
             // Check that this camera targets the target currently being rendered.
             if camera_should_render {
@@ -899,8 +907,6 @@ pub fn render_scene<'a, 'b>(
                 */
                 let multiview_enabled = false;
 
-                let (width, height) = camera.get_view_size();
-
                 let mut renderer = Renderer::new(
                     renderer_info,
                     &mut render_pass,
@@ -912,7 +918,7 @@ pub fn render_scene<'a, 'b>(
                     &camera_info,
                     kmath::geometry::BoundingBox::<u32, 2> {
                         min: Vector::ZERO,
-                        max: Vector::<u32, 2>::new(width, height),
+                        max: Vector::<u32, 2>::new(view_size.0, view_size.1),
                     },
                     multiview_enabled,
                 );
@@ -953,7 +959,10 @@ pub fn render_scene<'a, 'b>(
                 let texture = renderer_info.offscreen_render_target.color_texture();
                 let output_viewport = Box2::new(
                     Vec2::ZERO,
-                    Vec2::new(view_size.0 as f32, view_size.1 as f32),
+                    Vec2::new(
+                        view_size.0 as f32 * camera_inner_scale,
+                        view_size.1 as f32 * camera_inner_scale,
+                    ),
                 );
                 let texture_scale = renderer_info.offscreen_render_target.inner_texture_scale();
                 let min = output_viewport.min.as_u32();
@@ -995,6 +1004,77 @@ pub fn render_scene<'a, 'b>(
                 );
 
                 render_pass.draw_triangles_without_buffer(1);
+
+                // Draw USER interface cameras.
+                for (camera_global_transform, camera) in &cameras {
+                    // Check that the camera is setup to render to the current CameraTarget.
+                    let camera_should_render = (graphics.current_camera_target.is_some()
+                        && graphics.current_camera_target == camera.camera_target)
+                        || (is_primary_camera_target
+                            && camera.camera_target == Some(CameraTarget::Primary))
+                            && camera
+                                .render_flags
+                                .includes_layer(RenderFlags::USER_INTERFACE);
+
+                    // Check that this camera targets the target currently being rendered.
+                    if camera_should_render {
+                        let mut camera_info = Vec::new();
+                        if graphics.override_views.is_empty() {
+                            camera_info.push(Renderer::get_view_info(
+                                camera_global_transform,
+                                Mat4::IDENTITY,
+                                camera.projection_matrix(),
+                                Box2 {
+                                    min: Vec2::ZERO,
+                                    max: Vec2::ONE,
+                                },
+                            ));
+                        } else {
+                            for view in &graphics.override_views {
+                                camera_info.push(Renderer::get_view_info(
+                                    camera_global_transform,
+                                    view.offset_transform,
+                                    view.projection_matrix,
+                                    view.output_rectangle,
+                                ))
+                            }
+                        }
+
+                        /*
+                        #[cfg(not(feature = "xr"))]
+                        let multiview_enabled = false;
+                        #[cfg(feature = "xr")]
+                        let multiview_enabled = camera_info.len() > 1;
+                        */
+                        let multiview_enabled = false;
+
+                        let (width, height) = camera.get_view_size();
+
+                        let mut renderer = Renderer::new(
+                            renderer_info,
+                            &mut render_pass,
+                            shader_assets,
+                            material_assets,
+                            mesh_assets,
+                            texture_assets,
+                            cube_map_assets,
+                            &camera_info,
+                            kmath::geometry::BoundingBox::<u32, 2> {
+                                min: Vector::ZERO,
+                                max: Vector::<u32, 2>::new(width, height),
+                            },
+                            multiview_enabled,
+                        );
+
+                        renderer.render_scene(
+                            camera,
+                            camera_global_transform,
+                            &renderables,
+                            &lights,
+                            &reflection_probes,
+                        );
+                    }
+                }
 
                 // Debug render of intermediate bloom texture
 

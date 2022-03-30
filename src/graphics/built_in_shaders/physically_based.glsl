@@ -239,8 +239,8 @@ void main()
     //  float roughness = p_roughness;
 
     // When interpolating between face normals the normal can get shorted, so renormalize here.
-     // vec3 N = normalize(normal);
-    vec3 N = getNormalFromMap();
+    vec3 N = normalize(normal);
+    // vec3 N = getNormalFromMap();
     vec3 V = normalize(p_camera_positions[0] - WorldPosition);
 
     // calculate reflectance at normal incidence; if dia-electric (like plastic) use F0 
@@ -375,6 +375,9 @@ void main()
         vec2 brdf  = texture(p_brdf_lookup_table, vec2(max(dot(N, V), 0.0), roughness)).rg;
         vec3 specular = prefilteredColor * (kS * brdf.x + brdf.y);
 
+        if (ibl_scale < 1.0) {
+            specular = vec3(0.0);
+        }
         vec3 ambient = (kD * diffuse + specular) * ambient_amount * ibl_scale; 
 
         vec3 color = ambient + Lo;

@@ -36,15 +36,15 @@ fn main() {
         ));
         */
 
-        spawn_skybox(world, "assets/venice_sunset_1k.hdr");
+        spawn_skybox(world, "assets/field_1k.hdr");
 
         let worlds = world.get_single_component_mut::<Assets<World>>().unwrap();
-        let gltf_world = worlds.load("assets/Sponza/glTF/Sponza.gltf");
+        let gltf_world = worlds.load("assets/scifi_corridor_challenge/scene.gltf");
         // let gltf_world = worlds.load("assets/hydroponics_facility/scene.gltf");
 
         // Spawn a Handle<World> that will be replaced with the GlTf when it's loaded.
         let gltf_hierarchy = world.spawn(gltf_world);
-        let scaled_down = world.spawn(Transform::new().with_scale(Vec3::fill(1.0)));
+        let scaled_down = world.spawn(Transform::new().with_scale(Vec3::fill(0.05)));
         set_parent(world, Some(scaled_down), gltf_hierarchy);
 
         // Spawn a series of balls with different material properties.
@@ -76,8 +76,8 @@ fn main() {
                             PBRProperties {
                                 emissive,
                                 base_color: Color::AZURE,
-                                metallic: i as f32 / rows as f32,
-                                roughness: (j as f32 / columns as f32).clamp(0.05, 1.0),
+                                metallic: 0.0,
+                                roughness: 1.0,
                                 ..Default::default()
                             },
                         ))
@@ -97,9 +97,51 @@ fn main() {
         .run(world);
         commands.apply(world);
 
-        |event, _world| {
+        let mut ui_manager = UIManager::new(world);
+        let mut standard_context = StandardContext::new(
+            StandardStyle::new(),
+            StandardInput::default(),
+            Fonts::default(),
+        );
+
+        let mut root_widget = padding(column((
+            text("Bloom: "),
+            align(
+                Alignment::Start,
+                Alignment::Start,
+                width(
+                    200.0,
+                    slider(
+                        |world: &mut World| {
+                            &mut world.get_singleton::<RendererInfo>().bloom_strength
+                        },
+                        0.0,
+                        1.0,
+                    ),
+                ),
+            ),
+            button("Toggle Bloom", |world: &mut World| {
+                let bloom_enabled = &mut world.get_singleton::<RendererInfo>().bloom_enabled;
+                *bloom_enabled = !*bloom_enabled;
+            }),
+        )));
+        world.spawn((Transform::new(), Camera::new_for_user_interface()));
+
+        move |event, world| {
             match event {
-                Event::Draw => {}
+                Event::KappEvent(event) => {
+                    // If the UI handles the event don't percolate it to other systems
+                    if ui_manager.handle_event(&event, world, &mut standard_context) {
+                        return true;
+                    }
+                }
+                Event::Draw => {
+                    ui_manager.layout_and_draw_with_world(
+                        world,
+                        &mut standard_context,
+                        &mut root_widget,
+                    );
+                }
                 _ => {}
             }
             false
