@@ -92,6 +92,7 @@ impl Commands {
                 Command::RunSystem(system) => system.run(world),
             }
         }
+        self.clear();
     }
 
     pub fn clear(&mut self) {

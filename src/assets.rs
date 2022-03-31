@@ -90,6 +90,12 @@ pub struct Handle<T> {
     phantom: std::marker::PhantomData<T>,
 }
 
+impl<T> std::hash::Hash for Handle<T> {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        self.indirection_index.hash(state);
+    }
+}
+
 unsafe impl<T> Send for Handle<T> {}
 unsafe impl<T> Sync for Handle<T> {}
 

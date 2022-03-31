@@ -39,12 +39,12 @@ fn main() {
         spawn_skybox(world, "assets/field_1k.hdr");
 
         let worlds = world.get_single_component_mut::<Assets<World>>().unwrap();
-        let gltf_world = worlds.load("assets/scifi_corridor_challenge/scene.gltf");
+        let gltf_world = worlds.load("assets/Sponza/glTF/Sponza.gltf");
         // let gltf_world = worlds.load("assets/hydroponics_facility/scene.gltf");
 
         // Spawn a Handle<World> that will be replaced with the GlTf when it's loaded.
         let gltf_hierarchy = world.spawn(gltf_world);
-        let scaled_down = world.spawn(Transform::new().with_scale(Vec3::fill(0.05)));
+        let scaled_down = world.spawn(Transform::new().with_scale(Vec3::fill(1.0)));
         set_parent(world, Some(scaled_down), gltf_hierarchy);
 
         // Spawn a series of balls with different material properties.

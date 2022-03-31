@@ -106,7 +106,7 @@ pub fn setup_renderer(world: &mut World) {
 
     let blur_calculator = BloomCalculator::new.run(world);
     let renderer_info = RendererInfo {
-        bloom_enabled: false,
+        bloom_enabled: true,
         bloom_strength: 0.1,
         final_postprocess_shader: world
             .get_singleton::<Graphics>()
