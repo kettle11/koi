@@ -304,8 +304,8 @@ impl<F: NumericFloat + PhysicsDefaults + Debug + GJKEpsilon + VeryLargeNumber + 
                                     // Low bounce objects absord some of the impact force.
                                     // This simulates in the real world how less bouncy collisions lose energy
                                     // to heat, sound waves, etc.
-                                    let bounciness =
-                                        rigid_body_a.bounciness * rigid_body_b.bounciness;
+                                    let bounciness = F::ZERO;
+                                    //  rigid_body_a.bounciness * rigid_body_b.bounciness;
 
                                     // let impulse = impulse + impulse * bounciness;
 
@@ -335,30 +335,35 @@ impl<F: NumericFloat + PhysicsDefaults + Debug + GJKEpsilon + VeryLargeNumber + 
                                     println!("INVERSE TENSOR A: {:?}", inverse_tensor_a);
                                     println!("INVERSE TENSOR B: {:?}", inverse_tensor_b);
 
-                                    let velocity_a = rigid_body_a.velocity;
-                                    let angular_velocity_a = rigid_body_a.angular_velocity;
-
-                                    let velocity_b = rigid_body_b.velocity;
-                                    let angular_velocity_b = rigid_body_b.angular_velocity;
-
-                                    let mut velocity_change_a = Vector::ZERO;
-                                    let mut velocity_change_b = Vector::ZERO;
-
-                                    let mut angular_velocity_change_a = Vector::ZERO;
-                                    let mut angular_velocity_change_b = Vector::ZERO;
-
                                     for &point in contact_points.iter() {
-                                        let velocity_at_point_a = velocity_a
-                                            + angular_velocity_a
-                                                .cross(point - rigid_body_a.position);
+                                        let velocity_a = rigid_body_a.velocity;
+                                        let angular_velocity_a = rigid_body_a.angular_velocity;
 
-                                        let velocity_at_point_b = velocity_b
-                                            + angular_velocity_b
-                                                .cross(point - rigid_body_b.position);
+                                        let velocity_b = rigid_body_b.velocity;
+                                        let angular_velocity_b = rigid_body_b.angular_velocity;
+
+                                        let mut velocity_change_a = Vector::ZERO;
+                                        let mut velocity_change_b = Vector::ZERO;
+
+                                        let mut angular_velocity_change_a = Vector::ZERO;
+                                        let mut angular_velocity_change_b = Vector::ZERO;
+
+                                        let ra = point - rigid_body_a.position;
+                                        let rb = point - rigid_body_b.position;
+
+                                        let velocity_at_point_a =
+                                            velocity_a + angular_velocity_a.cross(ra);
+
+                                        let velocity_at_point_b =
+                                            velocity_b + angular_velocity_b.cross(rb);
 
                                         let relative_velocity_at_point =
                                             velocity_at_point_b - velocity_at_point_a;
 
+                                        println!(
+                                            "RELATIVE VELOCITY: {:#?}",
+                                            relative_velocity_at_point
+                                        );
                                         // Solve the impulse equation:
 
                                         let numerator = (relative_velocity_at_point
@@ -368,14 +373,13 @@ impl<F: NumericFloat + PhysicsDefaults + Debug + GJKEpsilon + VeryLargeNumber + 
                                         let term0 = F::ONE / rigid_body_a.mass;
                                         let term1 = F::ONE / rigid_body_b.mass;
 
-                                        let ra = point - rigid_body_a.position;
-                                        let rb = point - rigid_body_b.position;
-
                                         let ra_cross_normal = ra.cross(contact_plane.normal);
                                         let rb_cross_normal = rb.cross(contact_plane.normal);
 
-                                        let term2 = inverse_tensor_a * (ra_cross_normal).cross(ra);
-                                        let term3 = inverse_tensor_b * (rb_cross_normal).cross(rb);
+                                        let term2 = (inverse_tensor_a * ra_cross_normal.cross(ra))
+                                            .cross(ra);
+                                        let term3 = (inverse_tensor_b * rb_cross_normal.cross(rb))
+                                            .cross(rb);
 
                                         let impulse_magnitude = numerator
                                             / (term0
@@ -385,28 +389,38 @@ impl<F: NumericFloat + PhysicsDefaults + Debug + GJKEpsilon + VeryLargeNumber + 
 
                                         println!("VELOCITY before: {:?}", rigid_body_a.velocity);
 
-                                        velocity_change_a = -impulse / rigid_body_a.mass;
-                                        angular_velocity_change_a -= (inverse_tensor_a
+                                        velocity_change_a += -impulse / rigid_body_a.mass;
+
+                                        println!(
+                                            "POINT VELOCITY CHANGE A: {:#?}",
+                                            -impulse / rigid_body_a.mass
+                                        );
+                                        angular_velocity_change_a += (inverse_tensor_a
                                             * ra_cross_normal)
-                                            * impulse_magnitude;
+                                            * -impulse_magnitude;
 
                                         println!(
                                             "ANGULAR VELOCITY CHANGE: {:?}",
                                             (inverse_tensor_a * ra_cross_normal)
                                                 * -impulse_magnitude
                                         );
-                                        println!("VELOCITY CHANGE A: {:#?}", -impulse * response_a);
                                         println!("VELOCITY after: {:?}", rigid_body_a.velocity);
 
-                                        velocity_change_b = -impulse / rigid_body_b.mass;
+                                        velocity_change_b += impulse / rigid_body_b.mass;
                                         angular_velocity_change_b += (inverse_tensor_b
                                             * rb_cross_normal)
                                             * impulse_magnitude;
+
+                                        rigid_body_a.velocity += velocity_change_a;
+                                        rigid_body_b.velocity += velocity_change_b;
+                                        rigid_body_a.angular_velocity += angular_velocity_change_a;
+                                        rigid_body_b.angular_velocity += angular_velocity_change_b;
                                     }
 
                                     println!("CONTACT POINTS: {:?}", contact_points);
                                     self.contact_points = contact_points;
 
+                                    /*
                                     rigid_body_a.velocity += velocity_change_a;
                                     println!("VELOCITY CHANGE TOTAL: {:?}", velocity_change_a);
                                     rigid_body_b.velocity += velocity_change_b;
@@ -417,6 +431,10 @@ impl<F: NumericFloat + PhysicsDefaults + Debug + GJKEpsilon + VeryLargeNumber + 
                                         angular_velocity_change_a
                                     );
                                     rigid_body_b.angular_velocity += angular_velocity_change_b;
+
+                                    println!("VELOCITY A NOW: {:?}", rigid_body_a.velocity);
+                                    println!("VELOCITY B NOW: {:?}", rigid_body_b.velocity);
+                                    */
                                 }
                             }
                         }

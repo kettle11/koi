@@ -21,11 +21,11 @@ pub trait VeryLargeNumber {
 }
 
 impl VeryLargeNumber for f32 {
-    const VERY_LARGE_NUMBER: Self = 9999.;
+    const VERY_LARGE_NUMBER: Self = 10.;
 }
 
 impl VeryLargeNumber for f64 {
-    const VERY_LARGE_NUMBER: Self = 9999.;
+    const VERY_LARGE_NUMBER: Self = 10.;
 }
 
 // A helper data structure that makes the GJK algorithm a bit cleaner.
@@ -673,42 +673,50 @@ fn sutherland_hodgman_clipping<F: NumericFloat + Debug, const DIM: usize>(
     output_points: &mut Vec<Vector<F, DIM>>,
     clipping_planes: &[Plane<F, DIM>],
 ) {
+    std::mem::swap(input_points, output_points);
+
     // https://en.wikipedia.org/wiki/Sutherland–Hodgman_algorithm
     for &plane in clipping_planes.iter() {
+        std::mem::swap(input_points, output_points);
         output_points.clear();
 
         if let Some(mut previous_point) = input_points.last().cloned() {
-            let mut previous_outside = plane.signed_distance_to_point(previous_point) > F::ZERO;
+            // println!("START POINT: {:?}", previous_point);
 
-            println!("PLANE: {:#?}", plane);
+            let mut previous_outside =
+                plane.signed_distance_to_point(previous_point) > F::from_f32(0.001);
+
+            // println!("PLANE: {:#?}", plane);
             for &current_point in input_points.iter() {
-                let current_outside = plane.signed_distance_to_point(current_point) > F::ZERO;
+                //     println!("CURRENT POINT: {:?}", current_point);
+                let current_outside =
+                    plane.signed_distance_to_point(current_point) > F::from_f32(0.001);
 
-                if current_outside != previous_outside {
-                    // Crossing
-                    let line = Line::new(current_point, previous_point);
-
-                    // `line_with_plane` can return `None` if the current point is on the plane.
-                    // In that case `current_outside` will be false and the point will be pushed.
-                    // But a cross point should not be pushed.
-                    if let Some(cross_point) = kmath::intersections::line_with_plane(line, plane) {
-                        output_points.push(cross_point);
+                let line = Line::new(current_point, previous_point);
+                let intersection = kmath::intersections::line_with_plane(line, plane);
+                if !current_outside {
+                    if previous_outside {
+                        if let Some(intersection) = intersection {
+                            output_points.push(intersection)
+                        } else {
+                            output_points.push(current_point)
+                        }
+                    }
+                    output_points.push(current_point)
+                } else if !previous_outside {
+                    if let Some(intersection) = intersection {
+                        output_points.push(intersection)
+                    } else {
+                        output_points.push(current_point)
                     }
                 }
-                if !current_outside {
-                    println!("CULLING POINT");
-                    output_points.push(current_point);
-                } else {
-                    println!("CULLING POINT");
-                }
+
                 previous_point = current_point;
                 previous_outside = current_outside;
             }
         }
         //  println!("POINTS: {:#?}", output_points);
-        std::mem::swap(input_points, output_points);
     }
-    std::mem::swap(input_points, output_points);
 }
 
 pub fn find_min_max_along_direction<F: NumericFloat>(
@@ -737,15 +745,21 @@ pub fn find_contact_points_on_plane<F: NumericFloat + VeryLargeNumber + GJKEpsil
     // There can easily be duplicate or redundant clipping planes here.
     let mut clipping_planes = Vec::new();
     for p in clipping_planes_a {
-        let matches = (p.normal.cross(plane.normal)).length_squared() < F::GJK_EPSILON;
+        let p = local_to_world_a.transform_plane(*p);
+        let dir = p.normal.cross(plane.normal);
+        let length = dir.length_squared();
+        let matches = length < F::GJK_EPSILON;
         if !matches {
-            clipping_planes.push(local_to_world_a.transform_plane(*p));
+            clipping_planes.push(p);
         }
     }
     for p in clipping_planes_b {
-        let matches = (p.normal.cross(plane.normal)).length_squared() < F::GJK_EPSILON;
+        let p = local_to_world_b.transform_plane(*p);
+        let dir = p.normal.cross(plane.normal);
+        let length = dir.length_squared();
+        let matches = length < F::GJK_EPSILON;
         if !matches {
-            clipping_planes.push(local_to_world_b.transform_plane(*p));
+            clipping_planes.push(p);
         }
     }
 
@@ -769,6 +783,8 @@ pub fn find_contact_points_on_plane<F: NumericFloat + VeryLargeNumber + GJKEpsil
         (-right + -up) * F::VERY_LARGE_NUMBER + point_on_plane,
         (right + -up) * F::VERY_LARGE_NUMBER + point_on_plane,
     ];
+
+    //println!("CLIPPING START POINTS: {:?}", polygon_points);
     let mut output_points = Vec::new();
 
     sutherland_hodgman_clipping(&mut polygon_points, &mut output_points, &clipping_planes);
