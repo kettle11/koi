@@ -40,6 +40,14 @@ impl<T: NumericFloat + std::fmt::Debug> Quaternion<T> {
         Self(Vector::<T, 4>::new(v[0], v[1], v[2], c))
     }
 
+    pub fn to_angle_axis(self) -> (T, Vector<T, 3>) {
+        let v = Vector::<T, 3>::new(self.0[0], self.0[1], self.0[2]);
+        let length = v.length();
+        let axis = v / length;
+        let angle = T::TWO * T::atan2(length, self.0[3]);
+        (angle, axis)
+    }
+
     pub fn as_array(self) -> [T; 4] {
         self.0 .0[0]
     }

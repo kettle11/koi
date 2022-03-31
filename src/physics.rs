@@ -120,6 +120,9 @@ pub fn update_physics_0(
     mut rigid_bodies: Query<(&mut RigidBody, &mut Transform)>,
     physics_world: &mut PhysicsWorld,
 ) {
+    if physics_world.paused {
+        return;
+    }
     // Synchronize all `RigidBody` values with the `PhysicsWorld`.
     for (entity, (rigid_body, rigid_body_transform)) in rigid_bodies.entities_and_components_mut() {
         let associated_entity = kphysics::AssociatedEntity {
@@ -171,6 +174,9 @@ pub fn update_physics_1(
     meshes: &Assets<Mesh>,
     physics_world: &mut PhysicsWorld,
 ) {
+    if physics_world.paused {
+        return;
+    }
     // Synchronize all `Collider` values with the `PhysicsWorld`.
     // Connect `Collider`s to `RigidBody`s.
     for (entity, (collider, collider_transform, mesh_handle)) in

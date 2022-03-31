@@ -112,7 +112,6 @@ impl<F: NumericFloat + PhysicsDefaults + Debug + GJKEpsilon + VeryLargeNumber + 
         for rigid_body in &mut self.rigid_bodies {
             // Apply movement and gravity only to non-kinematic rigid-bodies
             if rigid_body.mass != F::INFINITY {
-                println!("MOVING RIGID BODY VELOCITY: {:?}", rigid_body.velocity);
                 // When an object is moving less than 3 centimeters per second stop its movement.
                 // This probably is too aggressive, but it's the threshold that seems to work for now with the
                 // precision of the current system. Perhaps it could be relaxed with 64-bit operations
@@ -336,19 +335,19 @@ impl<F: NumericFloat + PhysicsDefaults + Debug + GJKEpsilon + VeryLargeNumber + 
                                     println!("INVERSE TENSOR A: {:?}", inverse_tensor_a);
                                     println!("INVERSE TENSOR B: {:?}", inverse_tensor_b);
 
-                                    let velocity_a = rigid_body_a.velocity;
-                                    let angular_velocity_a = rigid_body_a.angular_velocity;
-
-                                    let velocity_b = rigid_body_b.velocity;
-                                    let angular_velocity_b = rigid_body_b.angular_velocity;
-
-                                    let mut velocity_change_a = Vector::ZERO;
-                                    let mut velocity_change_b = Vector::ZERO;
-
-                                    let mut angular_velocity_change_a = Vector::ZERO;
-                                    let mut angular_velocity_change_b = Vector::ZERO;
-
                                     for &point in contact_points.iter() {
+                                        let velocity_a = rigid_body_a.velocity;
+                                        let angular_velocity_a = rigid_body_a.angular_velocity;
+
+                                        let velocity_b = rigid_body_b.velocity;
+                                        let angular_velocity_b = rigid_body_b.angular_velocity;
+
+                                        let mut velocity_change_a = Vector::ZERO;
+                                        let mut velocity_change_b = Vector::ZERO;
+
+                                        let mut angular_velocity_change_a = Vector::ZERO;
+                                        let mut angular_velocity_change_b = Vector::ZERO;
+
                                         let ra = point - rigid_body_a.position;
                                         let rb = point - rigid_body_b.position;
 
@@ -361,6 +360,10 @@ impl<F: NumericFloat + PhysicsDefaults + Debug + GJKEpsilon + VeryLargeNumber + 
                                         let relative_velocity_at_point =
                                             velocity_at_point_b - velocity_at_point_a;
 
+                                        println!(
+                                            "RELATIVE VELOCITY: {:#?}",
+                                            relative_velocity_at_point
+                                        );
                                         // Solve the impulse equation:
 
                                         let numerator = (relative_velocity_at_point
@@ -407,11 +410,17 @@ impl<F: NumericFloat + PhysicsDefaults + Debug + GJKEpsilon + VeryLargeNumber + 
                                         angular_velocity_change_b += (inverse_tensor_b
                                             * rb_cross_normal)
                                             * impulse_magnitude;
+
+                                        rigid_body_a.velocity += velocity_change_a;
+                                        rigid_body_b.velocity += velocity_change_b;
+                                        rigid_body_a.angular_velocity += angular_velocity_change_a;
+                                        rigid_body_b.angular_velocity += angular_velocity_change_b;
                                     }
 
                                     println!("CONTACT POINTS: {:?}", contact_points);
                                     self.contact_points = contact_points;
 
+                                    /*
                                     rigid_body_a.velocity += velocity_change_a;
                                     println!("VELOCITY CHANGE TOTAL: {:?}", velocity_change_a);
                                     rigid_body_b.velocity += velocity_change_b;
@@ -425,6 +434,7 @@ impl<F: NumericFloat + PhysicsDefaults + Debug + GJKEpsilon + VeryLargeNumber + 
 
                                     println!("VELOCITY A NOW: {:?}", rigid_body_a.velocity);
                                     println!("VELOCITY B NOW: {:?}", rigid_body_b.velocity);
+                                    */
                                 }
                             }
                         }
