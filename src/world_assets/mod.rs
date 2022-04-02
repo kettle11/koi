@@ -37,6 +37,7 @@ fn load_prefabs_system(
     for PrefabLoadMessage {
         world_load_message_data,
         handle,
+        options,
     } in messages.into_iter()
     {
         let world: Option<World> = match world_load_message_data {
@@ -58,7 +59,12 @@ fn load_prefabs_system(
             ),
         };
 
-        worlds.replace_placeholder(&handle, world.unwrap());
+        let mut world = world.unwrap();
+        if let Some(run_on_world) = options.run_on_world {
+            run_on_world(&mut world);
+        }
+        println!("HERE");
+        worlds.replace_placeholder(&handle, world);
     }
 }
 
@@ -105,14 +111,25 @@ fn delayed_spawn_system(world: &mut World) {
     }
 }
 
+pub struct LoadWorldOptions {
+    pub run_on_world: Option<Box<dyn Fn(&mut World) + Send + Sync>>,
+}
+
+impl Default for LoadWorldOptions {
+    fn default() -> Self {
+        Self { run_on_world: None }
+    }
+}
+
 impl LoadableAssetTrait for World {
-    type Options = ();
+    type Options = LoadWorldOptions;
     type AssetLoader = WorldLoader;
 }
 
 struct PrefabLoadMessage {
     world_load_message_data: PrefabLoadMessageData,
     handle: Handle<World>,
+    options: LoadWorldOptions,
 }
 
 enum PrefabLoadMessageData {
@@ -146,7 +163,7 @@ impl AssetLoader<World> for WorldLoader {
         &mut self,
         path: &str,
         handle: crate::Handle<World>,
-        _options: <World as LoadableAssetTrait>::Options,
+        options: <World as LoadableAssetTrait>::Options,
     ) {
         let path = path.to_owned();
         let sender = self.sender.inner().clone();
@@ -161,6 +178,7 @@ impl AssetLoader<World> for WorldLoader {
             sender.send(PrefabLoadMessage {
                 handle,
                 world_load_message_data,
+                options,
             })
         })
         .run();
@@ -170,7 +188,7 @@ impl AssetLoader<World> for WorldLoader {
         data: Vec<u8>,
         extension: String,
         handle: crate::Handle<World>,
-        _options: <World as LoadableAssetTrait>::Options,
+        options: <World as LoadableAssetTrait>::Options,
     ) {
         let sender = self.sender.inner().clone();
         ktasks::spawn(async move {
@@ -181,6 +199,7 @@ impl AssetLoader<World> for WorldLoader {
             sender.send(PrefabLoadMessage {
                 handle,
                 world_load_message_data,
+                options,
             })
         })
         .run();
@@ -241,4 +260,22 @@ async fn load_world(path: &str) -> Option<PrefabLoadMessageData> {
 
     let bytes = crate::fetch_bytes(path).await.ok()?;
     load_world_from_bytes_and_extension(&bytes, &path, &extension).await
+}
+
+pub fn flatten_world(world: &mut World) {
+    let mut commands = Commands::new();
+
+    (|mut transforms: Query<(&mut Transform, &GlobalTransform)>| {
+        for (local_transform, global_transform) in transforms.iter_mut() {
+            *local_transform = **global_transform;
+        }
+    })
+    .run(world);
+    (|entities_with_hierarchy: Query<&HierarchyNode>| {
+        for (entity, _) in entities_with_hierarchy.entities_and_components() {
+            commands.remove_component::<HierarchyNode>(entity.clone());
+        }
+    })
+    .run(world);
+    commands.apply(world);
 }
