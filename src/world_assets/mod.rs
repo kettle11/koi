@@ -63,7 +63,6 @@ fn load_prefabs_system(
         if let Some(run_on_world) = options.run_on_world {
             run_on_world(&mut world);
         }
-        println!("HERE");
         worlds.replace_placeholder(&handle, world);
     }
 }
