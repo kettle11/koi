@@ -175,6 +175,7 @@ pub(super) fn load_gltf_as_world(
     commands.apply(&mut gltf_world);
     commands.clear();
 
+    // flatten_world(&mut gltf_world);
     // Flatten world. This should be made an option later.
     // This updates all transform hierarchies, sets local transforms to `GlobalTransforms, and then removes `HierarchyNodes`
     // Doing this makes sense for static geometry like level objects, but doesn't make sense for GlTfs which would have
@@ -206,6 +207,30 @@ pub(super) fn load_gltf_as_world(
 
     Some(gltf_world)
 }
+
+/*
+pub fn flatten_world(world: &mut World) {
+    let commands_entity = world.spawn(Commands::new());
+    let mut commands = world.remove_component::<Commands>(commands_entity).unwrap();
+    commands.clear();
+    // Todo: This *SHOULD* be despawned, but it exposes a crash in adding worlds to worlds.
+    // world.despawn(commands_entity).unwrap();
+
+    (|mut transforms: Query<(&mut Transform, &GlobalTransform)>| {
+        for (local_transform, global_transform) in transforms.iter_mut() {
+            *local_transform = **global_transform;
+        }
+    })
+    .run(world);
+    (|entities_with_hierarchy: Query<&HierarchyNode>| {
+        for (entity, _) in entities_with_hierarchy.entities_and_components() {
+            commands.remove_component::<HierarchyNode>(entity.clone());
+        }
+    })
+    .run(world);
+    commands.apply(world);
+}
+*/
 
 pub(super) struct MeshPrimitiveData {
     /// The data for this mesh and its material attributes
