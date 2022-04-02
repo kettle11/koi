@@ -261,6 +261,11 @@ fn update_descendent_transforms(
 /// NOTE: This will ignore the child location transform unless it's become part of the global transform.
 /// Probably that should be changed in the future.
 pub fn set_parent(world: &mut World, parent: Option<Entity>, child: Entity) {
+    if parent == Some(child) {
+        klog::log!("WARNING: Attempted to parent an Entity to itself");
+        return;
+    }
+
     // This is very inefficient to do here, it updates *ALL* transforms again.
     // It should be removed in favor of only updating the transform for the thing being reparanted.
     // update_global_transforms.run(world);
