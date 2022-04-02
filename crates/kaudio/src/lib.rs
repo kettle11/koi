@@ -1,5 +1,5 @@
 #[allow(unused)]
-const SAMPLE_RATE: usize = 44100;
+pub const SAMPLE_RATE: usize = 44100;
 
 #[cfg(all(target_os = "windows", not(feature = "SDL")))]
 #[allow(non_camel_case_types, non_snake_case, non_upper_case_globals)]

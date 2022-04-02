@@ -8,6 +8,10 @@ impl Sound {
     pub fn new(data: Vec<f32>, channels: u8) -> Self {
         Self { data, channels }
     }
+
+    pub fn length_seconds(&self) -> f32 {
+        self.data.len() as f32 / crate::SAMPLE_RATE as f32
+    }
 }
 
 /// Resample interleaved audio.

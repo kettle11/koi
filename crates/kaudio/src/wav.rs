@@ -28,12 +28,12 @@ pub fn load_wav_from_bytes(bytes: &[u8]) -> Result<crate::Sound, hound::Error> {
     };
 
     // Resample audio if it doesn't match our desired sample rate.
-    if spec.sample_rate != 44100 {
+    if spec.sample_rate != crate::SAMPLE_RATE as u32 {
         samples = resample(
             &samples,
             spec.channels as usize,
             spec.sample_rate as f32,
-            44100.,
+            crate::SAMPLE_RATE as f32,
         );
     }
 
@@ -68,12 +68,12 @@ pub fn load_wav(path: &str) -> Result<crate::Sound, hound::Error> {
     };
 
     // Resample audio if it doesn't match our desired sample rate.
-    if spec.sample_rate != 44100 {
+    if spec.sample_rate != crate::SAMPLE_RATE as u32 {
         samples = resample(
             &samples,
             spec.channels as usize,
             spec.sample_rate as f32,
-            44100.,
+            crate::SAMPLE_RATE as f32,
         );
     }
 
