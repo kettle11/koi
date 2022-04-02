@@ -280,6 +280,22 @@ impl<T: LoadableAssetTrait> Assets<T> {
         self.indirection_storage.get_mut(handle.indirection_index)
     }
 
+    pub fn get_if_loaded(&self, handle: &Handle<T>) -> Option<&T> {
+        if !self.is_placeholder(handle) {
+            Some(self.get(handle))
+        } else {
+            None
+        }
+    }
+
+    pub fn get_mut_if_loaded(&mut self, handle: &Handle<T>) -> Option<&mut T> {
+        if !self.is_placeholder(handle) {
+            Some(self.get_mut(handle))
+        } else {
+            None
+        }
+    }
+
     pub fn handle_to_path(&self, handle: &Handle<T>) -> Option<&str> {
         self.handle_to_path
             .get(&handle.indirection_index)
