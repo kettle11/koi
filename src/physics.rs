@@ -2,7 +2,7 @@ use crate::*;
 
 type FloatType = f32;
 
-pub fn physics_plguin() -> Plugin {
+pub fn physics_plugin() -> Plugin {
     Plugin {
         setup_systems: vec![setup_physics.system()],
         fixed_update_systems: vec![

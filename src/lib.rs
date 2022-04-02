@@ -208,7 +208,9 @@ impl App {
         // #[cfg(feature = "ui")]
         // let app = app.add_plugin(ui_plugin());
         #[cfg(feature = "physics")]
-        let app = app.add_plugin(physics_plguin());
+        let app = app.add_plugin(physics_plugin());
+
+        let app = app.add_plugin(immediate_drawer_plugin());
 
         // Non-default plugins
         #[cfg(feature = "xr")]
