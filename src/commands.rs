@@ -25,10 +25,6 @@ impl Commands {
         Self(Vec::new())
     }
 
-    pub fn despawn(&mut self, entity: Entity) {
-        self.0.push(Command::DespawnEntity(entity));
-    }
-
     pub fn spawn(&mut self, component_bundle: impl ComponentBundleTrait) {
         let mut component_bundle = Some(component_bundle);
         self.0.push(Command::RunSystem(
@@ -39,6 +35,10 @@ impl Commands {
             })
             .system(),
         ))
+    }
+
+    pub fn despawn(&mut self, entity: Entity) {
+        self.0.push(Command::DespawnEntity(entity));
     }
 
     pub fn add_world(&mut self, world: World) {

@@ -548,6 +548,58 @@ pub fn uv_sphere(horizontal_segments: u32, vertical_segments: u32, uv_scale: Vec
     }
 }
 
+pub fn cylinder(start: Vec3, end: Vec3, resolution: u32, radius: f32) -> MeshData {
+    let mut positions = Vec::with_capacity(resolution as usize + 1);
+    let mut normals = Vec::with_capacity(positions.capacity());
+    let uvs = Vec::with_capacity(positions.capacity());
+
+    let mut indices: Vec<[u32; 3]> = Vec::with_capacity(resolution as usize * 3);
+
+    let center = start;
+    let dir = (start - end).normalized();
+    let other_dir = if dir.abs() != Vec3::X {
+        Vec3::X
+    } else {
+        Vec3::Z
+    };
+    let right = dir.cross(other_dir).normalized() * radius;
+    let forward = dir.cross(right).normalized() * radius;
+
+    let increment = std::f32::consts::PI * 2.0 / resolution as f32;
+    let mut current_angle = 0.;
+
+    let start_index = positions.len() as u32;
+    for _ in 0..resolution {
+        current_angle += increment;
+
+        let new_vertex = positions.len() as u32;
+        let (sin, cos) = current_angle.sin_cos();
+        let offset = right * cos + forward * sin;
+        positions.push(center + right * cos + forward * sin);
+        positions.push(end + right * cos + forward * sin);
+
+        normals.push(offset.normalized());
+        normals.push(offset.normalized());
+
+        indices.push([new_vertex, new_vertex + 1, new_vertex + 2]);
+        indices.push([new_vertex + 2, new_vertex + 1, new_vertex + 3]);
+    }
+
+    let new_vertex = (positions.len() - 2) as u32;
+    indices.pop();
+    indices.pop();
+    indices.push([new_vertex, new_vertex + 1, start_index]);
+    indices.push([start_index, new_vertex + 1, start_index + 1]);
+
+    MeshData {
+        positions,
+        indices,
+        normals,
+        texture_coordinates: uvs,
+        ..Default::default()
+    }
+}
+
 /// All merging meshes must have normals and texture coordinates
 /// The second argument is a slice of tuples. The first value in the tuple is an index to a mesh in the first slice.
 pub fn merge_meshes(
@@ -606,6 +658,7 @@ impl Mesh {
     pub const TRIANGLE: Handle<Mesh> = Handle::<Mesh>::new_with_just_index(6);
     pub const CONE: Handle<Mesh> = Handle::<Mesh>::new_with_just_index(7);
     pub const CUBE_MAP_CUBE: Handle<Mesh> = Handle::<Mesh>::new_with_just_index(8);
+    pub const CYLINDER: Handle<Mesh> = Handle::<Mesh>::new_with_just_index(9);
 }
 
 pub(crate) fn initialize_static_primitives(
@@ -629,4 +682,6 @@ pub(crate) fn initialize_static_primitives(
     meshes.add_and_leak(Mesh::new(graphics, mesh_data), &Mesh::CONE);
     let mesh_data = cube_map_cube();
     meshes.add_and_leak(Mesh::new(graphics, mesh_data), &Mesh::CUBE_MAP_CUBE);
+    let mesh_data = cylinder(Vec3::ZERO, -Vec3::Z, 10, 0.5);
+    meshes.add_and_leak(Mesh::new(graphics, mesh_data), &Mesh::CYLINDER);
 }
