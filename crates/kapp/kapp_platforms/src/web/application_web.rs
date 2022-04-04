@@ -93,11 +93,11 @@ impl PlatformApplicationTrait for PlatformApplication {
     }
 
     fn hide_cursor(&mut self) {
-        klog::log!("kapp: HIDE CURSOR NOT IMPLEMENTED YET");
+        // klog::log!("kapp: HIDE CURSOR NOT IMPLEMENTED YET");
         //  todo!()
     }
     fn show_cursor(&mut self) {
-        klog::log!("kapp: SHOW CURSOR NOT IMPLEMENTED YET");
+        // NOT IMPLEMENTED YET");
         //  todo!()
     }
 
