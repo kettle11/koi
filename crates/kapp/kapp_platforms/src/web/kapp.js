@@ -289,11 +289,25 @@ function receive_message(command, data) {
             break;
         case 5:
             // LockCursor
-            canvas.requestPointerLock();
+            if (!document.pointerLockElement) {
+                try {
+                    console.log("REQUESTING POINTER LOCK");
+                    canvas.requestPointerLock();
+                } catch (e) {
+                }
+            }
             break;
         case 6:
-            // UnlockCursor
-            document.exitPointerLock();
+
+            if (document.pointerLockElement) {
+
+                // UnlockCursor
+                try {
+                    console.log("EXITING POINTER LOCK");
+                    document.exitPointerLock();
+                } catch (e) { }
+            }
+
             break;
         case 7:
             // SetCursor
