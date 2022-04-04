@@ -189,13 +189,13 @@ float ShadowCalculation(in sampler2D shadowMap, vec4 fragPosLightSpace, vec3 lig
 
     // Percentage-close filtering (PCF)
     // This could be improved in the future by taking fewer dithered samples.
-    int shadow_samples = 3;
+    int shadow_samples = 4;
     for(int x = -shadow_samples; x <= shadow_samples; ++x)
     {
         for(int y = -shadow_samples; y <= shadow_samples; ++y)
         {
             float pcfDepth = texture(shadowMap, projCoords.xy + vec2(x, y) * texelSize).r; 
-            shadow += currentDepth - bias > pcfDepth ? 1.0 : 0.0;        
+            shadow += (currentDepth - bias) > pcfDepth ? 1.0 : 0.0;        
         }    
     }
     shadow /= (float(shadow_samples) * 2.0 + 1.0) * (float(shadow_samples) * 2.0 + 1.0);
@@ -206,8 +206,8 @@ float ShadowCalculation(in sampler2D shadowMap, vec4 fragPosLightSpace, vec3 lig
     return shadow;
 }
 
-const float cascade_depths[4] = float[4](5., 15., 30., 60.);
-const float biases[4] = float[4](0.0001, 0.0001, 0.0002, 0.0004);
+const float cascade_depths[4] = float[4](5., 15., 60., 400.);
+const float biases[4] = float[4](0.001, 0.001, 0.002, 0.004);
 
 void main()
 {
@@ -384,7 +384,7 @@ void main()
     
     
     // This should be applied before the shader instead.
-    //color = mix(color, p_fog_color.rgb, fog_factor );
+    color = mix(color, p_fog_color.rgb, fog_factor );
     color += emissive;
 
     // HDR tonemapping

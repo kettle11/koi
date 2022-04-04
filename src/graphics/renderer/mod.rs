@@ -106,7 +106,7 @@ pub fn setup_renderer(world: &mut World) {
 
     let blur_calculator = BloomCalculator::new.run(world);
     let renderer_info = RendererInfo {
-        bloom_enabled: true,
+        bloom_enabled: false,
         bloom_strength: 0.1,
         final_postprocess_shader: world
             .get_singleton::<Graphics>()
@@ -466,9 +466,9 @@ impl<'a, 'b: 'a> Renderer<'a, 'b> {
 
                 // Set fog values
                 self.render_pass
-                    .set_float_property(&pipeline.get_float_property("p_fog_start").unwrap(), 20.);
+                    .set_float_property(&pipeline.get_float_property("p_fog_start").unwrap(), 300.);
                 self.render_pass
-                    .set_float_property(&pipeline.get_float_property("p_fog_end").unwrap(), 8000.);
+                    .set_float_property(&pipeline.get_float_property("p_fog_end").unwrap(), 1600.);
                 self.render_pass.set_vec4_property(
                     &pipeline.get_vec4_property("p_fog_color").unwrap(),
                     (1.0, 1.0, 1.0, 1.0),
@@ -816,7 +816,8 @@ pub fn render_scene<'a, 'b>(
         let is_primary_camera = ((graphics.current_camera_target.is_some()
             && graphics.current_camera_target == camera.camera_target)
             || (is_primary_camera_target && camera.camera_target == Some(CameraTarget::Primary)))
-            && camera.render_flags.includes_layer(RenderFlags::DEFAULT);
+            && camera.render_flags.includes_layer(RenderFlags::DEFAULT)
+            && camera.enabled;
 
         if is_primary_camera {
             render_shadow_pass(
@@ -866,6 +867,9 @@ pub fn render_scene<'a, 'b>(
             command_buffer.begin_render_pass_with_framebuffer(&render_framebuffer, clear_color);
 
         for (camera_global_transform, camera) in &cameras {
+            if !camera.enabled {
+                continue;
+            }
             // Check that the camera is setup to render to the current CameraTarget.
             let camera_should_render = (graphics.current_camera_target.is_some()
                 && graphics.current_camera_target == camera.camera_target)

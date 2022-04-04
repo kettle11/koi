@@ -354,7 +354,7 @@ fn load_cube_map_immediate(
                 .with_position(direction)
                 .looking_at(Vec3::ZERO, Vec3::Y),
             Light::new(LightMode::Directional, Color::WHITE, 0.0),
-            ShadowCaster::new().with_ibl_shadowing(0.5),
+            ShadowCaster::new().with_ibl_shadowing(0.8),
         ))
     }
     let pixel_format = message.texture_load_data.pixel_format;

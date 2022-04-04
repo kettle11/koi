@@ -86,7 +86,7 @@ impl Commands {
         for command in &mut self.0 {
             match command {
                 Command::DespawnEntity(entity) => {
-                    HierarchyNode::despawn_hierarchy(world, *entity).unwrap();
+                    let _ = HierarchyNode::despawn_hierarchy(world, *entity);
                 }
                 Command::SetParent { parent, child } => crate::set_parent(world, *parent, *child),
                 Command::RunSystem(system) => system.run(world),

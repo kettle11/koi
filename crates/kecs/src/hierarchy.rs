@@ -177,7 +177,7 @@ impl HierarchyNode {
     /// Remove an [Entity], all its components, and all of its descendent [Entity]s, from the [World].
     /// A [KecsError] is returned if the entity does not exist.
     pub fn despawn_hierarchy(world: &mut World, entity: Entity) -> Result<(), KecsError> {
-        world.despawn(entity).unwrap();
+        world.despawn(entity)?;
         if let Ok(hierarchy_node) = world
             .get_component_mut::<HierarchyNode>(entity)
             .map(|h| h.clone_hierarchy())
@@ -185,7 +185,7 @@ impl HierarchyNode {
             // Despawn all children and their siblings
             let mut current_child = hierarchy_node.last_child;
             while let Some(child) = current_child {
-                Self::despawn_hierarchy(world, child).unwrap();
+                Self::despawn_hierarchy(world, child)?;
                 current_child = world
                     .get_component_mut::<HierarchyNode>(child)
                     .map(|n| n.previous_sibling)

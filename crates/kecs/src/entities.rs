@@ -47,9 +47,11 @@ impl Entities {
         self.generation_and_entity_location
             .reserve(other.generation_and_entity_location.len() - other.free_entities.len());
 
-        let entities_to_reserve = other.generation_and_entity_location.len()
-            - other.free_entities.len()
-            - self.free_entities.len();
+        let entities_to_reserve = other
+            .generation_and_entity_location
+            .len()
+            .saturating_sub(other.free_entities.len())
+            .saturating_sub(self.free_entities.len());
 
         self.generation_and_entity_location
             .extend((0..entities_to_reserve).map(|_| (0, None)));
@@ -143,7 +145,7 @@ impl Entities {
     }
 
     pub fn len(&self) -> usize {
-        self.generation_and_entity_location.len()
+        self.generation_and_entity_location.len() - self.free_entities.len()
     }
 }
 

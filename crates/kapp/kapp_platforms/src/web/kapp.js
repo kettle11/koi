@@ -157,17 +157,20 @@ function receive_message(command, data) {
                 self.kwasm_exports.kapp_on_pointer_move(event.clientX * window.devicePixelRatio, event.clientY * window.devicePixelRatio, pointer_type, event.timeStamp, event.pointerId);
             }
             canvas.onmousemove = function (event) {
+                // console.log(event.movementX);
                 check_special_key_status(event);
                 // Calculate delta instead to make it more consistent between browsers. 
-                let movement_x = (previous_mouse_x ? event.screenX - previous_mouse_x : 0)
-                let movement_y = (previous_mouse_y ? event.screenY - previous_mouse_y : 0)
-                previous_mouse_x = event.screenX;
-                previous_mouse_y = event.screenY;
-                self.kwasm_exports.kapp_on_mouse_move(movement_x * window.devicePixelRatio, movement_y * window.devicePixelRatio, event.timeStamp);
+                // let movement_x = (previous_mouse_x ? event.screenX - previous_mouse_x : 0)
+                // let movement_y = (previous_mouse_y ? event.screenY - previous_mouse_y : 0)
+                // previous_mouse_x = event.screenX;
+                // previous_mouse_y = event.screenY;
+                self.kwasm_exports.kapp_on_mouse_move(event.movementX, event.movementY, event.timeStamp);
             }
             canvas.onpointerdown = function (event) {
                 check_special_key_status(event);
-                canvas.setPointerCapture(event.pointerId);
+                try {
+                    canvas.setPointerCapture(event.pointerId);
+                } catch (e) { };
                 let pointer_type = get_pointer_type(event);
                 self.kwasm_exports.kapp_on_pointer_down(event.clientX * window.devicePixelRatio, event.clientY * window.devicePixelRatio, pointer_type, event.button, event.timeStamp, event.pointerId);
             }

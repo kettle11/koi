@@ -26,15 +26,13 @@ fn main() {
         ));
         */
 
-        /*
         world.spawn((
-            Transform::new()
-                .with_position(Vec3::new(0., -20.0, 0.))
-                .with_scale(Vec3::fill(40.)),
-            Mesh::CUBE,
+            Transform::new(),
+            // .with_position(Vec3::new(0., -20.0, 0.))
+            // .with_scale(Vec3::fill(40.)),
+            Mesh::CYLINDER,
             Material::PHYSICALLY_BASED,
         ));
-        */
 
         spawn_skybox(world, "assets/field_1k.hdr");
 
@@ -89,7 +87,7 @@ fn main() {
                             -2.0,
                         )),
                         new_material,
-                        Mesh::SPHERE,
+                        Mesh::CYLINDER,
                     ))
                 }
             }
