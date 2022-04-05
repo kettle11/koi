@@ -28,6 +28,10 @@ where
             }
         }
     }
+
+    fn remaining(&self) -> f32 {
+        self.inner.remaining()
+    }
 }
 
 impl<T> oddio::Seek for FixedGain<T>
