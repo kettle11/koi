@@ -10,9 +10,6 @@ pub fn log(string: &str) {
     log_js_string(&js_string_object);
 }
 
-pub fn do_nothing_log(string: &str) {
-}
-
 pub fn error(string: &str) {
     let js_string_object = JSString::new(string);
     error_js_string(&js_string_object);

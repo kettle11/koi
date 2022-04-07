@@ -808,7 +808,7 @@ pub fn render_scene<'a, 'b>(
     let mut clear_color = None;
     let mut view_size = (0, 0);
 
-    let camera_inner_scale = 2.0;
+    let camera_inner_scale = 1.0;
 
     // For now only render shadows from the primary camera's perspective.
     // This would make splitscreen shadows really messed up.
