@@ -102,11 +102,11 @@ pub fn setup_renderer(world: &mut World) {
         .unwrap()
         .add(brdf_lookup_table);
 
-    #[cfg(not(feature="headless"))]
+    #[cfg(not(feature = "headless"))]
     let initial_size = world.get_singleton::<NotSendSync<kapp::Window>>().size();
-    #[cfg(feature="headless")]
+    #[cfg(feature = "headless")]
     let initial_size = (1, 1);
-    
+
     let blur_calculator = BloomCalculator::new.run(world);
     let renderer_info = RendererInfo {
         bloom_enabled: true,
@@ -803,7 +803,7 @@ pub fn render_scene<'a, 'b>(
     reflection_probes: Query<(&'static GlobalTransform, &'static ReflectionProbe)>,
     renderer_info: &mut RendererInfo,
 ) {
-    #[cfg(feature="headless")]
+    #[cfg(feature = "headless")]
     return;
 
     let mut command_buffer = graphics.context.new_command_buffer();

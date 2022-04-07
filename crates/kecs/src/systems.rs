@@ -150,7 +150,7 @@ pub(crate) enum SystemInner {
 pub struct System {
     pub(crate) system_inner: SystemInner,
     #[cfg(debug_assertions)]
-    pub(crate) caller_location: &'static std::panic::Location<'static>
+    pub(crate) caller_location: &'static std::panic::Location<'static>,
 }
 
 impl System {
@@ -194,7 +194,7 @@ where
                 Ok(())
             })),
             #[cfg(debug_assertions)]
-            caller_location: std::panic::Location::caller()
+            caller_location: std::panic::Location::caller(),
         }
     }
 }

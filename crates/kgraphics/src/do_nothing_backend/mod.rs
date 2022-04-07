@@ -56,7 +56,6 @@ impl Pipeline {
         None
     }
 }
-    
 
 // Presently this isn't dropped appropriately.
 #[derive(Debug, Clone)]
@@ -120,7 +119,8 @@ impl RenderPassTrait for RenderPass<'_> {
         &mut self,
         vertex_attribute: &VertexAttribute<T>,
         value: &[f32],
-    ) {}
+    ) {
+    }
 
     fn set_float_property(&mut self, property: &FloatProperty, value: f32) {}
 
@@ -141,13 +141,14 @@ impl RenderPassTrait for RenderPass<'_> {
         texture_unit: u8,
     ) {
     }
-    
+
     fn set_cube_map_property(
         &mut self,
         property: &CubeMapProperty,
         cube_map: Option<&CubeMap>,
         texture_unit: u8,
-    ) {}
+    ) {
+    }
 
     fn set_depth_mask(&mut self, depth_mask: bool) {}
     fn blit_framebuffer(
@@ -161,7 +162,8 @@ impl RenderPassTrait for RenderPass<'_> {
         dest_y: u32,
         dest_width: u32,
         dest_height: u32,
-    ) {}
+    ) {
+    }
 
     fn draw_triangles(&mut self, count: u32, buffer: &IndexBuffer) {}
     fn draw_triangles_without_buffer(&mut self, count: u32) {}
@@ -179,7 +181,7 @@ impl CommandBufferTrait for CommandBuffer {
         clear_color: Option<(f32, f32, f32, f32)>,
     ) -> RenderPass<'a> {
         RenderPass {
-            phantom: std::marker::PhantomData
+            phantom: std::marker::PhantomData,
         }
     }
 
@@ -274,9 +276,7 @@ impl GraphicsContextTrait for GraphicsContext {
     }
     fn commit_command_buffer(&mut self, command_buffer: CommandBuffer) {}
 
-    fn generate_mip_map_for_texture(&mut self, texture: &Texture) {
-       
-    }
+    fn generate_mip_map_for_texture(&mut self, texture: &Texture) {}
 
     fn new_cube_map(
         &mut self,
@@ -298,16 +298,11 @@ impl GraphicsContextTrait for GraphicsContext {
         pixel_format_in: PixelFormat,
         texture_settings: TextureSettings,
     ) {
-       
     }
 
-    fn delete_cube_map(&mut self, cube_map: CubeMap) {
-       
-    }
+    fn delete_cube_map(&mut self, cube_map: CubeMap) {}
 
-    fn generate_mip_map_for_cube_map(&mut self, cube_map: &CubeMap) {
-       
-    }
+    fn generate_mip_map_for_cube_map(&mut self, cube_map: &CubeMap) {}
 
     fn new_framebuffer(
         &mut self,
@@ -315,12 +310,10 @@ impl GraphicsContextTrait for GraphicsContext {
         depth_texture: Option<&Texture>,
         stencil_texture: Option<&Texture>,
     ) -> Framebuffer {
-       Framebuffer
+        Framebuffer
     }
 
-    fn delete_framebuffer(&mut self, framebuffer: Framebuffer) {
-       
-    }
+    fn delete_framebuffer(&mut self, framebuffer: Framebuffer) {}
 }
 
 impl<'a> PipelineBuilderTrait for PipelineBuilder<'a> {

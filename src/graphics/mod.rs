@@ -55,13 +55,13 @@ pub fn graphics_plugin() -> Plugin {
         ],
         draw_systems: vec![
             load_shaders.system(),
-            #[cfg(not(feature="headless"))]
-            resize_window.system()
+            #[cfg(not(feature = "headless"))]
+            resize_window.system(),
         ],
         end_of_frame_systems: vec![
             load_textures.system(),
             load_cube_maps.system(),
-            #[cfg(not(feature="headless"))]
+            #[cfg(not(feature = "headless"))]
             automatic_redraw_request.system(),
         ],
         ..Default::default()
@@ -160,7 +160,7 @@ pub enum PipelineError {
 }
 
 fn setup_graphics(world: &mut World) {
-    #[cfg(not(feature="headless"))]
+    #[cfg(not(feature = "headless"))]
     let main_window = world
         .get_single_component_mut::<NotSendSync<kapp::Window>>()
         .unwrap();
@@ -172,27 +172,27 @@ fn setup_graphics(world: &mut World) {
     })
     .unwrap();
 
-    #[cfg(not(feature="headless"))]
+    #[cfg(not(feature = "headless"))]
     let main_window: &kapp::Window = main_window;
 
-    #[cfg(not(feature="headless"))]
+    #[cfg(not(feature = "headless"))]
     let (window_width, window_height) = main_window.size();
 
-    #[cfg(feature="headless")]
+    #[cfg(feature = "headless")]
     let (window_width, window_height) = (1, 1);
 
-    #[cfg(not(feature="headless"))]
+    #[cfg(not(feature = "headless"))]
     context.resize(main_window, window_width, window_height);
 
     #[cfg(not(feature = "SDL"))]
-    #[cfg(not(feature="headless"))]
+    #[cfg(not(feature = "headless"))]
     let render_target = unsafe {
         context
             .get_render_target_for_window(main_window, window_width, window_height)
             .unwrap()
     };
 
-    #[cfg(feature="headless")]
+    #[cfg(feature = "headless")]
     let render_target = RenderTarget;
 
     #[cfg(feature = "SDL")]
@@ -209,6 +209,9 @@ fn setup_graphics(world: &mut World) {
         context,
         render_target,
         current_camera_target: None,
+        #[cfg(not(feature = "headless"))]
+        primary_camera_target: CameraTarget::Window(main_window.id),
+        #[cfg(feature = "headless")]
         primary_camera_target: CameraTarget::Primary,
         override_views: Vec::new(),
         current_target_framebuffer: Framebuffer::default(),
