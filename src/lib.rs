@@ -196,7 +196,7 @@ impl App {
         // Default plugins
         #[cfg(feature = "graphics")]
         let app = app.add_plugin(graphics_plugin());
-        #[cfg(feature = "renderer")]
+        #[cfg(feature = "graphics")]
         let app = app.add_plugin(renderer_plugin());
         #[cfg(feature = "audio")]
         let app = app.add_plugin(audio_plugin());
@@ -205,12 +205,14 @@ impl App {
         let app = app.add_plugin(camera_plugin());
         #[cfg(feature = "graphics")]
         let app = app.add_plugin(camera_controls_plugin());
+        #[cfg(feature = "graphics")]
+        let app = app.add_plugin(immediate_drawer_plugin());
+        
         // #[cfg(feature = "ui")]
         // let app = app.add_plugin(ui_plugin());
         #[cfg(feature = "physics")]
         let app = app.add_plugin(physics_plugin());
-
-        let app = app.add_plugin(immediate_drawer_plugin());
+      
 
         // Non-default plugins
         #[cfg(feature = "xr")]
@@ -239,8 +241,10 @@ impl App {
         let kapp_events_entity = world.spawn((Name("KappEvents".into()), KappEvents(Vec::new())));
 
         // For now `kapp` is integrated directly into `koi`
+        #[cfg(not(feature="headless"))]
         let (kapp_app, kapp_event_loop) = kapp::initialize();
 
+        #[cfg(not(feature="headless"))]
         world.spawn((
             Name("Kapp Application".into()),
             NotSendSync::new(kapp_app.clone()),
@@ -250,6 +254,7 @@ impl App {
         let window_height = 1200;
 
         // For now only a single window is suppported.
+        #[cfg(not(feature="headless"))]
         let window = kapp_app
             .new_window()
             .title(&self.title)
@@ -257,8 +262,10 @@ impl App {
             .build()
             .unwrap();
 
+        #[cfg(not(feature="headless"))]
         window.request_redraw();
 
+        #[cfg(not(feature="headless"))]
         let window_entity = world.spawn((Name("Window".into()), NotSendSync::new(window)));
 
         for setup_system in &mut self.systems.setup_systems {
@@ -292,9 +299,12 @@ impl App {
             fixed_time_step,
             run_system,
             input_entity,
+            #[cfg(not(feature="headless"))]
             window_entity,
             kapp_events_entity,
         };
+
+        #[cfg(not(feature="headless"))]
         kapp_event_loop.run(move |event| {
             koi_state.handle_event(event.clone());
             match event {
@@ -306,7 +316,13 @@ impl App {
                 }
                 _ => {}
             }
-        })
+        });
+
+        #[cfg(feature="headless")]
+        loop {
+            koi_state.handle_event(KappEvent::Draw { window_id: kapp_platform_common::WindowId::new(std::ptr::null_mut()) });
+        }
+
     }
 }
 
@@ -318,6 +334,7 @@ pub struct KoiState {
     pub fixed_time_step: f64,
     pub run_system: Box<dyn FnMut(Event, &mut World) -> bool>,
     pub input_entity: Entity,
+    #[cfg(not(feature="headless"))]
     pub window_entity: Entity,
     pub kapp_events_entity: Entity,
 }

@@ -102,6 +102,7 @@ macro_rules! system_tuple_impls {
                 FnMut( $( <<$tuple as SystemParameterFetchTrait>::FetchResult as AsSystemArg>::Arg ),*),
         {
             #[allow(non_snake_case, unused_variables, unused_mut, clippy::too_many_arguments)]
+            #[track_caller]
             fn system(mut self) -> System {
                 // This trick to get `rustc` to accept calling the FnMut is from Bevy:
                 // https://github.com/bevyengine/bevy/blob/f6dbc25bd92ea81b4c7948c6f3f41f6411e97d78/crates/bevy_ecs/src/system/function_system.rs#L432
@@ -112,47 +113,60 @@ macro_rules! system_tuple_impls {
                     f($($tuple,)*)
                 }
 
-                System::NonExclusive{
-                    system: Box::new(
-                        move |world: &World| {
+                System {
+                    system_inner: SystemInner::NonExclusive{
+                        system: Box::new(
+                            move |world: &World| {
+                                let mut archetype_access = Vec::new();
+                                $(let $tuple = $tuple::get_meta_data(world)?;)*
+                                $($tuple.append_meta_data(&mut archetype_access);)*
+                                $(let mut $tuple = <$tuple as SystemParameterFetchTrait>::fetch(world, &$tuple)?;)*
+                                $(let $tuple = $tuple.as_system_arg();)*
+                                call_inner(&mut self, $( $tuple ),*);
+                                Ok(())
+                        }),
+                        meta_data: Box::new( |world: &World| {
                             let mut archetype_access = Vec::new();
                             $(let $tuple = $tuple::get_meta_data(world)?;)*
                             $($tuple.append_meta_data(&mut archetype_access);)*
-                            $(let mut $tuple = <$tuple as SystemParameterFetchTrait>::fetch(world, &$tuple)?;)*
-                            $(let $tuple = $tuple.as_system_arg();)*
-                            call_inner(&mut self, $( $tuple ),*);
-                            Ok(())
-                    }),
-                    meta_data: Box::new( |world: &World| {
-                        let mut archetype_access = Vec::new();
-                        $(let $tuple = $tuple::get_meta_data(world)?;)*
-                        $($tuple.append_meta_data(&mut archetype_access);)*
-                        Ok(archetype_access)
-                    })
+                            Ok(archetype_access)
+                        }),
+                    },
+                    #[cfg(debug_assertions)]
+                    caller_location: std::panic::Location::caller()
                 }
             }
         }
     };
 }
 
-pub enum System {
+pub(crate) enum SystemInner {
     Exclusive(Box<dyn FnMut(&mut World) -> Result<(), KecsError> + Send + Sync>),
     NonExclusive {
         system: Box<dyn FnMut(&World) -> Result<(), KecsError> + Send + Sync>,
         meta_data: Box<dyn Fn(&World) -> Result<Vec<ArchetypeAccess>, KecsError> + Send + Sync>,
     },
 }
+pub struct System {
+    pub(crate) system_inner: SystemInner,
+    #[cfg(debug_assertions)]
+    pub(crate) caller_location: &'static std::panic::Location<'static>
+}
 
 impl System {
     pub fn try_run(&mut self, world: &mut World) -> Result<(), KecsError> {
-        match self {
-            Self::Exclusive(system) => system(world),
-            Self::NonExclusive { system, .. } => system(world),
+        match &mut self.system_inner {
+            SystemInner::Exclusive(system) => system(world),
+            SystemInner::NonExclusive { system, .. } => system(world),
         }
     }
 
     pub fn run(&mut self, world: &mut World) {
-        self.try_run(world).unwrap()
+        if let Result::Err(e) = self.try_run(world) {
+            #[cfg(debug_assertions)]
+            println!("CALLER LOCATION: {:#?}", self.caller_location);
+            panic!("{:?}", e);
+        }
     }
 }
 
@@ -174,10 +188,14 @@ where
     for<'a> &'a mut FUNCTION: FnMut(&mut World),
 {
     fn system(mut self) -> System {
-        System::Exclusive(Box::new(move |world: &mut World| {
-            self(world);
-            Ok(())
-        }))
+        System {
+            system_inner: SystemInner::Exclusive(Box::new(move |world: &mut World| {
+                self(world);
+                Ok(())
+            })),
+            #[cfg(debug_assertions)]
+            caller_location: std::panic::Location::caller()
+        }
     }
 }
 

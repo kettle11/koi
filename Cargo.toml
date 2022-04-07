@@ -8,11 +8,12 @@ license = "Zlib OR Apache-2.0 OR MIT"
 members = ["crates/*"]
 
 [features]
-default = ["audio", "graphics", "renderer", "drawer2d", "imagine_png", "jpeg", "gltf", "ui", "hdri", "physics"]
+default = ["audio", "graphics", "drawer2d", "imagine_png", "jpeg", "gltf", "ui", "hdri", "physics", "gl", "kapp"]
 SDL = ["kapp/SDL", "kaudio/SDL", "kgraphics/SDL"]
-graphics = ["kgraphics"]
+graphics = []
+gl = ["kgraphics/gl"]
+headless = ["kgraphics/do_nothing_backend"]
 audio = ["oddio", "kaudio"]
-renderer = []
 drawer2d = []
 xr = []
 jpeg = ["jpeg-decoder"]
@@ -24,7 +25,8 @@ imagine_png = ["imagine"]
 tracing_allocator = ["ktracing_allocator"]
 
 [dependencies]
-kapp = {path = "crates/kapp", default-features=false, features=["kserde"]}
+kapp = {path = "crates/kapp", default-features=false, features=["kserde"], optional=true}
+kapp_platform_common = {path = "crates/kapp/kapp_platform_common"}
 kecs = {path = "crates/kecs"}
 ktasks = {path = "crates/ktasks"}
 kmath = {path = "crates/kmath"}
@@ -35,7 +37,7 @@ kserde = {path = "crates/kserde"}
 ktracing_allocator = {path = "crates/ktracing_allocator", optional = true}
 
 kphysics = {path = "crates/kphysics",  optional = true}
-kgraphics = {path = "crates/kgraphics",  optional = true}
+kgraphics = {path = "crates/kgraphics",  optional = true, default-features=false}
 kaudio = {path = "crates/kaudio",  optional = true}
 kgltf = {path = "crates/kgltf", optional = true}
 kui = {path = "crates/kui", optional = true}
@@ -58,3 +60,7 @@ opt-level = 3
 [[example]]
 name = "xr"
 required-features = ["xr"]
+
+[[example]]
+name = "headless"
+required-features = ["headless"]

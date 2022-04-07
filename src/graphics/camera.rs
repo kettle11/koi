@@ -2,7 +2,10 @@ use crate::*;
 
 pub fn camera_plugin() -> Plugin {
     Plugin {
-        pre_fixed_update_systems: vec![resize_camera.system()],
+        pre_fixed_update_systems: vec![
+            #[cfg(not(feature="headless"))]
+            resize_camera.system()
+            ],
         ..Default::default()
     }
 }
