@@ -36,11 +36,12 @@ pub fn create_workers_with_count(count: usize) {
     #[cfg(all(target_arch = "wasm32", not(target_feature = "atomics")))]
     let count = 1;
 
-    klog::log!("ktasks: Creating {:?} workers", count);
     use std::sync::Once;
     static SETUP: Once = Once::new();
 
     SETUP.call_once(|| {
+        klog::log!("ktasks: Creating {:?} workers", count);
+
         assert!(count > 0);
 
         // Used to signal that a new task has been added.

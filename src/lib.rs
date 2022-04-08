@@ -1,5 +1,6 @@
 use std::ops::{Deref, DerefMut};
 
+use kapp::EventLoop;
 pub use kcolor::*;
 pub use kecs::hierarchy::HierarchyNode;
 pub use kecs::*;
@@ -219,6 +220,60 @@ impl App {
         app
     }
 
+    /// Only use this setup function for something like a game-server.
+    pub fn setup_without_run<S: FnMut(Event, &mut World) -> bool + 'static>(
+        mut self,
+        setup_and_run_function: impl FnOnce(&mut World) -> S,
+    ) -> KoiState {
+        #[cfg(feature = "tracing_allocator")]
+        ktracing_allocator::set_alloc_error_hook();
+
+        // Todo: Base this on number of cores
+        ktasks::create_workers();
+
+        let mut world = World::new();
+        world.spawn((Name("Commands".into()), Commands::new()));
+
+        // Setup input
+        let input_entity = world.spawn((Name("Input".into()), Input::new()));
+        let kapp_events_entity = world.spawn((Name("KappEvents".into()), KappEvents(Vec::new())));
+
+        for setup_system in &mut self.systems.setup_systems {
+            setup_system.run(&mut world)
+        }
+
+        // Setup time tracking
+        let start = Instant::now();
+        let time_acumulator = 0.0;
+
+        // Hard-coded to 60 fixed updates per second for now.
+        let fixed_time_step = 1.0 / 60.0;
+
+        world.spawn((
+            Name("Time".into()),
+            Time {
+                // Set the delta_time to fixed_time_delta so that a fixed update runs for the first frame.
+                delta_seconds_f64: fixed_time_step,
+                fixed_time_step,
+                discontinuity: false,
+            },
+        ));
+
+        let run_system = Box::new(setup_and_run_function(&mut world));
+
+        let koi_state = KoiState {
+            world,
+            systems: self.systems,
+            start,
+            time_acumulator,
+            fixed_time_step,
+            run_system,
+            input_entity,
+            kapp_events_entity,
+        };
+        koi_state
+    }
+
     /// Pass in a 'setup' function that returns a 'run' function.
     /// The setup functon is called once and gives the program a chance to initialize things.
     /// The 'run' function is called continuously with [Event]s until shutdown.
@@ -265,7 +320,7 @@ impl App {
         window.request_redraw();
 
         #[cfg(not(feature = "headless"))]
-        let window_entity = world.spawn((Name("Window".into()), NotSendSync::new(window)));
+        world.spawn((Name("Window".into()), NotSendSync::new(window)));
 
         for setup_system in &mut self.systems.setup_systems {
             setup_system.run(&mut world)
@@ -298,8 +353,6 @@ impl App {
             fixed_time_step,
             run_system,
             input_entity,
-            #[cfg(not(feature = "headless"))]
-            window_entity,
             kapp_events_entity,
         };
 
@@ -334,13 +387,11 @@ pub struct KoiState {
     pub fixed_time_step: f64,
     pub run_system: Box<dyn FnMut(Event, &mut World) -> bool>,
     pub input_entity: Entity,
-    #[cfg(not(feature = "headless"))]
-    pub window_entity: Entity,
     pub kapp_events_entity: Entity,
 }
 
 impl KoiState {
-    fn handle_event(&mut self, event: KappEvent) {
+    pub fn handle_event(&mut self, event: KappEvent) {
         ktasks::run_tasks_unless_there_are_workers();
 
         // Run user callback and give it a chance to consume the event.

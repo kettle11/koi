@@ -81,6 +81,7 @@ pub fn request_window_redraw(world: &mut World) {
 }
 
 /// Ensure that the primary window redraws continuously.
+#[cfg(not(feature = "headless"))]
 fn automatic_redraw_request(
     graphics: &mut Graphics,
     window: &mut NotSendSync<kapp::Window>,
