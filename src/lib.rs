@@ -1,6 +1,5 @@
 use std::ops::{Deref, DerefMut};
 
-use kapp::EventLoop;
 pub use kcolor::*;
 pub use kecs::hierarchy::HierarchyNode;
 pub use kecs::*;
