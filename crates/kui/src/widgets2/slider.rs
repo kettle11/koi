@@ -2,13 +2,16 @@ use std::cell::RefCell;
 
 use crate::*;
 
-pub trait Slideable: Copy + Clone + 'static {
+pub trait Slideable: Copy + Clone + 'static + PartialEq {
+    const ZERO: Self;
     fn slide(min: Self, max: Self, v: f32) -> Self;
     fn get_percent(self, min: Self, max: Self) -> f32;
     fn clamp_slideable(self, min: Self, max: Self) -> Self;
+    fn round_to_increment(self, increment: Self) -> Self;
 }
 
 impl Slideable for f32 {
+    const ZERO: Self = 0.0;
     fn slide(min: Self, max: Self, v: f32) -> Self {
         (max - min) * v
     }
@@ -18,9 +21,13 @@ impl Slideable for f32 {
     fn clamp_slideable(self, min: Self, max: Self) -> Self {
         self.clamp(min, max)
     }
+    fn round_to_increment(self, increment: Self) -> Self {
+        (self / increment).round() * increment
+    }
 }
 
 impl Slideable for i32 {
+    const ZERO: Self = 0;
     fn slide(min: Self, max: Self, v: f32) -> Self {
         ((max - min) as f32 * v).round() as Self
     }
@@ -30,9 +37,13 @@ impl Slideable for i32 {
     fn clamp_slideable(self, min: Self, max: Self) -> Self {
         self.clamp(min, max)
     }
+    fn round_to_increment(self, increment: Self) -> Self {
+        (self as f32 / increment as f32).round() as Self * increment
+    }
 }
 
 impl Slideable for i64 {
+    const ZERO: Self = 0;
     fn slide(min: Self, max: Self, v: f32) -> Self {
         ((max - min) as f32 * v) as Self
     }
@@ -42,9 +53,13 @@ impl Slideable for i64 {
     fn clamp_slideable(self, min: Self, max: Self) -> Self {
         self.clamp(min, max)
     }
+    fn round_to_increment(self, increment: Self) -> Self {
+        (self as f32 / increment as f32).round() as Self * increment
+    }
 }
 
 impl Slideable for usize {
+    const ZERO: Self = 0;
     fn slide(min: Self, max: Self, v: f32) -> Self {
         ((max - min) as f32 * v).round() as Self
     }
@@ -53,6 +68,9 @@ impl Slideable for usize {
     }
     fn clamp_slideable(self, min: Self, max: Self) -> Self {
         self.clamp(min, max)
+    }
+    fn round_to_increment(self, increment: Self) -> Self {
+        (self as f32 / increment as f32).round() as Self * increment
     }
 }
 
@@ -65,6 +83,20 @@ pub fn slider<
     current: fn(&mut State) -> &mut T,
     min: T,
     max: T,
+) -> impl Widget<State, Context, ExtraState> {
+    slider_with_increment(current, min, max, T::ZERO)
+}
+
+pub fn slider_with_increment<
+    State: 'static,
+    ExtraState,
+    Context: GetStandardInput + GetStandardStyle + GetEventHandlers<State>,
+    T: Slideable,
+>(
+    current: fn(&mut State) -> &mut T,
+    min: T,
+    max: T,
+    increment: T,
 ) -> impl Widget<State, Context, ExtraState> {
     let clicked = Rc::new(RefCell::new(SliderSharedState {
         hitbox: Box2::ZERO,
@@ -122,6 +154,9 @@ pub fn slider<
                         let v = (cursor_position_moved.x - bounds.min.x) / bounds.size().x;
                         let current_value = (current)(state);
                         *current_value = T::slide(min, max, v).clamp_slideable(min, max);
+                        if increment != T::ZERO {
+                            *current_value = T::round_to_increment(*current_value, increment)
+                        }
                     }
                 }
             },
