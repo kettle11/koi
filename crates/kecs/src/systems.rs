@@ -125,12 +125,12 @@ macro_rules! system_tuple_impls {
                                 call_inner(&mut self, $( $tuple ),*);
                                 Ok(())
                         }),
-                        meta_data: Box::new( |world: &World| {
-                            let mut archetype_access = Vec::new();
-                            $(let $tuple = $tuple::get_meta_data(world)?;)*
-                            $($tuple.append_meta_data(&mut archetype_access);)*
-                            Ok(archetype_access)
-                        }),
+                        //meta_data: Box::new( |world: &World| {
+                        //    let mut archetype_access = Vec::new();
+                        //    $(let $tuple = $tuple::get_meta_data(world)?;)*
+                        //    $($tuple.append_meta_data(&mut archetype_access);)*
+                        //    Ok(archetype_access)
+                        //}),
                     },
                     #[cfg(debug_assertions)]
                     caller_location: std::panic::Location::caller()
@@ -144,7 +144,7 @@ pub(crate) enum SystemInner {
     Exclusive(Box<dyn FnMut(&mut World) -> Result<(), KecsError> + Send + Sync>),
     NonExclusive {
         system: Box<dyn FnMut(&World) -> Result<(), KecsError> + Send + Sync>,
-        meta_data: Box<dyn Fn(&World) -> Result<Vec<ArchetypeAccess>, KecsError> + Send + Sync>,
+        //meta_data: Box<dyn Fn(&World) -> Result<Vec<ArchetypeAccess>, KecsError> + Send + Sync>,
     },
 }
 pub struct System {
