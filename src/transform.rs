@@ -173,7 +173,7 @@ impl Mul<Transform> for Transform {
     }
 }
 
-/// Add [GlobalTransform]s to all root nodes without them.
+/// Add [GlobalTransform]s to all root nodes without them and update their [GlobalTransform] to be equal to their [Transform]
 pub fn update_root_global_transforms(
     commands: &mut Commands,
     mut query: Query<(
