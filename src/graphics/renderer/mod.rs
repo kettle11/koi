@@ -814,7 +814,7 @@ pub fn render_scene<'a, 'b>(
     let mut clear_color = None;
     let mut view_size = (0, 0);
 
-    let camera_inner_scale = 2.0;
+    let mut resolution_scale = 1.0;
 
     // For now only render shadows from the primary camera's perspective.
     // This would make splitscreen shadows really messed up.
@@ -836,8 +836,10 @@ pub fn render_scene<'a, 'b>(
             );
 
             view_size = camera.get_view_size();
-            view_size.0 /= camera_inner_scale as u32;
-            view_size.1 /= camera_inner_scale as u32;
+            view_size.0 /= camera.resolution_scale as u32;
+            view_size.1 /= camera.resolution_scale as u32;
+
+            resolution_scale = camera.resolution_scale;
 
             // Resize of the offscreen render target to match the view size.
             renderer_info
@@ -966,8 +968,8 @@ pub fn render_scene<'a, 'b>(
                 let output_viewport = Box2::new(
                     Vec2::ZERO,
                     Vec2::new(
-                        view_size.0 as f32 * camera_inner_scale,
-                        view_size.1 as f32 * camera_inner_scale,
+                        view_size.0 as f32 * resolution_scale,
+                        view_size.1 as f32 * resolution_scale,
                     ),
                 );
                 let texture_scale = renderer_info.offscreen_render_target.inner_texture_scale();

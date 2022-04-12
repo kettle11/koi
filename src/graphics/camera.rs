@@ -24,6 +24,7 @@ pub struct Camera {
     view_height: u32,
     z_near: f32,
     z_far: f32,
+    pub resolution_scale: f32,
     /// Only relevant for orthographic projections
     orthographic_height: f32,
     /// Only relevant for perspective projections.
@@ -68,6 +69,7 @@ impl Camera {
             vertical_field_of_view_radians: (72.0_f32).to_radians(),
             render_flags: RenderFlags::DEFAULT,
             camera_target: Some(CameraTarget::Primary),
+            resolution_scale: 1.0,
         };
         camera.update_projection_matrix();
         camera
