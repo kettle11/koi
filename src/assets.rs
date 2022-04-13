@@ -264,6 +264,15 @@ impl<T: LoadableAssetTrait> Assets<T> {
         Handle::new(indirection_index, self.send_drop_channel.inner().clone())
     }
 
+    pub fn add_with_path(&mut self, path: &str, asset: T) -> Handle<T> {
+        let new_handle = self.add(asset);
+        self.path_to_handle
+            .insert(path.to_string(), new_handle.clone_weak());
+        self.handle_to_path
+            .insert(new_handle.indirection_index, path.to_string());
+        new_handle
+    }
+
     /// Used to initialize static variables
     /// Adds an asset and leaks it.
     #[allow(dead_code)]
