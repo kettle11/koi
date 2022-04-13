@@ -197,6 +197,11 @@ impl Camera {
         self.vertical_field_of_view_radians
     }
 
+    pub fn get_horizontal_field_of_view(&self) -> f32 {
+        let aspect_ratio = self.view_width as f32 / self.view_height as f32;
+        self.vertical_field_of_view_radians * aspect_ratio
+    }
+
     pub fn set_projection_mode(&mut self, projection_mode: ProjectionMode) {
         self.projection_mode = projection_mode;
         self.update_projection_matrix();
