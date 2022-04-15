@@ -173,12 +173,15 @@ impl AssetLoader<World> for WorldLoader {
             .unwrap();
 
         ktasks::spawn(async move {
-            let world_load_message_data = load_world(&path).await.unwrap();
-            sender.send(PrefabLoadMessage {
-                handle,
-                world_load_message_data,
-                options,
-            })
+            if let Some(world_load_message_data) = load_world(&path).await {
+                let _ = sender.send(PrefabLoadMessage {
+                    handle,
+                    world_load_message_data,
+                    options,
+                });
+            } else {
+                klog::log!("FAILED TO LOAD GLTF");
+            }
         })
         .run();
     }
@@ -191,15 +194,17 @@ impl AssetLoader<World> for WorldLoader {
     ) {
         let sender = self.sender.inner().clone();
         ktasks::spawn(async move {
-            let world_load_message_data =
-                load_world_from_bytes_and_extension(&data, &"", &extension)
-                    .await
-                    .unwrap();
-            sender.send(PrefabLoadMessage {
-                handle,
-                world_load_message_data,
-                options,
-            })
+            if let Some(world_load_message_data) =
+                load_world_from_bytes_and_extension(&data, &"", &extension).await
+            {
+                let _ = sender.send(PrefabLoadMessage {
+                    handle,
+                    world_load_message_data,
+                    options,
+                });
+            } else {
+                klog::log!("FAILED TO LOAD GLTF");
+            }
         })
         .run();
     }
@@ -214,7 +219,7 @@ async fn load_world_from_bytes_and_extension(
     Some(match extension {
         #[cfg(feature = "gltf")]
         "glb" => {
-            let glb = kgltf::GLB::from_bytes(&bytes).unwrap();
+            let glb = kgltf::GLB::from_bytes(&bytes).ok()?;
             let data = glb.binary_data.map(|d| d.into_owned());
             let mesh_primitive_data =
                 load_mesh_primitive_data(path, &glb.gltf, data.as_deref()).await;
@@ -232,7 +237,7 @@ async fn load_world_from_bytes_and_extension(
             let s = std::str::from_utf8(&bytes).ok()?;
             //   klog::log!("ABOUT TO DECODE GLTF0: {}", s);
 
-            let gltf = kgltf::GlTf::from_json(s).unwrap();
+            let gltf = kgltf::GlTf::from_json(s)?;
             //  klog::log!("ABOUT TO DECODE GLTF1");
 
             let mesh_primitive_data = load_mesh_primitive_data(path, &gltf, None).await;

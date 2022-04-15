@@ -302,17 +302,21 @@ pub(super) async fn load_mesh_primitive_data(
                 }
             }
 
-            let indices = get_indices(gltf, &data, &buffers, primitive.indices.unwrap()).await;
+            if let Some(indices) = primitive.indices {
+                let indices = get_indices(gltf, &data, &buffers, indices).await;
 
-            let mesh_data = MeshData {
-                positions: positions.unwrap(),
-                normals: normals.unwrap_or_else(Vec::new),
-                texture_coordinates: texture_coordinates.unwrap_or_else(Vec::new),
-                colors: colors.unwrap_or_else(Vec::new),
-                indices,
-            };
+                let mesh_data = MeshData {
+                    positions: positions.unwrap(),
+                    normals: normals.unwrap_or_else(Vec::new),
+                    texture_coordinates: texture_coordinates.unwrap_or_else(Vec::new),
+                    colors: colors.unwrap_or_else(Vec::new),
+                    indices,
+                };
 
-            primitives.push((mesh_data, primitive.material))
+                primitives.push((mesh_data, primitive.material))
+            } else {
+                klog::log!("Warning: GLTF primitive does not have indices.");
+            }
         }
         meshes.push(MeshPrimitiveData { primitives });
     }
