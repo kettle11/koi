@@ -9,7 +9,7 @@ rect_packer = "0.2.1"
 kmath = {path = "../kmath"}
 kapp_platform_common = {path = "../kapp/kapp_platform_common"}
 kcolor = {path = "../kcolor"}
-kwasm = {path = "../kwasm"}
+kwasm = {path = "../kwasm", optional = true}
 
 [target.'cfg(not(target_arch="wasm32"))'.dependencies]
 fontdb = "0.7.0"
