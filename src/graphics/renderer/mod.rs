@@ -73,6 +73,7 @@ pub struct RendererInfo {
     /// This value should be from 0.0 to 1.0
     /// The default value is 0.1. More than 0.3 looks rather extreme. 0.0 is no bloom.
     pub bloom_strength: f32,
+    pub cascade_depths: [f32; 4],
 }
 
 pub fn renderer_plugin() -> Plugin {
@@ -150,6 +151,7 @@ pub fn setup_renderer(world: &mut World) {
             )
         })
         .run(world),
+        cascade_depths: [5., 15., 30., 60.],
     };
     world.spawn((Name("RendererInfo".into()), renderer_info));
 }
@@ -193,6 +195,7 @@ struct Renderer<'a, 'b: 'a> {
     just_changed_material: bool,
     brdf_lookup_texture: &'a Texture,
     color_is_set: bool,
+    renderer_info: &'a RendererInfo,
 }
 
 impl<'a, 'b: 'a> Renderer<'a, 'b> {
@@ -231,6 +234,7 @@ impl<'a, 'b: 'a> Renderer<'a, 'b> {
             just_changed_material: false,
             brdf_lookup_texture,
             color_is_set: false,
+            renderer_info,
         }
     }
 
@@ -257,6 +261,16 @@ impl<'a, 'b: 'a> Renderer<'a, 'b> {
         self.render_pass.set_int_property(
             &pipeline.get_int_property("p_light_count").unwrap(),
             lights.iter().count() as i32,
+        );
+
+        self.render_pass.set_vec4_property(
+            &pipeline.get_vec4_property("p_cascade_depths").unwrap(),
+            (
+                self.renderer_info.cascade_depths[0],
+                self.renderer_info.cascade_depths[1],
+                self.renderer_info.cascade_depths[2],
+                self.renderer_info.cascade_depths[3],
+            ),
         );
 
         for (i, (transform, light, shadow_caster)) in lights.iter().enumerate() {
@@ -833,11 +847,12 @@ pub fn render_scene<'a, 'b>(
                 camera_global_transform,
                 &mut lights,
                 &renderables,
+                &renderer_info.cascade_depths,
             );
 
             view_size = camera.get_view_size();
-            view_size.0 /= camera.resolution_scale as u32;
-            view_size.1 /= camera.resolution_scale as u32;
+            view_size.0 = (view_size.0 as f32 / camera.resolution_scale) as u32;
+            view_size.1 = (view_size.1 as f32 / camera.resolution_scale) as u32;
 
             resolution_scale = camera.resolution_scale;
 

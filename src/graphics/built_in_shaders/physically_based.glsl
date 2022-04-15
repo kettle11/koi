@@ -72,6 +72,10 @@ uniform samplerCube p_irradiance_map;
 uniform samplerCube p_prefilter_map;
 uniform sampler2D p_brdf_lookup_table;
 
+uniform vec4 p_cascade_depths;
+const float biases[4] = float[4](0.0001, 0.0001, 0.0002, 0.0004);
+
+
 // Up to 4 cascades are supported.
 // uniform float p_shadow_cascades[4];
 
@@ -206,8 +210,6 @@ float ShadowCalculation(in sampler2D shadowMap, vec4 fragPosLightSpace, vec3 lig
     return shadow;
 }
 
-const float cascade_depths[4] = float[4](5., 15., 30., 60.);
-const float biases[4] = float[4](0.0001, 0.0001, 0.0002, 0.0004);
 
 void main()
 {
@@ -325,24 +327,24 @@ void main()
                 // Todo: his offset needs to be scaled with cascade otherwise acne is introduced at far distances.
                 vec4 offset_world_position = vec4(WorldPosition + N * 0.1, 1.0);
                 
-                if (z > cascade_depths[3]) {
+                if (z > p_cascade_depths[3]) {
                     shadow = 0.0;
                 }
-                else if (z > cascade_depths[2]) {
+                else if (z > p_cascade_depths[2]) {
                     vec4 light_space_position = p_world_to_light_space_3 * offset_world_position;
-                    shadow = ShadowCalculation(p_light_shadow_maps_3, light_space_position, L, cascade_depths[3] - cascade_depths[2], biases[3]);
+                    shadow = ShadowCalculation(p_light_shadow_maps_3, light_space_position, L, p_cascade_depths[3] - p_cascade_depths[2], biases[3]);
                     //debug_color = vec3(1.0, 0.0, 0.0);
-                } else if (z > cascade_depths[1]) {
+                } else if (z > p_cascade_depths[1]) {
                     vec4 light_space_position = p_world_to_light_space_2 * offset_world_position;
-                    shadow = ShadowCalculation(p_light_shadow_maps_2, light_space_position, L, cascade_depths[2] - cascade_depths[1], biases[2]);
+                    shadow = ShadowCalculation(p_light_shadow_maps_2, light_space_position, L, p_cascade_depths[2] - p_cascade_depths[1], biases[2]);
                     //debug_color = vec3(0.0, 1.0, 0.0);
-                } else if (z > cascade_depths[0]) {
+                } else if (z > p_cascade_depths[0]) {
                     vec4 light_space_position = p_world_to_light_space_1 * offset_world_position;
-                    shadow = ShadowCalculation(p_light_shadow_maps_1, light_space_position, L, cascade_depths[1] - cascade_depths[0], biases[1]);
+                    shadow = ShadowCalculation(p_light_shadow_maps_1, light_space_position, L, p_cascade_depths[1] - p_cascade_depths[0], biases[1]);
                     //debug_color = vec3(0.0, 0.0, 1.0);
                 } else {
                     vec4 light_space_position = p_world_to_light_space_0 * offset_world_position;
-                    shadow = ShadowCalculation(p_light_shadow_maps_0, light_space_position, L, cascade_depths[0] - near_plane_depth, biases[0]);
+                    shadow = ShadowCalculation(p_light_shadow_maps_0, light_space_position, L, p_cascade_depths[0] - near_plane_depth, biases[0]);
                 }
             }
 
