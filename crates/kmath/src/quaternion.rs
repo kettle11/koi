@@ -2,7 +2,7 @@ use std::ops::{Add, Index, Mul, Neg};
 
 use crate::*;
 
-#[derive(Copy, Clone, Debug, Hash)]
+#[derive(Copy, Clone, Debug, PartialEq, PartialOrd, Hash, Eq)]
 pub struct Quaternion<T: NumericFloat>(pub(crate) Vector<T, 4>);
 
 use kserde::*;
