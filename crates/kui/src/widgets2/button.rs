@@ -1,5 +1,3 @@
-use std::cell::RefCell;
-
 use crate::*;
 
 pub fn button<
@@ -81,81 +79,9 @@ pub fn button_base<
     child_widget: impl Widget<State, Context, ExtraState>,
     on_click: impl Fn(&mut State) + 'static,
 ) -> impl Widget<State, Context, ExtraState> {
-    let clicked = Rc::new(RefCell::new(false));
-
-    ButtonBase {
-        child_widget: set_cursor_on_hover(kapp_platform_common::Cursor::PointingHand, child_widget),
-        bounding_rect: Box3::ZERO,
-        clicked: clicked.clone(),
-        on_click: Rc::new(
-            move |event: &kapp_platform_common::Event,
-                  pointer_event_info: PointerEventInfo,
-                  state: &mut State| match event {
-                kapp_platform_common::Event::PointerDown { .. } => {
-                    if pointer_event_info.in_hitbox {
-                        *clicked.borrow_mut() = true;
-                        on_click(state);
-                    }
-                }
-                kapp_platform_common::Event::PointerUp { .. } => {
-                    *clicked.borrow_mut() = false;
-                }
-                _ => {}
-            },
-        ),
-        phantom: std::marker::PhantomData,
-    }
-}
-
-pub struct ButtonBase<State, Context, ExtraState, Child: Widget<State, Context, ExtraState>> {
-    child_widget: Child,
-    bounding_rect: Box3,
-    on_click: Rc<dyn Fn(&kapp_platform_common::Event, PointerEventInfo, &mut State) + 'static>,
-    clicked: Rc<RefCell<bool>>,
-    phantom: std::marker::PhantomData<fn() -> (Context, State, ExtraState)>,
-}
-
-impl<
-        State,
-        Context: GetStandardInput + GetEventHandlers<State>,
-        ExtraState,
-        Child: Widget<State, Context, ExtraState>,
-    > Widget<State, Context, ExtraState> for ButtonBase<State, Context, ExtraState, Child>
-{
-    fn layout(
-        &mut self,
-        state: &mut State,
-        extra_state: &mut ExtraState,
-        context: &mut Context,
-        min_and_max_size: MinAndMaxSize,
-    ) -> Vec3 {
-        context.standard_input_mut().button_clicked = *self.clicked.borrow_mut();
-        let child_size = self
-            .child_widget
-            .layout(state, extra_state, context, min_and_max_size);
-        self.bounding_rect = Box3 {
-            min: Vec3::ZERO,
-            max: child_size.min(min_and_max_size.max),
-        };
-        child_size
-    }
-    fn draw(
-        &mut self,
-        state: &mut State,
-        extra_state: &mut ExtraState,
-        context: &mut Context,
-        drawer: &mut Drawer,
-        constraints: Box3,
-    ) {
-        context.standard_input_mut().button_clicked = *self.clicked.borrow_mut();
-        let size = self.bounding_rect.size().min(constraints.size());
-        self.bounding_rect = Box3::new_with_min_corner_and_size(constraints.min, size);
-        self.child_widget
-            .draw(state, extra_state, context, drawer, constraints);
-        context.event_handlers_mut().add_pointer_event_handler(
-            self.bounding_rect,
-            true,
-            Some(self.on_click.clone()),
-        )
-    }
+    crate::on_cursor_event(
+        on_click,
+        true,
+        set_cursor_on_hover(kapp_platform_common::Cursor::PointingHand, child_widget),
+    )
 }

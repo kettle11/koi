@@ -57,6 +57,9 @@ pub use expand::*;
 mod link;
 pub use link::*;
 
+mod cursor_event_handlers;
+pub use cursor_event_handlers::*;
+
 /// Just a colored rectangle for debug purposes
 pub struct Rectangle {
     pub size: Vec3,
