@@ -235,6 +235,10 @@ impl<T: NumericFloat, const DIM: usize> Plane<T, DIM> {
     pub fn signed_distance_to_point(&self, point: Vector<T, DIM>) -> T {
         self.normal.dot(point) - self.distance_along_normal
     }
+
+    pub fn mirror_point(&self, point: Vector<T, DIM>) -> Vector<T, DIM> {
+        point - (self.normal * self.signed_distance_to_point(point) * T::TWO)
+    }
 }
 
 /// A Frustum. Does not include a far plane
