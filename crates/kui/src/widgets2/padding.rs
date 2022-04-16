@@ -1,8 +1,13 @@
 use crate::*;
 
-pub fn padding<Data, Context: GetStandardStyle, ExtraState>(
-    child: impl Widget<Data, Context, ExtraState>,
-) -> impl Widget<Data, Context, ExtraState> {
+pub fn padding<
+    Data,
+    Context: GetStandardStyle,
+    ExtraState,
+    Child: Widget<Data, Context, ExtraState>,
+>(
+    child: Child,
+) -> Padding<Data, Context, ExtraState, Child> {
     Padding {
         child,
         amount: |c| c.standard_style().padding,
@@ -10,10 +15,10 @@ pub fn padding<Data, Context: GetStandardStyle, ExtraState>(
     }
 }
 
-pub fn padding_with_amount<Data, Context, ExtraState>(
+pub fn padding_with_amount<Data, Context, ExtraState, Child: Widget<Data, Context, ExtraState>>(
     amount: fn(&Context) -> f32,
-    child: impl Widget<Data, Context, ExtraState>,
-) -> impl Widget<Data, Context, ExtraState> {
+    child: Child,
+) -> Padding<Data, Context, ExtraState, Child> {
     Padding {
         child,
         amount,
@@ -25,6 +30,15 @@ pub struct Padding<Data, Context, ExtraState, Child: Widget<Data, Context, Extra
     child: Child,
     amount: fn(&Context) -> f32,
     phantom: std::marker::PhantomData<fn() -> (Data, Context, ExtraState)>,
+}
+
+impl<Data, Context, ExtraState, Child: Widget<Data, Context, ExtraState>>
+    Padding<Data, Context, ExtraState, Child>
+{
+    pub fn with_amount(mut self, amount: fn(&Context) -> f32) -> Self {
+        self.amount = amount;
+        self
+    }
 }
 
 impl<Data, Context, ExtraState, Child: Widget<Data, Context, ExtraState>>
