@@ -29,6 +29,25 @@ pub fn column<
     }
 }
 
+pub fn column_with_spacing<
+    State,
+    Context: GetStandardStyle,
+    ExtraState,
+    I: IntoWidgetChildren<State, Context, ExtraState>,
+    GetSpacing: Fn(&mut State, &Context) -> f32,
+>(
+    get_spacing: GetSpacing,
+    children: I,
+) -> Consecutive<State, Context, ExtraState, I::WidgetChildren, GetSpacing> {
+    Consecutive {
+        // This should be reversed for right-to-left.
+        direction: Vec3::Y,
+        children: children.into_widget_children(),
+        get_spacing,
+        phantom: std::marker::PhantomData,
+    }
+}
+
 pub fn row<
     State,
     Context: GetStandardStyle,

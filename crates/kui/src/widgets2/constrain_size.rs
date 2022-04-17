@@ -1,6 +1,19 @@
 use crate::*;
 
 /// Limits the childs size
+pub fn max_size<Data, Context, ExtraState>(
+    max_size: Vec3,
+    child: impl Widget<Data, Context, ExtraState>,
+) -> impl Widget<Data, Context, ExtraState> {
+    ConstrainSize {
+        child,
+        min_size: Vec3::ZERO,
+        max_size,
+        phantom: std::marker::PhantomData,
+    }
+}
+
+/// Limits the childs size
 pub fn max_width<Data, Context, ExtraState>(
     width: f32,
     child: impl Widget<Data, Context, ExtraState>,
