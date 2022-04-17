@@ -255,6 +255,7 @@ impl App {
                 delta_seconds_f64: fixed_time_step,
                 fixed_time_step,
                 discontinuity: false,
+                last_frame_time_ms: 0.0,
             },
         ));
 
@@ -339,6 +340,7 @@ impl App {
                 delta_seconds_f64: fixed_time_step,
                 fixed_time_step,
                 discontinuity: false,
+                last_frame_time_ms: 0.0,
             },
         ));
 
@@ -442,7 +444,9 @@ impl KoiState {
 
         let elapsed = self.start.elapsed();
         let time_elapsed_seconds = elapsed.as_secs_f64();
-        //klog::log!("TIME ELAPSED: {:?}", elapsed.as_millis());
+        self.world.get_singleton::<Time>().last_frame_time_ms =
+            (time_elapsed_seconds * 1000.0) as f32;
+
         self.start = Instant::now();
         self.time_acumulator += time_elapsed_seconds;
 

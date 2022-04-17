@@ -6,4 +6,5 @@ pub struct Time {
     pub delta_seconds_f64: f64,
     pub fixed_time_step: f64,
     pub discontinuity: bool,
+    pub last_frame_time_ms: f32,
 }
