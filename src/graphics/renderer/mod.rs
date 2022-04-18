@@ -215,6 +215,7 @@ impl<'a, 'b: 'a> Renderer<'a, 'b> {
         let size = viewport.size();
         render_pass.set_viewport(min.x as u32, min.y as u32, size.x as u32, size.y as u32);
         let brdf_lookup_texture = texture_assets.get(&renderer_info.brdf_lookup_table);
+
         Self {
             render_pass,
             // camera_info,
@@ -1150,70 +1151,4 @@ pub fn render_texture_to_screen(
     );
 
     render_pass.draw_triangles_without_buffer(1);
-}
-
-pub fn render_depth_only(
-    shaders: &Assets<Shader>,
-    meshes: &Assets<Mesh>,
-    command_buffer: &mut CommandBuffer,
-    framebuffer: &Framebuffer,
-    view_matrix: &Mat4,
-    projection_matrix: &Mat4,
-    viewport_size: u32,
-    renderables: &Renderables,
-) {
-    let mut render_pass =
-        command_buffer.begin_render_pass_with_framebuffer(framebuffer, Some((0.0, 0.0, 0.0, 0.0)));
-    render_pass.set_viewport(0, 0, viewport_size, viewport_size);
-
-    render_pass.set_depth_mask(true);
-
-    let depth_shader = shaders.get(&Shader::DEPTH_ONLY);
-
-    render_pass.set_pipeline(&depth_shader.pipeline);
-    render_pass.set_mat4_property(
-        &depth_shader
-            .pipeline
-            .get_mat4_property("p_views[0]")
-            .unwrap(),
-        view_matrix.as_array(),
-    );
-    render_pass.set_mat4_property(
-        &depth_shader
-            .pipeline
-            .get_mat4_property("p_projections[0]")
-            .unwrap(),
-        projection_matrix.as_array(),
-    );
-
-    let model_property = depth_shader.pipeline.get_mat4_property("p_model").unwrap();
-    let position_attribute = depth_shader
-        .pipeline
-        .get_vertex_attribute::<Vec3>("a_position")
-        .unwrap();
-
-    let culling_frustum = Frustum::from_matrix(*projection_matrix * *view_matrix);
-
-    for (global_transform, _, mesh_handle, render_flags, _, _) in renderables {
-        let render_flags = render_flags.cloned().unwrap_or(RenderFlags::DEFAULT);
-        if render_flags.includes_layer(RenderFlags::DEFAULT)
-            && !render_flags.includes_layer(RenderFlags::DO_NOT_CAST_SHADOWS)
-        {
-            let mesh = meshes.get(mesh_handle);
-            let should_render = render_flags.includes_layer(RenderFlags::IGNORE_CULLING)
-                || meshes.get(mesh_handle).bounding_box.map_or(true, |b| {
-                    frustum_with_bounding_box(&culling_frustum, global_transform.model(), b)
-                });
-
-            if should_render {
-                if let Some(gpu_mesh) = mesh.gpu_mesh.as_ref() {
-                    render_pass
-                        .set_mat4_property(&model_property, global_transform.model().as_array());
-                    render_pass
-                        .set_vertex_attribute(&position_attribute, Some(&gpu_mesh.positions));
-                    render_pass.draw_triangles(gpu_mesh.triangle_count, &gpu_mesh.index_buffer);
-                }
-            }
-        }
-    }
 }
