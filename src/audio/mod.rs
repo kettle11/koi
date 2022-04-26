@@ -28,7 +28,7 @@ pub fn setup_audio(world: &mut World) {
 
     const QUIET_AMPLITUDE: f32 = 0.001;
 
-    let spatial_scene = oddio::SpatialScene::new(SAMPLE_RATE, 0.1);
+    let spatial_scene = oddio::SpatialScene::new();
     let mixer = oddio::Reinhard::new(oddio::Adapt::new(
         spatial_scene,
         QUIET_AMPLITUDE / 2.0f32.sqrt(),
