@@ -143,7 +143,7 @@ impl Entities {
     }
 
     pub fn len(&self) -> usize {
-        self.generation_and_entity_location.len()
+        self.generation_and_entity_location.len() - self.free_entities.len()
     }
 }
 
