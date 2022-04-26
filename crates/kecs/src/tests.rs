@@ -51,7 +51,7 @@ fn single_query() {
 fn multicomponent_singleton_query() {
     let mut world = World::new();
     world.spawn((A, B));
-    (|(a, b): (&A, &B)| {}).run(&world);
+    (|(_a, _b): (&A, &B)| {}).run(&world);
 }
 
 #[test]

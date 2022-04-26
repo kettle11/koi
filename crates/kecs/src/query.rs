@@ -469,32 +469,35 @@ impl<Q: QueryParameterTrait> QueryParameterTrait for Option<Q> {
 }
 
 impl<'a, Q: QueryParameterFetchTrait<'a>> QueryParameterFetchTrait<'a> for Option<Q> {
-    type FetchResult = Option<Q::FetchResult>;
+    type FetchResult = (usize, Option<Q::FetchResult>);
     fn fetch(
         archetype: &'a Archetype,
         channel_index: Option<usize>,
     ) -> Result<Self::FetchResult, KecsError> {
-        Ok(if let Some(channel_index) = channel_index {
-            Some(Q::fetch(archetype, Some(channel_index))?)
-        } else {
-            None
-        })
+        Ok((
+            archetype.entities.len(),
+            if let Some(channel_index) = channel_index {
+                Some(Q::fetch(archetype, Some(channel_index))?)
+            } else {
+                None
+            },
+        ))
     }
 }
 
-impl<'a, T: GetIteratorsTrait<'a>> GetIteratorsTrait<'a> for Option<T> {
+impl<'a, T: GetIteratorsTrait<'a>> GetIteratorsTrait<'a> for (usize, Option<T>) {
     type Iterator = OptionIterator<T::Iterator>;
     type IteratorMut = OptionIterator<T::IteratorMut>;
     fn get_iterator(&'a self) -> Self::Iterator {
-        OptionIterator::new(self.as_ref().map(|s| s.get_iterator()))
+        OptionIterator::new(self.0, self.1.as_ref().map(|s| s.get_iterator()))
     }
     fn get_iterator_mut(&'a mut self) -> Self::IteratorMut {
-        OptionIterator::new(self.as_mut().map(|s| s.get_iterator_mut()))
+        OptionIterator::new(self.0, self.1.as_mut().map(|s| s.get_iterator_mut()))
     }
     fn get_components(&'a self, index: usize) -> <Self::Iterator as Iterator>::Item {
-        self.as_ref().map(|i| i.get_components(index))
+        self.1.as_ref().map(|i| i.get_components(index))
     }
     fn get_components_mut(&'a mut self, index: usize) -> <Self::IteratorMut as Iterator>::Item {
-        self.as_mut().map(|i| i.get_components_mut(index))
+        self.1.as_mut().map(|i| i.get_components_mut(index))
     }
 }

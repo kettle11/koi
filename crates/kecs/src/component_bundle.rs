@@ -198,16 +198,3 @@ pub(crate) fn merge_sorted_iter<T: Ord>(
     }
     output
 }
-
-#[test]
-fn merge_sorted() {
-    let nums = [0, 1, 5];
-    let other_nums = [2, 3, 4, 8];
-
-    let result = merge_sorted_iter(
-        nums.len() + other_nums.len(),
-        nums.iter(),
-        other_nums.iter(),
-    );
-    // assert_eq!(result, vec![0, 1, 2, 3, 4, 5, 8]);
-}
