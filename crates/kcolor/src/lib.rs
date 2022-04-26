@@ -195,6 +195,14 @@ impl Color {
         }
         (in_space.x, in_space.y, in_space.z)
     }
+
+    pub fn xyza(self) -> (f32, f32, f32, f32) {
+        (self.x, self.y, self.z, self.alpha)
+    }
+
+    pub fn from_xyza(x: f32, y: f32, z: f32, alpha: f32) -> Self {
+        Self { x, y, z, alpha }
+    }
 }
 
 impl From<(f32, f32, f32, f32)> for Color {
