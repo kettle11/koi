@@ -5,6 +5,7 @@ use std::sync::mpsc;
 
 #[derive(Clone)]
 pub struct Shader {
+    pub name: &'static str,
     pub pipeline: Pipeline,
     #[cfg(feature = "xr")]
     pub multiview_pipeline: Option<Pipeline>, // pub transparent: bool,
@@ -177,13 +178,17 @@ pub(crate) fn initialize_static_shaders(graphics: &mut Graphics, shaders: &mut A
 
     shaders.add_and_leak(
         graphics
-            .new_shader(
+            .new_shader_with_name(
+                "UNLIT_TRANSPARENT",
                 UNLIT_SHADER_SOURCE,
                 // Render front and back as this may be used for sprites
                 // that will be flipped.
                 PipelineSettings {
                     faces_to_render: FacesToRender::FrontAndBack,
                     blending: Some((BlendFactor::SourceAlpha, BlendFactor::OneMinusSourceAlpha)),
+                    // LessOrEqual allows transparent overlays to be rendered with the same mesh
+                    // as the thing being overlaid.
+                    depth_test: DepthTest::LessOrEqual,
                     ..Default::default()
                 },
             )

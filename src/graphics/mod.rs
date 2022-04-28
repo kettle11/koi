@@ -356,6 +356,7 @@ impl GraphicsInner {
             // For now all pipelines just have alpha blending by default.
             .blending(pipeline_settings.blending)
             .faces_to_render(pipeline_settings.faces_to_render)
+            .depth_test(pipeline_settings.depth_test)
             .build()
             .map_err(PipelineError::PipelineCompilationError)
     }
@@ -364,6 +365,15 @@ impl GraphicsInner {
     /// and fragment sections.
     pub fn new_shader(
         &mut self,
+        source: &str,
+        pipeline_settings: PipelineSettings,
+    ) -> Result<Shader, PipelineError> {
+        self.new_shader_with_name("", source, pipeline_settings)
+    }
+
+    pub fn new_shader_with_name(
+        &mut self,
+        name: &'static str,
         source: &str,
         pipeline_settings: PipelineSettings,
     ) -> Result<Shader, PipelineError> {
@@ -382,6 +392,7 @@ impl GraphicsInner {
         };
 
         Ok(Shader {
+            name,
             pipeline,
             #[cfg(feature = "xr")]
             multiview_pipeline,
