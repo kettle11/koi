@@ -87,11 +87,21 @@ impl Shader {
     pub const FULLSCREEN_QUAD: Handle<Shader> = Handle::<Shader>::new_with_just_index(10);
 }
 
+pub static UNLIT_SHADER_SOURCE: &'static str = include_str!("built_in_shaders/unlit.glsl");
+pub static PHYSICALLY_BASED_SHADER_SOURCE: &'static str =
+    include_str!("built_in_shaders/physically_based.glsl");
+pub static DEPTH_ONLY_SHADER_SOURCE: &'static str =
+    include_str!("built_in_shaders/depth_only.glsl");
+pub static FULLSCREEN_QUAD_SHADER_SOURCE: &'static str =
+    include_str!("built_in_shaders/fullscreen_quad.glsl");
+pub static UNLIT_UI_SHADER_SOURCE: &'static str = include_str!("built_in_shaders/unlit_ui.glsl");
+pub static SKYBOX_SHADER_SOURCE: &'static str = include_str!("built_in_shaders/skybox.glsl");
+
 pub(crate) fn initialize_static_shaders(graphics: &mut Graphics, shaders: &mut Assets<Shader>) {
     shaders.add_and_leak(
         graphics
             .new_shader(
-                include_str!("built_in_shaders/unlit.glsl"),
+                UNLIT_SHADER_SOURCE,
                 // Render front and back as this may be used for sprites
                 // that will be flipped.
                 PipelineSettings {
@@ -107,7 +117,7 @@ pub(crate) fn initialize_static_shaders(graphics: &mut Graphics, shaders: &mut A
     shaders.add_and_leak(
         graphics
             .new_shader(
-                include_str!("built_in_shaders/physically_based.glsl"),
+                PHYSICALLY_BASED_SHADER_SOURCE,
                 PipelineSettings {
                     faces_to_render: FacesToRender::Front,
                     blending: None,
@@ -121,7 +131,7 @@ pub(crate) fn initialize_static_shaders(graphics: &mut Graphics, shaders: &mut A
     shaders.add_and_leak(
         graphics
             .new_shader(
-                include_str!("built_in_shaders/physically_based.glsl"),
+                PHYSICALLY_BASED_SHADER_SOURCE,
                 PipelineSettings {
                     faces_to_render: FacesToRender::Front,
                     blending: Some((BlendFactor::SourceAlpha, BlendFactor::OneMinusSourceAlpha)),
@@ -135,7 +145,7 @@ pub(crate) fn initialize_static_shaders(graphics: &mut Graphics, shaders: &mut A
     shaders.add_and_leak(
         graphics
             .new_shader(
-                include_str!("built_in_shaders/depth_only.glsl"),
+                DEPTH_ONLY_SHADER_SOURCE,
                 PipelineSettings {
                     faces_to_render: FacesToRender::FrontAndBack,
                     ..Default::default()
@@ -147,7 +157,7 @@ pub(crate) fn initialize_static_shaders(graphics: &mut Graphics, shaders: &mut A
     shaders.add_and_leak(
         graphics
             .new_shader(
-                include_str!("built_in_shaders/unlit_ui.glsl"),
+                UNLIT_UI_SHADER_SOURCE,
                 PipelineSettings {
                     faces_to_render: FacesToRender::FrontAndBack,
                     blending: Some((BlendFactor::SourceAlpha, BlendFactor::OneMinusSourceAlpha)),
@@ -160,10 +170,7 @@ pub(crate) fn initialize_static_shaders(graphics: &mut Graphics, shaders: &mut A
 
     shaders.add_and_leak(
         graphics
-            .new_shader(
-                include_str!("built_in_shaders/skybox.glsl"),
-                PipelineSettings::default(),
-            )
+            .new_shader(SKYBOX_SHADER_SOURCE, PipelineSettings::default())
             .unwrap(),
         &Shader::SKY_BOX,
     );
@@ -171,7 +178,7 @@ pub(crate) fn initialize_static_shaders(graphics: &mut Graphics, shaders: &mut A
     shaders.add_and_leak(
         graphics
             .new_shader(
-                include_str!("built_in_shaders/unlit.glsl"),
+                UNLIT_SHADER_SOURCE,
                 // Render front and back as this may be used for sprites
                 // that will be flipped.
                 PipelineSettings {
@@ -187,7 +194,7 @@ pub(crate) fn initialize_static_shaders(graphics: &mut Graphics, shaders: &mut A
     shaders.add_and_leak(
         graphics
             .new_shader(
-                include_str!("built_in_shaders/physically_based.glsl"),
+                PHYSICALLY_BASED_SHADER_SOURCE,
                 PipelineSettings {
                     faces_to_render: FacesToRender::FrontAndBack,
                     blending: None,
@@ -201,7 +208,7 @@ pub(crate) fn initialize_static_shaders(graphics: &mut Graphics, shaders: &mut A
     shaders.add_and_leak(
         graphics
             .new_shader(
-                include_str!("built_in_shaders/physically_based.glsl"),
+                PHYSICALLY_BASED_SHADER_SOURCE,
                 PipelineSettings {
                     faces_to_render: FacesToRender::FrontAndBack,
                     blending: Some((BlendFactor::SourceAlpha, BlendFactor::OneMinusSourceAlpha)),
@@ -215,7 +222,7 @@ pub(crate) fn initialize_static_shaders(graphics: &mut Graphics, shaders: &mut A
     shaders.add_and_leak(
         graphics
             .new_shader(
-                include_str!("built_in_shaders/fullscreen_quad.glsl"),
+                FULLSCREEN_QUAD_SHADER_SOURCE,
                 PipelineSettings {
                     faces_to_render: FacesToRender::Front,
                     depth_test: DepthTest::AlwaysPass,
