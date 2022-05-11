@@ -81,19 +81,7 @@ impl PlatformApplicationTrait for PlatformApplication {
     }
 
     fn get_window_scale(&mut self, window_id: WindowId) -> f64 {
-        let (logical_width, _logical_height) = self.get_window_size(window_id);
-        let mut physical_width = 0;
-        let mut _physical_height = 0;
-
-        // This call returns the actual pixel widths that would be in a framebuffer.
-        unsafe {
-            SDL_GL_GetDrawableSize(
-                window_id.raw() as *mut SDL_Window,
-                &mut physical_width,
-                &mut _physical_height,
-            );
-        }
-        logical_width as f64 / physical_width as f64
+        get_window_scale(window_id)
     }
 
     fn fullscreen_window(&mut self, window_id: WindowId) {
@@ -355,11 +343,14 @@ fn process_event(callback: &mut Box<dyn FnMut(Event)>, event: &SDL_Event) {
                     SDL_WINDOWEVENT_CLOSE => callback(Event::WindowCloseRequested { window_id }),
                     // Presently SDL will block during resizing, which isn't ideal and doesn't match the other
                     // `kapp` platforms. There are ways to alleviate it, but investigation is required.
-                    SDL_WINDOWEVENT_SIZE_CHANGED => callback(Event::WindowResized {
-                        window_id,
-                        width: window_event.data1 as u32,
-                        height: window_event.data2 as u32,
-                    }),
+                    SDL_WINDOWEVENT_SIZE_CHANGED => {
+                        let window_scale = get_window_scale(window_id);
+                        callback(Event::WindowResized {
+                            window_id,
+                            width: (window_event.data1 as f64 * window_scale) as u32,
+                            height: (window_event.data2 as f64 * window_scale) as u32,
+                        })
+                    }
                     _ => {}
                 }
             }
@@ -385,6 +376,10 @@ fn process_event(callback: &mut Box<dyn FnMut(Event)>, event: &SDL_Event) {
             SDL_MOUSEMOTION => {
                 let mouse_motion_event = event.motion;
 
+                let window_id =
+                    WindowId::new(SDL_GetWindowFromID(mouse_motion_event.windowID) as *mut c_void);
+                let window_scale = get_window_scale(window_id);
+
                 // Are milliseconds the correct units?
                 let timestamp = Duration::from_millis(mouse_motion_event.timestamp as u64);
                 let source = match mouse_motion_event.which {
@@ -394,13 +389,13 @@ fn process_event(callback: &mut Box<dyn FnMut(Event)>, event: &SDL_Event) {
 
                 // Do these need to be scaled by the window DPI?
                 callback(Event::MouseMotion {
-                    delta_x: mouse_motion_event.xrel as f64,
-                    delta_y: mouse_motion_event.yrel as f64,
+                    delta_x: mouse_motion_event.xrel as f64 * window_scale,
+                    delta_y: mouse_motion_event.yrel as f64 * window_scale,
                     timestamp,
                 });
                 callback(Event::PointerMoved {
-                    x: mouse_motion_event.x as f64,
-                    y: mouse_motion_event.y as f64,
+                    x: mouse_motion_event.x as f64 * window_scale,
+                    y: mouse_motion_event.y as f64 * window_scale,
                     source,
                     id: 0,
                     timestamp,
@@ -408,6 +403,9 @@ fn process_event(callback: &mut Box<dyn FnMut(Event)>, event: &SDL_Event) {
             }
             SDL_MOUSEBUTTONDOWN => {
                 let event = event.button;
+
+                let window_id = WindowId::new(SDL_GetWindowFromID(event.windowID) as *mut c_void);
+                let window_scale = get_window_scale(window_id);
 
                 let source = match event.which {
                     SDL_TOUCH_MOUSEID => PointerSource::Touch,
@@ -426,8 +424,8 @@ fn process_event(callback: &mut Box<dyn FnMut(Event)>, event: &SDL_Event) {
                 };
 
                 callback(Event::PointerDown {
-                    x: event.x as f64,
-                    y: event.y as f64,
+                    x: event.x as f64 * window_scale,
+                    y: event.y as f64 * window_scale,
                     source,
                     button,
                     id: 0,
@@ -452,6 +450,9 @@ fn process_event(callback: &mut Box<dyn FnMut(Event)>, event: &SDL_Event) {
             SDL_MOUSEBUTTONUP => {
                 let event = event.button;
 
+                let window_id = WindowId::new(SDL_GetWindowFromID(event.windowID) as *mut c_void);
+                let window_scale = get_window_scale(window_id);
+
                 let source = match event.which {
                     SDL_TOUCH_MOUSEID => PointerSource::Touch,
                     _ => PointerSource::Mouse,
@@ -468,8 +469,8 @@ fn process_event(callback: &mut Box<dyn FnMut(Event)>, event: &SDL_Event) {
                     _ => PointerButton::Unknown,
                 };
                 callback(Event::PointerUp {
-                    x: event.x as f64,
-                    y: event.y as f64,
+                    x: event.x as f64 * window_scale,
+                    y: event.y as f64 * window_scale,
                     source,
                     button,
                     id: 0,
@@ -477,8 +478,8 @@ fn process_event(callback: &mut Box<dyn FnMut(Event)>, event: &SDL_Event) {
                 });
                 if event.clicks == 2 {
                     callback(Event::DoubleClickUp {
-                        x: event.x as f64,
-                        y: event.y as f64,
+                        x: event.x as f64 * window_scale,
+                        y: event.y as f64 * window_scale,
                         button,
                         timestamp,
                     });
@@ -581,4 +582,30 @@ impl PlatformUserEventSenderTrait for PlatformUserEventSender {
             let _result = SDL_PushEvent(&mut user_event as *mut _);
         }
     }
+}
+
+fn get_window_scale(window_id: WindowId) -> f64 {
+    let mut physical_width = 0;
+    let mut _physical_height = 0;
+    unsafe {
+        SDL_GL_GetDrawableSize(
+            window_id.raw() as *mut SDL_Window,
+            &mut physical_width,
+            &mut _physical_height,
+        );
+    }
+
+    let mut logical_width = 0;
+    let mut _logical_height = 0;
+
+    // This call returns the actual pixel widths that would be in a framebuffer.
+    unsafe {
+        SDL_GetWindowSize(
+            window_id.raw() as *mut SDL_Window,
+            &mut logical_width,
+            &mut _logical_height,
+        );
+    }
+
+    physical_width as f64 / logical_width as f64
 }
