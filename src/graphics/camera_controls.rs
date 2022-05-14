@@ -125,15 +125,15 @@ pub fn update_camera_controls(
         let mut pan = Vec2::ZERO;
 
         // Panning
-        if input.key(Key::LeftShift) || input.key(Key::RightShift) || input.key(Key::Shift) {
-            let scale = 0.005;
-            pitch = -input.scroll().1 as f32 * scale;
-            yaw = -input.scroll().0 as f32 * scale;
-        } else {
-            let scale = 0.0125;
-            pan.x -= -input.scroll().0 as f32 * scale;
-            pan.y -= -input.scroll().1 as f32 * scale;
-        };
+        //  if input.key(Key::LeftShift) || input.key(Key::RightShift) || input.key(Key::Shift) {
+        //      let scale = 0.005;
+        //      pitch = -input.scroll().1 as f32 * scale;
+        //      yaw = -input.scroll().0 as f32 * scale;
+        //  } else {
+        let scale = 0.0125;
+        pan.x -= -input.scroll().0 as f32 * scale;
+        pan.y -= -input.scroll().1 as f32 * scale;
+        // };
 
         if controls.touch_rotate_enabled {
             if input.touch_state.touches.len() == 1 {
