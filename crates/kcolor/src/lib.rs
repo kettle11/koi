@@ -20,6 +20,17 @@ pub struct Color {
     pub alpha: FType,
 }
 
+impl Eq for Color {}
+
+impl std::hash::Hash for Color {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        self.x.to_ne_bytes().hash(state);
+        self.y.to_ne_bytes().hash(state);
+        self.z.to_ne_bytes().hash(state);
+        self.alpha.to_ne_bytes().hash(state);
+    }
+}
+
 impl kecs::ComponentTrait for Color {
     fn clone_components(
         _entity_migrator: &mut kecs::EntityMigrator,
