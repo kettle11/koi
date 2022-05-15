@@ -929,6 +929,8 @@ impl<'a> RustGenerator {
                     }
                     write!(output, "        }}\n\n").unwrap();
 
+                    write!(output, "        deserializer.end_object();\n");
+
                     write!(output, "        Some(Self {{\n").unwrap();
                     for property in s.properties.iter() {
                         let mut optional = false;

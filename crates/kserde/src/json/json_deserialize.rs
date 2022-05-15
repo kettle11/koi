@@ -126,6 +126,12 @@ impl<'a, CONTEXT> Deserializer<'a> for JSONDeserializer<'a, CONTEXT> {
         }
     }
 
+    fn end_object(&mut self) {
+        self.skip_whitespace();
+        self.recursive_depth -= 1;
+        self.iter.next();
+    }
+
     fn has_property(&mut self) -> Option<Cow<'a, str>> {
         // '{' already parsed
         self.skip_whitespace();
@@ -136,10 +142,7 @@ impl<'a, CONTEXT> Deserializer<'a> for JSONDeserializer<'a, CONTEXT> {
             (_, '}') => {
                 if self.recursive_depth == 0 {
                     return None;
-                } else {
-                    self.recursive_depth -= 1
-                };
-                self.iter.next();
+                }
                 None?
             }
             _ => {}
@@ -173,6 +176,12 @@ impl<'a, CONTEXT> Deserializer<'a> for JSONDeserializer<'a, CONTEXT> {
         }
     }
 
+    fn end_array(&mut self) {
+        self.skip_whitespace();
+        self.recursive_depth -= 1;
+        self.iter.next();
+    }
+
     fn has_array_value(&mut self) -> bool {
         // '[' already parsed
         self.skip_whitespace();
@@ -184,10 +193,7 @@ impl<'a, CONTEXT> Deserializer<'a> for JSONDeserializer<'a, CONTEXT> {
             Some((_, ']')) => {
                 if self.recursive_depth == 0 {
                     return false;
-                } else {
-                    self.recursive_depth -= 1
-                };
-                self.iter.next();
+                }
                 false
             }
             _ => true,

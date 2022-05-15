@@ -56,6 +56,35 @@ thread_local! {
         f
         "#);
 
+    static DELETE_FROM_DATABASE: JSObjectFromString = JSObjectFromString::new(r#"
+        function f (fileName) {
+            let promise = Promise.resolve(this.kwasm_db).then(function(e) {
+                let db = e.target.result;
+             
+                let transaction = db.transaction("array_buffers", "readonly");
+                let array_buffers = transaction.objectStore("array_buffers");
+                let request = array_buffers.delete(fileName);
+              
+                let promise = new Promise(function(resolve, reject) {
+                    request.onsuccess = function(e) {
+                        if (e.target.result) {
+                            resolve(null);
+                        } else {
+                            resolve(null);
+                        }
+                    };
+                    request.onerror = function() {
+                        console.log("Database Error", request.error);
+                        reject(request.error);
+                    };
+                });
+                return promise;
+            });
+            return promise;
+        }
+        f
+        "#);
+
     static GET_FROM_DATABASE: JSObjectFromString = JSObjectFromString::new(r#"
         function f (fileName) {
             let promise = Promise.resolve(this.kwasm_db).then(function(e) {
@@ -130,4 +159,10 @@ pub async fn load_bytes_with_key(key: &str) -> Option<Vec<u8>> {
     let data = js_future.await;
     let data: Option<Vec<u8>> = *data.downcast().unwrap();
     data
+}
+
+pub async fn delete_with_key(key: &str) {
+    setup_database();
+    let js_name = JSString::new(key);
+    DELETE_FROM_DATABASE.with(|f| f.call_raw(&[js_name.index()]));
 }

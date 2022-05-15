@@ -352,7 +352,8 @@ pub fn kserde_deserialize_impl(value: &Value) -> String {
                 r#"
                 let enum_name = deserializer.has_property()?;
                 deserializer.begin_object().then(|| {{}})?;
-
+                deserializer.end_object();
+                
                 Some(match &*enum_name {{
                     {enum_body_inner}
                     _ => None?
@@ -377,7 +378,9 @@ pub fn kserde_deserialize_impl(value: &Value) -> String {
         r#"impl<{generic_lifetimes}{generic_types}{generic_consts}> kserde::Deserialize<'kserde, KDes> for {name}{generic_args} {where_clause} {{
     fn deserialize(deserializer: &mut KDes) -> Option<Self> {{
         deserializer.begin_object().then(|| {{}})?;
-        {body}
+       let result = {{{body}}};
+       deserializer.end_object();
+       result
     }}
 }}"#
     )

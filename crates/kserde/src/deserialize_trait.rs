@@ -15,11 +15,15 @@ pub trait Deserializer<'a> {
     // how to make that work without generic associated types,
     // so these functions are here instead.
     fn begin_object(&mut self) -> bool;
+    fn end_object(&mut self);
+
     /// When this returns `None` we're at the end of the object or an error was encountered.
     /// The name of the property is returned.
     fn has_property(&mut self) -> Option<Cow<'a, str>>;
 
     fn begin_array(&mut self) -> bool;
+    fn end_array(&mut self);
+
     /// When this returns `None` we're at the end of the array or an error was encountered.
     fn has_array_value(&mut self) -> bool;
     fn get_context_mut(&mut self) -> &mut Self::Context;
@@ -114,6 +118,7 @@ impl<'a, D: Deserializer<'a>, T: Deserialize<'a, D>> Deserialize<'a, D> for Vec<
         while deserializer.has_array_value() {
             vec.push(T::deserialize(deserializer)?)
         }
+        deserializer.end_array();
         Some(vec)
     }
 }
@@ -128,6 +133,7 @@ impl<'a, D: Deserializer<'a>, T: Deserialize<'a, D>> Deserialize<'a, D>
             let t = T::deserialize(deserializer)?;
             hash_map.insert(key.to_string(), t);
         }
+        deserializer.end_object();
         Some(hash_map)
     }
 }
@@ -141,7 +147,7 @@ impl<'a, D: Deserializer<'a>, T: Deserialize<'a, D>, const COUNT: usize> Deseria
         // This implementation is pretty funky.
         // It feels like this behavior should be handled by something from the standard library.
         let mut a = std::mem::MaybeUninit::<[T; COUNT]>::uninit();
-        unsafe {
+        let result = unsafe {
             for i in 0..COUNT {
                 if deserializer.has_array_value() {
                     let t = T::deserialize(deserializer);
@@ -167,7 +173,9 @@ impl<'a, D: Deserializer<'a>, T: Deserialize<'a, D>, const COUNT: usize> Deseria
             } else {
                 None
             }
-        }
+        };
+        deserializer.end_array();
+        result
     }
 }
 
@@ -189,6 +197,7 @@ impl<'a, D: Deserializer<'a>, A: Deserialize<'a, D>> Deserialize<'a, D> for (A,)
             return None;
         }
 
+        deserializer.end_object();
         Some((a,))
     }
 }
@@ -213,6 +222,7 @@ impl<'a, D: Deserializer<'a>, A: Deserialize<'a, D>, B: Deserialize<'a, D>> Dese
             return None;
         }
 
+        deserializer.end_object();
         Some((a, b))
     }
 }
@@ -248,6 +258,8 @@ impl<
         } else {
             return None;
         }
+
+        deserializer.end_object();
 
         Some((a, b, c))
     }

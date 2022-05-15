@@ -31,6 +31,8 @@ impl<'a, D: Deserializer<'a>> Deserialize<'a, D> for Person {
             }
         }
 
+        deserializer.end_object();
+
         Some(Self {
             name: name?,
             age: age?,
