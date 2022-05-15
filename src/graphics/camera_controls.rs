@@ -13,7 +13,7 @@ pub fn camera_controls_plugin() -> Plugin {
 #[derive(Clone, SerializeDeserialize)]
 pub enum CameraControlsMode {
     Fly,
-    Orbit { target: Vec3 },
+    Orbit,
 }
 
 #[derive(Clone, Component)]
@@ -27,6 +27,7 @@ pub struct CameraControls {
     pub panning_scale: f32,
     pub touch_rotate_enabled: bool,
     pub enabled: bool,
+    pub orbit_target: Vec3,
 }
 
 impl Default for CameraControls {
@@ -47,6 +48,7 @@ impl CameraControls {
             panning_scale: 1.0,
             touch_rotate_enabled: true,
             enabled: true,
+            orbit_target: Vec3::ZERO,
         }
     }
 
@@ -165,8 +167,8 @@ pub fn update_camera_controls(
         let offset = left * pan.x + up * pan.y;
 
         match &mut controls.mode {
-            CameraControlsMode::Orbit { target } => {
-                *target += offset;
+            CameraControlsMode::Orbit => {
+                controls.orbit_target += offset;
                 transform.position += offset;
             }
             _ => {
@@ -191,9 +193,10 @@ pub fn update_camera_controls(
 
                 transform.rotation = rotation_yaw * transform.rotation * rotation_pitch;
                 transform.position += controls.velocity * time.delta_seconds_f64 as f32;
+                controls.orbit_target += controls.velocity * time.delta_seconds_f64 as f32;
             }
-            CameraControlsMode::Orbit { target } => {
-                let diff_here = transform.position - *target;
+            CameraControlsMode::Orbit => {
+                let diff_here = transform.position - controls.orbit_target;
 
                 match camera.get_projection_mode() {
                     ProjectionMode::Orthographic => {
@@ -209,7 +212,7 @@ pub fn update_camera_controls(
                 let rotation_pitch = Quat::from_yaw_pitch_roll(0., pitch, 0.);
                 let rotation_yaw = Quat::from_yaw_pitch_roll(yaw, 0., 0.);
 
-                let diff = transform.position - *target;
+                let diff = transform.position - controls.orbit_target;
                 let diff_length = diff.length();
 
                 let rotation = rotation_yaw * transform.rotation * rotation_pitch;
@@ -217,9 +220,9 @@ pub fn update_camera_controls(
                 let new_direction = rotation * -Vec3::Z;
                 let new_up = rotation * Vec3::Y;
 
-                *target += controls.velocity * time.delta_seconds_f64 as f32;
+                controls.orbit_target += controls.velocity * time.delta_seconds_f64 as f32;
 
-                transform.position = *target - new_direction * diff_length;
+                transform.position = controls.orbit_target - new_direction * diff_length;
                 transform.rotation = Quat::from_forward_up(new_direction, new_up);
             }
         }
