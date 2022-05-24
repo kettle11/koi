@@ -161,7 +161,7 @@ pub async fn load_bytes_with_key(key: &str) -> Option<Vec<u8>> {
     data
 }
 
-pub async fn delete_with_key(key: &str) {
+pub fn delete_with_key(key: &str) {
     setup_database();
     let js_name = JSString::new(key);
     DELETE_FROM_DATABASE.with(|f| f.call_raw(&[js_name.index()]));
