@@ -28,10 +28,13 @@ pub fn on_cursor_event<
                 kapp_platform_common::Event::PointerDown { .. } => {
                     if pointer_event_info.in_hitbox {
                         cursor_event_state.borrow_mut().clicked = true;
-                        (on_click)(state)
+                        //(on_click)(state)
                     }
                 }
                 kapp_platform_common::Event::PointerUp { .. } => {
+                    if pointer_event_info.in_hitbox {
+                        (on_click)(state)
+                    }
                     cursor_event_state.borrow_mut().clicked = false
                 }
                 _ => {}

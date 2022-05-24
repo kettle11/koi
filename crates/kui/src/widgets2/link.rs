@@ -34,22 +34,15 @@ pub fn open_url(url: &str) {
             static OPEN_URL: kwasm::JSObjectFromString = kwasm::JSObjectFromString::new(r#"
             function open_url (url_index) {
                 let url = self.kwasm_get_object(url_index);
+                window.open(url, '_blank');
                 console.log('OPENING URL:' + url);
                 console.trace();
-                let window_opened = window.open(url, '_blank');
-                if (window_opened == null || typeof(window_opened) =='undefined') {
-                    console.log('Could not open window')
-                }
             }
             open_url"#);
         }
 
         let js_url = kwasm::JSString::new(url);
 
-        OPEN_URL.with(|v| {
-            v.call_raw(&[
-                js_url.index(),
-            ])
-        });
+        OPEN_URL.with(|v| v.call_raw(&[js_url.index()]));
     }
 }
