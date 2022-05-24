@@ -11,10 +11,7 @@ pub fn link<
     on_cursor_event(
         move |state| {
             let url = (get_url)(state);
-            println!("CLICKED URL: {:?}", url);
-
-            #[cfg(target_arch = "wasm32")]
-            kwasm::libraries::eval(&format!("window.open(\"{}\")", url));
+            open_url(url);
         },
         true,
         set_cursor_on_hover(
@@ -28,4 +25,31 @@ pub fn link<
             ))),
         ),
     )
+}
+
+pub fn open_url(url: &str) {
+    #[cfg(target_arch = "wasm32")]
+    {
+        thread_local! {
+            static OPEN_URL: kwasm::JSObjectFromString = kwasm::JSObjectFromString::new(r#"
+            function open_url (url_index) {
+                let url = self.kwasm_get_object(url_index);
+                console.log('OPENING URL:' + url);
+                console.trace();
+                let window_opened = window.open(url, '_blank');
+                if (window_opened == null || typeof(window_opened) =='undefined') {
+                    console.log('Could not open window')
+                }
+            }
+            open_url"#);
+        }
+
+        let js_url = kwasm::JSString::new(url);
+
+        OPEN_URL.with(|v| {
+            v.call_raw(&[
+                js_url.index(),
+            ])
+        });
+    }
 }
