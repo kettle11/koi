@@ -69,7 +69,7 @@ impl Fonts {
             }
         }
 
-        #[cfg(target_arch = "wasm32")]
+        #[cfg(all(target_arch = "wasm32", feature = "default_font"))]
         {
             self.new_font_from_bytes(include_bytes!("../Inter-Regular.otf"))
                 .unwrap();

@@ -8,7 +8,7 @@ license = "Zlib OR Apache-2.0 OR MIT"
 members = ["crates/*"]
 
 [features]
-default = ["audio", "graphics", "drawer2d", "imagine_png", "jpeg", "gltf", "ui", "hdri", "physics", "gl", "kapp"]
+default = ["audio", "graphics", "drawer2d", "imagine_png", "jpeg", "gltf", "ui", "hdri", "physics", "gl", "kapp", "default_font"]
 SDL = ["kapp/SDL", "kaudio/SDL", "kgraphics/SDL"]
 graphics = []
 gl = ["kgraphics/gl"]
@@ -23,6 +23,7 @@ hdri = ["hdrldr"]
 physics = ["kphysics"]
 imagine_png = ["imagine"]
 tracing_allocator = ["ktracing_allocator"]
+default_font = ["kui/default_font"]
 
 [dependencies]
 kapp = {path = "crates/kapp", default-features=false, features=["kserde"], optional=true}
@@ -40,7 +41,7 @@ kphysics = {path = "crates/kphysics",  optional = true}
 kgraphics = {path = "crates/kgraphics",  optional = true, default-features=false}
 kaudio = {path = "crates/kaudio",  optional = true}
 kgltf = {path = "crates/kgltf", optional = true}
-kui = {path = "crates/kui", optional = true}
+kui = {path = "crates/kui", optional = true, default-features=false}
 
 oorandom = "11.1.3"
 png = {version = "0.17.0", optional = true}
