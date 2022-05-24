@@ -28,6 +28,7 @@ pub fn link<
 }
 
 pub fn open_url(url: &str) {
+    println!("OPENING URL: {:?}", url);
     #[cfg(target_arch = "wasm32")]
     {
         thread_local! {
