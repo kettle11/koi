@@ -69,11 +69,13 @@ impl<
         context: &mut Context,
         min_and_max_size: MinAndMaxSize,
     ) -> Vec3 {
-        let cursor_event_state = self.cursor_event_state.borrow_mut();
-        let standard_input = context.standard_input_mut();
-        standard_input.button_clicked = cursor_event_state.clicked;
-        standard_input.element_hovered = cursor_event_state.hovered;
-
+        {
+            let cursor_event_state = self.cursor_event_state.borrow_mut();
+            let standard_input = context.standard_input_mut();
+            standard_input.button_clicked = cursor_event_state.clicked;
+            standard_input.element_hovered = cursor_event_state.hovered;
+        }
+        
         let child_size = self
             .child_widget
             .layout(state, extra_state, context, min_and_max_size);
@@ -91,10 +93,12 @@ impl<
         drawer: &mut Drawer,
         constraints: Box3,
     ) {
-        let cursor_event_state = self.cursor_event_state.borrow_mut();
-        let standard_input = context.standard_input_mut();
-        standard_input.button_clicked = cursor_event_state.clicked;
-        standard_input.element_hovered = cursor_event_state.hovered;
+        {
+            let cursor_event_state = self.cursor_event_state.borrow_mut();
+            let standard_input = context.standard_input_mut();
+            standard_input.button_clicked = cursor_event_state.clicked;
+            standard_input.element_hovered = cursor_event_state.hovered;
+        }
 
         let size = self.bounding_rect.size().min(constraints.size());
         self.bounding_rect = Box3::new_with_min_corner_and_size(constraints.min, size);
