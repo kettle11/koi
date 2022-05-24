@@ -75,7 +75,7 @@ impl<
             standard_input.button_clicked = cursor_event_state.clicked;
             standard_input.element_hovered = cursor_event_state.hovered;
         }
-        
+
         let child_size = self
             .child_widget
             .layout(state, extra_state, context, min_and_max_size);
