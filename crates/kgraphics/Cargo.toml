@@ -3,6 +3,7 @@ name = "kgraphics"
 version = "0.1.0"
 authors = ["Ian Kettlewell <ian.kettlewell@gmail.com>"]
 edition = "2021"
+license = "Zlib OR Apache-2.0 OR MIT"
 
 [dependencies]
 kapp = { path = "../kapp", default-features=false, features=["gl_context"]}

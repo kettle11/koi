@@ -3,6 +3,7 @@ name = "klog"
 version = "0.1.0"
 authors = ["Ian Kettlewell <ian.kettlewell@gmail.com>"]
 edition = "2021"
+license = "Zlib OR Apache-2.0 OR MIT"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
