@@ -452,7 +452,7 @@ impl GraphicsInner {
         };
 
         let texture_coordinates = if !mesh_data.texture_coordinates.is_empty() {
-            assert!(mesh_data.texture_coordinates.len() == len);
+            assert_eq!(mesh_data.texture_coordinates.len(), len);
             Some(
                 self.context
                     .new_data_buffer(&mesh_data.texture_coordinates)?,
@@ -461,14 +461,14 @@ impl GraphicsInner {
             None
         };
         let normals = if !mesh_data.normals.is_empty() {
-            assert!(mesh_data.normals.len() == len);
+            assert_eq!(mesh_data.normals.len(), len);
             Some(self.context.new_data_buffer(&mesh_data.normals)?)
         } else {
             None
         };
 
         let colors = if !mesh_data.colors.is_empty() {
-            assert!(mesh_data.colors.len() == len);
+            assert_eq!(mesh_data.colors.len(), len);
             Some(self.context.new_data_buffer(&mesh_data.colors)?)
         } else {
             None
