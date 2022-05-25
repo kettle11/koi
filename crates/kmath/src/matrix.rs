@@ -658,7 +658,7 @@ impl<T: NumericFloat> Matrix<T, 4, 4> {
     pub fn looking_at_with_fallback_right(
         from: Vector<T, 3>,
         target: Vector<T, 3>,
-        mut up: Vector<T, 3>,
+        up: Vector<T, 3>,
         fallback_right: Vector<T, 3>,
         threshold: T,
     ) -> Self
@@ -672,20 +672,14 @@ impl<T: NumericFloat> Matrix<T, 4, 4> {
         let f = (target - from).normalized();
 
         let r = if f.abs().dot(up) > (T::ONE - threshold) {
-            up = if up != Vector::<T, 3>::Y {
-                Vector::<T, 3>::Y
-            } else {
-                Vector::<T, 3>::X
-            };
             fallback_right
         } else {
             f.cross(up).normalized()
         };
 
-        println!("F: {:?}", f);
-        println!("UP: {:?}", up);
-
-        println!("F DOT UP: {:?}", (f.abs()).dot(up));
+        // println!("F: {:?}", f);
+        // println!("UP: {:?}", up);
+        // println!("F DOT UP: {:?}", (f.abs()).dot(up));
 
         let u = r.cross(f);
         Self([
