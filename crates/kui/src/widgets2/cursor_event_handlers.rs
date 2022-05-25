@@ -32,10 +32,15 @@ pub fn on_cursor_event<
                     }
                 }
                 kapp_platform_common::Event::PointerUp { .. } => {
-                    if pointer_event_info.in_hitbox {
+                    let is_clicked = {
+                        let clicked = &mut cursor_event_state.borrow_mut().clicked;
+                        let is_clicked = *clicked;
+                        *clicked = false;
+                        is_clicked
+                    };
+                    if pointer_event_info.in_hitbox && is_clicked {
                         (on_click)(state)
                     }
-                    cursor_event_state.borrow_mut().clicked = false
                 }
                 _ => {}
             }
