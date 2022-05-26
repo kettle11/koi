@@ -140,6 +140,7 @@ struct ClickHandler<State> {
     handler: Option<Rc<dyn Fn(&kapp_platform_common::Event, PointerEventInfo, &mut State)>>,
 }
 pub struct EventHandlers<State> {
+    consumed_down: bool,
     click_handlers: Vec<ClickHandler<State>>,
 }
 
@@ -151,6 +152,7 @@ pub struct PointerEventInfo {
 impl<State> EventHandlers<State> {
     pub fn new() -> Self {
         Self {
+            consumed_down: false,
             click_handlers: Vec::new(),
         }
     }
@@ -217,11 +219,24 @@ impl<State> EventHandlers<State> {
             }
         }
         // Don't prevent pointer up events from percolating, for now.
-        if let kapp_platform_common::Event::PointerUp { .. }
-        | kapp_platform_common::Event::PointerMoved { .. } = event
-        {
+        if let kapp_platform_common::Event::PointerMoved { .. } = event {
             any_hitbox_hit = false;
         }
+
+        // Only consume PointerUp events if there was a corresponding consumed PointerDown event.
+        match event {
+            kapp_platform_common::Event::PointerDown { .. } => {
+                if any_hitbox_hit {
+                    self.consumed_down = true;
+                }
+            }
+            kapp_platform_common::Event::PointerUp { .. } => {
+                any_hitbox_hit = self.consumed_down;
+                self.consumed_down = false;
+            }
+            _ => {}
+        }
+
         any_hitbox_hit
     }
 }
