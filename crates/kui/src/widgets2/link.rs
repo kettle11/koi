@@ -14,6 +14,7 @@ pub fn link<
             open_url(url);
         },
         true,
+        true,
         set_cursor_on_hover(
             kapp_platform_common::Cursor::PointingHand,
             fit(column_unspaced((

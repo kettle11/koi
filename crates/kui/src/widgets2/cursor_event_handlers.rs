@@ -8,6 +8,7 @@ pub fn on_cursor_event<
 >(
     on_click: impl Fn(&mut State) + 'static,
     handle_event: bool,
+    on_up: bool,
     child: impl Widget<State, Context, ExtraState>,
 ) -> impl Widget<State, Context, ExtraState> {
     let cursor_event_state = Rc::new(RefCell::new(CursorEventState {
@@ -28,7 +29,9 @@ pub fn on_cursor_event<
                 kapp_platform_common::Event::PointerDown { .. } => {
                     if pointer_event_info.in_hitbox {
                         cursor_event_state.borrow_mut().clicked = true;
-                        //(on_click)(state)
+                        if !on_up {
+                            (on_click)(state)
+                        }
                     }
                 }
                 kapp_platform_common::Event::PointerUp { .. } => {
@@ -38,7 +41,7 @@ pub fn on_cursor_event<
                         *clicked = false;
                         is_clicked
                     };
-                    if pointer_event_info.in_hitbox && is_clicked {
+                    if pointer_event_info.in_hitbox && is_clicked && on_up {
                         (on_click)(state)
                     }
                 }
@@ -130,6 +133,7 @@ pub fn set_cursor_on_hover<
 ) -> impl Widget<State, Context, ExtraState> {
     on_cursor_event(
         |_| {},
+        false,
         false,
         SetCursorOnHover {
             child_widget: child,

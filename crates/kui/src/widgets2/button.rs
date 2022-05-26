@@ -11,12 +11,13 @@ pub fn button<
     button_with_child(crate::text(text), on_click)
 }
 
-pub fn button_with_child<
+pub fn button_with_child_inner<
     State: 'static,
     Context: GetStandardInput + GetStandardStyle + GetEventHandlers<State>,
     ExtraState,
 >(
     child_widget: impl Widget<State, Context, ExtraState>,
+    on_up: bool,
     on_click: fn(&mut State),
 ) -> impl Widget<State, Context, ExtraState> {
     let child_widget = fit(stack((
@@ -32,7 +33,18 @@ pub fn button_with_child<
         ),
         padding(child_widget),
     )));
-    button_base(child_widget, on_click)
+    button_base(child_widget, on_click, on_up)
+}
+
+pub fn button_with_child<
+    State: 'static,
+    Context: GetStandardInput + GetStandardStyle + GetEventHandlers<State>,
+    ExtraState,
+>(
+    child_widget: impl Widget<State, Context, ExtraState>,
+    on_click: fn(&mut State),
+) -> impl Widget<State, Context, ExtraState> {
+    button_with_child_inner(child_widget, false, on_click)
 }
 
 pub fn toggle_button<
@@ -68,6 +80,7 @@ pub fn toggle_button<
             let edit_state = get_state(state);
             *edit_state = new_value;
         },
+        false,
     )
 }
 
@@ -78,10 +91,12 @@ pub fn button_base<
 >(
     child_widget: impl Widget<State, Context, ExtraState>,
     on_click: impl Fn(&mut State) + 'static,
+    on_up: bool,
 ) -> impl Widget<State, Context, ExtraState> {
     crate::on_cursor_event(
         on_click,
         true,
+        on_up,
         set_cursor_on_hover(kapp_platform_common::Cursor::PointingHand, child_widget),
     )
 }
