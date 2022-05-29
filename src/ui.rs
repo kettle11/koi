@@ -46,7 +46,7 @@ impl UIManager {
         standard_context.standard_input_mut().view_size = Vec2::new(width, height);
 
         self.initial_constraints =
-            Box3::new_with_min_corner_and_size(Vec3::ZERO, Vec3::new(width, height, f32::MAX));
+            Box3::new_with_min_corner_and_size(Vec3::ZERO, Vec3::new(width, height, 10_000.0));
     }
 
     pub fn handle_event<Data>(
