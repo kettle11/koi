@@ -477,7 +477,7 @@ pub fn cone(radius: f32, height: f32, resolution: usize) -> MeshData {
         normals.push(direction.normalized());
         uvs.push(Vec2::new(0.5, 0.5));
 
-        angle += increment;
+        angle -= increment;
     }
 
     // Sides
