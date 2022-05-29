@@ -290,7 +290,7 @@ pub fn ray_with_mesh(ray: Ray3, vertices: &[Vec3], indices: &[[u32; 3]]) -> Opti
 pub fn ray_with_bounding_box<F: NumericFloat, const DIM: usize>(
     r: Ray<F, DIM>,
     b: geometry::BoundingBox<F, DIM>,
-) -> (bool, F) {
+) -> Option<F> {
     // This could be cached for extra speed.
     let multiplicative_inverse = r.direction.reciprocal();
 
@@ -304,7 +304,11 @@ pub fn ray_with_bounding_box<F: NumericFloat, const DIM: usize>(
     let tmax = max.min_component();
 
     let tmin = tmin.numeric_max(F::ZERO);
-    (tmax >= tmin, tmin)
+    if tmax >= tmin {
+        Some(tmin)
+    } else {
+        None
+    }
 }
 
 pub fn frustum_with_bounding_box(frustum: &Frustum, transform: Mat4, box3: Box3) -> bool {
