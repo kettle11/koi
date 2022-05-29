@@ -78,12 +78,7 @@ pub fn colored_rectangle<State, Context: GetStandardInput + GetEventHandlers<Sta
     size: Vec2,
     color: impl Fn(&mut State, &mut ExtraState, &Context) -> Color,
 ) -> impl Widget<State, Context, ExtraState> {
-    stack((
-        Rectangle {
-            size: size.extend(0.1),
-        },
-        fill_pass_through(color),
-    ))
+    exact_size(size.extend(0.1), fill_pass_through(color))
 }
 
 impl<State, Context, ExtraState> Widget<State, Context, ExtraState> for Rectangle {

@@ -55,11 +55,15 @@ impl<
 {
     fn layout(
         &mut self,
-        _state: &mut Data,
-        _extra_state: &mut ExtraState,
-        _context: &mut Context,
+        state: &mut Data,
+        extra_state: &mut ExtraState,
+        context: &mut Context,
         min_and_max_size: MinAndMaxSize,
     ) -> Vec3 {
+        self.child_a
+            .layout(state, extra_state, context, min_and_max_size);
+        self.child_b
+            .layout(state, extra_state, context, min_and_max_size);
         min_and_max_size.max
     }
 
