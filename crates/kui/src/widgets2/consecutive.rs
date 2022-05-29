@@ -8,6 +8,7 @@ pub fn stack<State, Context, ExtraState, I: IntoWidgetChildren<State, Context, E
         direction: Vec3::Z,
         children: children.into_widget_children(),
         get_spacing: |_, _| 0.0,
+        wrap: false,
         phantom: std::marker::PhantomData,
     }
 }
@@ -25,6 +26,7 @@ pub fn column<
         direction: Vec3::Y,
         children: children.into_widget_children(),
         get_spacing: |_, c| c.standard_style().padding,
+        wrap: false,
         phantom: std::marker::PhantomData,
     }
 }
@@ -44,6 +46,7 @@ pub fn column_with_spacing<
         direction: Vec3::Y,
         children: children.into_widget_children(),
         get_spacing,
+        wrap: false,
         phantom: std::marker::PhantomData,
     }
 }
@@ -61,6 +64,7 @@ pub fn row<
         direction: Vec3::X,
         children: children.into_widget_children(),
         get_spacing: |_, c| c.standard_style().padding,
+        wrap: false,
         phantom: std::marker::PhantomData,
     }
 }
@@ -78,6 +82,7 @@ pub fn row_unspaced<
         direction: Vec3::X,
         children: children.into_widget_children(),
         get_spacing: |_, _| 0.0,
+        wrap: false,
         phantom: std::marker::PhantomData,
     }
 }
@@ -94,6 +99,7 @@ pub fn column_unspaced<
         direction: Vec3::Y,
         children: children.into_widget_children(),
         get_spacing: |_, _| 0.0,
+        wrap: false,
         phantom: std::marker::PhantomData,
     }
 }
@@ -108,6 +114,7 @@ pub struct Consecutive<
     direction: Vec3,
     children: Children,
     get_spacing: GetSpacing,
+    wrap: bool,
     phantom: std::marker::PhantomData<(State, Context, ExtraState)>,
 }
 
@@ -131,22 +138,21 @@ impl<
     ) -> Vec3 {
         let spacing = (self.get_spacing)(data, context);
 
-        let mut offset_in_direction = 0.;
-        let mut other_dimension_size = Vec3::ZERO;
         self.children
             .create_children_and_layout(data, extra_state, context, min_and_max_size);
-        let mut sized_children: usize = 0;
+
+        let mut child_position_calculator = ChildPositionCalculator::new(
+            self.direction,
+            spacing,
+            Box3::new(min_and_max_size.min, min_and_max_size.max),
+        );
+
+        //let mut offset_in_wrap_direction = 0.0;
+
         for &child_size in self.children.constraints_iter() {
-            let amount_in_directon = child_size.dot(self.direction);
-            if amount_in_directon > 0.0 {
-                sized_children += 1;
-            }
-            let non_direction_size = child_size - (amount_in_directon * self.direction);
-            other_dimension_size = other_dimension_size.max(non_direction_size);
-            offset_in_direction += amount_in_directon;
+            let _child_bounds = child_position_calculator.get_child_bounds(child_size);
         }
-        offset_in_direction += spacing * sized_children.saturating_sub(1) as f32;
-        other_dimension_size + self.direction * offset_in_direction
+        child_position_calculator.total_size()
     }
 
     fn draw(
@@ -159,24 +165,88 @@ impl<
     ) {
         let spacing = (self.get_spacing)(data, context);
 
-        let constraint_size = bounds.size();
-        let mut offset = bounds.min;
+        let mut child_position_calculator =
+            ChildPositionCalculator::new(self.direction, spacing, bounds);
 
-        let size_not_along_direction =
-            constraint_size - (constraint_size.dot(self.direction) * self.direction);
         self.children
             .draw(data, extra_state, context, drawer, |constraints| {
-                let amount_along_direction = constraints.dot(self.direction).abs();
-                let child_size_along_direction = amount_along_direction * self.direction;
-
-                let corner0 = offset;
-                let corner1 = offset + child_size_along_direction + size_not_along_direction;
-                let child_constraints = Box3::new(corner0.min(corner1), corner0.max(corner1));
-
-                if amount_along_direction > 0.0 {
-                    offset += child_size_along_direction + spacing * self.direction;
-                }
-                child_constraints
+                child_position_calculator.get_child_bounds(*constraints)
             })
+    }
+}
+
+struct ChildPositionCalculator {
+    direction: Vec3,
+    wrap_direction: Vec3,
+    offset_in_direction: f32,
+    offset_in_wrap_direction: f32,
+    max_along_direction: f32,
+    current_line_height: f32,
+    spacing: f32,
+    size_available_in_other_directions: Vec3,
+    min: Vec3,
+    total_bounds: Box3,
+}
+
+impl ChildPositionCalculator {
+    pub fn new(direction: Vec3, spacing: f32, min_and_max: Box3) -> Self {
+        let wrap_direction = if direction == Vec3::Y {
+            Vec3::X
+        } else {
+            Vec3::Y
+        };
+        let max_along_direction = min_and_max.max.dot(direction);
+
+        let available_size = min_and_max.size();
+        let size_available_in_other_directions =
+            available_size - available_size.dot(direction) * direction;
+
+        Self {
+            direction,
+            wrap_direction,
+            offset_in_direction: 0.0,
+            offset_in_wrap_direction: 0.0,
+            max_along_direction,
+            current_line_height: 0.0,
+            spacing,
+            size_available_in_other_directions,
+            min: min_and_max.min,
+            total_bounds: Box3::new(min_and_max.min, min_and_max.min),
+        }
+    }
+
+    pub fn get_child_bounds(&mut self, child_size: Vec3) -> Box3 {
+        let amount_in_directon = child_size.dot(self.direction);
+
+        if self.offset_in_direction + amount_in_directon > self.max_along_direction {
+            self.offset_in_direction = 0.0;
+            self.offset_in_wrap_direction += self.current_line_height;
+            self.current_line_height = 0.0;
+        }
+        let min = self.offset_in_direction * self.direction
+            + self.offset_in_wrap_direction * self.wrap_direction
+            + self.min;
+        self.offset_in_direction += amount_in_directon;
+        self.current_line_height = self
+            .current_line_height
+            .max(child_size.dot(self.wrap_direction));
+
+        // Widgets that have 0 size do not introduce additional spacing.
+        if amount_in_directon > 0.0 {
+            self.offset_in_direction += self.spacing;
+        }
+
+        let child_bounds = Box3::new(
+            min,
+            min + child_size.max(self.size_available_in_other_directions),
+        );
+
+        // The size reported for layout is different than the size used for drawing.
+        self.total_bounds = self.total_bounds.join(Box3::new(min, min + child_size));
+        child_bounds
+    }
+
+    pub fn total_size(&self) -> Vec3 {
+        self.total_bounds.size()
     }
 }
