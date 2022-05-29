@@ -57,6 +57,9 @@ pub use expand::*;
 mod link;
 pub use link::*;
 
+mod split;
+pub use split::*;
+
 mod cursor_event_handlers;
 pub use cursor_event_handlers::*;
 
