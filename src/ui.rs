@@ -9,6 +9,7 @@ pub struct UIManager {
     pub initial_constraints: Box3,
     pub ui_scale: f32,
     pub cursor: Cursor,
+    last_cursor_position: Vec2,
 }
 
 impl UIManager {
@@ -26,6 +27,7 @@ impl UIManager {
             initial_constraints: Box3::ZERO,
             ui_scale: 1.0,
             cursor: Cursor::Arrow,
+            last_cursor_position: Vec2::ZERO,
         }
     }
 
@@ -92,6 +94,9 @@ impl UIManager {
                     timestamp,
                     id,
                 };
+                self.last_cursor_position =
+                    Vec2::new(x as f32 / self.ui_scale, y as f32 / self.ui_scale);
+
                 standard_context.event_handlers.handle_pointer_event(
                     &event,
                     data,
@@ -118,6 +123,24 @@ impl UIManager {
                     &event,
                     data,
                     Vec2::new(x as f32, y as f32) / self.ui_scale,
+                )
+            }
+            &kapp::Event::Scroll {
+                delta_x,
+                delta_y,
+                window_id,
+                timestamp,
+            } => {
+                let event = kapp::Event::Scroll {
+                    delta_x,
+                    delta_y,
+                    window_id,
+                    timestamp,
+                };
+                standard_context.event_handlers.handle_pointer_event(
+                    &event,
+                    data,
+                    self.last_cursor_position,
                 )
             }
             _ => false,

@@ -11,7 +11,7 @@ pub struct Drawer {
     pub(crate) view_width: f32,
     pub(crate) view_height: f32,
     pub texture_atlas: TextureAtlas,
-    pub clipping_mask: Box2,
+    pub(crate) clipping_mask: Vec<Box2>,
 }
 
 impl Default for Drawer {
@@ -30,7 +30,7 @@ impl Drawer {
             view_width: 100.,
             view_height: 100.,
             texture_atlas: TextureAtlas::new(1024),
-            clipping_mask: Box2::new(-Vec2::MAX, Vec2::MAX),
+            clipping_mask: vec![Box2::new(-Vec2::MAX, Vec2::MAX)],
         }
     }
 
@@ -39,12 +39,21 @@ impl Drawer {
         self.view_height = height;
     }
 
+    pub fn push_clipping_mask(&mut self, clipping_mask: Box2) {
+        self.clipping_mask.push(clipping_mask);
+    }
+
+    pub fn pop_clipping_mask(&mut self) {
+        self.clipping_mask.pop();
+    }
+
     pub fn reset(&mut self) {
         self.positions.clear();
         self.texture_coordinates.clear();
         self.colors.clear();
         self.indices.clear();
-        self.clipping_mask = Box2::new(-Vec2::MAX, Vec2::MAX);
+        self.clipping_mask.clear();
+        self.clipping_mask.push(Box2::new(-Vec2::MAX, Vec2::MAX));
     }
 
     pub fn glyph_position(offset: Vec3, scale: f32, c: &fontdue::layout::GlyphPosition) -> Box2 {
@@ -112,7 +121,7 @@ impl Drawer {
     }
 
     fn clip_rectangle(&mut self, rectangle: Box2) -> Box2 {
-        rectangle.intersection(self.clipping_mask)
+        rectangle.intersection(*self.clipping_mask.last().unwrap())
     }
 
     /// Returns the rectangle that will actually be displayed.
@@ -163,18 +172,9 @@ impl Drawer {
     }
 
     fn position_to_gl(&self, mut position: Vec3) -> Vec3 {
-        position.x = self
-            .clipping_mask
-            .min
-            .x
-            .max(position.x)
-            .min(self.clipping_mask.max.x);
-        position.y = self
-            .clipping_mask
-            .min
-            .y
-            .max(position.y)
-            .min(self.clipping_mask.max.y);
+        let clipping_mask = *self.clipping_mask.last().unwrap();
+        position.x = clipping_mask.min.x.max(position.x).min(clipping_mask.max.x);
+        position.y = clipping_mask.min.y.max(position.y).min(clipping_mask.max.y);
 
         let x = (position.x / self.view_width) * 2.0 - 1.0;
         let y = (position.y / self.view_height) * -2.0 + 1.0;

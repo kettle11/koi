@@ -60,6 +60,9 @@ pub use link::*;
 mod split;
 pub use split::*;
 
+mod scroll_view;
+pub use scroll_view::*;
+
 mod cursor_event_handlers;
 pub use cursor_event_handlers::*;
 
