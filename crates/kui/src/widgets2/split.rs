@@ -60,10 +60,28 @@ impl<
         context: &mut Context,
         min_and_max_size: MinAndMaxSize,
     ) -> Vec3 {
-        self.child_a
-            .layout(state, extra_state, context, min_and_max_size);
-        self.child_b
-            .layout(state, extra_state, context, min_and_max_size);
+        let split = (self.get_split)(state, extra_state, context);
+
+        let min_and_max_size_along_axis = MinAndMaxSize {
+            min: min_and_max_size.min.dot(self.axis) * self.axis,
+            max: min_and_max_size.max.dot(self.axis) * self.axis,
+        };
+        let min_and_max_size_not_along_axis = MinAndMaxSize {
+            min: min_and_max_size.min - min_and_max_size_along_axis.min,
+            max: min_and_max_size.max - min_and_max_size_along_axis.max,
+        };
+        let size_a = MinAndMaxSize {
+            min: min_and_max_size_not_along_axis.min + min_and_max_size_along_axis.min * split,
+            max: min_and_max_size_not_along_axis.max + min_and_max_size_along_axis.max * split,
+        };
+        let size_b = MinAndMaxSize {
+            min: min_and_max_size_not_along_axis.min
+                + min_and_max_size_along_axis.min * (1.0 - split),
+            max: min_and_max_size_not_along_axis.max
+                + min_and_max_size_along_axis.max * (1.0 - split),
+        };
+        self.child_a.layout(state, extra_state, context, size_a);
+        self.child_b.layout(state, extra_state, context, size_b);
         min_and_max_size.max
     }
 

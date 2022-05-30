@@ -8,7 +8,7 @@ pub fn stack<State, Context, ExtraState, I: IntoWidgetChildren<State, Context, E
         direction: Vec3::Z,
         children: children.into_widget_children(),
         get_spacing: |_, _| 0.0,
-        wrap: false,
+        wrap: true,
         phantom: std::marker::PhantomData,
     }
 }
@@ -26,7 +26,7 @@ pub fn column<
         direction: Vec3::Y,
         children: children.into_widget_children(),
         get_spacing: |_, c| c.standard_style().padding,
-        wrap: false,
+        wrap: true,
         phantom: std::marker::PhantomData,
     }
 }
@@ -46,7 +46,7 @@ pub fn column_with_spacing<
         direction: Vec3::Y,
         children: children.into_widget_children(),
         get_spacing,
-        wrap: false,
+        wrap: true,
         phantom: std::marker::PhantomData,
     }
 }
@@ -64,7 +64,7 @@ pub fn row<
         direction: Vec3::X,
         children: children.into_widget_children(),
         get_spacing: |_, c| c.standard_style().padding,
-        wrap: false,
+        wrap: true,
         phantom: std::marker::PhantomData,
     }
 }
@@ -82,7 +82,7 @@ pub fn row_unspaced<
         direction: Vec3::X,
         children: children.into_widget_children(),
         get_spacing: |_, _| 0.0,
-        wrap: false,
+        wrap: true,
         phantom: std::marker::PhantomData,
     }
 }
@@ -99,7 +99,7 @@ pub fn column_unspaced<
         direction: Vec3::Y,
         children: children.into_widget_children(),
         get_spacing: |_, _| 0.0,
-        wrap: false,
+        wrap: true,
         phantom: std::marker::PhantomData,
     }
 }
@@ -145,6 +145,7 @@ impl<
             self.direction,
             spacing,
             Box3::new(min_and_max_size.min, min_and_max_size.max),
+            self.wrap,
         );
 
         //let mut offset_in_wrap_direction = 0.0;
@@ -166,7 +167,7 @@ impl<
         let spacing = (self.get_spacing)(data, context);
 
         let mut child_position_calculator =
-            ChildPositionCalculator::new(self.direction, spacing, bounds);
+            ChildPositionCalculator::new(self.direction, spacing, bounds, self.wrap);
 
         self.children
             .draw(data, extra_state, context, drawer, |constraints| {
@@ -186,10 +187,11 @@ struct ChildPositionCalculator {
     size_available_in_other_directions: Vec3,
     min: Vec3,
     total_bounds: Box3,
+    wrap: bool,
 }
 
 impl ChildPositionCalculator {
-    pub fn new(direction: Vec3, spacing: f32, min_and_max: Box3) -> Self {
+    pub fn new(direction: Vec3, spacing: f32, min_and_max: Box3, wrap: bool) -> Self {
         let wrap_direction = if direction == Vec3::Y {
             Vec3::X
         } else {
@@ -212,15 +214,16 @@ impl ChildPositionCalculator {
             size_available_in_other_directions,
             min: min_and_max.min,
             total_bounds: Box3::new(min_and_max.min, min_and_max.min),
+            wrap,
         }
     }
 
     pub fn get_child_bounds(&mut self, child_size: Vec3) -> Box3 {
         let amount_in_directon = child_size.dot(self.direction);
 
-        if self.offset_in_direction + amount_in_directon > self.max_along_direction {
+        if self.wrap && self.offset_in_direction + amount_in_directon > self.max_along_direction {
             self.offset_in_direction = 0.0;
-            self.offset_in_wrap_direction += self.current_line_height;
+            self.offset_in_wrap_direction += self.current_line_height + self.spacing;
             self.current_line_height = 0.0;
         }
         let min = self.offset_in_direction * self.direction

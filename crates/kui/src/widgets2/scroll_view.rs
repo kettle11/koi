@@ -49,6 +49,7 @@ pub fn scroll_view<
             offset: offset0,
             horizontal,
             vertical,
+            child_size: Vec3::ZERO,
             phantom: std::marker::PhantomData,
         },
     )
@@ -58,6 +59,7 @@ struct ScrollView<Data, Context, ExtraState, Child: Widget<Data, Context, ExtraS
     offset: Rc<RefCell<Vec2>>,
     horizontal: bool,
     vertical: bool,
+    child_size: Vec3,
     phantom: std::marker::PhantomData<fn() -> (Data, Context, ExtraState)>,
 }
 
@@ -71,7 +73,8 @@ impl<Data, Context, ExtraState, Child: Widget<Data, Context, ExtraState>>
         context: &mut Context,
         min_and_max_size: MinAndMaxSize,
     ) -> Vec3 {
-        self.child
+        self.child_size = self
+            .child
             .layout(state, extra_state, context, min_and_max_size);
         min_and_max_size.max
     }
@@ -84,7 +87,11 @@ impl<Data, Context, ExtraState, Child: Widget<Data, Context, ExtraState>>
         drawer: &mut Drawer,
         bounds: Box3,
     ) {
-        let offset: Vec2 = *self.offset.borrow_mut();
+        let mut offset = self.offset.borrow_mut();
+
+        let min = (bounds.size().xy() - self.child_size.xy()).min(Vec2::ZERO);
+        *offset = offset.clamp(min, Vec2::ZERO);
+
         drawer.push_clipping_mask(Box2::new(bounds.min.xy(), bounds.max.xy()));
         let mut bounds_max = bounds.max;
         if self.horizontal {
@@ -93,6 +100,7 @@ impl<Data, Context, ExtraState, Child: Widget<Data, Context, ExtraState>>
         if self.vertical {
             bounds_max.y = f32::MAX
         }
+
         let bounds = Box3::new(bounds.min + offset.extend(0.0), bounds_max);
         self.child.draw(state, extra_state, context, drawer, bounds);
         drawer.pop_clipping_mask();
