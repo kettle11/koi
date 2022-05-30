@@ -81,7 +81,7 @@ impl<
 
         let split = (self.get_split)(state, extra_state, context);
         let size_a = size_not_along_axis + size_along_axis * split;
-        let size_b = size_not_along_axis + size_along_axis * (1.0 - split);
+        let size_b_along_axis = size_along_axis * (1.0 - split);
 
         let child_a_max = constraints.min + size_a;
         self.child_a.draw(
@@ -97,7 +97,10 @@ impl<
             extra_state,
             context,
             drawer,
-            Box3::new(child_a_max.dot(self.axis) * self.axis, child_a_max + size_b),
+            Box3::new(
+                child_a_max.dot(self.axis) * self.axis,
+                child_a_max + size_b_along_axis,
+            ),
         )
     }
 }
