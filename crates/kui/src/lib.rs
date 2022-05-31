@@ -17,7 +17,7 @@ pub use widgets2::*;
 mod fonts;
 pub use fonts::*;
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug)]
 pub struct MinAndMaxSize {
     pub min: Vec3,
     pub max: Vec3,
@@ -162,12 +162,17 @@ impl<State> EventHandlers<State> {
         hit_box: Box3,
         consume_event: bool,
         handler: Option<Rc<dyn Fn(&kapp_platform_common::Event, PointerEventInfo, &mut State)>>,
+        clipping_mask: Box2,
     ) {
-        self.click_handlers.push(ClickHandler {
-            hit_box,
-            consume_event,
-            handler,
-        });
+        let clipped = clipping_mask.intersection(Box2::new(hit_box.min.xy(), hit_box.max.xy()));
+        if clipped.area() > 0.0 {
+            // Todo: This does not properly account for the third dimension.
+            self.click_handlers.push(ClickHandler {
+                hit_box: Box3::new(clipped.min.extend(0.0), clipped.max.extend(1.0)),
+                consume_event,
+                handler,
+            });
+        }
     }
 
     pub fn clear(&mut self) {

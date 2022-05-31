@@ -217,6 +217,8 @@ impl UIManager {
         context.event_handlers.clear();
         context.standard_input_mut().cursor = Cursor::Arrow;
 
+        // let start = Instant::now();
+
         root_widget.layout(
             state,
             &mut (),
@@ -226,6 +228,13 @@ impl UIManager {
                 max: self.initial_constraints.size(),
             },
         );
+
+        //  let duration = start.elapsed();
+
+        //  println!("Layout: {:?}", duration);
+
+        // let start = Instant::now();
+
         let (width, height, _) = self.initial_constraints.size().into();
         self.drawer.set_view_width_height(width, height);
         root_widget.draw(
@@ -235,6 +244,11 @@ impl UIManager {
             &mut self.drawer,
             self.initial_constraints,
         );
+
+        // let duration = start.elapsed();
+
+        // println!("Draw: {:?}", duration);
+
         self.cursor = context.standard_input().cursor;
     }
 
@@ -256,7 +270,7 @@ pub fn run_simple_ui<Data: 'static>(
     fonts: kui::Fonts,
     root: impl kui::Widget<Data, StandardContext<Data>, ()> + 'static,
 ) {
-    let root = stack((fill(|_, _, _| Color::WHITE), root));
+    let root = root;
     App::new().setup_and_run(|world| {
         world
             .get_singleton::<Graphics>()

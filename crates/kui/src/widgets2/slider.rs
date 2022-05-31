@@ -247,6 +247,7 @@ impl<
             constraints,
             true,
             Some(self.on_click.clone()),
+            drawer.current_clipping_mask(),
         )
     }
 }

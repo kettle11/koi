@@ -109,9 +109,12 @@ impl<
         bounds: Box3,
     ) {
         if self.consume_pointer_events {
-            context
-                .event_handlers_mut()
-                .add_pointer_event_handler(bounds, true, None);
+            context.event_handlers_mut().add_pointer_event_handler(
+                bounds,
+                true,
+                None,
+                drawer.current_clipping_mask(),
+            );
         }
         drawer.standard().rounded_rectangle(
             bounds,

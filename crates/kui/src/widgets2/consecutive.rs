@@ -144,7 +144,7 @@ impl<
         let mut child_position_calculator = ChildPositionCalculator::new(
             self.direction,
             spacing,
-            Box3::new(min_and_max_size.min, min_and_max_size.max),
+            Box3::new(Vec3::ZERO, min_and_max_size.max),
             self.wrap,
         );
 
@@ -197,7 +197,7 @@ impl ChildPositionCalculator {
         } else {
             Vec3::Y
         };
-        let max_along_direction = min_and_max.max.dot(direction);
+        let max_along_direction = min_and_max.size().dot(direction);
 
         let available_size = min_and_max.size();
         let size_available_in_other_directions =

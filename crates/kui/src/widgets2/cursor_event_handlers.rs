@@ -150,10 +150,12 @@ impl<
         self.bounding_rect = Box3::new_with_min_corner_and_size(constraints.min, size);
         self.child_widget
             .draw(state, extra_state, context, drawer, constraints);
+
         context.event_handlers_mut().add_pointer_event_handler(
             self.bounding_rect,
             self.handle_event,
             Some(self.on_event.clone()),
+            drawer.current_clipping_mask(),
         )
     }
 }

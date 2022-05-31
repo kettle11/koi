@@ -49,7 +49,7 @@ impl<Style: Send + 'static, Data: Send + 'static, W: WidgetTrait<Style, Data>>
         self.offset.y = self.offset.y.clamp(size_diff.y, 0.0);
 
         rectangle.min += self.offset;
-        self.child.draw(style, data, drawer, rectangle)
+        self.child.draw(style, data, drawer, rectangle);
     }
 
     fn event(&mut self, data: &mut Data, event: &Event) -> bool {

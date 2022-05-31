@@ -120,8 +120,12 @@ impl Drawer {
         }
     }
 
+    pub fn current_clipping_mask(&self) -> Box2 {
+        *self.clipping_mask.last().unwrap()
+    }
+
     fn clip_rectangle(&mut self, rectangle: Box2) -> Box2 {
-        rectangle.intersection(*self.clipping_mask.last().unwrap())
+        rectangle.intersection(self.current_clipping_mask())
     }
 
     /// Returns the rectangle that will actually be displayed.
@@ -172,7 +176,7 @@ impl Drawer {
     }
 
     fn position_to_gl(&self, mut position: Vec3) -> Vec3 {
-        let clipping_mask = *self.clipping_mask.last().unwrap();
+        let clipping_mask = self.current_clipping_mask();
         position.x = clipping_mask.min.x.max(position.x).min(clipping_mask.max.x);
         position.y = clipping_mask.min.y.max(position.y).min(clipping_mask.max.y);
 
