@@ -166,9 +166,11 @@ impl<State> EventHandlers<State> {
     ) {
         let clipped = clipping_mask.intersection(Box2::new(hit_box.min.xy(), hit_box.max.xy()));
         if clipped.area() > 0.0 {
-            // Todo: This does not properly account for the third dimension.
             self.click_handlers.push(ClickHandler {
-                hit_box: Box3::new(clipped.min.extend(0.0), clipped.max.extend(1.0)),
+                hit_box: Box3::new(
+                    clipped.min.extend(hit_box.min.z),
+                    clipped.max.extend(hit_box.max.z),
+                ),
                 consume_event,
                 handler,
             });
