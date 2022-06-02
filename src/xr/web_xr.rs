@@ -3,16 +3,16 @@ use kwasm::*;
 use std::convert::TryFrom;
 
 pub struct WebXR {
-    start_xr: JSObjectDynamic,
-    end_xr: JSObjectDynamic,
-    get_device_transform: JSObjectDynamic,
-    get_view_info: JSObjectDynamic,
-    get_view_count: JSObjectDynamic,
-    get_xr_framebuffer: JSObjectDynamic,
-    get_input_count: JSObjectDynamic,
-    get_input_info: JSObjectDynamic,
-    get_button_count: JSObjectDynamic,
-    get_button_info: JSObjectDynamic,
+    start_xr: JSObject,
+    end_xr: JSObject,
+    get_device_transform: JSObject,
+    get_view_info: JSObject,
+    get_view_count: JSObject,
+    get_xr_framebuffer: JSObject,
+    get_input_count: JSObject,
+    get_input_info: JSObject,
+    get_button_count: JSObject,
+    get_button_info: JSObject,
     running: bool,
     framebuffer: Option<Framebuffer>,
     /// Only setup for two controllers at the moment.
@@ -213,6 +213,7 @@ impl WebXR {
 pub(crate) const XR_EVENT_ID: usize = 8434232;
 
 pub(super) fn xr_control_flow(koi_state: &mut KoiState, event: KappEvent) -> bool {
+    klog::log!("HERE IN XR CONTROL FLOW");
     match event {
         KappEvent::UserEvent {
             id: XR_EVENT_ID,
@@ -245,11 +246,14 @@ pub(super) fn xr_control_flow(koi_state: &mut KoiState, event: KappEvent) -> boo
                         Some(
                             xr.get_xr_framebuffer
                                 .call()
-                                .map_or(Default::default(), |f| Framebuffer::from_js_object(f)),
+                                .map_or(Default::default(), |f| {
+                                    Framebuffer::from_js_object(f.to_dynamic())
+                                }),
                         )
                     };
                 }
 
+                klog::log!("HERE ASSIGNING XR TARGET FRAMEBUFFER");
                 graphics.current_target_framebuffer = xr.framebuffer.clone().unwrap();
                 graphics.current_camera_target = Some(CameraTarget::XRDevice(0));
                 graphics.primary_camera_target = CameraTarget::XRDevice(0);

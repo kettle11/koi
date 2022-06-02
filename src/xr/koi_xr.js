@@ -96,8 +96,8 @@ function on_xr_frame(time, frame) {
 
     self.kwasm_exports.koi_begin_xr_frame();
 
-     // Inform the session that we're ready for the next frame.
-     session.requestAnimationFrame(on_xr_frame);
+    // Inform the session that we're ready for the next frame.
+    session.requestAnimationFrame(on_xr_frame);
 }
 
 // Called either when the user has explicitly ended the session by calling
@@ -132,18 +132,18 @@ let kxr = {
             if (!xr_session) {
 
                 // Set up a click handler to start XR when the page is clicked.
-                document.addEventListener("click", function () {
-                    navigator.xr.isSessionSupported('immersive-vr').then((supported) => {
-                        console.log("STARTING SESSION!");
-                        if (supported) {
-                            navigator.xr.requestSession('immersive-vr', {
-                                requiredFeatures: ['local-floor'],
-                            }).then(on_session_started);
-                        } else {
-                            navigator.xr.requestSession('inline').then(on_session_started);
-                        }
-                    })
-                });
+                // document.addEventListener("click", function () {
+                navigator.xr.isSessionSupported('immersive-vr').then((supported) => {
+                    console.log("STARTING SESSION!");
+                    if (supported) {
+                        navigator.xr.requestSession('immersive-vr', {
+                            requiredFeatures: ['local-floor'],
+                        }).then(on_session_started);
+                    } else {
+                        navigator.xr.requestSession('inline').then(on_session_started);
+                    }
+                })
+                // });
             }
         }
     },

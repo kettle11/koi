@@ -429,12 +429,11 @@ impl KoiState {
                 system.run(&mut self.world)
             }
 
-            std::mem::swap(&mut self.systems.additional_control_flow, &mut swap);
-
             if let KappEvent::Draw { .. } = event {
                 self.draw()
             }
         }
+        std::mem::swap(&mut self.systems.additional_control_flow, &mut swap);
     }
 
     pub fn draw(&mut self) {

@@ -44,17 +44,29 @@ fn main() {
         //spawn_skybox(world, "assets/venice_sunset_1k.hdr");
 
         let worlds = world.get_single_component_mut::<Assets<World>>().unwrap();
-        let gltf_world = worlds.load("assets/silent_ash/scene.gltf");
+        let gltf_world = worlds.load("assets/Sponza/glTF/Sponza.gltf");
 
         // Spawn a Handle<World> that will be replaced with the GlTf when it's loaded.
-        let gltf_hierarchy = world.spawn(gltf_world);
-        let scaled_down = world.spawn(Transform::new().with_scale(Vec3::fill(30.0)));
-        set_parent(world, Some(scaled_down), gltf_hierarchy);
+        // let gltf_hierarchy = world.spawn(gltf_world);
+        // let scaled_down = world.spawn(Transform::new().with_scale(Vec3::fill(30.0)));
+        // set_parent(world, Some(scaled_down), gltf_hierarchy);
 
         // Spawn a cube
         //world.spawn((Transform::new(), Mesh::CUBE, Material::UNLIT, Color::RED));
         move |event: Event, world: &mut World| {
             match event {
+                Event::KappEvent(event) => {
+                    match event {
+                        KappEvent::PointerUp { .. } => {
+                            (|xr: &mut XR| {
+                                xr.start();
+                            })
+                            .run(world);
+                        }
+                        _ => {}
+                    }
+                    klog::log!("KAPP EVENT: {:?}", event);
+                }
                 Event::Draw => {
                     let mut move_amount = 0.0;
                     let mut should_rotate = false;
