@@ -881,7 +881,7 @@ pub fn render_scene<'a, 'b>(
         // Presently the output needs to be in non-linear sRGB.
         // However that means that blending with the clear-color will be incorrect.
         // A post-processing pass is needed to convert into the appropriate output space.
-        let c = c.to_rgb_color(color_spaces::ENCODED_SRGB);
+        let c = c.to_rgb_color(color_spaces::LINEAR_SRGB);
         c.into()
     });
 
@@ -973,7 +973,7 @@ pub fn render_scene<'a, 'b>(
                     )
                 };
 
-                // Drawn to the screen
+                // Draw to the screen
                 let mut render_pass = command_buffer.begin_render_pass_with_framebuffer(
                     &graphics.current_target_framebuffer,
                     clear_color,
