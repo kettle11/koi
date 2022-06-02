@@ -9,6 +9,13 @@ use gltf::*;
 #[cfg(feature = "gltf")]
 pub use kgltf;
 
+#[derive(Debug, Clone)]
+pub enum WorldLoadError {
+    UnsupportedExtension,
+    CouldNotLoadFile,
+    CouldNotDecode,
+}
+
 pub fn world_assets_plugin() -> Plugin {
     Plugin {
         setup_systems: vec![setup_prefabs.system()],
@@ -173,14 +180,18 @@ impl AssetLoader<World> for WorldLoader {
             .unwrap();
 
         ktasks::spawn(async move {
-            if let Some(world_load_message_data) = load_world(&path).await {
-                let _ = sender.send(PrefabLoadMessage {
-                    handle,
-                    world_load_message_data,
-                    options,
-                });
-            } else {
-                klog::log!("FAILED TO LOAD GLTF");
+            let result = load_world(&path).await;
+            match result {
+                Ok(world_load_message_data) => {
+                    let _ = sender.send(PrefabLoadMessage {
+                        handle,
+                        world_load_message_data,
+                        options,
+                    });
+                }
+                Err(e) => {
+                    klog::log!("FAILED TO LOAD GLTF: {:?}", e);
+                }
             }
         })
         .run();
@@ -194,16 +205,18 @@ impl AssetLoader<World> for WorldLoader {
     ) {
         let sender = self.sender.inner().clone();
         ktasks::spawn(async move {
-            if let Some(world_load_message_data) =
-                load_world_from_bytes_and_extension(&data, &"", &extension).await
-            {
-                let _ = sender.send(PrefabLoadMessage {
-                    handle,
-                    world_load_message_data,
-                    options,
-                });
-            } else {
-                klog::log!("FAILED TO LOAD GLTF");
+            let result = load_world_from_bytes_and_extension(&data, &"", &extension).await;
+            match result {
+                Ok(world_load_message_data) => {
+                    let _ = sender.send(PrefabLoadMessage {
+                        handle,
+                        world_load_message_data,
+                        options,
+                    });
+                }
+                Err(e) => {
+                    klog::log!("FAILED TO LOAD GLTF: {:?}", e);
+                }
             }
         })
         .run();
@@ -214,12 +227,12 @@ async fn load_world_from_bytes_and_extension(
     bytes: &[u8],
     path: &str,
     extension: &str,
-) -> Option<PrefabLoadMessageData> {
+) -> Result<PrefabLoadMessageData, WorldLoadError> {
     #[allow(unreachable_code)]
-    Some(match extension {
+    Ok(match extension {
         #[cfg(feature = "gltf")]
         "glb" => {
-            let glb = kgltf::GLB::from_bytes(&bytes).ok()?;
+            let glb = kgltf::GLB::from_bytes(&bytes).map_err(|_| WorldLoadError::CouldNotDecode)?;
             let data = glb.binary_data.map(|d| d.into_owned());
             let mesh_primitive_data =
                 load_mesh_primitive_data(path, &glb.gltf, data.as_deref()).await;
@@ -234,10 +247,10 @@ async fn load_world_from_bytes_and_extension(
         #[cfg(feature = "gltf")]
         "gltf" => {
             //  klog::log!("ABOUT TO DECODE GLTF");
-            let s = std::str::from_utf8(&bytes).ok()?;
+            let s = std::str::from_utf8(&bytes).map_err(|_| WorldLoadError::CouldNotDecode)?;
             //   klog::log!("ABOUT TO DECODE GLTF0: {}", s);
 
-            let gltf = kgltf::GlTf::from_json(s)?;
+            let gltf = kgltf::GlTf::from_json(s).ok_or(WorldLoadError::CouldNotDecode)?;
             //  klog::log!("ABOUT TO DECODE GLTF1");
 
             let mesh_primitive_data = load_mesh_primitive_data(path, &gltf, None).await;
@@ -252,17 +265,20 @@ async fn load_world_from_bytes_and_extension(
         }
         _ => {
             klog::log!("Extension not yet implemented: {:?}", extension);
-            return None;
+            return Err(WorldLoadError::UnsupportedExtension);
         }
     })
 }
 #[allow(dead_code, unused_variables)]
-async fn load_world(path: &str) -> Option<PrefabLoadMessageData> {
+async fn load_world(path: &str) -> Result<PrefabLoadMessageData, WorldLoadError> {
     let extension = std::path::Path::new(&path)
         .extension()
-        .and_then(std::ffi::OsStr::to_str)?;
+        .and_then(std::ffi::OsStr::to_str)
+        .unwrap();
 
-    let bytes = crate::fetch_bytes(path).await.ok()?;
+    let bytes = crate::fetch_bytes(path)
+        .await
+        .map_err(|_| WorldLoadError::CouldNotLoadFile)?;
     load_world_from_bytes_and_extension(&bytes, &path, &extension).await
 }
 
