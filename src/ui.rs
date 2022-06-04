@@ -162,11 +162,16 @@ impl UIManager {
                 .end_text_input();
         }
 
+        standard_context.needs_redraw = false;
+        standard_context.delta_time_seconds =
+            world.get_singleton::<Time>().delta_seconds_f64 as f32;
+
         self.update_size(world, standard_context);
     }
 
     pub fn render_ui(&mut self, world: &mut World) {
         let mut commands = Commands::new();
+
         (|graphics: &mut Graphics,
           meshes: &mut Assets<Mesh>,
           textures: &mut Assets<Texture>,
@@ -260,6 +265,9 @@ impl UIManager {
     ) {
         self.prepare(world, context);
         self.layout(world, context, root_widget);
+        if context.needs_redraw {
+            request_window_redraw(world)
+        }
         self.render_ui(world)
     }
 }
@@ -293,6 +301,9 @@ pub fn run_simple_ui<Data: 'static>(
             Event::Draw => {
                 ui_manager.prepare(world, &mut standard_context);
                 ui_manager.layout(&mut data, &mut standard_context, &mut root);
+                if standard_context.needs_redraw {
+                    request_window_redraw(world)
+                }
                 ui_manager.render_ui(world);
                 false
             }

@@ -36,6 +36,16 @@ pub fn on_scroll<State, Context: GetStandardInput + GetEventHandlers<State>, Ext
     }
 }
 
+pub fn track_hover<
+    State,
+    Context: GetStandardStyle + GetStandardInput + GetEventHandlers<State>,
+    ExtraState,
+>(
+    child: impl Widget<State, Context, ExtraState>,
+) -> impl Widget<State, Context, ExtraState> {
+    on_cursor_event(|_| {}, false, false, child)
+}
+
 pub fn on_cursor_event<
     State,
     Context: GetStandardStyle + GetStandardInput + GetEventHandlers<State>,
