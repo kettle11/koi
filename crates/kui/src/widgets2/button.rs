@@ -2,7 +2,11 @@ use crate::*;
 
 pub fn button<
     State: 'static,
-    Context: GetStandardInput + GetStandardStyle + GetFonts + GetEventHandlers<State>,
+    Context: GetStandardInput
+        + GetStandardStyle
+        + GetFonts
+        + GetEventHandlers<State>
+        + GetAnimationValueTrait,
     ExtraState,
 >(
     text: impl Into<TextSource<State>>,
@@ -13,32 +17,43 @@ pub fn button<
 
 pub fn button_with_child_inner<
     State: 'static,
-    Context: GetStandardInput + GetStandardStyle + GetEventHandlers<State>,
+    Context: GetStandardInput + GetStandardStyle + GetEventHandlers<State> + GetAnimationValueTrait,
     ExtraState,
 >(
     child_widget: impl Widget<State, Context, ExtraState>,
     on_up: bool,
     on_click: fn(&mut State),
 ) -> impl Widget<State, Context, ExtraState> {
-    let child_widget = fit(stack((
-        rounded_fill(
-            |_, _, c: &Context| {
-                if c.standard_input().button_clicked {
-                    c.standard_style().disabled_color
-                } else {
-                    c.standard_style().primary_color
-                }
-            },
-            |_, c| c.standard_style().rounding,
+    let child_widget = hover_animation(
+        0.2,
+        animation_curve(
+            |_, _, _| |v| v,
+            fit(stack((
+                rounded_fill(
+                    |_, _, c: &Context| {
+                        if c.standard_input().button_clicked {
+                            c.standard_style().disabled_color
+                        } else {
+                            Color::interpolate(
+                                c.standard_style().primary_color,
+                                c.standard_style().disabled_color,
+                                c.animation_value().min(0.5),
+                            )
+                            //c.standard_style().primary_color
+                        }
+                    },
+                    |_, c| c.standard_style().rounding,
+                ),
+                padding(child_widget),
+            ))),
         ),
-        padding(child_widget),
-    )));
+    );
     button_base(child_widget, on_click, on_up)
 }
 
 pub fn button_with_child<
     State: 'static,
-    Context: GetStandardInput + GetStandardStyle + GetEventHandlers<State>,
+    Context: GetStandardInput + GetStandardStyle + GetEventHandlers<State> + GetAnimationValueTrait,
     ExtraState,
 >(
     child_widget: impl Widget<State, Context, ExtraState>,
@@ -49,7 +64,7 @@ pub fn button_with_child<
 
 pub fn toggle_button<
     State: 'static,
-    Context: GetStandardInput + GetStandardStyle + GetEventHandlers<State>,
+    Context: GetStandardInput + GetStandardStyle + GetEventHandlers<State> + GetAnimationValueTrait,
     ExtraState,
     EditState: 'static + Copy + PartialEq,
 >(
@@ -59,28 +74,38 @@ pub fn toggle_button<
 ) -> impl Widget<State, Context, ExtraState> {
     let state_value_0 = state_value.clone();
 
-    button_base(
-        fit(stack((
-            rounded_fill(
-                move |state, _, c: &Context| {
-                    let current_state = (state_value_0)(state);
-                    let selected = *get_state(state) == current_state;
-                    if c.standard_input().button_clicked || selected {
-                        c.standard_style().disabled_color
-                    } else {
-                        c.standard_style().primary_color
-                    }
+    hover_animation(
+        0.2,
+        animation_curve(
+            |_, _, _| |v| v,
+            button_base(
+                fit(stack((
+                    rounded_fill(
+                        move |state, _, c: &Context| {
+                            let current_state = (state_value_0)(state);
+                            let selected = *get_state(state) == current_state;
+                            if c.standard_input().button_clicked || selected {
+                                c.standard_style().disabled_color
+                            } else {
+                                Color::interpolate(
+                                    c.standard_style().primary_color,
+                                    c.standard_style().disabled_color,
+                                    c.animation_value().min(0.5),
+                                )
+                            }
+                        },
+                        |_, c| c.standard_style().rounding,
+                    ),
+                    padding(child),
+                ))),
+                move |state| {
+                    let new_value = (state_value)(state);
+                    let edit_state = get_state(state);
+                    *edit_state = new_value;
                 },
-                |_, c| c.standard_style().rounding,
+                false,
             ),
-            padding(child),
-        ))),
-        move |state| {
-            let new_value = (state_value)(state);
-            let edit_state = get_state(state);
-            *edit_state = new_value;
-        },
-        false,
+        ),
     )
 }
 

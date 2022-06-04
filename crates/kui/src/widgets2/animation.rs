@@ -45,10 +45,7 @@ pub fn hover_animation<
     child: impl Widget<Data, Context, ExtraState>,
 ) -> impl Widget<Data, Context, ExtraState> {
     track_hover(toggle_animation(
-        |_, _, c| {
-            println!("HOVERED: {:?}", c.standard_input().element_hovered);
-            c.standard_input().element_hovered
-        },
+        |_, _, c| c.standard_input().element_hovered,
         speed_seconds,
         child,
     ))
@@ -99,9 +96,6 @@ impl<
                 self.current_t = self.target_t;
             }
         }
-
-        println!("CURRENT T: {:?}", self.current_t);
-        println!("TARGET T: {:?}", self.target_t);
 
         let old_animation_value = context.animation_value();
         *context.animation_value_mut() = self.current_t;
