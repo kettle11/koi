@@ -17,6 +17,9 @@ pub use widgets2::*;
 mod fonts;
 pub use fonts::*;
 
+// mod images;
+// pub use images::*;
+
 #[derive(Clone, Copy, Debug)]
 pub struct MinAndMaxSize {
     pub min: Vec3,
@@ -96,6 +99,13 @@ pub trait GetStandardInput {
 }
 pub trait GetEventHandlers<State> {
     fn event_handlers_mut(&mut self) -> &mut EventHandlers<State>;
+}
+
+pub trait GetAnimationValueTrait {
+    fn animation_value(&self) -> f32;
+    fn animation_value_mut(&mut self) -> &mut f32;
+    fn delta_time_seconds(&self) -> f32;
+    fn set_needs_redraw(&mut self);
 }
 
 pub struct StandardInput {
@@ -252,6 +262,9 @@ pub struct StandardContext<State> {
     pub input: StandardInput,
     pub fonts: Fonts,
     pub event_handlers: EventHandlers<State>,
+    pub animation_value: f32,
+    pub delta_time_seconds: f32,
+    pub needs_redraw: bool,
 }
 
 impl<State> StandardContext<State> {
@@ -261,6 +274,9 @@ impl<State> StandardContext<State> {
             input,
             fonts,
             event_handlers: EventHandlers::new(),
+            animation_value: 0.0,
+            delta_time_seconds: 0.0,
+            needs_redraw: false,
         }
     }
 }
@@ -284,6 +300,23 @@ impl<State> GetStandardInput for StandardContext<State> {
     }
 }
 
+impl<State> GetAnimationValueTrait for StandardContext<State> {
+    fn animation_value(&self) -> f32 {
+        self.animation_value
+    }
+
+    fn animation_value_mut(&mut self) -> &mut f32 {
+        &mut self.animation_value
+    }
+
+    fn delta_time_seconds(&self) -> f32 {
+        self.delta_time_seconds
+    }
+
+    fn set_needs_redraw(&mut self) {
+        self.needs_redraw = true;
+    }
+}
 impl<State> GetEventHandlers<State> for StandardContext<State> {
     fn event_handlers_mut(&mut self) -> &mut EventHandlers<State> {
         &mut self.event_handlers
