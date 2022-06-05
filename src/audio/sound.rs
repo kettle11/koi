@@ -63,8 +63,7 @@ pub struct SoundAssetLoader {
     receiver: SyncGuard<mpsc::Receiver<SoundLoadMessage>>,
 }
 
-impl LoadableAssetTrait for Sound {
-    type Options = ();
+impl AssetTrait for Sound {
     type AssetLoader = SoundAssetLoader;
 }
 
@@ -78,13 +77,9 @@ impl SoundAssetLoader {
     }
 }
 
-impl AssetLoader<Sound> for SoundAssetLoader {
-    fn load_with_options(
-        &mut self,
-        path: &str,
-        handle: Handle<Sound>,
-        _options: <Sound as LoadableAssetTrait>::Options,
-    ) {
+impl AssetLoaderTrait<Sound> for SoundAssetLoader {
+    type Options = ();
+    fn load_with_options(&mut self, path: &str, handle: Handle<Sound>, _options: Self::Options) {
         let path = path.to_owned();
         let sender = self.sender.inner().clone();
 

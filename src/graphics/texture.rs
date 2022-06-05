@@ -281,12 +281,13 @@ impl TextureAssetLoader {
     }
 }
 
-impl AssetLoader<Texture> for TextureAssetLoader {
+impl AssetLoaderTrait<Texture> for TextureAssetLoader {
+    type Options = TextureSettings;
     fn load_with_options(
         &mut self,
         path: &str,
         handle: Handle<Texture>,
-        #[allow(unused_mut)] mut options: <Texture as LoadableAssetTrait>::Options,
+        #[allow(unused_mut)] mut options: Self::Options,
     ) {
         let path = path.to_owned();
         let sender = self.sender.inner().clone();
@@ -337,7 +338,7 @@ impl AssetLoader<Texture> for TextureAssetLoader {
         data: Vec<u8>,
         extension: String,
         handle: Handle<Texture>,
-        mut options: <Texture as LoadableAssetTrait>::Options,
+        mut options: Self::Options,
     ) {
         let sender = self.sender.inner().clone();
 
@@ -352,8 +353,7 @@ impl AssetLoader<Texture> for TextureAssetLoader {
         .run();
     }
 }
-impl LoadableAssetTrait for Texture {
-    type Options = TextureSettings;
+impl AssetTrait for Texture {
     type AssetLoader = TextureAssetLoader;
 }
 

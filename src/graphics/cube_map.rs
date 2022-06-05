@@ -490,8 +490,7 @@ impl Default for CubeMapOptions {
     }
 }
 
-impl LoadableAssetTrait for CubeMap {
-    type Options = CubeMapOptions;
+impl AssetTrait for CubeMap {
     type AssetLoader = NotSendSync<CubeMapAssetLoader>;
 }
 
@@ -542,12 +541,13 @@ fn find_brightest_direction(texture_load_data: &mut TextureLoadData) -> Vec3 {
     }
 }
 
-impl AssetLoader<CubeMap> for NotSendSync<CubeMapAssetLoader> {
+impl AssetLoaderTrait<CubeMap> for NotSendSync<CubeMapAssetLoader> {
+    type Options = CubeMapOptions;
     fn load_with_options(
         &mut self,
         path: &str,
         handle: Handle<CubeMap>,
-        mut options: <CubeMap as LoadableAssetTrait>::Options,
+        mut options: Self::Options,
     ) {
         let path = path.to_owned();
         let sender = self.sender.inner().clone();

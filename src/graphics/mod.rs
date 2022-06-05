@@ -242,7 +242,7 @@ fn setup_graphics(world: &mut World) {
             // The default mesh is empty so give it no bounding-box.
             bounding_box: None,
         },
-        MeshAssetLoader::new(),
+        (),
     );
 
     // Initialize asset stores and their placeholders.

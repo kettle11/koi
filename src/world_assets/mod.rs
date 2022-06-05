@@ -127,8 +127,7 @@ impl Default for LoadWorldOptions {
     }
 }
 
-impl LoadableAssetTrait for World {
-    type Options = LoadWorldOptions;
+impl AssetTrait for World {
     type AssetLoader = WorldLoader;
 }
 
@@ -163,13 +162,14 @@ impl WorldLoader {
     }
 }
 
-impl AssetLoader<World> for WorldLoader {
+impl AssetLoaderTrait<World> for WorldLoader {
+    type Options = LoadWorldOptions;
     #[allow(unused_variables)]
     fn load_with_options(
         &mut self,
         path: &str,
         handle: crate::Handle<World>,
-        options: <World as LoadableAssetTrait>::Options,
+        options: Self::Options,
     ) {
         let path = path.to_owned();
         let sender = self.sender.inner().clone();
@@ -201,7 +201,7 @@ impl AssetLoader<World> for WorldLoader {
         data: Vec<u8>,
         extension: String,
         handle: crate::Handle<World>,
-        options: <World as LoadableAssetTrait>::Options,
+        options: Self::Options,
     ) {
         let sender = self.sender.inner().clone();
         ktasks::spawn(async move {

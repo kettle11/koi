@@ -2,6 +2,24 @@ use std::collections::HashMap;
 use std::fmt::Debug;
 use std::sync::{mpsc, Arc, Weak};
 
+pub trait AssetTrait: 'static {
+    type AssetLoader;
+}
+
+pub trait AssetLoaderTrait<T: AssetTrait> {
+    type Options;
+    fn load_with_options(&mut self, path: &str, handle: Handle<T>, options: Self::Options);
+    fn load_with_data_and_options_and_extension(
+        &mut self,
+        _data: Vec<u8>,
+        _extension: String,
+        _handle: Handle<T>,
+        _options: Self::Options,
+    ) {
+        unimplemented!()
+    }
+}
+
 struct Item<T> {
     item: T,
     indirect_index: usize,
@@ -226,7 +244,7 @@ impl<T> WeakHandle<T> {
 /// Many types of [Assets] are used by koi:
 /// `Assets<Texture>`, `Assets<World>`, `Assets<Shader>`, etc.
 #[derive(NotCloneComponent)]
-pub struct Assets<T: LoadableAssetTrait> {
+pub struct Assets<T: AssetTrait> {
     indirection_storage: IndirectionStorage<T>,
     send_drop_channel: SyncGuard<mpsc::Sender<usize>>,
     receive_drop_channel: SyncGuard<mpsc::Receiver<usize>>,
@@ -235,10 +253,10 @@ pub struct Assets<T: LoadableAssetTrait> {
     pub asset_loader: T::AssetLoader,
 }
 
-unsafe impl<T: LoadableAssetTrait> Send for Assets<T> {}
-unsafe impl<T: LoadableAssetTrait> Sync for Assets<T> {}
+unsafe impl<T: AssetTrait> Send for Assets<T> {}
+unsafe impl<T: AssetTrait> Sync for Assets<T> {}
 
-impl<T: LoadableAssetTrait> Assets<T> {
+impl<T: AssetTrait> Assets<T> {
     pub fn new(default_placeholder: T, asset_loader: T::AssetLoader) -> Self {
         let (send_drop_channel, receive_drop_channel) = mpsc::channel();
         let mut s = Self {
@@ -311,52 +329,11 @@ impl<T: LoadableAssetTrait> Assets<T> {
             .map(String::as_str)
     }
 
-    pub fn load(&mut self, path: &str) -> Handle<T> {
-        self.load_with_options(path, Default::default())
-    }
-
     /// Create a new asset handle initialized to the default placeholder.
     pub fn new_handle(&mut self) -> Handle<T> {
         let indirection_index = self.indirection_storage.get_new_indirection_index();
         let new_handle =
             Handle::<T>::new(indirection_index, self.send_drop_channel.inner().clone());
-        new_handle
-    }
-
-    pub fn load_with_options(&mut self, path: &str, options: T::Options) -> Handle<T> {
-        // Check first if we've already loaded this path.
-        // The weak handle upgrade may fail, but if that happens proceed to load a new instance of the asset.
-        if let Some(weak_handle) = self.path_to_handle.get(path) {
-            if let Some(handle) = weak_handle.upgrade() {
-                return handle;
-            }
-        }
-
-        let new_handle = self.new_handle();
-        self.path_to_handle
-            .insert(path.to_string(), new_handle.clone_weak());
-        self.handle_to_path
-            .insert(new_handle.indirection_index, path.to_string());
-        self.asset_loader
-            .load_with_options(path, new_handle.clone(), options);
-        new_handle
-    }
-
-    pub fn load_with_data_and_options_and_extension(
-        &mut self,
-        data: Vec<u8>,
-        extension: String,
-        options: T::Options,
-    ) -> Handle<T> {
-        // Could a path be accepted instead of extension to allow for temporary substitutions of assets?
-        // Or for gltfs to have subpaths like "some_file.gltf/buffer_data0_100.png"?
-        let new_handle = self.new_handle();
-        self.asset_loader.load_with_data_and_options_and_extension(
-            data,
-            extension,
-            new_handle.clone(),
-            options,
-        );
         new_handle
     }
 
@@ -385,21 +362,56 @@ impl<T: LoadableAssetTrait> Assets<T> {
     }
 }
 
-pub trait LoadableAssetTrait: Sized + 'static {
-    type AssetLoader: AssetLoader<Self> + Send + Sync;
-    type Options: Default;
-}
+impl<T: AssetTrait> Assets<T>
+where
+    T::AssetLoader: AssetLoaderTrait<T>,
+{
+    pub fn load(&mut self, path: &str) -> Handle<T>
+    where
+        <T::AssetLoader as AssetLoaderTrait<T>>::Options: Default,
+    {
+        self.load_with_options(path, Default::default())
+    }
 
-pub trait AssetLoader<T: LoadableAssetTrait> {
-    fn load_with_options(&mut self, path: &str, handle: Handle<T>, options: T::Options);
-    fn load_with_data_and_options_and_extension(
+    pub fn load_with_options(
         &mut self,
-        _data: Vec<u8>,
-        _extension: String,
-        _handle: Handle<T>,
-        _options: T::Options,
-    ) {
-        unimplemented!()
+        path: &str,
+        options: <T::AssetLoader as AssetLoaderTrait<T>>::Options,
+    ) -> Handle<T> {
+        // Check first if we've already loaded this path.
+        // The weak handle upgrade may fail, but if that happens proceed to load a new instance of the asset.
+        if let Some(weak_handle) = self.path_to_handle.get(path) {
+            if let Some(handle) = weak_handle.upgrade() {
+                return handle;
+            }
+        }
+
+        let new_handle = self.new_handle();
+        self.path_to_handle
+            .insert(path.to_string(), new_handle.clone_weak());
+        self.handle_to_path
+            .insert(new_handle.indirection_index, path.to_string());
+        self.asset_loader
+            .load_with_options(path, new_handle.clone(), options);
+        new_handle
+    }
+
+    pub fn load_with_data_and_options_and_extension(
+        &mut self,
+        data: Vec<u8>,
+        extension: String,
+        options: <T::AssetLoader as AssetLoaderTrait<T>>::Options,
+    ) -> Handle<T> {
+        // Could a path be accepted instead of extension to allow for temporary substitutions of assets?
+        // Or for gltfs to have subpaths like "some_file.gltf/buffer_data0_100.png"?
+        let new_handle = self.new_handle();
+        self.asset_loader.load_with_data_and_options_and_extension(
+            data,
+            extension,
+            new_handle.clone(),
+            options,
+        );
+        new_handle
     }
 }
 

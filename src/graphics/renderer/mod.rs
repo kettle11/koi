@@ -24,7 +24,8 @@ pub use offscreen_render_target::*;
 
 use crate::graphics::texture::Texture;
 
-struct RenderTargetTexture {
+#[derive(Clone)]
+pub struct RenderTargetTexture {
     texture: Handle<Texture>,
     pixel_format: PixelFormat,
     texture_settings: TextureSettings,
@@ -94,7 +95,7 @@ pub fn drop_materials(materials: &mut Assets<Material>) {
 
 pub fn setup_renderer(world: &mut World) {
     let default_material = new_pbr_material(Shader::PHYSICALLY_BASED, PBRProperties::default());
-    let mut materials = Assets::<Material>::new(default_material, MaterialAssetLoader::new());
+    let mut materials = Assets::<Material>::new(default_material, ());
     Material::initialize_static_materials(&mut materials);
     world.spawn((Name("Assets<Material>".into()), materials));
     let brdf_lookup_table = brdf_lookup::generate_brdf_lookup.run(world);
@@ -773,7 +774,7 @@ impl<'a, 'b: 'a> Renderer<'a, 'b> {
     }
 }
 
-type Renderables<'a> = Query<
+pub type Renderables<'a> = Query<
     'a,
     (
         &'static GlobalTransform,
@@ -786,7 +787,7 @@ type Renderables<'a> = Query<
     ),
 >;
 
-type Lights<'a> = Query<
+pub type Lights<'a> = Query<
     'a,
     (
         &'static GlobalTransform,
@@ -805,6 +806,36 @@ pub fn prepare_shadow_casters(
     }
 }
 
+pub fn render_other_world(main_world: &mut World, other_world: &mut World) {
+    (|graphics: &mut Graphics,
+      shader_assets: &Assets<Shader>,
+      material_assets: &Assets<Material>,
+      mesh_assets: &Assets<Mesh>,
+      texture_assets: &mut Assets<Texture>,
+      cube_map_assets: &Assets<CubeMap>,
+      renderer_info: &mut RendererInfo| {
+        (|cameras: Query<(&GlobalTransform, &Camera)>,
+          renderables: Renderables,
+          lights: Lights,
+          reflection_probes: Query<(&'static GlobalTransform, &'static ReflectionProbe)>| {
+              render_scene(
+                  graphics,
+                  shader_assets,
+                  material_assets,
+                  mesh_assets,
+                  texture_assets,
+                  cube_map_assets,
+                  renderer_info,
+                  cameras,
+                  renderables,
+                  lights,
+                  reflection_probes,
+              )
+          }).run(other_world);
+    })
+    .run(main_world)
+}
+
 pub fn render_scene<'a, 'b>(
     graphics: &mut Graphics,
     shader_assets: &Assets<Shader>,
@@ -812,19 +843,20 @@ pub fn render_scene<'a, 'b>(
     mesh_assets: &Assets<Mesh>,
     texture_assets: &mut Assets<Texture>,
     cube_map_assets: &Assets<CubeMap>,
+    renderer_info: &mut RendererInfo,
     cameras: Query<(&GlobalTransform, &Camera)>,
     renderables: Renderables<'a>,
     mut lights: Lights<'b>,
     reflection_probes: Query<(&'static GlobalTransform, &'static ReflectionProbe)>,
-    renderer_info: &mut RendererInfo,
 ) {
     #[cfg(feature = "headless")]
     return;
 
     let mut command_buffer = graphics.context.new_command_buffer();
 
-    let is_primary_camera_target =
-        graphics.current_camera_target == Some(graphics.primary_camera_target);
+    // Setting this to true will mess with XR
+    let is_primary_camera_target = true;
+    //   graphics.current_camera_target == Some(graphics.primary_camera_target);
 
     let mut clear_color = None;
     let mut view_size = (0, 0);

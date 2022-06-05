@@ -46,12 +46,13 @@ impl ShaderAssetLoader {
     }
 }
 
-impl AssetLoader<Shader> for ShaderAssetLoader {
+impl AssetLoaderTrait<Shader> for ShaderAssetLoader {
+    type Options = PipelineSettings;
     fn load_with_options(
         &mut self,
         path: &str,
         handle: Handle<Shader>,
-        pipeline_settings: <Shader as LoadableAssetTrait>::Options,
+        pipeline_settings: Self::Options,
     ) {
         let path = path.to_owned();
         let sender = self.sender.inner().clone();
@@ -67,9 +68,8 @@ impl AssetLoader<Shader> for ShaderAssetLoader {
         .run();
     }
 }
-impl LoadableAssetTrait for Shader {
+impl AssetTrait for Shader {
     type AssetLoader = ShaderAssetLoader;
-    type Options = PipelineSettings;
 }
 
 impl Shader {
@@ -188,7 +188,7 @@ pub(crate) fn initialize_static_shaders(graphics: &mut Graphics, shaders: &mut A
                     blending: Some((BlendFactor::SourceAlpha, BlendFactor::OneMinusSourceAlpha)),
                     // LessOrEqual allows transparent overlays to be rendered with the same mesh
                     // as the thing being overlaid.
-                    depth_test: DepthTest::LessOrEqual,
+                    depth_test: DepthTest::AlwaysPass,
                     ..Default::default()
                 },
             )

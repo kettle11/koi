@@ -211,19 +211,8 @@ impl MaterialAssetLoader {
     }
 }
 
-impl AssetLoader<Material> for MaterialAssetLoader {
-    fn load_with_options(
-        &mut self,
-        _path: &str,
-        _handle: Handle<Material>,
-        _options: <Material as LoadableAssetTrait>::Options,
-    ) {
-        unimplemented!()
-    }
-}
-impl LoadableAssetTrait for Material {
-    type Options = ();
-    type AssetLoader = MaterialAssetLoader;
+impl AssetTrait for Material {
+    type AssetLoader = ();
 }
 
 /// Some built in properties for materials

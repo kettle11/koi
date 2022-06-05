@@ -68,26 +68,6 @@ pub struct GPUMesh {
     pub colors: Option<DataBuffer<Vec4>>,
 }
 
-pub struct MeshAssetLoader {}
-
-impl MeshAssetLoader {
-    pub fn new() -> Self {
-        Self {}
-    }
-}
-
-impl AssetLoader<Mesh> for MeshAssetLoader {
-    fn load_with_options(
-        &mut self,
-        _path: &str,
-        _handle: Handle<Mesh>,
-        _options: <Mesh as LoadableAssetTrait>::Options,
-    ) {
-        todo!()
-    }
-}
-
-impl LoadableAssetTrait for Mesh {
-    type Options = ();
-    type AssetLoader = MeshAssetLoader;
+impl AssetTrait for Mesh {
+    type AssetLoader = ();
 }
