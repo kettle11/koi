@@ -356,6 +356,23 @@ impl<T: AssetTrait> Assets<T> {
         }
     }
 
+    pub fn get_by_path(&mut self, path: &str) -> Handle<T> {
+        // Check first if we've already loaded this path.
+        // The weak handle upgrade may fail, but if that happens proceed to load a new instance of the asset.
+        if let Some(weak_handle) = self.path_to_handle.get(path) {
+            if let Some(handle) = weak_handle.upgrade() {
+                return handle;
+            }
+        }
+
+        let new_handle = self.new_handle();
+        self.path_to_handle
+            .insert(path.to_string(), new_handle.clone_weak());
+        self.handle_to_path
+            .insert(new_handle.indirection_index, path.to_string());
+        new_handle
+    }
+
     pub fn is_placeholder(&self, handle: &Handle<T>) -> bool {
         self.indirection_storage
             .is_placeholder(handle.indirection_index)
@@ -378,21 +395,11 @@ where
         path: &str,
         options: <T::AssetLoader as AssetLoaderTrait<T>>::Options,
     ) -> Handle<T> {
-        // Check first if we've already loaded this path.
-        // The weak handle upgrade may fail, but if that happens proceed to load a new instance of the asset.
-        if let Some(weak_handle) = self.path_to_handle.get(path) {
-            if let Some(handle) = weak_handle.upgrade() {
-                return handle;
-            }
+        let new_handle = self.get_by_path(path);
+        if self.is_placeholder(&new_handle) {
+            self.asset_loader
+                .load_with_options(path, new_handle.clone(), options);
         }
-
-        let new_handle = self.new_handle();
-        self.path_to_handle
-            .insert(path.to_string(), new_handle.clone_weak());
-        self.handle_to_path
-            .insert(new_handle.indirection_index, path.to_string());
-        self.asset_loader
-            .load_with_options(path, new_handle.clone(), options);
         new_handle
     }
 
