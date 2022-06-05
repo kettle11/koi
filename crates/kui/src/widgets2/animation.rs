@@ -2,14 +2,14 @@ use crate::*;
 
 pub fn animation<Data, Context: GetAnimationValueTrait, ExtraState>(
     get_target_value: impl Fn(&mut Data, &mut ExtraState, &Context) -> f32,
-    speed_seconds: f32,
+    get_animation_speed_seconds: impl Fn(&mut Data, &mut ExtraState, &Context) -> f32,
     child: impl Widget<Data, Context, ExtraState>,
 ) -> impl Widget<Data, Context, ExtraState> {
     Animation {
         child,
         current_t: 0.0,
         target_t: 0.0,
-        rate_change_t: speed_seconds,
+        rate_change_t: get_animation_speed_seconds,
         get_animation_value: get_target_value,
         phantom: std::marker::PhantomData,
     }
@@ -17,14 +17,14 @@ pub fn animation<Data, Context: GetAnimationValueTrait, ExtraState>(
 
 pub fn toggle_animation<Data, Context: GetAnimationValueTrait, ExtraState>(
     get_state: impl Fn(&mut Data, &mut ExtraState, &Context) -> bool,
-    speed_seconds: f32,
+    get_animation_speed_seconds: impl Fn(&mut Data, &mut ExtraState, &Context) -> f32,
     child: impl Widget<Data, Context, ExtraState>,
 ) -> impl Widget<Data, Context, ExtraState> {
     Animation {
         child,
         current_t: 0.0,
         target_t: 0.0,
-        rate_change_t: speed_seconds,
+        rate_change_t: get_animation_speed_seconds,
         get_animation_value: move |data, extra_state, context| {
             if (get_state)(data, extra_state, context) {
                 1.0
@@ -41,13 +41,12 @@ pub fn hover_animation<
     Context: GetAnimationValueTrait + GetStandardInput + GetStandardStyle + GetEventHandlers<Data>,
     ExtraState,
 >(
-    speed_seconds: f32,
     child: impl Widget<Data, Context, ExtraState>,
 ) -> impl Widget<Data, Context, ExtraState> {
     track_hover(toggle_animation(
         |_, _, c| c.standard_input().element_hovered,
-        speed_seconds,
-        child,
+        |_, _, c| c.standard_style().animation_time,
+        animation_curve(|_, _, c| c.standard_style().animation_curve, child),
     ))
 }
 
@@ -57,10 +56,11 @@ pub struct Animation<
     ExtraState,
     Child: Widget<Data, Context, ExtraState>,
     GetAnimationValue: Fn(&mut Data, &mut ExtraState, &Context) -> f32,
+    GetAnimationSpeed: Fn(&mut Data, &mut ExtraState, &Context) -> f32,
 > {
     current_t: f32,
     target_t: f32,
-    rate_change_t: f32,
+    rate_change_t: GetAnimationSpeed,
     get_animation_value: GetAnimationValue,
     child: Child,
     phantom: std::marker::PhantomData<fn() -> (Data, ExtraState, Context)>,
@@ -72,8 +72,9 @@ impl<
         ExtraState,
         Child: Widget<Data, Context, ExtraState>,
         GetAnimationValue: Fn(&mut Data, &mut ExtraState, &Context) -> f32,
+        GetAnimationSpeed: Fn(&mut Data, &mut ExtraState, &Context) -> f32,
     > Widget<Data, Context, ExtraState>
-    for Animation<Data, Context, ExtraState, Child, GetAnimationValue>
+    for Animation<Data, Context, ExtraState, Child, GetAnimationValue, GetAnimationSpeed>
 {
     fn layout(
         &mut self,
@@ -83,15 +84,16 @@ impl<
         min_and_max_size: MinAndMaxSize,
     ) -> Vec3 {
         self.target_t = (self.get_animation_value)(state, extra_state, context);
+        let rate_of_change = (self.rate_change_t)(state, extra_state, context);
         if self.current_t < self.target_t {
             context.set_needs_redraw();
-            self.current_t += context.delta_time_seconds() / self.rate_change_t;
+            self.current_t += context.delta_time_seconds() / rate_of_change;
             if self.current_t > self.target_t {
                 self.current_t = self.target_t;
             }
         } else if self.current_t > self.target_t {
             context.set_needs_redraw();
-            self.current_t -= context.delta_time_seconds() / self.rate_change_t;
+            self.current_t -= context.delta_time_seconds() / rate_of_change;
             if self.current_t < self.target_t {
                 self.current_t = self.target_t;
             }
