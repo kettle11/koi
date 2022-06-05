@@ -8,7 +8,7 @@ pub fn stack<State, Context, ExtraState, I: IntoWidgetChildren<State, Context, E
         direction: Vec3::Z,
         children: children.into_widget_children(),
         get_spacing: |_, _| 0.0,
-        wrap: true,
+        wrap: false,
         phantom: std::marker::PhantomData,
     }
 }
@@ -26,7 +26,7 @@ pub fn column<
         direction: Vec3::Y,
         children: children.into_widget_children(),
         get_spacing: |_, c| c.standard_style().padding,
-        wrap: true,
+        wrap: false,
         phantom: std::marker::PhantomData,
     }
 }
@@ -46,12 +46,47 @@ pub fn column_with_spacing<
         direction: Vec3::Y,
         children: children.into_widget_children(),
         get_spacing,
-        wrap: true,
+        wrap: false,
+        phantom: std::marker::PhantomData,
+    }
+}
+
+pub fn column_unspaced<
+    State,
+    Context,
+    ExtraState,
+    I: IntoWidgetChildren<State, Context, ExtraState>,
+>(
+    children: I,
+) -> impl Widget<State, Context, ExtraState> {
+    Consecutive {
+        direction: Vec3::Y,
+        children: children.into_widget_children(),
+        get_spacing: |_, _| 0.0,
+        wrap: false,
         phantom: std::marker::PhantomData,
     }
 }
 
 pub fn row<
+    State,
+    Context: GetStandardStyle,
+    ExtraState,
+    I: IntoWidgetChildren<State, Context, ExtraState>,
+>(
+    children: I,
+) -> Consecutive<State, Context, ExtraState, I::WidgetChildren, fn(&mut State, &Context) -> f32> {
+    Consecutive {
+        // This should be reversed for right-to-left.
+        direction: Vec3::X,
+        children: children.into_widget_children(),
+        get_spacing: |_, c| c.standard_style().padding,
+        wrap: false,
+        phantom: std::marker::PhantomData,
+    }
+}
+
+pub fn row_wrapped<
     State,
     Context: GetStandardStyle,
     ExtraState,
@@ -82,24 +117,7 @@ pub fn row_unspaced<
         direction: Vec3::X,
         children: children.into_widget_children(),
         get_spacing: |_, _| 0.0,
-        wrap: true,
-        phantom: std::marker::PhantomData,
-    }
-}
-
-pub fn column_unspaced<
-    State,
-    Context,
-    ExtraState,
-    I: IntoWidgetChildren<State, Context, ExtraState>,
->(
-    children: I,
-) -> impl Widget<State, Context, ExtraState> {
-    Consecutive {
-        direction: Vec3::Y,
-        children: children.into_widget_children(),
-        get_spacing: |_, _| 0.0,
-        wrap: true,
+        wrap: false,
         phantom: std::marker::PhantomData,
     }
 }

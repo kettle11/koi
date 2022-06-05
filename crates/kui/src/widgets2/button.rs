@@ -56,6 +56,41 @@ pub fn button_with_child<
     button_with_child_inner(child_widget, false, on_click)
 }
 
+pub fn bool_button<
+    State: 'static,
+    Context: GetStandardInput + GetStandardStyle + GetEventHandlers<State> + GetAnimationValueTrait,
+    ExtraState,
+>(
+    child: impl Widget<State, Context, ExtraState>,
+    get_state: fn(&mut State) -> &mut bool,
+) -> impl Widget<State, Context, ExtraState> {
+    hover_animation(button_base(
+        fit(stack((
+            rounded_fill(
+                move |state, _, c: &Context| {
+                    let selected = *(get_state)(state);
+                    if c.standard_input().button_clicked || selected {
+                        c.standard_style().disabled_color
+                    } else {
+                        Color::interpolate(
+                            c.standard_style().primary_color,
+                            c.standard_style().disabled_color,
+                            c.animation_value().min(0.5),
+                        )
+                    }
+                },
+                |_, c| c.standard_style().rounding,
+            ),
+            padding(child),
+        ))),
+        move |state| {
+            let new_value = (get_state)(state);
+            *new_value = !*new_value
+        },
+        false,
+    ))
+}
+
 pub fn toggle_button<
     State: 'static,
     Context: GetStandardInput + GetStandardStyle + GetEventHandlers<State> + GetAnimationValueTrait,

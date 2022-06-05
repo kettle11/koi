@@ -175,16 +175,16 @@ impl<State> EventHandlers<State> {
         clipping_mask: Box2,
     ) {
         let clipped = clipping_mask.intersection(Box2::new(hit_box.min.xy(), hit_box.max.xy()));
-        if clipped.area() > 0.0 {
-            self.click_handlers.push(ClickHandler {
-                hit_box: Box3::new(
-                    clipped.min.extend(hit_box.min.z),
-                    clipped.max.extend(hit_box.max.z),
-                ),
-                consume_event,
-                handler,
-            });
-        }
+        // if clipped.area() > 0.0 {
+        self.click_handlers.push(ClickHandler {
+            hit_box: Box3::new(
+                clipped.min.extend(hit_box.min.z),
+                clipped.max.extend(hit_box.max.z),
+            ),
+            consume_event,
+            handler,
+        });
+        // }
     }
 
     pub fn clear(&mut self) {
