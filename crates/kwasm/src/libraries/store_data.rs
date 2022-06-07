@@ -61,7 +61,7 @@ thread_local! {
             let promise = Promise.resolve(this.kwasm_db).then(function(e) {
                 let db = e.target.result;
              
-                let transaction = db.transaction("array_buffers", "readonly");
+                let transaction = db.transaction("array_buffers", "readwrite");
                 let array_buffers = transaction.objectStore("array_buffers");
                 let request = array_buffers.delete(fileName);
               
