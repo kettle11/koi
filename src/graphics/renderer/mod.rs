@@ -1184,6 +1184,10 @@ pub fn render_scene<'a, 'b>(
                     );
                     */
                 }
+            } else {
+                if let Some(CameraTarget::OffscreenRenderTarget(c)) = &camera.camera_target {
+                    offscreen_render_targets.get(c).resolve(render_pass)
+                }
             }
         }
     }
