@@ -11,6 +11,15 @@ pub struct NotSendSync<T: 'static> {
     thread_id: std::thread::ThreadId,
 }
 
+impl<T: 'static + Clone> Clone for NotSendSync<T> {
+    fn clone(&self) -> Self {
+        Self {
+            value: self.value.clone(),
+            thread_id: self.thread_id.clone(),
+        }
+    }
+}
+
 unsafe impl<T> Send for NotSendSync<T> {}
 unsafe impl<T> Sync for NotSendSync<T> {}
 

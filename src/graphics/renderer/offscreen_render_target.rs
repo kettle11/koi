@@ -1,6 +1,7 @@
 use super::*;
 
 // Todo: Framebuffer is leaked when this is dropped.
+#[derive(Clone)]
 pub struct OffscreenRenderTarget {
     framebuffer: Option<NotSendSync<Framebuffer>>,
     color_texture: Option<RenderTargetTexture>,
@@ -9,6 +10,10 @@ pub struct OffscreenRenderTarget {
     inner_texture_size: Vec2u,
     used_size: Vec2u,
     needs_resolve: bool,
+}
+
+impl AssetTrait for OffscreenRenderTarget {
+    type AssetLoader = ();
 }
 
 impl OffscreenRenderTarget {

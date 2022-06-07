@@ -34,11 +34,12 @@ pub struct Camera {
     pub camera_target: Option<CameraTarget>,
 }
 
-#[derive(Clone, Debug, PartialEq, Copy)]
+#[derive(Clone, Debug, PartialEq)]
 pub enum CameraTarget {
     Primary,
     Window(kapp::WindowId),
     XRDevice(usize),
+    OffscreenRenderTarget(Handle<OffscreenRenderTarget>),
 }
 
 #[derive(Copy, Clone, Debug, SerializeDeserialize)]

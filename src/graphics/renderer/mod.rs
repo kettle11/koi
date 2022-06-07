@@ -95,9 +95,21 @@ pub fn drop_materials(materials: &mut Assets<Material>) {
 
 pub fn setup_renderer(world: &mut World) {
     let default_material = new_pbr_material(Shader::PHYSICALLY_BASED, PBRProperties::default());
+
     let mut materials = Assets::<Material>::new(default_material, ());
     Material::initialize_static_materials(&mut materials);
     world.spawn((Name("Assets<Material>".into()), materials));
+
+    let default_offscreen_render_target =
+        (|graphics: &mut Graphics, textures: &mut Assets<Texture>| {
+            OffscreenRenderTarget::new(graphics, textures, Vec2u::ZERO, None, None)
+        })
+        .run(world);
+    world.spawn((
+        Name("Offscreen Render Target Assets".into()),
+        Assets::<OffscreenRenderTarget>::new(default_offscreen_render_target, ()),
+    ));
+
     let brdf_lookup_table = brdf_lookup::generate_brdf_lookup.run(world);
     let brdf_lookup_table = world
         .get_single_component_mut::<Assets<Texture>>()
@@ -812,6 +824,7 @@ pub fn render_other_world(main_world: &mut World, other_world: &mut World) {
       material_assets: &Assets<Material>,
       mesh_assets: &Assets<Mesh>,
       texture_assets: &mut Assets<Texture>,
+      offscreen_render_targets: &mut Assets<OffscreenRenderTarget>,
       cube_map_assets: &Assets<CubeMap>,
       renderer_info: &mut RendererInfo| {
         (|cameras: Query<(&GlobalTransform, &Camera)>,
@@ -830,6 +843,7 @@ pub fn render_other_world(main_world: &mut World, other_world: &mut World) {
                   renderables,
                   lights,
                   reflection_probes,
+                  offscreen_render_targets
               )
           }).run(other_world);
     })
@@ -848,6 +862,7 @@ pub fn render_scene<'a, 'b>(
     renderables: Renderables<'a>,
     mut lights: Lights<'b>,
     reflection_probes: Query<(&'static GlobalTransform, &'static ReflectionProbe)>,
+    offscreen_render_targets: &Assets<OffscreenRenderTarget>,
 ) {
     #[cfg(feature = "headless")]
     return;
@@ -901,252 +916,274 @@ pub fn render_scene<'a, 'b>(
         }
     }
 
-    let post_processing_enabled = true;
+    let mut post_processing_enabled = true;
 
-    let render_framebuffer = if post_processing_enabled {
-        renderer_info.offscreen_render_target.framebuffer()
-    } else {
-        &graphics.current_target_framebuffer
-    };
+    for (camera_global_transform, camera) in &cameras {
+        let clear_color = camera.clear_color;
 
-    let clear_color = clear_color.map(|c| {
-        // Presently the output needs to be in non-linear sRGB.
-        // However that means that blending with the clear-color will be incorrect.
-        // A post-processing pass is needed to convert into the appropriate output space.
-        let c = c.to_rgb_color(color_spaces::LINEAR_SRGB);
-        c.into()
-    });
+        // Check that the camera is setup to render to the current CameraTarget.
+        let camera_should_render = !camera
+            .render_flags
+            .includes_layer(RenderFlags::USER_INTERFACE); /*(graphics.current_camera_target.is_some()
+                                                          && graphics.current_camera_target == camera.camera_target)
+                                                          || (is_primary_camera_target && camera.camera_target == Some(CameraTarget::Primary))
+                                                              && !camera
+                                                                  .render_flags
+                                                                  .includes_layer(RenderFlags::USER_INTERFACE);
+                                                                  */
 
-    {
-        let mut render_pass =
-            command_buffer.begin_render_pass_with_framebuffer(&render_framebuffer, clear_color);
+        // Check that this camera targets the target currently being rendered.
+        if camera_should_render {
+            let clear_color = clear_color.map(|c| {
+                // Presently the output needs to be in non-linear sRGB.
+                // However that means that blending with the clear-color will be incorrect.
+                // A post-processing pass is needed to convert into the appropriate output space.
+                let c = c.to_rgb_color(color_spaces::LINEAR_SRGB);
+                c.into()
+            });
 
-        for (camera_global_transform, camera) in &cameras {
-            // Check that the camera is setup to render to the current CameraTarget.
-            let camera_should_render = (graphics.current_camera_target.is_some()
-                && graphics.current_camera_target == camera.camera_target)
-                || (is_primary_camera_target
-                    && camera.camera_target == Some(CameraTarget::Primary))
-                    && !camera
-                        .render_flags
-                        .includes_layer(RenderFlags::USER_INTERFACE);
+            let mut render_framebuffer = if post_processing_enabled {
+                renderer_info.offscreen_render_target.framebuffer()
+            } else {
+                &graphics.current_target_framebuffer
+            };
 
-            // Check that this camera targets the target currently being rendered.
-            if camera_should_render {
-                let mut camera_info = Vec::new();
-                if graphics.override_views.is_empty() {
+            if let Some(CameraTarget::OffscreenRenderTarget(c)) = &camera.camera_target {
+                render_framebuffer = offscreen_render_targets.get(c).framebuffer();
+
+                view_size = camera.get_view_size();
+                view_size.0 = (view_size.0 as f32 / camera.resolution_scale) as u32;
+                view_size.1 = (view_size.1 as f32 / camera.resolution_scale) as u32;
+
+                resolution_scale = camera.resolution_scale;
+
+                // Resize of the offscreen render target to match the view size.
+                renderer_info
+                    .offscreen_render_target
+                    .resize(graphics, texture_assets, {
+                        Vec2u::new(view_size.0 as usize, view_size.1 as usize)
+                    });
+
+                // Todo: This is a hack
+                post_processing_enabled = false;
+            }
+
+            let mut render_pass =
+                command_buffer.begin_render_pass_with_framebuffer(&render_framebuffer, clear_color);
+
+            let mut camera_info = Vec::new();
+            if graphics.override_views.is_empty() {
+                camera_info.push(Renderer::get_view_info(
+                    camera_global_transform,
+                    Mat4::IDENTITY,
+                    camera.projection_matrix(),
+                    Box2 {
+                        min: Vec2::ZERO,
+                        max: Vec2::ONE,
+                    },
+                ));
+            } else {
+                for view in &graphics.override_views {
                     camera_info.push(Renderer::get_view_info(
                         camera_global_transform,
-                        Mat4::IDENTITY,
-                        camera.projection_matrix(),
-                        Box2 {
-                            min: Vec2::ZERO,
-                            max: Vec2::ONE,
-                        },
-                    ));
-                } else {
-                    for view in &graphics.override_views {
-                        camera_info.push(Renderer::get_view_info(
-                            camera_global_transform,
-                            view.offset_transform,
-                            view.projection_matrix,
-                            view.output_rectangle,
-                        ))
-                    }
+                        view.offset_transform,
+                        view.projection_matrix,
+                        view.output_rectangle,
+                    ))
                 }
-
-                /*
-                #[cfg(not(feature = "xr"))]
-                let multiview_enabled = false;
-                #[cfg(feature = "xr")]
-                let multiview_enabled = camera_info.len() > 1;
-                */
-                let multiview_enabled = false;
-
-                let mut renderer = Renderer::new(
-                    renderer_info,
-                    &mut render_pass,
-                    shader_assets,
-                    material_assets,
-                    mesh_assets,
-                    texture_assets,
-                    cube_map_assets,
-                    &camera_info,
-                    kmath::geometry::BoundingBox::<u32, 2> {
-                        min: Vector::ZERO,
-                        max: Vector::<u32, 2>::new(view_size.0, view_size.1),
-                    },
-                    multiview_enabled,
-                );
-
-                renderer.render_scene(
-                    camera,
-                    camera_global_transform,
-                    &renderables,
-                    &lights,
-                    &reflection_probes,
-                );
             }
-        }
 
-        if post_processing_enabled {
-            renderer_info.offscreen_render_target.resolve(render_pass);
+            /*
+            #[cfg(not(feature = "xr"))]
+            let multiview_enabled = false;
+            #[cfg(feature = "xr")]
+            let multiview_enabled = camera_info.len() > 1;
+            */
+            let multiview_enabled = false;
 
-            // Bloom, linear -> sRGB, and Dither
-            {
-                let mut blurred_texture = &Texture::WHITE;
-                if renderer_info.bloom_enabled {
-                    blurred_texture = renderer_info.blur_calculator.blur_texture(
-                        graphics,
-                        texture_assets,
-                        &mut command_buffer,
-                        renderer_info.offscreen_render_target.color_texture(),
-                        Vec2u::new(view_size.0 as _, view_size.1 as _),
-                    )
-                };
+            let mut renderer = Renderer::new(
+                renderer_info,
+                &mut render_pass,
+                shader_assets,
+                material_assets,
+                mesh_assets,
+                texture_assets,
+                cube_map_assets,
+                &camera_info,
+                kmath::geometry::BoundingBox::<u32, 2> {
+                    min: Vector::ZERO,
+                    max: Vector::<u32, 2>::new(view_size.0, view_size.1),
+                },
+                multiview_enabled,
+            );
 
-                // Draw to the screen
-                let mut render_pass = command_buffer.begin_render_pass_with_framebuffer(
-                    &graphics.current_target_framebuffer,
-                    clear_color,
-                );
+            renderer.render_scene(
+                camera,
+                camera_global_transform,
+                &renderables,
+                &lights,
+                &reflection_probes,
+            );
 
-                let shader = &renderer_info.final_postprocess_shader;
-                let texture = renderer_info.offscreen_render_target.color_texture();
-                let output_viewport = Box2::new(
-                    Vec2::ZERO,
-                    Vec2::new(
-                        view_size.0 as f32 * resolution_scale,
-                        view_size.1 as f32 * resolution_scale,
-                    ),
-                );
-                let texture_scale = renderer_info.offscreen_render_target.inner_texture_scale();
-                let min = output_viewport.min.as_u32();
-                let size = output_viewport.size().as_u32();
+            if post_processing_enabled {
+                renderer_info.offscreen_render_target.resolve(render_pass);
 
-                render_pass.set_pipeline(&shader.pipeline);
-                render_pass.set_viewport(min.x, min.y, size.x, size.y);
-
-                render_pass.set_texture_property(
-                    &shader.pipeline.get_texture_property("p_texture").unwrap(),
-                    Some(texture_assets.get(texture)),
-                    0,
-                );
-                render_pass.set_texture_property(
-                    &shader
-                        .pipeline
-                        .get_texture_property("p_blurred_texture")
-                        .unwrap(),
-                    Some(texture_assets.get(blurred_texture)),
-                    1,
-                );
-                render_pass.set_vec2_property(
-                    &shader
-                        .pipeline
-                        .get_vec2_property("p_texture_coordinate_scale")
-                        .unwrap(),
-                    texture_scale.into(),
-                );
-                render_pass.set_float_property(
-                    &shader
-                        .pipeline
-                        .get_float_property("p_bloom_strength")
-                        .unwrap(),
+                // Bloom, linear -> sRGB, and Dither
+                {
+                    let mut blurred_texture = &Texture::WHITE;
                     if renderer_info.bloom_enabled {
-                        renderer_info.bloom_strength
-                    } else {
-                        0.0
-                    },
-                );
+                        blurred_texture = renderer_info.blur_calculator.blur_texture(
+                            graphics,
+                            texture_assets,
+                            &mut command_buffer,
+                            renderer_info.offscreen_render_target.color_texture(),
+                            Vec2u::new(view_size.0 as _, view_size.1 as _),
+                        )
+                    };
 
-                render_pass.draw_triangles_without_buffer(1);
+                    // Draw to the screen
+                    let mut render_pass = command_buffer.begin_render_pass_with_framebuffer(
+                        &graphics.current_target_framebuffer,
+                        clear_color,
+                    );
 
-                // Draw USER interface cameras.
-                for (camera_global_transform, camera) in &cameras {
-                    // Check that the camera is setup to render to the current CameraTarget.
-                    let camera_should_render = (graphics.current_camera_target.is_some()
-                        && graphics.current_camera_target == camera.camera_target)
-                        || (is_primary_camera_target
-                            && camera.camera_target == Some(CameraTarget::Primary))
-                            && camera
-                                .render_flags
-                                .includes_layer(RenderFlags::USER_INTERFACE);
+                    let shader = &renderer_info.final_postprocess_shader;
+                    let texture = renderer_info.offscreen_render_target.color_texture();
+                    let output_viewport = Box2::new(
+                        Vec2::ZERO,
+                        Vec2::new(
+                            view_size.0 as f32 * resolution_scale,
+                            view_size.1 as f32 * resolution_scale,
+                        ),
+                    );
+                    let texture_scale = renderer_info.offscreen_render_target.inner_texture_scale();
+                    let min = output_viewport.min.as_u32();
+                    let size = output_viewport.size().as_u32();
 
-                    // Check that this camera targets the target currently being rendered.
-                    if camera_should_render {
-                        let mut camera_info = Vec::new();
-                        if graphics.override_views.is_empty() {
-                            camera_info.push(Renderer::get_view_info(
-                                camera_global_transform,
-                                Mat4::IDENTITY,
-                                camera.projection_matrix(),
-                                Box2 {
-                                    min: Vec2::ZERO,
-                                    max: Vec2::ONE,
-                                },
-                            ));
+                    render_pass.set_pipeline(&shader.pipeline);
+                    render_pass.set_viewport(min.x, min.y, size.x, size.y);
+
+                    render_pass.set_texture_property(
+                        &shader.pipeline.get_texture_property("p_texture").unwrap(),
+                        Some(texture_assets.get(texture)),
+                        0,
+                    );
+                    render_pass.set_texture_property(
+                        &shader
+                            .pipeline
+                            .get_texture_property("p_blurred_texture")
+                            .unwrap(),
+                        Some(texture_assets.get(blurred_texture)),
+                        1,
+                    );
+                    render_pass.set_vec2_property(
+                        &shader
+                            .pipeline
+                            .get_vec2_property("p_texture_coordinate_scale")
+                            .unwrap(),
+                        texture_scale.into(),
+                    );
+                    render_pass.set_float_property(
+                        &shader
+                            .pipeline
+                            .get_float_property("p_bloom_strength")
+                            .unwrap(),
+                        if renderer_info.bloom_enabled {
+                            renderer_info.bloom_strength
                         } else {
-                            for view in &graphics.override_views {
+                            0.0
+                        },
+                    );
+
+                    render_pass.draw_triangles_without_buffer(1);
+
+                    // Draw USER interface cameras.
+                    for (camera_global_transform, camera) in &cameras {
+                        // Check that the camera is setup to render to the current CameraTarget.
+                        let camera_should_render = (graphics.current_camera_target.is_some()
+                            && graphics.current_camera_target == camera.camera_target)
+                            || (is_primary_camera_target
+                                && camera.camera_target == Some(CameraTarget::Primary))
+                                && camera
+                                    .render_flags
+                                    .includes_layer(RenderFlags::USER_INTERFACE);
+
+                        // Check that this camera targets the target currently being rendered.
+                        if camera_should_render {
+                            let mut camera_info = Vec::new();
+                            if graphics.override_views.is_empty() {
                                 camera_info.push(Renderer::get_view_info(
                                     camera_global_transform,
-                                    view.offset_transform,
-                                    view.projection_matrix,
-                                    view.output_rectangle,
-                                ))
+                                    Mat4::IDENTITY,
+                                    camera.projection_matrix(),
+                                    Box2 {
+                                        min: Vec2::ZERO,
+                                        max: Vec2::ONE,
+                                    },
+                                ));
+                            } else {
+                                for view in &graphics.override_views {
+                                    camera_info.push(Renderer::get_view_info(
+                                        camera_global_transform,
+                                        view.offset_transform,
+                                        view.projection_matrix,
+                                        view.output_rectangle,
+                                    ))
+                                }
                             }
+
+                            /*
+                            #[cfg(not(feature = "xr"))]
+                            let multiview_enabled = false;
+                            #[cfg(feature = "xr")]
+                            let multiview_enabled = camera_info.len() > 1;
+                            */
+                            let multiview_enabled = false;
+
+                            let (width, height) = camera.get_view_size();
+
+                            let mut renderer = Renderer::new(
+                                renderer_info,
+                                &mut render_pass,
+                                shader_assets,
+                                material_assets,
+                                mesh_assets,
+                                texture_assets,
+                                cube_map_assets,
+                                &camera_info,
+                                kmath::geometry::BoundingBox::<u32, 2> {
+                                    min: Vector::ZERO,
+                                    max: Vector::<u32, 2>::new(width, height),
+                                },
+                                multiview_enabled,
+                            );
+
+                            renderer.render_scene(
+                                camera,
+                                camera_global_transform,
+                                &renderables,
+                                &lights,
+                                &reflection_probes,
+                            );
                         }
-
-                        /*
-                        #[cfg(not(feature = "xr"))]
-                        let multiview_enabled = false;
-                        #[cfg(feature = "xr")]
-                        let multiview_enabled = camera_info.len() > 1;
-                        */
-                        let multiview_enabled = false;
-
-                        let (width, height) = camera.get_view_size();
-
-                        let mut renderer = Renderer::new(
-                            renderer_info,
-                            &mut render_pass,
-                            shader_assets,
-                            material_assets,
-                            mesh_assets,
-                            texture_assets,
-                            cube_map_assets,
-                            &camera_info,
-                            kmath::geometry::BoundingBox::<u32, 2> {
-                                min: Vector::ZERO,
-                                max: Vector::<u32, 2>::new(width, height),
-                            },
-                            multiview_enabled,
-                        );
-
-                        renderer.render_scene(
-                            camera,
-                            camera_global_transform,
-                            &renderables,
-                            &lights,
-                            &reflection_probes,
-                        );
                     }
+
+                    // Debug render of intermediate bloom texture
+
+                    /*
+                    render_texture_to_screen(
+                        shader_assets.get(&Shader::FULLSCREEN_QUAD),
+                        texture_assets,
+                        &mut render_pass,
+                        Box2::new(
+                            Vec2::ZERO,
+                            Vec2::new(view_size.0 as f32, view_size.1 as f32) / 2.0,
+                        ),
+                        blurred_texture,
+                        texture_scale,
+                    );
+                    */
                 }
-
-                // Debug render of intermediate bloom texture
-
-                /*
-                render_texture_to_screen(
-                    shader_assets.get(&Shader::FULLSCREEN_QUAD),
-                    texture_assets,
-                    &mut render_pass,
-                    Box2::new(
-                        Vec2::ZERO,
-                        Vec2::new(view_size.0 as f32, view_size.1 as f32) / 2.0,
-                    ),
-                    blurred_texture,
-                    texture_scale,
-                );
-                */
             }
         }
     }
