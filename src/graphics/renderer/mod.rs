@@ -819,6 +819,32 @@ pub fn prepare_shadow_casters(
 }
 
 pub fn render_other_world(main_world: &mut World, other_world: &mut World) {
+    {
+        let commands_entity = other_world.spawn(Commands::new());
+        update_root_global_transforms.run(&other_world);
+        let mut commands = other_world
+            .remove_component::<Commands>(commands_entity)
+            .unwrap();
+        commands.apply(other_world);
+        commands.clear();
+
+        let commands_entity = other_world.spawn(commands);
+        update_global_transforms.run(&other_world);
+        let mut commands = other_world
+            .remove_component::<Commands>(commands_entity)
+            .unwrap();
+        commands.apply(other_world);
+        commands.clear();
+    }
+
+    (|graphics: &mut Graphics, textures: &mut Assets<Texture>| {
+        (|shadow_casters: Query<&mut ShadowCaster>| {
+            prepare_shadow_casters(graphics, textures, shadow_casters)
+        })
+        .run(other_world);
+    })
+    .run(main_world);
+
     (|graphics: &mut Graphics,
       shader_assets: &Assets<Shader>,
       material_assets: &Assets<Material>,
