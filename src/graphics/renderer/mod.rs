@@ -869,51 +869,8 @@ pub fn render_scene<'a, 'b>(
 
     let mut command_buffer = graphics.context.new_command_buffer();
 
-    // Setting this to true will mess with XR
-    let is_primary_camera_target = true;
-
     let mut cameras: Vec<(&GlobalTransform, &Camera)> = cameras.iter().collect();
     cameras.sort_by_key(|v| v.1.render_flags);
-
-    // For now only render shadows from the primary camera's perspective.
-    // This would make splitscreen shadows really messed up.
-    /*
-    for (camera_global_transform, camera) in cameras {
-        let is_primary_camera = ((graphics.current_camera_target.is_some()
-            && graphics.current_camera_target == camera.camera_target)
-            || (is_primary_camera_target && camera.camera_target == Some(CameraTarget::Primary)))
-            && camera.render_flags.includes_layer(RenderFlags::DEFAULT);
-
-        if is_primary_camera {
-            render_shadow_pass(
-                shader_assets,
-                mesh_assets,
-                &mut command_buffer,
-                camera,
-                camera_global_transform,
-                &mut lights,
-                &renderables,
-                &renderer_info.cascade_depths,
-            );
-
-            view_size = camera.get_view_size();
-            view_size.0 = (view_size.0 as f32 / camera.resolution_scale) as u32;
-            view_size.1 = (view_size.1 as f32 / camera.resolution_scale) as u32;
-
-            resolution_scale = camera.resolution_scale;
-
-            // Resize of the offscreen render target to match the view size.
-            renderer_info
-                .offscreen_render_target
-                .resize(graphics, texture_assets, {
-                    Vec2u::new(view_size.0 as usize, view_size.1 as usize)
-                });
-
-            clear_color = camera.clear_color;
-            break;
-        }
-    }
-    */
 
     for (camera_global_transform, camera) in &cameras {
         if !camera.enabled {
@@ -948,7 +905,11 @@ pub fn render_scene<'a, 'b>(
         let initial_framebuffer = if camera.post_processing_enabled {
             renderer_info.offscreen_render_target.framebuffer()
         } else {
-            &graphics.current_target_framebuffer
+            if let Some(CameraTarget::OffscreenRenderTarget(c)) = &camera.camera_target {
+                offscreen_render_targets.get(c).framebuffer()
+            } else {
+                &graphics.current_target_framebuffer
+            }
         };
 
         let mut view_size = camera.get_view_size();
@@ -1059,7 +1020,6 @@ pub fn render_scene<'a, 'b>(
             let min = output_viewport.min.as_u32();
             let size = output_viewport.size().as_u32();
 
-            println!("SIZE: {:?}", size);
             render_pass.set_pipeline(&shader.pipeline);
             render_pass.set_viewport(min.x, min.y, size.x, size.y);
 
@@ -1112,7 +1072,13 @@ pub fn render_scene<'a, 'b>(
                 texture_scale,
             );
             */
+
+            // Resolve into textures
+            if let Some(CameraTarget::OffscreenRenderTarget(c)) = &camera.camera_target {
+                offscreen_render_targets.get(c).resolve(render_pass)
+            }
         } else {
+            // Resolve into textures
             if let Some(CameraTarget::OffscreenRenderTarget(c)) = &camera.camera_target {
                 offscreen_render_targets.get(c).resolve(render_pass)
             }
