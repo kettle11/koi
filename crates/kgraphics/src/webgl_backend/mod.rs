@@ -271,6 +271,7 @@ impl RenderPassTrait for RenderPass<'_> {
     fn set_pipeline(&mut self, pipeline: &Pipeline) {
         fn blending_to_gl(blending: BlendFactor) -> c_uint {
             match blending {
+                BlendFactor::One => ONE,
                 BlendFactor::OneMinusSourceAlpha => ONE_MINUS_SRC_ALPHA,
                 BlendFactor::SourceAlpha => SRC_ALPHA,
             }

@@ -871,6 +871,7 @@ impl GraphicsContextTrait for GraphicsContext {
                         {
                             fn blending_to_gl(blending: BlendFactor) -> GLenum {
                                 match blending {
+                                    BlendFactor::One => GL_ONE,
                                     BlendFactor::OneMinusSourceAlpha => GL_ONE_MINUS_SRC_ALPHA,
                                     BlendFactor::SourceAlpha => GL_SRC_ALPHA,
                                 }

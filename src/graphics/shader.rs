@@ -135,7 +135,7 @@ pub(crate) fn initialize_static_shaders(graphics: &mut Graphics, shaders: &mut A
                 PHYSICALLY_BASED_SHADER_SOURCE,
                 PipelineSettings {
                     faces_to_render: FacesToRender::Front,
-                    blending: Some((BlendFactor::SourceAlpha, BlendFactor::OneMinusSourceAlpha)),
+                    blending: Some((BlendFactor::One, BlendFactor::OneMinusSourceAlpha)),
                     ..Default::default()
                 },
             )
@@ -161,7 +161,7 @@ pub(crate) fn initialize_static_shaders(graphics: &mut Graphics, shaders: &mut A
                 UNLIT_UI_SHADER_SOURCE,
                 PipelineSettings {
                     faces_to_render: FacesToRender::FrontAndBack,
-                    blending: Some((BlendFactor::SourceAlpha, BlendFactor::OneMinusSourceAlpha)),
+                    blending: Some((BlendFactor::One, BlendFactor::OneMinusSourceAlpha)),
                     ..Default::default()
                 },
             )
@@ -185,7 +185,7 @@ pub(crate) fn initialize_static_shaders(graphics: &mut Graphics, shaders: &mut A
                 // that will be flipped.
                 PipelineSettings {
                     faces_to_render: FacesToRender::FrontAndBack,
-                    blending: Some((BlendFactor::SourceAlpha, BlendFactor::OneMinusSourceAlpha)),
+                    blending: Some((BlendFactor::One, BlendFactor::OneMinusSourceAlpha)),
                     // LessOrEqual allows transparent overlays to be rendered with the same mesh
                     // as the thing being overlaid.
                     depth_test: DepthTest::AlwaysPass,
@@ -216,7 +216,7 @@ pub(crate) fn initialize_static_shaders(graphics: &mut Graphics, shaders: &mut A
                 PHYSICALLY_BASED_SHADER_SOURCE,
                 PipelineSettings {
                     faces_to_render: FacesToRender::FrontAndBack,
-                    blending: Some((BlendFactor::SourceAlpha, BlendFactor::OneMinusSourceAlpha)),
+                    blending: Some((BlendFactor::One, BlendFactor::OneMinusSourceAlpha)),
                     ..Default::default()
                 },
             )

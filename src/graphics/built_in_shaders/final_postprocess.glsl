@@ -26,6 +26,7 @@ const float DITHER_SCALE = 4.0;
 void main()
 {
     color_out = texture(p_texture, TexCoords);
+    float alpha = color_out.a;
 
     // Bloom 
     color_out = mix(color_out, texture(p_blurred_texture, TexCoords), p_bloom_strength);
@@ -35,5 +36,5 @@ void main()
     
     color_out.rgb = pow(color_out.rgb, vec3(1.0/2.2)); 
     color_out.rgb += ScreenSpaceDither(gl_FragCoord.xy) * DITHER_SCALE;
-    color_out.a = 1.0;
+    color_out.a = alpha;
 }

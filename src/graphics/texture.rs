@@ -130,7 +130,15 @@ pub fn png_data_from_bytes(bytes: &[u8], srgb: bool) -> TextureLoadData {
 
     let pixel_format = match metadata.color_type {
         // png::ColorType::Rgb => PixelFormat::RGB8Unorm,
-        png::ColorType::Rgba => PixelFormat::RGBA8Unorm,
+        png::ColorType::Rgba => {
+            for v in pixels.chunks_exact(4) {
+                let a = a[3] as f32 / 255.0;
+                a[0] = (a[0] as f32 * a) as u8;
+                a[1] = (a[1] as f32 * a) as u8;
+                a[2] = (a[2] as f32 * a) as u8;
+            }
+            PixelFormat::RGBA8Unorm
+        }
         png::ColorType::Grayscale => {
             // Convert to RGBA sRGB8_ALPHA8 is the only color renderable format
             // which is allowed for mipmap generation
@@ -165,7 +173,15 @@ pub fn png_data_from_bytes(bytes: &[u8], srgb: bool) -> TextureLoadData {
 
 #[cfg(feature = "imagine_png")]
 fn png_data_from_bytes(bytes: &[u8], _srgb: bool) -> TextureLoadData {
-    let (data, width, height) = imagine_integration::parse_me_a_png_yo(bytes).unwrap();
+    let (mut data, width, height) = imagine_integration::parse_me_a_png_yo(bytes).unwrap();
+
+    // Premultiply texture
+    for v in data.iter_mut() {
+        let a = v.a as f32 / 255.0;
+        v.r = (v.r as f32 * a) as u8;
+        v.g = (v.g as f32 * a) as u8;
+        v.b = (v.b as f32 * a) as u8;
+    }
 
     TextureLoadData {
         data: TextureData::Bytes(Box::new(data)),

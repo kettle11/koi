@@ -67,6 +67,8 @@ pub enum DepthTest {
 /// This should be expanded
 #[derive(Clone, Copy, Debug)]
 pub enum BlendFactor {
+    /// source_pixel
+    One,
     /// source_pixel.alpha
     SourceAlpha,
     /// 1.0 - source_pixel.alpha

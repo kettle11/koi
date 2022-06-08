@@ -131,7 +131,7 @@ pub fn setup_renderer(world: &mut World) {
                 include_str!("../built_in_shaders/final_postprocess.glsl"),
                 PipelineSettings {
                     faces_to_render: FacesToRender::Front,
-                    blending: None,
+                    blending: Some((BlendFactor::One, BlendFactor::OneMinusSourceAlpha)),
                     depth_test: DepthTest::AlwaysPass,
                 },
             )
