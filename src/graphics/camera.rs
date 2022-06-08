@@ -32,6 +32,7 @@ pub struct Camera {
     pub render_flags: RenderFlags,
     #[skip]
     pub camera_target: Option<CameraTarget>,
+    pub post_processing_enabled: bool,
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -71,6 +72,7 @@ impl Camera {
             render_flags: RenderFlags::DEFAULT,
             camera_target: Some(CameraTarget::Primary),
             resolution_scale: 1.0,
+            post_processing_enabled: true,
         };
         camera.update_projection_matrix();
         camera
@@ -105,6 +107,7 @@ impl Camera {
         camera.render_flags = RenderFlags::USER_INTERFACE;
         camera.clear_color = None;
         camera.z_near = 0.0;
+        camera.post_processing_enabled = false;
         camera
     }
 
