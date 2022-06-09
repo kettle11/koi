@@ -17,6 +17,15 @@ impl AssetTrait for OffscreenRenderTarget {
 }
 
 impl OffscreenRenderTarget {
+    // Todo: This is temporary until this object gets automatically deleted.
+    pub fn delete(&mut self, graphics: &mut Graphics) {
+        if let Some(framebuffer) = self.framebuffer.as_ref() {
+            graphics.context.delete_framebuffer((**framebuffer).clone());
+        }
+        if let Some(framebuffer) = self.resolve_framebuffer.as_ref() {
+            graphics.context.delete_framebuffer((**framebuffer).clone());
+        }
+    }
     pub fn new(
         graphics: &mut Graphics,
         textures: &mut Assets<Texture>,

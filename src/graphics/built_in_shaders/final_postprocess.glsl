@@ -33,7 +33,10 @@ void main()
 
     // Reinhard tonehamp
    // color_out.rgb = color_out.rgb / (color_out.rgb + vec3(1.0));
-    
+
+    // Premultiply alpha
+    color_out.rgb *= alpha;
+
     color_out.rgb = pow(color_out.rgb, vec3(1.0/2.2)); 
     color_out.rgb += ScreenSpaceDither(gl_FragCoord.xy) * DITHER_SCALE;
     color_out.a = alpha;

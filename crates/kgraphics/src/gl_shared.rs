@@ -30,6 +30,7 @@ pub const FRONT: c_uint = 0x0404;
 pub const BACK: c_uint = 0x0405;
 pub const FRONT_AND_BACK: c_uint = 0x0408;
 
+pub const ONE: c_uint = 0x1;
 pub const ONE_MINUS_SRC_ALPHA: c_uint = 0x0303;
 pub const SRC_ALPHA: c_uint = 0x0302;
 
