@@ -5,7 +5,7 @@ use kgraphics::*;
 
 use std::sync::mpsc;
 
-pub struct Texture(pub(crate) kgraphics::Texture);
+pub struct Texture(pub kgraphics::Texture);
 
 impl Deref for Texture {
     type Target = kgraphics::Texture;

@@ -668,6 +668,24 @@ impl GraphicsContextTrait for GraphicsContext {
         }
     }
 
+    fn read_texture(&mut self, texture: &Texture, format: PixelFormat, size: usize) -> Vec<u8> {
+        let framebuffer = self.new_framebuffer(Some(&texture), None, None);
+        let (pixel_format, _inner_pixel_format, type_) =
+            crate::gl_shared::pixel_format_to_gl_format_and_inner_format_and_type(format, false);
+
+        let result = unsafe {
+            self.gl.bind_framebuffer(GL_FRAMEBUFFER, framebuffer);
+            self.gl
+                .read_pixels(GLenum(pixel_format), GLenum(type_), size)
+        };
+        unsafe {
+            self.gl
+                .bind_framebuffer(GL_FRAMEBUFFER, Framebuffer::default());
+        }
+        self.delete_framebuffer(framebuffer);
+        result
+    }
+
     fn generate_mip_map_for_texture(&mut self, texture: &Texture) {
         let (target, texture) = match texture.texture_type {
             TextureType::Texture(t) => (GL_TEXTURE_2D, t),

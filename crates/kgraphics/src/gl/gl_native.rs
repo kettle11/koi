@@ -289,6 +289,20 @@ impl GL {
         self.gl.BindFramebuffer(target, framebuffer.0);
     }
 
+    pub unsafe fn read_pixels(&self, format: GLenum, type_: GLenum, size: usize) -> Vec<u8> {
+        let mut pixel_data: Vec<u8> = vec![0; size * size * 4];
+        self.gl.ReadPixels(
+            0,
+            0,
+            size as i32,
+            size as i32,
+            format,
+            type_,
+            pixel_data.as_mut_ptr() as *mut std::ffi::c_void,
+        );
+        pixel_data
+    }
+
     pub unsafe fn blit_framebuffer(
         &self,
         source_x: u32,

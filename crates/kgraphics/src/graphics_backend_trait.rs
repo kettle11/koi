@@ -155,6 +155,8 @@ pub trait GraphicsContextTrait: Sized {
 
     fn delete_texture(&mut self, texture: Texture);
 
+    fn read_texture(&mut self, texture: &Texture, format: PixelFormat, size: usize) -> Vec<u8>;
+
     fn generate_mip_map_for_texture(&mut self, texture: &Texture);
 
     fn new_cube_map(
