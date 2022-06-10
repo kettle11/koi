@@ -649,7 +649,7 @@ impl GraphicsContextTrait for GraphicsContext {
                 data,
             );*/
 
-            let (pixel_format, inner_pixel_format, type_) =
+            let (pixel_format, _inner_pixel_format, type_) =
                 crate::gl_shared::pixel_format_to_gl_format_and_inner_format_and_type(
                     pixel_format_in,
                     texture_settings.srgb,
@@ -657,7 +657,7 @@ impl GraphicsContextTrait for GraphicsContext {
 
             self.gl.bind_texture(target, Some(texture));
 
-            if data.is_some() {
+            if let Some(data) = data {
                 self.gl.tex_sub_image_2d(
                     target,
                     0, /* mip level */
@@ -669,7 +669,6 @@ impl GraphicsContextTrait for GraphicsContext {
                     GLenum(type_),
                     data,
                 );
-                
             }
 
             let minification_filter = minification_filter_to_gl_enum(

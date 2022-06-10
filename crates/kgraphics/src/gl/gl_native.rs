@@ -246,7 +246,7 @@ impl GL {
         height: i32,
         format: GLenum,
         type_: GLenum,
-        pixels: Option<&[u8]>,
+        pixels: &[u8],
     ) {
         self.gl.TexSubImage2D(
             target,
@@ -257,7 +257,7 @@ impl GL {
             height,
             format,
             type_,
-            pixels.map(|p| p.as_ptr()).unwrap_or(std::ptr::null()) as *const std::ffi::c_void,
+            pixels.as_ptr() as *const std::ffi::c_void,
         );
     }
 
