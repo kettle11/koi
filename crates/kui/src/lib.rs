@@ -17,8 +17,8 @@ pub use widgets2::*;
 mod fonts;
 pub use fonts::*;
 
-// mod images;
-// pub use images::*;
+mod images;
+pub use images::*;
 
 #[derive(Clone, Copy, Debug)]
 pub struct MinAndMaxSize {

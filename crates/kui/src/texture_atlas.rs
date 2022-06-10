@@ -101,7 +101,6 @@ impl TextureAtlas {
         width: u32,
         height: u32,
     ) -> Option<RectU32> {
-        // Just crash for now if there's not space for character.
         let rect = self.packer.pack(width as i32, height as i32, false);
         if let Some(rect) = rect {
             let rectangle = RectU32::new(
@@ -229,7 +228,7 @@ pub struct RectU32 {
 }
 
 impl RectU32 {
-    fn new(x: u32, y: u32, width: u32, height: u32) -> Self {
+    pub fn new(x: u32, y: u32, width: u32, height: u32) -> Self {
         Self {
             x,
             y,
