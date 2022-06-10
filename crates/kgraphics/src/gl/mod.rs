@@ -530,22 +530,61 @@ impl GraphicsContextTrait for GraphicsContext {
         width: u32,
         height: u32,
         data: Option<&[u8]>,
-        pixel_format: PixelFormat,
+        pixel_format_in: PixelFormat,
         texture_settings: TextureSettings,
     ) -> Result<Texture, ()> {
         unsafe {
             if texture_settings.msaa_samples == 0 {
                 let texture = self.gl.create_texture().unwrap();
+
                 let texture = Texture {
                     texture_type: TextureType::Texture(texture),
                     mip: 0,
                 };
+                {
+                    let (target, texture) = match texture.texture_type {
+                        TextureType::Texture(t) => (GL_TEXTURE_2D, t),
+                        TextureType::CubeMap {
+                            face,
+                            texture_native,
+                        } => (
+                            GLenum(GL_TEXTURE_CUBE_MAP_POSITIVE_X.0 + face as u32),
+                            texture_native,
+                        ),
+                        TextureType::RenderBuffer { .. } => {
+                            panic!("For now textures with MSAA cannot be updated by a call to `update_texture`")
+                        }
+                        TextureType::DefaultFramebuffer => {
+                            panic!("Cannot update default framebuffer")
+                        }
+                    };
+                    let (pixel_format, inner_pixel_format, type_) =
+                        crate::gl_shared::pixel_format_to_gl_format_and_inner_format_and_type(
+                            pixel_format_in,
+                            texture_settings.srgb,
+                        );
+                    self.gl.bind_texture(target, Some(texture));
+                    self.gl.tex_image_2d(
+                        target,
+                        0,                         /* mip level */
+                        inner_pixel_format as i32, // Internal format, how the GPU stores these pixels.
+                        width as i32,
+                        height as i32,
+                        0,                    /* border: must be 0 */
+                        GLenum(pixel_format), // This doesn't necessarily need to match the internal_format
+                        GLenum(type_),
+                        None,
+                    );
+                }
+
                 self.update_texture(
                     &texture,
+                    0,
+                    0,
                     width,
                     height,
                     data,
-                    pixel_format,
+                    pixel_format_in,
                     texture_settings,
                 );
                 Ok(texture)
@@ -556,7 +595,7 @@ impl GraphicsContextTrait for GraphicsContext {
 
                 let (_pixel_format, inner_pixel_format, _type_) =
                     crate::gl_shared::pixel_format_to_gl_format_and_inner_format_and_type(
-                        pixel_format,
+                        pixel_format_in,
                         texture_settings.srgb,
                     );
                 self.gl.renderbuffer_storage_multisample(
@@ -578,6 +617,8 @@ impl GraphicsContextTrait for GraphicsContext {
     fn update_texture(
         &mut self,
         texture: &Texture,
+        x: u32,
+        y: u32,
         width: u32,
         height: u32,
         data: Option<&[u8]>,
@@ -615,14 +656,18 @@ impl GraphicsContextTrait for GraphicsContext {
                 );
 
             self.gl.bind_texture(target, Some(texture));
-            self.gl.tex_image_2d(
+
+            println!("PIXEL FORMAT: {:?}", pixel_format);
+            println!("TYPE: {:?}", type_);
+
+            self.gl.tex_sub_image_2d(
                 target,
-                0,                         /* mip level */
-                inner_pixel_format as i32, // Internal format, how the GPU stores these pixels.
+                0, /* mip level */
+                x as i32,
+                y as i32,
                 width as i32,
                 height as i32,
-                0,                    /* border: must be 0 */
-                GLenum(pixel_format), // This doesn't necessarily need to match the internal_format
+                GLenum(inner_pixel_format), // This doesn't necessarily need to match the internal_format
                 GLenum(type_),
                 data,
             );

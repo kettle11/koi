@@ -146,6 +146,8 @@ pub trait GraphicsContextTrait: Sized {
     fn update_texture(
         &mut self,
         texture: &Texture,
+        x: u32,
+        y: u32,
         width: u32,
         height: u32,
         data: Option<&[u8]>,

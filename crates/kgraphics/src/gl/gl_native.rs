@@ -236,6 +236,32 @@ impl GL {
     }
 
     #[allow(clippy::too_many_arguments)]
+    pub unsafe fn tex_sub_image_2d(
+        &self,
+        target: GLenum,
+        level: i32,
+        x: i32,
+        y: i32,
+        width: i32,
+        height: i32,
+        format: GLenum,
+        type_: GLenum,
+        pixels: Option<&[u8]>,
+    ) {
+        self.gl.TexSubImage2D(
+            target,
+            level,
+            x,
+            y,
+            width,
+            height,
+            format,
+            type_,
+            pixels.map(|p| p.as_ptr()).unwrap_or(std::ptr::null()) as *const std::ffi::c_void,
+        );
+    }
+
+    #[allow(clippy::too_many_arguments)]
     pub unsafe fn renderbuffer_storage_multisample(
         &self,
         target: GLenum,
