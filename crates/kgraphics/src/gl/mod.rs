@@ -657,20 +657,20 @@ impl GraphicsContextTrait for GraphicsContext {
 
             self.gl.bind_texture(target, Some(texture));
 
-            println!("PIXEL FORMAT: {:?}", pixel_format);
-            println!("TYPE: {:?}", type_);
-
-            self.gl.tex_sub_image_2d(
-                target,
-                0, /* mip level */
-                x as i32,
-                y as i32,
-                width as i32,
-                height as i32,
-                GLenum(inner_pixel_format), // This doesn't necessarily need to match the internal_format
-                GLenum(type_),
-                data,
-            );
+            if data.is_some() {
+                self.gl.tex_sub_image_2d(
+                    target,
+                    0, /* mip level */
+                    x as i32,
+                    y as i32,
+                    width as i32,
+                    height as i32,
+                    GLenum(pixel_format), // This doesn't necessarily need to match the internal_format
+                    GLenum(type_),
+                    data,
+                );
+                
+            }
 
             let minification_filter = minification_filter_to_gl_enum(
                 texture_settings.minification_filter,
