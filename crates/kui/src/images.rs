@@ -60,6 +60,7 @@ impl Images {
 
     fn unload_dropped(&mut self) {
         while let Ok(drop) = self.receive_channel.try_recv() {
+            println!("DROPPED IMAGE");
             let dropped_image = &mut self.image_data[drop];
             dropped_image.image_data.data.clear();
             dropped_image.image_data.width = 0;
@@ -90,6 +91,7 @@ impl Images {
     }
 
     fn repack(&mut self) {
+        println!("REPACKING");
         self.packer = Self::get_packer();
         for image in self.image_data.iter_mut() {
             image.location = None;
@@ -104,8 +106,10 @@ impl Images {
 
     fn pack_inner(&mut self, image_index: usize, allow_repack: bool) -> Option<RectU32> {
         if let Some(location) = self.image_data[image_index].location {
+            println!("RETURNING ALREADY PACKED");
             Some(location)
         } else {
+            println!("PACKING");
             let Self {
                 image_data, packer, ..
             } = self;
@@ -118,6 +122,13 @@ impl Images {
             );
             if let Some(rect) = rect {
                 self.newly_packed.push(image_index);
+                let r = RectU32::new(
+                    rect.x as u32,
+                    rect.y as u32,
+                    rect.width as u32,
+                    rect.height as u32,
+                );
+                image_data.location = Some(r);
                 Some(RectU32::new(
                     rect.x as u32,
                     rect.y as u32,

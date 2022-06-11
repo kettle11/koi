@@ -46,7 +46,7 @@ impl UIManager {
             Transform::new(),
             Material::UI,
             RenderFlags::USER_INTERFACE,
-            image_atlas_texture.clone(),
+            Texture::BLUE,
         ));
 
         Self {
