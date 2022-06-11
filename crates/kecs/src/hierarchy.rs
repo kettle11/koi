@@ -22,7 +22,7 @@ impl HierarchyNode {
         &self.previous_sibling
     }
 
-    pub fn clone_hierarchy(&self) -> Self {
+    pub fn clone_hierarchy_node(&self) -> Self {
         Self {
             parent: self.parent,
             last_child: self.last_child,
@@ -180,7 +180,7 @@ impl HierarchyNode {
         world.despawn(entity).unwrap();
         if let Ok(hierarchy_node) = world
             .get_component_mut::<HierarchyNode>(entity)
-            .map(|h| h.clone_hierarchy())
+            .map(|h| h.clone_hierarchy_node())
         {
             // Despawn all children and their siblings
             let mut current_child = hierarchy_node.last_child;
