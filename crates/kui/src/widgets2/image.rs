@@ -31,9 +31,9 @@ impl<
         _data: &mut State,
         _extra_state: &mut ExtraState,
         _context: &mut Context,
-        _min_and_max_size: MinAndMaxSize,
+        min_and_max_size: MinAndMaxSize,
     ) -> Vec3 {
-        Vec3::fill(200.0)
+        min_and_max_size.max
     }
     fn draw(
         &mut self,

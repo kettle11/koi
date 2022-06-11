@@ -23,12 +23,7 @@ impl UIManager {
             Material::UI,
             RenderFlags::USER_INTERFACE,
         ));
-        let images_entity = world.spawn((
-            Name("User Interface Visuals Images".into()),
-            Transform::new(),
-            Material::UI,
-            RenderFlags::USER_INTERFACE,
-        ));
+
         let drawer = kui::Drawer::new();
 
         let image_atlas_texture = (|textures: &mut Assets<Texture>, graphics: &mut Graphics| {
@@ -45,6 +40,15 @@ impl UIManager {
             textures.add(texture)
         })
         .run(world);
+
+        let images_entity = world.spawn((
+            Name("User Interface Visuals Images".into()),
+            Transform::new(),
+            Material::UI,
+            RenderFlags::USER_INTERFACE,
+            image_atlas_texture.clone(),
+        ));
+
         Self {
             entity,
             images_entity,
@@ -257,6 +261,7 @@ impl UIManager {
                 texture_coordinates: second_mesh_data.texture_coordinates.clone(),
                 ..Default::default()
             };
+            println!("MESH DATA: {:#?}", mesh_data);
             let new_mesh_handle = meshes.add(Mesh::new(graphics, mesh_data));
             commands.add_component(self.images_entity, new_mesh_handle);
 
