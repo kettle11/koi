@@ -42,14 +42,17 @@ impl UIManager {
         })
         .run(world);
 
-        let new_sprite = Sprite::new(image_atlas_texture.clone(), Box2::new(Vec2::ZERO, Vec2::ONE));
+        let new_sprite = Sprite::new(
+            image_atlas_texture.clone(),
+            Box2::new(Vec2::ZERO, Vec2::ONE),
+        );
 
         let images_entity = world.spawn((
             Name("User Interface Visuals Images".into()),
             Transform::new(),
-            Material::UI,
+            Material::UNLIT_TRANSPARENT,
             RenderFlags::USER_INTERFACE,
-            new_sprite
+            new_sprite,
         ));
 
         Self {
@@ -256,7 +259,7 @@ impl UIManager {
                 )
             });
 
-            let second_mesh_data = &self.drawer.first_mesh;
+            let second_mesh_data = &self.drawer.second_mesh;
 
             let mesh_data = MeshData {
                 positions: second_mesh_data.positions.clone(),
@@ -265,7 +268,7 @@ impl UIManager {
                 texture_coordinates: second_mesh_data.texture_coordinates.clone(),
                 ..Default::default()
             };
-           // println!("MESH DATA: {:#?}", mesh_data);
+            // println!("MESH DATA: {:#?}", mesh_data);
             let new_mesh_handle = meshes.add(Mesh::new(graphics, mesh_data));
             commands.add_component(self.images_entity, new_mesh_handle);
 

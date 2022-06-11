@@ -36,6 +36,10 @@ impl DrawerMeshData {
         self.colors.clear();
         self.indices.clear();
     }
+    pub fn extend_indices(&mut self, indices: &[[u32; 3]]) {
+        self.indices
+            .extend(indices.iter().map(|v| [v[2], v[1], v[0]]))
+    }
 }
 impl Default for Drawer {
     fn default() -> Self {
@@ -132,11 +136,11 @@ impl Drawer {
                 Vec2::new(atlas_rectangle.min.x, atlas_rectangle.max.y),
             ]);
 
-            let color = color.to_linear_srgb();
+            let color = color.to_srgb();
             self.first_mesh
                 .colors
                 .extend_from_slice(&[color, color, color, color]);
-            self.extend_indices(&[
+            self.first_mesh.extend_indices(&[
                 [offset, offset + 1, offset + 2],
                 [offset, offset + 2, offset + 3],
             ]);
@@ -156,7 +160,7 @@ impl Drawer {
                 ),
             );
 
-            let offset = self.first_mesh.positions.len() as u32;
+            let offset = self.second_mesh.positions.len() as u32;
 
             let _z = rectangle.max.z;
             let rectangle = Box2 {
@@ -167,14 +171,14 @@ impl Drawer {
             let (width, height) = rectangle.size().xy().into();
             let (x, y) = rectangle.min.into();
 
-            self.first_mesh.positions.extend_from_slice(&[
+            self.second_mesh.positions.extend_from_slice(&[
                 self.position_to_gl(Vec3::new(x, y, 0.0)),
                 self.position_to_gl(Vec3::new(x + width, y, 0.0)),
                 self.position_to_gl(Vec3::new(x + width, y + height, 0.0)),
                 self.position_to_gl(Vec3::new(x, y + height, 0.0)),
             ]);
 
-            self.first_mesh.texture_coordinates.extend_from_slice(&[
+            self.second_mesh.texture_coordinates.extend_from_slice(&[
                 Vec2::new(atlas_rectangle.min.x, atlas_rectangle.min.y),
                 Vec2::new(atlas_rectangle.max.x, atlas_rectangle.min.y),
                 Vec2::new(atlas_rectangle.max.x, atlas_rectangle.max.y),
@@ -182,10 +186,10 @@ impl Drawer {
             ]);
 
             let color = Vec4::ONE;
-            self.first_mesh
+            self.second_mesh
                 .colors
                 .extend_from_slice(&[color, color, color, color]);
-            self.extend_indices(&[
+            self.second_mesh.extend_indices(&[
                 [offset, offset + 1, offset + 2],
                 [offset, offset + 2, offset + 3],
             ]);
@@ -213,7 +217,7 @@ impl Drawer {
             return rectangle;
         }
         if rectangle.area() != 0.0 {
-            let color = color.to_linear_srgb();
+            let color = color.to_srgb();
             let (width, height) = rectangle.size().xy().into();
             let (x, y) = rectangle.min.into();
 
@@ -235,19 +239,12 @@ impl Drawer {
             self.first_mesh
                 .colors
                 .extend_from_slice(&[color, color, color, color]);
-            self.extend_indices(&[
+            self.first_mesh.extend_indices(&[
                 [offset, offset + 1, offset + 2],
                 [offset, offset + 2, offset + 3],
             ]);
         }
         rectangle
-    }
-
-    // Flips indices for OpenGL backend
-    fn extend_indices(&mut self, indices: &[[u32; 3]]) {
-        self.first_mesh
-            .indices
-            .extend(indices.iter().map(|v| [v[2], v[1], v[0]]))
     }
 
     fn position_to_gl(&self, mut position: Vec3) -> Vec3 {
@@ -280,7 +277,8 @@ impl Drawer {
         for i in 0..steps {
             let len = self.first_mesh.positions.len() as u32;
             if i != 0 {
-                self.extend_indices(&[[center_index, len - 1, len]]);
+                self.first_mesh
+                    .extend_indices(&[[center_index, len - 1, len]]);
             }
             let (sin, cos) = angle.sin_cos();
             let position = corner_center + Vec3::new(cos, sin, 0.0) * radius;
@@ -316,7 +314,7 @@ impl Drawer {
         }
 
         if clipped_rectangle.area() != 0.0 {
-            let color = color.to_linear_srgb();
+            let color = color.to_srgb();
 
             let (width, height) = rectangle.size().into();
             let min_radius = (width / 2.).min(height / 2.);
@@ -344,7 +342,7 @@ impl Drawer {
                 color,
             );
 
-            self.extend_indices(&[[
+            self.first_mesh.extend_indices(&[[
                 center_index,
                 self.first_mesh.positions.len() as u32 - 1,
                 self.first_mesh.positions.len() as u32,
@@ -362,7 +360,7 @@ impl Drawer {
                 color,
             );
 
-            self.extend_indices(&[[
+            self.first_mesh.extend_indices(&[[
                 center_index,
                 self.first_mesh.positions.len() as u32 - 1,
                 self.first_mesh.positions.len() as u32,
@@ -379,7 +377,7 @@ impl Drawer {
                 0.0,
                 color,
             );
-            self.extend_indices(&[[
+            self.first_mesh.extend_indices(&[[
                 center_index,
                 self.first_mesh.positions.len() as u32 - 1,
                 self.first_mesh.positions.len() as u32,
@@ -397,7 +395,7 @@ impl Drawer {
                 color,
             );
 
-            self.extend_indices(&[[
+            self.first_mesh.extend_indices(&[[
                 center_index,
                 self.first_mesh.positions.len() as u32 - 1,
                 center_index + 1,
