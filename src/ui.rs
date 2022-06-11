@@ -28,9 +28,10 @@ impl UIManager {
 
         let image_atlas_texture = (|textures: &mut Assets<Texture>, graphics: &mut Graphics| {
             let size = 1024;
+            let empty_data = vec![0; size as usize * size as usize * 4];
             let texture = graphics
                 .new_texture(
-                    None,
+                    Some(&empty_data),
                     size,
                     size,
                     kgraphics::PixelFormat::RGBA8Unorm,
@@ -41,12 +42,14 @@ impl UIManager {
         })
         .run(world);
 
+        let new_sprite = Sprite::new(image_atlas_texture.clone(), Box2::new(Vec2::ZERO, Vec2::ONE));
+
         let images_entity = world.spawn((
             Name("User Interface Visuals Images".into()),
             Transform::new(),
             Material::UI,
             RenderFlags::USER_INTERFACE,
-            Texture::BLUE,
+            new_sprite
         ));
 
         Self {
@@ -240,6 +243,7 @@ impl UIManager {
 
             let images_texture = textures.get(&self.image_atlas_texture);
             self.drawer.images.update_rects(|rect, data| {
+                println!("RECT: {:?}", rect);
                 graphics.context.update_texture(
                     images_texture,
                     rect.x,
@@ -261,7 +265,7 @@ impl UIManager {
                 texture_coordinates: second_mesh_data.texture_coordinates.clone(),
                 ..Default::default()
             };
-            println!("MESH DATA: {:#?}", mesh_data);
+           // println!("MESH DATA: {:#?}", mesh_data);
             let new_mesh_handle = meshes.add(Mesh::new(graphics, mesh_data));
             commands.add_component(self.images_entity, new_mesh_handle);
 

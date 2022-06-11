@@ -14,8 +14,8 @@ uniform sampler2D p_base_color_texture;
 void main()
 {
     if (TexCoords.x != 0.0 || TexCoords.y != 0.0) {
-        float alpha = texture(p_base_color_texture, TexCoords).r;
-        color_out = vec4(VertexColor.rgb * alpha, alpha);
+        vec4 v = texture(p_base_color_texture, TexCoords);
+        color_out = vec4(VertexColor.rgb * v.rgb * v.a, v.a);
     } else {
         color_out = VertexColor;
     }
