@@ -1,15 +1,18 @@
 use kapp::Cursor;
+use kgraphics::GraphicsContextTrait;
 pub use kui::*;
 
 use crate::*;
 
 pub struct UIManager {
     pub entity: Entity,
+    pub images_entity: Entity,
     pub drawer: kui::Drawer,
     pub initial_constraints: Box3,
     pub ui_scale: f32,
     pub cursor: Cursor,
     last_cursor_position: Vec2,
+    image_atlas_texture: Handle<Texture>,
 }
 
 impl UIManager {
@@ -20,14 +23,37 @@ impl UIManager {
             Material::UI,
             RenderFlags::USER_INTERFACE,
         ));
+        let images_entity = world.spawn((
+            Name("User Interface Visuals Images".into()),
+            Transform::new(),
+            Material::UI,
+            RenderFlags::USER_INTERFACE,
+        ));
         let drawer = kui::Drawer::new();
+
+        let image_atlas_texture = (|textures: &mut Assets<Texture>, graphics: &mut Graphics| {
+            let size = 1024;
+            let texture = graphics
+                .new_texture(
+                    None,
+                    size,
+                    size,
+                    kgraphics::PixelFormat::RGBA8Unorm,
+                    TextureSettings::default(),
+                )
+                .unwrap();
+            textures.add(texture)
+        })
+        .run(world);
         Self {
             entity,
+            images_entity,
             drawer,
             initial_constraints: Box3::ZERO,
             ui_scale: 1.0,
             cursor: Cursor::Arrow,
             last_cursor_position: Vec2::ZERO,
+            image_atlas_texture,
         }
     }
 
@@ -176,11 +202,12 @@ impl UIManager {
           meshes: &mut Assets<Mesh>,
           textures: &mut Assets<Texture>,
           kapp_application: &mut KappApplication| {
+            let first_mesh_data = &self.drawer.first_mesh;
             let mesh_data = MeshData {
-                positions: self.drawer.positions.clone(),
-                indices: self.drawer.indices.clone(),
-                colors: self.drawer.colors.clone(),
-                texture_coordinates: self.drawer.texture_coordinates.clone(),
+                positions: first_mesh_data.positions.clone(),
+                indices: first_mesh_data.indices.clone(),
+                colors: first_mesh_data.colors.clone(),
+                texture_coordinates: first_mesh_data.texture_coordinates.clone(),
                 ..Default::default()
             };
 
@@ -206,6 +233,33 @@ impl UIManager {
             }
 
             commands.add_component(self.entity, new_mesh_handle);
+
+            let images_texture = textures.get(&self.image_atlas_texture);
+            self.drawer.images.update_rects(|rect, data| {
+                graphics.context.update_texture(
+                    images_texture,
+                    rect.x,
+                    rect.y,
+                    rect.width,
+                    rect.height,
+                    Some(data),
+                    kgraphics::PixelFormat::RGBA8Unorm,
+                    TextureSettings::default(),
+                )
+            });
+
+            let second_mesh_data = &self.drawer.first_mesh;
+
+            let mesh_data = MeshData {
+                positions: second_mesh_data.positions.clone(),
+                indices: second_mesh_data.indices.clone(),
+                colors: second_mesh_data.colors.clone(),
+                texture_coordinates: second_mesh_data.texture_coordinates.clone(),
+                ..Default::default()
+            };
+            let new_mesh_handle = meshes.add(Mesh::new(graphics, mesh_data));
+            commands.add_component(self.images_entity, new_mesh_handle);
+
             kapp_application.set_cursor(self.cursor);
         })
         .run(world);

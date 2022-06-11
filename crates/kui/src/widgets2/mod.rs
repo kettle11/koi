@@ -69,6 +69,9 @@ pub use cursor_event_handlers::*;
 mod animation;
 pub use animation::*;
 
+mod image;
+pub use image::*;
+
 /// Just a colored rectangle for debug purposes
 pub struct Rectangle {
     pub size: Vec3,

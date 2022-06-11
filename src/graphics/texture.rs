@@ -131,11 +131,11 @@ pub fn png_data_from_bytes(bytes: &[u8], srgb: bool) -> TextureLoadData {
     let pixel_format = match metadata.color_type {
         // png::ColorType::Rgb => PixelFormat::RGB8Unorm,
         png::ColorType::Rgba => {
-            for v in pixels.chunks_exact(4) {
-                let a = a[3] as f32 / 255.0;
-                a[0] = (a[0] as f32 * a) as u8;
-                a[1] = (a[1] as f32 * a) as u8;
-                a[2] = (a[2] as f32 * a) as u8;
+            for v in pixels.chunks_exact_mut(4) {
+                let a = v[3] as f32 / 255.0;
+                v[0] = (v[0] as f32 * a) as u8;
+                v[1] = (v[1] as f32 * a) as u8;
+                v[2] = (v[2] as f32 * a) as u8;
             }
             PixelFormat::RGBA8Unorm
         }

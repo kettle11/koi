@@ -59,7 +59,7 @@ impl Images {
     }
 
     fn unload_dropped(&mut self) {
-        for drop in self.receive_channel.iter() {
+        while let Ok(drop) = self.receive_channel.try_recv() {
             let dropped_image = &mut self.image_data[drop];
             dropped_image.image_data.data.clear();
             dropped_image.image_data.width = 0;
@@ -140,7 +140,7 @@ impl Images {
     }
 
     /// Call this once per frame to get the subrects and data that need to be updated in the GPU texture.
-    pub fn update_rects(&mut self, update_rects: impl Fn(RectU32, &[u8])) {
+    pub fn update_rects(&mut self, mut update_rects: impl FnMut(RectU32, &[u8])) {
         for i in self.newly_packed.drain(..) {
             let image_data = &self.image_data[i];
             if let Some(rect) = image_data.location {
