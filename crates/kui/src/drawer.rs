@@ -100,6 +100,7 @@ impl Drawer {
         color: Color,
         scale: f32,
     ) {
+        let z = offset.z;
         for c in layout.glyphs() {
             let atlas_rectangle = self
                 .texture_atlas
@@ -123,10 +124,10 @@ impl Drawer {
 
             let corners = glyph_position.corners();
             self.first_mesh.positions.extend_from_slice(&[
-                self.position_to_gl(corners[0].extend(0.0)),
-                self.position_to_gl(corners[1].extend(0.0)),
-                self.position_to_gl(corners[2].extend(0.0)),
-                self.position_to_gl(corners[3].extend(0.0)),
+                self.position_to_gl(corners[0].extend(z)),
+                self.position_to_gl(corners[1].extend(z)),
+                self.position_to_gl(corners[2].extend(z)),
+                self.position_to_gl(corners[3].extend(z)),
             ]);
 
             self.first_mesh.texture_coordinates.extend_from_slice(&[
@@ -148,51 +149,65 @@ impl Drawer {
     }
 
     pub fn image(&mut self, rectangle: Box3, image_handle: &ImageHandle) {
-        if let Some(atlas_rectangle) = self.images.get_image_texture_rect(image_handle) {
-            let atlas_rectangle = Box2::new_with_min_corner_and_size(
-                Vec2::new(
-                    atlas_rectangle.x as f32 / self.texture_atlas.width as f32,
-                    atlas_rectangle.y as f32 / self.texture_atlas.height as f32,
-                ),
-                Vec2::new(
-                    atlas_rectangle.width as f32 / self.texture_atlas.width as f32,
-                    atlas_rectangle.height as f32 / self.texture_atlas.height as f32,
-                ),
-            );
+        let _z = rectangle.max.z;
+        let rectangle = Box2 {
+            min: rectangle.min.xy(),
+            max: rectangle.max.xy(),
+        };
+        let clipped_rectangle = self.clip_rectangle(rectangle);
 
-            let offset = self.second_mesh.positions.len() as u32;
+        if clipped_rectangle.area() > 0.0 {
+            if let Some(atlas_rectangle) = self.images.get_image_texture_rect(image_handle) {
+                let atlas_rectangle = Box2::new_with_min_corner_and_size(
+                    Vec2::new(
+                        atlas_rectangle.x as f32 / self.images.get_size() as f32,
+                        atlas_rectangle.y as f32 / self.images.get_size() as f32,
+                    ),
+                    Vec2::new(
+                        atlas_rectangle.width as f32 / self.images.get_size() as f32,
+                        atlas_rectangle.height as f32 / self.images.get_size() as f32,
+                    ),
+                );
 
-            let _z = rectangle.max.z;
-            let rectangle = Box2 {
-                min: rectangle.min.xy(),
-                max: rectangle.max.xy(),
-            };
-            let rectangle = self.clip_rectangle(rectangle);
-            let (width, height) = rectangle.size().xy().into();
-            let (x, y) = rectangle.min.into();
+                let offset = self.second_mesh.positions.len() as u32;
 
-            self.second_mesh.positions.extend_from_slice(&[
-                self.position_to_gl(Vec3::new(x, y, 0.0)),
-                self.position_to_gl(Vec3::new(x + width, y, 0.0)),
-                self.position_to_gl(Vec3::new(x + width, y + height, 0.0)),
-                self.position_to_gl(Vec3::new(x, y + height, 0.0)),
-            ]);
+                let (width, height) = clipped_rectangle.size().xy().into();
+                let (x, y) = clipped_rectangle.min.into();
 
-            self.second_mesh.texture_coordinates.extend_from_slice(&[
-                Vec2::new(atlas_rectangle.min.x, atlas_rectangle.min.y),
-                Vec2::new(atlas_rectangle.max.x, atlas_rectangle.min.y),
-                Vec2::new(atlas_rectangle.max.x, atlas_rectangle.max.y),
-                Vec2::new(atlas_rectangle.min.x, atlas_rectangle.max.y),
-            ]);
+                self.second_mesh.positions.extend_from_slice(&[
+                    self.position_to_gl(Vec3::new(x, y, 0.0)),
+                    self.position_to_gl(Vec3::new(x + width, y, 0.0)),
+                    self.position_to_gl(Vec3::new(x + width, y + height, 0.0)),
+                    self.position_to_gl(Vec3::new(x, y + height, 0.0)),
+                ]);
 
-            let color = Vec4::ONE;
-            self.second_mesh
-                .colors
-                .extend_from_slice(&[color, color, color, color]);
-            self.second_mesh.extend_indices(&[
-                [offset, offset + 1, offset + 2],
-                [offset, offset + 2, offset + 3],
-            ]);
+                // Adjust texture coordinates based on how the rectangle was clipped.
+                let texture_coordinate_min =
+                    (clipped_rectangle.min - rectangle.min).div_by_component(rectangle.size());
+                let size = clipped_rectangle.size().div_by_component(rectangle.size());
+
+                let atlas_rectangle_size = atlas_rectangle.size();
+                let min = atlas_rectangle.min
+                    + atlas_rectangle_size.mul_by_component(texture_coordinate_min);
+                let max = min + size.mul_by_component(atlas_rectangle_size);
+                let atlas_rectangle = Box2::new(min, max);
+
+                self.second_mesh.texture_coordinates.extend_from_slice(&[
+                    Vec2::new(atlas_rectangle.min.x, atlas_rectangle.min.y),
+                    Vec2::new(atlas_rectangle.max.x, atlas_rectangle.min.y),
+                    Vec2::new(atlas_rectangle.max.x, atlas_rectangle.max.y),
+                    Vec2::new(atlas_rectangle.min.x, atlas_rectangle.max.y),
+                ]);
+
+                let color = Vec4::ONE;
+                self.second_mesh
+                    .colors
+                    .extend_from_slice(&[color, color, color, color]);
+                self.second_mesh.extend_indices(&[
+                    [offset, offset + 1, offset + 2],
+                    [offset, offset + 2, offset + 3],
+                ]);
+            }
         }
     }
 

@@ -192,7 +192,7 @@ fn png_data_from_bytes(bytes: &[u8], _srgb: bool) -> TextureLoadData {
 }
 
 #[cfg(feature = "jpeg")]
-fn jpeg_data_from_bytes(bytes: &[u8], srgb: bool) -> TextureLoadData {
+pub fn jpeg_data_from_bytes(bytes: &[u8], srgb: bool) -> TextureLoadData {
     let reader = std::io::BufReader::new(bytes);
 
     let mut decoder = jpeg_decoder::Decoder::new(reader);

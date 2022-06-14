@@ -6,6 +6,7 @@ pub struct Images {
     receive_channel: std::sync::mpsc::Receiver<usize>,
     packer: rect_packer::Packer,
     newly_packed: Vec<usize>,
+    size: usize,
 }
 
 struct ImageDataInternal {
@@ -30,12 +31,16 @@ impl Drop for ImageDropHandle {
     }
 }
 
+unsafe impl Sync for ImageHandle {}
+unsafe impl Send for ImageHandle {}
+
+pub static IMAGE_ATLAS_SIZE: usize = 2048;
 #[derive(Clone)]
 pub struct ImageHandle(std::sync::Arc<ImageDropHandle>);
 
 impl Images {
     fn get_packer() -> rect_packer::Packer {
-        let initial_size = 1024;
+        let initial_size: i32 = IMAGE_ATLAS_SIZE as _;
 
         let rect_packer_config = rect_packer::Config {
             width: initial_size as i32,
@@ -55,7 +60,12 @@ impl Images {
             receive_channel,
             packer: Self::get_packer(),
             newly_packed: Vec::new(),
+            size: IMAGE_ATLAS_SIZE as _,
         }
+    }
+
+    pub fn get_size(&self) -> usize {
+        self.size
     }
 
     fn unload_dropped(&mut self) {
@@ -90,6 +100,7 @@ impl Images {
     }
 
     fn repack(&mut self) {
+        println!("REPACKING");
         self.packer = Self::get_packer();
         for image in self.image_data.iter_mut() {
             image.location = None;

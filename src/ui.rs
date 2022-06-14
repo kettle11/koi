@@ -27,7 +27,7 @@ impl UIManager {
         let drawer = kui::Drawer::new();
 
         let image_atlas_texture = (|textures: &mut Assets<Texture>, graphics: &mut Graphics| {
-            let size = 1024;
+            let size = kui::IMAGE_ATLAS_SIZE as _;
             let empty_data = vec![0; size as usize * size as usize * 4];
             let texture = graphics
                 .new_texture(
@@ -246,7 +246,6 @@ impl UIManager {
 
             let images_texture = textures.get(&self.image_atlas_texture);
             self.drawer.images.update_rects(|rect, data| {
-                println!("RECT: {:?}", rect);
                 graphics.context.update_texture(
                     images_texture,
                     rect.x,
@@ -258,6 +257,21 @@ impl UIManager {
                     TextureSettings::default(),
                 )
             });
+
+            // Debug display for texture atlas.
+            /*
+            commands.spawn((
+                Temporary(1),
+                Transform::new(),
+                Material::UNLIT,
+                RenderFlags::USER_INTERFACE,
+                Mesh::VERTICAL_QUAD,
+                Sprite::new(
+                    self.image_atlas_texture.clone(),
+                    Box2::new(Vec2::ZERO, Vec2::ONE),
+                ),
+            ));
+            */
 
             let second_mesh_data = &self.drawer.second_mesh;
 
