@@ -170,6 +170,24 @@ impl Archetype {
     }
 }
 
+pub struct EntityRef<'a> {
+    archetype: &'a mut Archetype,
+    index_within_archetype: usize,
+}
+
+impl<'a> EntityRef<'a> {
+    pub fn get_mut<Component: ComponentTrait>(&mut self) -> Result<&mut Component, KecsError> {
+        let component_id = get_component_id::<Component>();
+        for channel in &mut self.archetype.channels {
+            if channel.component_id == component_id {
+                let component = &mut channel.as_mut_vec()[self.index_within_archetype];
+                return Ok(component);
+            }
+        }
+        Err(KecsError::no_matching_component::<Component>())
+    }
+}
+
 pub struct World {
     pub(crate) archetypes: Vec<Archetype>,
     /// Used to look up [Archetype]s
@@ -493,16 +511,27 @@ impl World {
             .get_entity_location(entity)
             .ok_or(KecsError::EntityMissing)?;
 
-        let removing_component_id = get_component_id::<Component>();
+        let component_id = get_component_id::<Component>();
 
         let archetype = &mut self.archetypes[entity_location.archetype_index as usize];
         for channel in &mut archetype.channels {
-            if channel.component_id == removing_component_id {
+            if channel.component_id == component_id {
                 let component = &mut channel.as_mut_vec()[entity_location.index_within_archetype];
                 return Ok(component);
             }
         }
         Err(KecsError::no_matching_component::<Component>())
+    }
+
+    pub fn entity<'a>(&'a mut self, entity: Entity) -> Result<EntityRef<'a>, KecsError> {
+        let entity_location = self
+            .entities
+            .get_entity_location(entity)
+            .ok_or(KecsError::EntityMissing)?;
+        Ok(EntityRef {
+            archetype: &mut self.archetypes[entity_location.archetype_index as usize],
+            index_within_archetype: entity_location.index_within_archetype,
+        })
     }
 
     /// Gets a single instance of a component from this [World].
@@ -535,6 +564,28 @@ impl World {
         .as_mut_vec()
         .get_mut(0)
         .ok_or_else(KecsError::no_matching_component::<Component>)
+    }
+
+    pub fn remove_singleton<Component: ComponentTrait>(&mut self) -> Result<Component, KecsError> {
+        let filters = [(
+            Some(0),
+            Filter {
+                component_id: get_component_id::<Component>(),
+                filter_type: FilterType::With,
+            },
+        )];
+        let matching_archetype = self
+            .storage_lookup
+            .matching_archetype_iterator::<1>(&filters)
+            .next()
+            .ok_or_else(KecsError::no_matching_component::<Component>)?;
+        let entity = *self.archetypes[matching_archetype.archetype_index]
+            .entities
+            .first()
+            .ok_or_else(KecsError::no_matching_component::<Component>)?;
+        let removed_component = self.remove_component(entity);
+        self.despawn(entity).unwrap();
+        removed_component
     }
 
     /// Clones the components and [Entity]s of the other [World] and adds them to this [World].
