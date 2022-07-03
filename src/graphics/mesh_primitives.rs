@@ -548,6 +548,7 @@ pub fn uv_sphere(horizontal_segments: u32, vertical_segments: u32, uv_scale: Vec
     }
 }
 
+/// A hollow cylinder.
 pub fn cylinder(start: Vec3, end: Vec3, resolution: u32, radius: f32) -> MeshData {
     let mut positions = Vec::with_capacity(resolution as usize + 1);
     let mut normals = Vec::with_capacity(positions.capacity());
@@ -575,11 +576,12 @@ pub fn cylinder(start: Vec3, end: Vec3, resolution: u32, radius: f32) -> MeshDat
         let new_vertex = positions.len() as u32;
         let (sin, cos) = current_angle.sin_cos();
         let offset = right * cos + forward * sin;
-        positions.push(center + right * cos + forward * sin);
-        positions.push(end + right * cos + forward * sin);
+        positions.push(center + offset);
+        positions.push(end + offset);
 
-        normals.push(offset.normalized());
-        normals.push(offset.normalized());
+        let normal = offset.normalized();
+        normals.push(normal);
+        normals.push(normal);
 
         indices.push([new_vertex, new_vertex + 1, new_vertex + 2]);
         indices.push([new_vertex + 2, new_vertex + 1, new_vertex + 3]);
@@ -590,6 +592,51 @@ pub fn cylinder(start: Vec3, end: Vec3, resolution: u32, radius: f32) -> MeshDat
     indices.pop();
     indices.push([new_vertex, new_vertex + 1, start_index]);
     indices.push([start_index, new_vertex + 1, start_index + 1]);
+
+    // Top
+    let start = positions.len() as u32;
+    let normal = (end - center).normalized();
+    let mut previous0 = 0;
+    let mut current_angle = 0.;
+
+    for i in 0..resolution {
+        current_angle += increment;
+
+        let new_vertex = positions.len() as u32;
+        let (sin, cos) = current_angle.sin_cos();
+        let offset = right * cos + forward * sin;
+
+        positions.push(end + offset);
+        normals.push(normal);
+
+        if i > 1 {
+            indices.push([start, previous0, new_vertex]);
+        }
+        previous0 = new_vertex;
+    }
+
+    // Bottom
+    let start = positions.len() as u32;
+
+    let normal = -normal;
+    let mut previous0 = 0;
+    let mut current_angle = 0.;
+
+    for i in 0..resolution {
+        current_angle += increment;
+
+        let new_vertex = positions.len() as u32;
+        let (sin, cos) = current_angle.sin_cos();
+        let offset = right * cos + forward * sin;
+
+        positions.push(center + offset);
+        normals.push(normal);
+
+        if i > 1 {
+            indices.push([start, previous0, new_vertex]);
+        }
+        previous0 = new_vertex;
+    }
 
     MeshData {
         positions,
