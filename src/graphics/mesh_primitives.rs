@@ -610,7 +610,7 @@ pub fn cylinder(start: Vec3, end: Vec3, resolution: u32, radius: f32) -> MeshDat
         normals.push(normal);
 
         if i > 1 {
-            indices.push([start, previous0, new_vertex]);
+            indices.push([new_vertex, previous0, start]);
         }
         previous0 = new_vertex;
     }
