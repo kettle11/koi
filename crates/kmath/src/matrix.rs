@@ -1393,3 +1393,27 @@ impl<'a, T: Numeric, const R: usize, const C: usize> IntoIterator for &'a mut Ma
         self.as_slice_mut().iter_mut()
     }
 }
+
+impl<const R: usize, const C: usize> Matrix<f32, R, C> {
+    pub fn to_bits(&self) -> Matrix<u32, R, C> {
+        let mut v = Matrix::<u32, R, C>::ZERO;
+        for i in 0..C {
+            for j in 0..R {
+                v.0[i][j] = self.0[i][j].to_bits()
+            }
+        }
+        v
+    }
+}
+
+impl<const R: usize, const C: usize> Matrix<f64, R, C> {
+    pub fn to_bits(&self) -> Matrix<u64, R, C> {
+        let mut v = Matrix::<u64, R, C>::ZERO;
+        for i in 0..C {
+            for j in 0..R {
+                v.0[i][j] = self.0[i][j].to_bits()
+            }
+        }
+        v
+    }
+}
