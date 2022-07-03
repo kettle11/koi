@@ -18,6 +18,13 @@ impl Mesh {
         }
     }
 
+    pub fn recalculate_bounding_box(&mut self) {
+        self.bounding_box = self
+            .mesh_data
+            .as_ref()
+            .map(|mesh_data| Box3::from_points(mesh_data.positions.iter().copied()));
+    }
+
     pub fn update_mesh_on_gpu(&mut self, graphics: &mut Graphics) {
         if let Some(gpu_mesh) = self.gpu_mesh.take() {
             graphics.delete_gpu_mesh(gpu_mesh)
