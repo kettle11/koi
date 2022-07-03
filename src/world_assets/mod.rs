@@ -223,6 +223,7 @@ impl AssetLoaderTrait<World> for WorldLoader {
     }
 }
 
+#[allow(unused)]
 async fn load_world_from_bytes_and_extension(
     bytes: &[u8],
     path: &str,
