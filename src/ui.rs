@@ -258,7 +258,6 @@ impl UIManager {
                 )
             });
 
-            // Debug display for texture atlas.
             /*
             commands.spawn((
                 Temporary(1),
@@ -350,6 +349,23 @@ impl UIManager {
         }
         self.render_ui(world)
     }
+
+    pub fn update_with_world(
+        &mut self,
+        event: &Event,
+        world: &mut World,
+        standard_context: &mut StandardContext<World>,
+        root_widget: &mut impl kui::Widget<World, StandardContext<World>, ()>,
+    ) -> bool {
+        match event {
+            Event::Draw => {
+                self.layout_and_draw_with_world(world, standard_context, root_widget);
+                false
+            }
+            Event::KappEvent(e) => self.handle_event(e, world, standard_context),
+            _ => false,
+        }
+    }
 }
 
 pub fn run_simple_ui<Data: 'static>(
@@ -364,7 +380,11 @@ pub fn run_simple_ui<Data: 'static>(
             .get_singleton::<Graphics>()
             .set_automatic_redraw(false);
 
-        world.spawn((Transform::new(), Camera::new_for_user_interface()));
+        world.spawn((Transform::new(), {
+            let mut camera = Camera::new_for_user_interface();
+            camera.clear_color = Some(Color::WHITE);
+            camera
+        }));
 
         let mut data = data;
         let mut root = root;
