@@ -12,7 +12,7 @@ fn main() {
             camera,
             CameraControls::new(),
         ));
-        world.spawn((Transform::new(), Mesh::CUBE, Material::PHYSICALLY_BASED));
+        world.spawn((Transform::new(), Mesh::CYLINDER, Material::PHYSICALLY_BASED));
 
         // Spawn a light
         world.spawn((
