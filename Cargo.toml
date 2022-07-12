@@ -65,3 +65,11 @@ required-features = ["xr"]
 [[example]]
 name = "headless"
 required-features = ["headless"]
+
+[[example]]
+name = "collision_test"
+required-features = ["physics"]
+
+[[example]]
+name = "physics"
+required-features = ["physics"]

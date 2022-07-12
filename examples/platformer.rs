@@ -60,7 +60,7 @@ fn main() {
         let character_sprite_map = SpriteMap::new(characters_texture, 24, 2, 232, 76);
 
         // Enter the tile of the sprite.
-        let snow_man_sprite = tiles_sprite_map.get_sprite(5, 7);
+        let _snow_man_sprite = tiles_sprite_map.get_sprite(5, 7);
         let middle_platform_sprite = tiles_sprite_map.get_sprite(2, 0);
 
         let character_sprites = [
