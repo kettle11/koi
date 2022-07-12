@@ -37,15 +37,11 @@ fn load_prefabs_system(
     #[cfg(feature = "graphics")] meshes: &mut Assets<Mesh>,
     #[cfg(feature = "graphics")] textures: &mut Assets<Texture>,
 ) {
-    // A Vec doesn't need to be allocated here.
-    // This is just a way to not borrow the AssetLoader and Assets at
-    // the same time.
-    let messages: Vec<_> = worlds.asset_loader.receiver.inner().try_iter().collect();
-    for PrefabLoadMessage {
+    while let Ok(PrefabLoadMessage {
         world_load_message_data,
         handle,
         options,
-    } in messages.into_iter()
+    }) = worlds.asset_loader.receiver.inner().try_recv()
     {
         let world: Option<World> = match world_load_message_data {
             #[cfg(feature = "gltf")]
@@ -117,14 +113,9 @@ fn delayed_spawn_system(world: &mut World) {
     }
 }
 
+#[derive(Default)]
 pub struct LoadWorldOptions {
     pub run_on_world: Option<Box<dyn Fn(&mut World) + Send + Sync>>,
-}
-
-impl Default for LoadWorldOptions {
-    fn default() -> Self {
-        Self { run_on_world: None }
-    }
 }
 
 impl AssetTrait for World {
@@ -205,7 +196,7 @@ impl AssetLoaderTrait<World> for WorldLoader {
     ) {
         let sender = self.sender.inner().clone();
         ktasks::spawn(async move {
-            let result = load_world_from_bytes_and_extension(&data, &"", &extension).await;
+            let result = load_world_from_bytes_and_extension(&data, "", &extension).await;
             match result {
                 Ok(world_load_message_data) => {
                     let _ = sender.send(PrefabLoadMessage {
@@ -233,7 +224,7 @@ async fn load_world_from_bytes_and_extension(
     Ok(match extension {
         #[cfg(feature = "gltf")]
         "glb" => {
-            let glb = kgltf::GLB::from_bytes(&bytes).map_err(|_| WorldLoadError::CouldNotDecode)?;
+            let glb = kgltf::GLB::from_bytes(bytes).map_err(|_| WorldLoadError::CouldNotDecode)?;
             let data = glb.binary_data.map(|d| d.into_owned());
             let mesh_primitive_data =
                 load_mesh_primitive_data(path, &glb.gltf, data.as_deref()).await;
@@ -248,7 +239,7 @@ async fn load_world_from_bytes_and_extension(
         #[cfg(feature = "gltf")]
         "gltf" => {
             //  klog::log!("ABOUT TO DECODE GLTF");
-            let s = std::str::from_utf8(&bytes).map_err(|_| WorldLoadError::CouldNotDecode)?;
+            let s = std::str::from_utf8(bytes).map_err(|_| WorldLoadError::CouldNotDecode)?;
             //   klog::log!("ABOUT TO DECODE GLTF0: {}", s);
 
             let gltf = kgltf::GlTf::from_json(s).ok_or(WorldLoadError::CouldNotDecode)?;
@@ -280,7 +271,7 @@ async fn load_world(path: &str) -> Result<PrefabLoadMessageData, WorldLoadError>
     let bytes = crate::fetch_bytes(path)
         .await
         .map_err(|_| WorldLoadError::CouldNotLoadFile)?;
-    load_world_from_bytes_and_extension(&bytes, &path, &extension).await
+    load_world_from_bytes_and_extension(&bytes, path, extension).await
 }
 
 pub fn flatten_world(world: &mut World) {
@@ -294,7 +285,7 @@ pub fn flatten_world(world: &mut World) {
     .run(world);
     (|entities_with_hierarchy: Query<&HierarchyNode>| {
         for (entity, _) in entities_with_hierarchy.entities_and_components() {
-            commands.remove_component::<HierarchyNode>(entity.clone());
+            commands.remove_component::<HierarchyNode>(*entity);
         }
     })
     .run(world);

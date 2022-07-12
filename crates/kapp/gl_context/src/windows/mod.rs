@@ -194,7 +194,7 @@ impl Drop for GLContext {
 }
 
 impl GLContextBuilder {
-    pub fn build(&self) -> Result<GLContext, ()> {
+    pub fn build(&self) -> Result<GLContext, std::io::Error> {
         Ok(new_opengl_context(
             self.gl_attributes.color_bits,
             self.gl_attributes.alpha_bits,
@@ -204,8 +204,7 @@ impl GLContextBuilder {
             self.gl_attributes.major_version,
             self.gl_attributes.minor_version,
             self.gl_attributes.srgb,
-        )
-        .unwrap())
+        )?)
     }
 }
 

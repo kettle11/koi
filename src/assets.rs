@@ -271,6 +271,10 @@ impl<T: AssetTrait> Assets<T> {
         self.indirection_storage.len()
     }
 
+    pub fn is_empty(&self) -> bool {
+        self.indirection_storage.len() == 0
+    }
+
     pub fn add(&mut self, asset: T) -> Handle<T> {
         let indirection_index = self.indirection_storage.push(asset);
         Handle::new(indirection_index, self.send_drop_channel.inner().clone())

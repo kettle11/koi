@@ -89,12 +89,7 @@ pub fn new_texture_from_texture_load_data(
 }
 /// A system that loads textures onto the GPU
 pub(crate) fn load_textures(textures: &mut Assets<Texture>, graphics: &mut Graphics) {
-    // A Vec doesn't need to be allocated here.
-    // This is just a way to not borrow the TextureAssetLoader and Textures at
-    // the same time.
-    let messages: Vec<TextureLoadMessage> =
-        textures.asset_loader.receiver.inner().try_iter().collect();
-    for message in messages.into_iter() {
+    while let Ok(message) = textures.asset_loader.receiver.inner().try_recv() {
         let texture = new_texture_from_texture_load_data(
             graphics,
             message.texture_load_data,
@@ -259,13 +254,13 @@ pub fn texture_load_data_from_bytes(
 ) -> TextureLoadData {
     match extension {
         #[cfg(any(feature = "png", feature = "imagine_png"))]
-        "png" => png_data_from_bytes(&bytes, options.srgb),
+        "png" => png_data_from_bytes(bytes, options.srgb),
         #[cfg(feature = "jpeg")]
-        "jpg" | "jpeg" => jpeg_data_from_bytes(&bytes, options.srgb),
+        "jpg" | "jpeg" => jpeg_data_from_bytes(bytes, options.srgb),
         #[cfg(feature = "hdri")]
         "hdr" => {
             options.srgb = false;
-            hdri_data_from_bytes(&bytes)
+            hdri_data_from_bytes(bytes)
         }
         _ => panic!("Unsupported texture extension: {:?}", extension),
     }
@@ -280,11 +275,17 @@ pub(crate) async fn texture_data_from_path(
         .and_then(std::ffi::OsStr::to_str)
         .expect("Expected image file extension");
 
-    let bytes = crate::fetch_bytes(&path)
+    let bytes = crate::fetch_bytes(path)
         .await
         .unwrap_or_else(|_| panic!("Failed to open file: {}", path));
 
     texture_load_data_from_bytes(extension, &bytes, options)
+}
+
+impl Default for TextureAssetLoader {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl TextureAssetLoader {

@@ -19,16 +19,13 @@ pub fn on_scroll<State, Context: GetStandardInput + GetEventHandlers<State>, Ext
         on_event: Rc::new(move |event, pointer_event_info, state| {
             cursor_event_state.borrow_mut().hovered = pointer_event_info.in_hitbox;
 
-            match event {
-                kapp_platform_common::Event::Scroll {
-                    delta_x, delta_y, ..
-                } => {
-                    if pointer_event_info.in_hitbox {
-                        (on_scroll)(state, *delta_x as f32, *delta_y as f32)
-                    }
+            if let kapp_platform_common::Event::Scroll {
+                delta_x, delta_y, ..
+            } = event
+            {
+                if pointer_event_info.in_hitbox {
+                    (on_scroll)(state, *delta_x as f32, *delta_y as f32)
                 }
-
-                _ => {}
             }
         }),
         cursor_event_state: state_value_0,

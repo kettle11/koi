@@ -15,11 +15,12 @@ impl<T: 'static + Clone> Clone for NotSendSync<T> {
     fn clone(&self) -> Self {
         Self {
             value: self.value.clone(),
-            thread_id: self.thread_id.clone(),
+            thread_id: self.thread_id,
         }
     }
 }
 
+#[allow(clippy::non_send_fields_in_send_ty)]
 unsafe impl<T> Send for NotSendSync<T> {}
 unsafe impl<T> Sync for NotSendSync<T> {}
 

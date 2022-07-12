@@ -205,6 +205,11 @@ impl Material {
 
 pub struct MaterialAssetLoader;
 
+impl Default for MaterialAssetLoader {
+    fn default() -> Self {
+        Self::new()
+    }
+}
 impl MaterialAssetLoader {
     pub fn new() -> Self {
         Self

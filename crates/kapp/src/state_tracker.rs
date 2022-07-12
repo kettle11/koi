@@ -214,6 +214,12 @@ pub struct TouchState {
     pinch_pair: Option<(usize, usize)>,
 }
 
+impl Default for TouchState {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl TouchState {
     pub fn new() -> Self {
         Self {

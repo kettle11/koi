@@ -5,6 +5,43 @@
 use kserde::*;
 
 #[test]
+fn test_basic_json() {
+    let json = r#"
+    {
+        "scenes": [
+            {
+                "nodes": [
+                    0
+                ]
+            }
+        ]
+    }"#;
+    let mut json_deserializer = JSONDeserializer::new(json);
+    json_deserializer.begin_object();
+    {
+        json_deserializer.has_property();
+
+        json_deserializer.begin_array();
+        {
+            json_deserializer.begin_object();
+            {
+                json_deserializer.has_property();
+                json_deserializer.begin_array();
+                {
+                    json_deserializer.has_array_value();
+                    json_deserializer.parse_number();
+                }
+                json_deserializer.end_array();
+            }
+            json_deserializer.end_object();
+        }
+        json_deserializer.end_array();
+    }
+    json_deserializer.end_object();
+
+    // Thing::from_json(&json).unwrap();
+}
+#[test]
 fn json_test_suite() {
     let files = std::fs::read_dir("tests/test_parsing").unwrap();
 

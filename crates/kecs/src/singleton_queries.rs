@@ -107,13 +107,18 @@ impl<'b, T: 'static> AsSystemArg<'b> for RwLockWriteGuard<'_, Vec<T>> {
 
 pub trait SingletonQuery: SystemParameterTrait {
     type Component: ComponentTrait;
+    // Lifetimes could be inferred but are allowed for clarity
+    #[allow(clippy::needless_lifetimes)]
     fn get_from_archetype<'a>(
         archetype: &'a Archetype,
         channel_index: usize,
     ) -> Result<<Self as SystemParameterFetchTrait<'a>>::FetchResult, KecsError>;
 }
+
 impl<A: ComponentTrait> SingletonQuery for &A {
     type Component = A;
+    // Lifetimes could be inferred but are allowed for clarity
+    #[allow(clippy::needless_lifetimes)]
     fn get_from_archetype<'a>(
         archetype: &'a Archetype,
         channel_index: usize,
@@ -129,6 +134,8 @@ impl<A: ComponentTrait> SingletonQuery for &A {
 impl<A: ComponentTrait> SingletonQuery for &mut A {
     type Component = A;
 
+    // Lifetimes could be inferred but are allowed for clarity
+    #[allow(clippy::needless_lifetimes)]
     fn get_from_archetype<'a>(
         archetype: &'a Archetype,
         channel_index: usize,
@@ -277,6 +284,7 @@ macro_rules! singleton_impls {
 
         impl<'b, $( $tuple: AsSystemArg<'b>,)*> AsSystemArg<'b> for ($( $tuple,)*) {
             type Arg =  ($( $tuple::Arg,)*);
+            #[allow(clippy::unused_unit)]
             fn as_system_arg(&'b mut self) -> Self::Arg {
                 ($( self.$index.as_system_arg(),)*)
             }

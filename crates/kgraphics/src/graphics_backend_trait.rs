@@ -3,18 +3,26 @@ use raw_window_handle::*;
 
 pub trait RenderTargetTrait {
     fn pixel_format(&self) -> PixelFormat;
-    fn current_frame(&self) -> Result<Texture, ()>;
+    fn current_frame(&self) -> Texture;
 }
 
+#[derive(Debug, Clone, Copy)]
+pub enum PropertyError {
+    IncorrectType,
+}
+
+#[derive(Debug, Clone, Copy)]
+pub enum GraphicsError {}
+
 pub trait PipelineTrait {
-    fn get_int_property(&self, name: &str) -> Result<IntProperty, ()>;
-    fn get_float_property(&self, name: &str) -> Result<FloatProperty, ()>;
-    fn get_vec2_property(&self, name: &str) -> Result<Vec2Property, ()>;
-    fn get_vec3_property(&self, name: &str) -> Result<Vec3Property, ()>;
-    fn get_vec4_property(&self, name: &str) -> Result<Vec4Property, ()>;
-    fn get_mat4_property(&self, name: &str) -> Result<Mat4Property, ()>;
-    fn get_texture_property(&self, name: &str) -> Result<TextureProperty, ()>;
-    fn get_cube_map_property(&self, name: &str) -> Result<CubeMapProperty, ()>;
+    fn get_int_property(&self, name: &str) -> Result<IntProperty, PropertyError>;
+    fn get_float_property(&self, name: &str) -> Result<FloatProperty, PropertyError>;
+    fn get_vec2_property(&self, name: &str) -> Result<Vec2Property, PropertyError>;
+    fn get_vec3_property(&self, name: &str) -> Result<Vec3Property, PropertyError>;
+    fn get_vec4_property(&self, name: &str) -> Result<Vec4Property, PropertyError>;
+    fn get_mat4_property(&self, name: &str) -> Result<Mat4Property, PropertyError>;
+    fn get_texture_property(&self, name: &str) -> Result<TextureProperty, PropertyError>;
+    fn get_cube_map_property(&self, name: &str) -> Result<CubeMapProperty, PropertyError>;
     fn get_vertex_attribute<T>(&self, name: &str) -> Result<VertexAttribute<T>, String>;
 }
 
@@ -67,6 +75,8 @@ pub trait RenderPassTrait {
     fn draw_triangles(&mut self, count: u32, index_buffer: &IndexBuffer);
     fn draw_triangles_without_buffer(&mut self, count: u32);
     fn set_depth_mask(&mut self, depth_mask: bool);
+
+    #[allow(clippy::too_many_arguments)]
     fn blit_framebuffer(
         self,
         target: &Framebuffer,
@@ -84,6 +94,7 @@ pub trait RenderPassTrait {
 pub trait CommandBufferTrait {
     /// Gets the number of actions encoded in the `CommandBuffer`
     fn len(&self) -> usize;
+    fn is_empty(&self) -> bool;
 
     fn begin_render_pass_with_framebuffer<'a>(
         &'a mut self,
@@ -104,16 +115,16 @@ pub trait CommandBufferTrait {
 }
 
 pub trait GraphicsContextTrait: Sized {
-    fn new() -> Result<Self, ()>;
-    fn new_with_settings(settings: crate::GraphicsContextSettings) -> Result<Self, ()>;
+    fn new() -> Self;
+    fn new_with_settings(settings: crate::GraphicsContextSettings) -> Self;
 
     /// This must only be called once per window.
-    unsafe fn get_render_target_for_window(
+    fn get_render_target_for_window(
         &mut self,
         window: &impl HasRawWindowHandle,
         _width: u32,
         _height: u32,
-    ) -> Result<RenderTarget, ()>;
+    ) -> RenderTarget;
 
     // A hack to accomodate passing an SDL window around
     #[cfg(feature = "SDL")]
@@ -128,10 +139,10 @@ pub trait GraphicsContextTrait: Sized {
     fn new_fragment_function(&mut self, source: &str) -> Result<FragmentFunction, String>;
     fn new_vertex_function(&mut self, source: &str) -> Result<VertexFunction, String>;
 
-    fn new_data_buffer<T>(&mut self, data: &[T]) -> Result<DataBuffer<T>, ()>;
+    fn new_data_buffer<T>(&mut self, data: &[T]) -> Result<DataBuffer<T>, GraphicsError>;
     fn delete_data_buffer<T>(&mut self, data_buffer: DataBuffer<T>);
 
-    fn new_index_buffer(&mut self, data: &[u32]) -> Result<IndexBuffer, ()>;
+    fn new_index_buffer(&mut self, data: &[u32]) -> Result<IndexBuffer, GraphicsError>;
     fn delete_index_buffer(&mut self, index_buffer: IndexBuffer);
 
     fn new_texture(
@@ -141,8 +152,9 @@ pub trait GraphicsContextTrait: Sized {
         data: Option<&[u8]>,
         pixel_format: PixelFormat,
         texture_settings: TextureSettings,
-    ) -> Result<Texture, ()>;
+    ) -> Result<Texture, GraphicsError>;
 
+    #[allow(clippy::too_many_arguments)]
     fn update_texture(
         &mut self,
         texture: &Texture,
@@ -168,7 +180,7 @@ pub trait GraphicsContextTrait: Sized {
         data: Option<[&[u8]; 6]>,
         pixel_format: PixelFormat,
         texture_settings: TextureSettings,
-    ) -> Result<CubeMap, ()>;
+    ) -> Result<CubeMap, GraphicsError>;
 
     fn update_cube_map(
         &mut self,

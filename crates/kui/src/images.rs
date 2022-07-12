@@ -31,25 +31,17 @@ impl Drop for ImageDropHandle {
     }
 }
 
-unsafe impl Sync for ImageHandle {}
-unsafe impl Send for ImageHandle {}
-
 pub static IMAGE_ATLAS_SIZE: usize = 2048;
 #[derive(Clone)]
 pub struct ImageHandle(std::sync::Arc<ImageDropHandle>);
 
-impl Images {
-    fn get_packer() -> rect_packer::Packer {
-        let initial_size: i32 = IMAGE_ATLAS_SIZE as _;
-
-        let rect_packer_config = rect_packer::Config {
-            width: initial_size as i32,
-            height: initial_size as i32,
-            border_padding: 5,
-            rectangle_padding: 10,
-        };
-        rect_packer::Packer::new(rect_packer_config)
+impl Default for Images {
+    fn default() -> Self {
+        Self::new()
     }
+}
+
+impl Images {
     pub fn new() -> Self {
         let (send_channel, receive_channel) = std::sync::mpsc::channel();
 
@@ -62,6 +54,18 @@ impl Images {
             newly_packed: Vec::new(),
             size: IMAGE_ATLAS_SIZE as _,
         }
+    }
+
+    fn get_packer() -> rect_packer::Packer {
+        let initial_size: i32 = IMAGE_ATLAS_SIZE as _;
+
+        let rect_packer_config = rect_packer::Config {
+            width: initial_size as i32,
+            height: initial_size as i32,
+            border_padding: 5,
+            rectangle_padding: 10,
+        };
+        rect_packer::Packer::new(rect_packer_config)
     }
 
     pub fn get_size(&self) -> usize {

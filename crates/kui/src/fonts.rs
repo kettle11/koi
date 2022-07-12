@@ -86,7 +86,7 @@ impl Fonts {
             let query = fontdb::Query {
                 // Default to Helvetica, otherwise fallback on an available system font.
                 // This should be changed later.
-                families: families,
+                families,
                 weight: fontdb::Weight::NORMAL,
                 style: fontdb::Style::Normal,
                 stretch: fontdb::Stretch::Normal,

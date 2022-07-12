@@ -77,11 +77,11 @@ impl RenderTargetTrait for RenderTarget {
         self.pixel_format
     }
 
-    fn current_frame(&self) -> Result<Texture, ()> {
-        Ok(Texture {
+    fn current_frame(&self) -> Texture {
+        Texture {
             texture_type: TextureType::DefaultFramebuffer,
             mip: 0,
-        })
+        }
     }
 }
 
@@ -197,12 +197,12 @@ unsafe impl Sync for Pipeline {}
 unsafe impl Sync for Texture {}
 
 impl Pipeline {
-    fn get_property(&self, name: &str, type_: u32) -> Result<JSObjectDynamic, ()> {
+    fn get_property(&self, name: &str, type_: u32) -> Result<JSObjectDynamic, PropertyError> {
         if let Some(uniform) = self.uniforms.get(name) {
             if uniform.uniform_type == type_ {
                 Ok(uniform.location.clone())
             } else {
-                Err(())
+                Err(PropertyError)
             }
         } else {
             Ok(JSObjectDynamic::NULL)
@@ -211,35 +211,35 @@ impl Pipeline {
 }
 
 impl PipelineTrait for Pipeline {
-    fn get_int_property(&self, name: &str) -> Result<IntProperty, ()> {
+    fn get_int_property(&self, name: &str) -> Result<IntProperty, PropertyError> {
         Ok(IntProperty(self.get_property(name, INT)?))
     }
 
-    fn get_float_property(&self, name: &str) -> Result<FloatProperty, ()> {
+    fn get_float_property(&self, name: &str) -> Result<FloatProperty, PropertyError> {
         Ok(FloatProperty(self.get_property(name, FLOAT)?))
     }
 
-    fn get_vec2_property(&self, name: &str) -> Result<Vec2Property, ()> {
+    fn get_vec2_property(&self, name: &str) -> Result<Vec2Property, PropertyError> {
         Ok(Vec2Property(self.get_property(name, FLOAT_VEC2)?))
     }
 
-    fn get_vec3_property(&self, name: &str) -> Result<Vec3Property, ()> {
+    fn get_vec3_property(&self, name: &str) -> Result<Vec3Property, PropertyError> {
         Ok(Vec3Property(self.get_property(name, FLOAT_VEC3)?))
     }
 
-    fn get_vec4_property(&self, name: &str) -> Result<Vec4Property, ()> {
+    fn get_vec4_property(&self, name: &str) -> Result<Vec4Property, PropertyError> {
         Ok(Vec4Property(self.get_property(name, FLOAT_VEC4)?))
     }
 
-    fn get_mat4_property(&self, name: &str) -> Result<Mat4Property, ()> {
+    fn get_mat4_property(&self, name: &str) -> Result<Mat4Property, PropertyError> {
         Ok(Mat4Property(self.get_property(name, FLOAT_MAT4)?))
     }
 
-    fn get_texture_property(&self, name: &str) -> Result<TextureProperty, ()> {
+    fn get_texture_property(&self, name: &str) -> Result<TextureProperty, PropertyError> {
         Ok(TextureProperty(self.get_property(name, SAMPLER_2D)?))
     }
 
-    fn get_cube_map_property(&self, name: &str) -> Result<CubeMapProperty, ()> {
+    fn get_cube_map_property(&self, name: &str) -> Result<CubeMapProperty, PropertyError> {
         Ok(CubeMapProperty(self.get_property(name, SAMPLER_CUBE)?))
     }
 
@@ -512,7 +512,11 @@ impl CommandBuffer {
 impl CommandBufferTrait for CommandBuffer {
     /// Gets the number of actions encoded in the `CommandBuffer`
     fn len(&self) -> usize {
-        0
+        self.commands.len()
+    }
+
+    fn is_empty(&self) -> bool {
+        self.commands.is_empty()
     }
 
     fn begin_render_pass_with_framebuffer<'a>(
@@ -768,33 +772,33 @@ impl GraphicsContext {
 }
 
 impl GraphicsContextTrait for GraphicsContext {
-    fn new() -> Result<Self, ()> {
+    fn new() -> Self {
         Self::new_with_settings(Default::default())
     }
-    fn new_with_settings(settings: crate::GraphicsContextSettings) -> Result<Self, ()> {
+    fn new_with_settings(settings: crate::GraphicsContextSettings) -> Self {
         let js = WebGLJS::new();
 
         let msaa_enabled = if settings.samples > 0 { 1 } else { 0 };
         // Initialize context
         js.new.call_raw(&[msaa_enabled]);
-        Ok(Self {
+        Self {
             js,
             old_command_buffers: Vec::new(),
-        })
+        }
     }
 
     /// This must only be called once per window.
-    unsafe fn get_render_target_for_window(
+    fn get_render_target_for_window(
         &mut self,
         _window: &impl HasRawWindowHandle,
         _width: u32,
         _height: u32,
-    ) -> Result<RenderTarget, ()> {
+    ) -> RenderTarget {
         // This is obviously incorrect. This should be fixed.
         let pixel_format = PixelFormat::RGBA8Unorm;
 
         // There's only one RenderTarget per context right now.
-        Ok(RenderTarget { pixel_format })
+        RenderTarget { pixel_format }
     }
 
     fn resize(&mut self, _window: &impl HasRawWindowHandle, width: u32, height: u32) {

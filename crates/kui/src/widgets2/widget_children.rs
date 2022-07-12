@@ -18,6 +18,7 @@ pub trait WidgetChildren<Data, Context, ExtraState>: for<'a> GetConstraintsIter<
         f: F,
     );
     fn len(&self) -> usize;
+    fn is_empty(&self) -> bool;
 }
 
 pub trait GetConstraintsIter<'a> {
@@ -166,6 +167,9 @@ impl<Data, Context, ExtraState, ChildExtraState, Child: Widget<Data, Context, Ch
     fn len(&self) -> usize {
         self.children.len()
     }
+    fn is_empty(&self) -> bool {
+        self.children.is_empty()
+    }
 }
 
 impl<
@@ -243,6 +247,9 @@ macro_rules! tuple_impls {
 
             fn len(&self) -> usize {
                 $count
+            }
+            fn is_empty(&self) -> bool {
+                $count == 0
             }
         }
     }

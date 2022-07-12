@@ -65,7 +65,7 @@ impl<'a> WindowBuilder<'a> {
         self
     }
 
-    pub fn build(&mut self) -> Result<Window, ()> {
+    pub fn build(&mut self) -> Window {
         // Clamp the window size to the minimum width and height
         if let Some(size) = &mut self.window_parameters.size {
             if let Some((min_width, min_height)) = self.window_parameters.minimum_size {
@@ -73,12 +73,12 @@ impl<'a> WindowBuilder<'a> {
             }
         }
 
-        Ok(Window::new(
+        Window::new(
             self.application
                 .platform_application
                 .borrow_mut()
                 .new_window(&self.window_parameters),
             self.application.platform_application.clone(),
-        ))
+        )
     }
 }

@@ -46,10 +46,7 @@ async fn run_async(app: Application, events: Events) {
         .unwrap();
 
     let (window_width, window_height) = window.size();
-    let render_target = unsafe {
-        g.get_render_target_for_window(&window, window_width, window_height)
-            .unwrap()
-    };
+    let render_target = g.get_render_target_for_window(&window, window_width, window_height);
 
     let pipeline = g
         .new_pipeline(

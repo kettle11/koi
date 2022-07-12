@@ -13,12 +13,7 @@ pub struct Shader {
 
 /// A system that loads shaders onto the GPU
 pub(crate) fn load_shaders(shaders: &mut Assets<Shader>, graphics: &mut Graphics) {
-    // A Vec doesn't need to be allocated here.
-    // This is just a way to not borrow the ShaderAssetLoader and Assets<Shader> at
-    // the same time.
-    let messages: Vec<ShaderLoadMessage> =
-        shaders.asset_loader.receiver.inner().try_iter().collect();
-    for message in messages.into_iter() {
+    while let Ok(message) = shaders.asset_loader.receiver.inner().try_recv() {
         let shader = graphics
             .new_shader(&message.source, message.pipeline_settings)
             .unwrap();
@@ -34,6 +29,12 @@ struct ShaderLoadMessage {
     handle: Handle<Shader>,
     source: String,
     pipeline_settings: PipelineSettings,
+}
+
+impl Default for ShaderAssetLoader {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl ShaderAssetLoader {
@@ -88,15 +89,14 @@ impl Shader {
     pub const FULLSCREEN_QUAD: Handle<Shader> = Handle::<Shader>::new_with_just_index(10);
 }
 
-pub static UNLIT_SHADER_SOURCE: &'static str = include_str!("built_in_shaders/unlit.glsl");
-pub static PHYSICALLY_BASED_SHADER_SOURCE: &'static str =
+pub static UNLIT_SHADER_SOURCE: &str = include_str!("built_in_shaders/unlit.glsl");
+pub static PHYSICALLY_BASED_SHADER_SOURCE: &str =
     include_str!("built_in_shaders/physically_based.glsl");
-pub static DEPTH_ONLY_SHADER_SOURCE: &'static str =
-    include_str!("built_in_shaders/depth_only.glsl");
-pub static FULLSCREEN_QUAD_SHADER_SOURCE: &'static str =
+pub static DEPTH_ONLY_SHADER_SOURCE: &str = include_str!("built_in_shaders/depth_only.glsl");
+pub static FULLSCREEN_QUAD_SHADER_SOURCE: &str =
     include_str!("built_in_shaders/fullscreen_quad.glsl");
-pub static UNLIT_UI_SHADER_SOURCE: &'static str = include_str!("built_in_shaders/unlit_ui.glsl");
-pub static SKYBOX_SHADER_SOURCE: &'static str = include_str!("built_in_shaders/skybox.glsl");
+pub static UNLIT_UI_SHADER_SOURCE: &str = include_str!("built_in_shaders/unlit_ui.glsl");
+pub static SKYBOX_SHADER_SOURCE: &str = include_str!("built_in_shaders/skybox.glsl");
 
 pub(crate) fn initialize_static_shaders(graphics: &mut Graphics, shaders: &mut Assets<Shader>) {
     shaders.add_and_leak(
@@ -189,7 +189,6 @@ pub(crate) fn initialize_static_shaders(graphics: &mut Graphics, shaders: &mut A
                     // LessOrEqual allows transparent overlays to be rendered with the same mesh
                     // as the thing being overlaid.
                     depth_test: DepthTest::AlwaysPass,
-                    ..Default::default()
                 },
             )
             .unwrap(),

@@ -175,6 +175,10 @@ impl CommandBufferTrait for CommandBuffer {
         0
     }
 
+    fn is_empty(&self) -> bool {
+        true
+    }
+
     fn begin_render_pass_with_framebuffer<'a>(
         &'a mut self,
         framebuffer: &Framebuffer,
@@ -201,21 +205,21 @@ impl CommandBufferTrait for CommandBuffer {
     fn present(&mut self) {}
 }
 impl GraphicsContextTrait for GraphicsContext {
-    fn new() -> Result<Self, ()> {
-        Ok(Self)
+    fn new() -> Self {
+        Self
     }
-    fn new_with_settings(settings: crate::GraphicsContextSettings) -> Result<Self, ()> {
-        Ok(Self)
+    fn new_with_settings(settings: crate::GraphicsContextSettings) -> Self {
+        Self
     }
 
     /// This must only be called once per window.
-    unsafe fn get_render_target_for_window(
+    fn get_render_target_for_window(
         &mut self,
         window: &impl HasRawWindowHandle,
         _width: u32,
         _height: u32,
-    ) -> Result<RenderTarget, ()> {
-        Ok(RenderTarget)
+    ) -> RenderTarget {
+        RenderTarget
     }
 
     fn resize(&mut self, window: &impl HasRawWindowHandle, width: u32, height: u32) {}

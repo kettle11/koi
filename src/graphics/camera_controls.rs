@@ -137,13 +137,11 @@ pub fn update_camera_controls(
         pan.y -= -input.scroll().1 as f32 * scale;
         // };
 
-        if controls.touch_rotate_enabled {
-            if input.touch_state.touches.len() == 1 {
-                if let Some((_, touch)) = input.touch_state.touches.iter().next() {
-                    let diff = touch.delta();
-                    pitch -= diff.y / 400.;
-                    yaw -= diff.x / 400.;
-                }
+        if controls.touch_rotate_enabled && input.touch_state.touches.len() == 1 {
+            if let Some((_, touch)) = input.touch_state.touches.iter().next() {
+                let diff = touch.delta();
+                pitch -= diff.y / 400.;
+                yaw -= diff.x / 400.;
             }
         }
 

@@ -212,6 +212,7 @@ struct Renderer<'a, 'b: 'a> {
 }
 
 impl<'a, 'b: 'a> Renderer<'a, 'b> {
+    #[allow(clippy::too_many_arguments)]
     pub fn new(
         renderer_info: &'a RendererInfo,
         render_pass: &'a mut RenderPass<'b>,
@@ -371,7 +372,7 @@ impl<'a, 'b: 'a> Renderer<'a, 'b> {
                 for (index, cascade) in shadow_caster.shadow_cascades.iter().enumerate() {
                     let depth_texture = self
                         .texture_assets
-                        .get(&cascade.offscreen_render_target.depth_texture());
+                        .get(cascade.offscreen_render_target.depth_texture());
 
                     self.render_pass.set_texture_property(
                         &pipeline
@@ -876,6 +877,9 @@ pub fn render_other_world(main_world: &mut World, other_world: &mut World) {
     .run(main_world)
 }
 
+// In the future there should be a way to use structs
+// as arguments to systems to avoid this mess of queries.
+#[allow(clippy::too_many_arguments)]
 pub fn render_scene<'a, 'b>(
     graphics: &mut Graphics,
     shader_assets: &Assets<Shader>,
@@ -930,12 +934,10 @@ pub fn render_scene<'a, 'b>(
 
         let initial_framebuffer = if camera.post_processing_enabled {
             renderer_info.offscreen_render_target.framebuffer()
+        } else if let Some(CameraTarget::OffscreenRenderTarget(c)) = &camera.camera_target {
+            offscreen_render_targets.get(c).framebuffer()
         } else {
-            if let Some(CameraTarget::OffscreenRenderTarget(c)) = &camera.camera_target {
-                offscreen_render_targets.get(c).framebuffer()
-            } else {
-                &graphics.current_target_framebuffer
-            }
+            &graphics.current_target_framebuffer
         };
 
         let mut view_size = camera.get_view_size();
@@ -945,11 +947,9 @@ pub fn render_scene<'a, 'b>(
         let resolution_scale = camera.resolution_scale;
 
         let mut render_pass =
-            command_buffer.begin_render_pass_with_framebuffer(&initial_framebuffer, clear_color);
+            command_buffer.begin_render_pass_with_framebuffer(initial_framebuffer, clear_color);
 
-        let mut camera_info = Vec::new();
-        //  if graphics.override_views.is_empty() {
-        camera_info.push(Renderer::get_view_info(
+        let camera_info = vec![Renderer::get_view_info(
             camera_global_transform,
             Mat4::IDENTITY,
             camera.projection_matrix(),
@@ -957,8 +957,18 @@ pub fn render_scene<'a, 'b>(
                 min: Vec2::ZERO,
                 max: Vec2::ONE,
             },
-        ));
-        /* }else {
+        )];
+        /* if graphics.override_views.is_empty() {
+            camera_info.push(Renderer::get_view_info(
+                camera_global_transform,
+                Mat4::IDENTITY,
+                camera.projection_matrix(),
+                Box2 {
+                    min: Vec2::ZERO,
+                    max: Vec2::ONE,
+                },
+            ));
+        } else {
             for view in &graphics.override_views {
                 camera_info.push(Renderer::get_view_info(
                     camera_global_transform,

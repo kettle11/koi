@@ -39,8 +39,8 @@ fn main() {
         spawn_skybox(world, "assets/field_1k.hdr");
 
         let worlds = world.get_single_component_mut::<Assets<World>>().unwrap();
-        let gltf_world = worlds.load("assets/Sponza/glTF/Sponza.gltf");
-        // let gltf_world = worlds.load("assets/hydroponics_facility/scene.gltf");
+        //let gltf_world = worlds.load("assets/Sponza/glTF/Sponza.gltf");
+        let gltf_world = worlds.load("assets/silent_ash/scene.gltf");
 
         // Spawn a Handle<World> that will be replaced with the GlTf when it's loaded.
         let gltf_hierarchy = world.spawn(gltf_world);

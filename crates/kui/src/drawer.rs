@@ -20,6 +20,12 @@ pub struct DrawerMeshData {
     pub indices: Vec<[u32; 3]>,
 }
 
+impl Default for DrawerMeshData {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl DrawerMeshData {
     pub fn new() -> Self {
         Self {

@@ -312,9 +312,7 @@ impl App {
             .new_window()
             .title(&self.title)
             .size(window_width, window_height)
-            .build()
-            .unwrap();
-
+            .build();
         #[cfg(not(feature = "headless"))]
         window.request_redraw();
 

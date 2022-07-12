@@ -849,13 +849,23 @@ impl<'a> RustGenerator {
 
                             // Only serialize a property if it does not equal the default.
                             if property.default_value.is_some() {
-                                write!(
-                                    output,
-                                    "           if self.{} != {} {{\nserializer.property(\"{}\");\n           serializer.value(&self.{});\n}}\n",
-                                    property.name, format_default_value(&property),
-                                    property.json_name, property.name
-                                )
-                                .unwrap();
+                                let default_value = format_default_value(&property);
+
+                                if default_value == "false" {
+                                    write!(
+                                        output,
+                                        "           if self.{} {{\nserializer.property(\"{}\");\n           serializer.value(&self.{});\n}}\n",
+                                        property.name,
+                                        property.json_name, property.name
+                                    ).unwrap();
+                                } else {
+                                    write!(
+                                        output,
+                                        "           if self.{} != {} {{\nserializer.property(\"{}\");\n           serializer.value(&self.{});\n}}\n",
+                                        property.name, default_value,
+                                        property.json_name, property.name
+                                    ).unwrap();
+                                }
                             } else {
                                 write!(
                                     output,

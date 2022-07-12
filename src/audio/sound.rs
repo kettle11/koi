@@ -67,6 +67,12 @@ impl AssetTrait for Sound {
     type AssetLoader = SoundAssetLoader;
 }
 
+impl Default for SoundAssetLoader {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl SoundAssetLoader {
     pub fn new() -> Self {
         let (sender, receiver) = mpsc::channel();
@@ -99,12 +105,7 @@ impl AssetLoaderTrait<Sound> for SoundAssetLoader {
 }
 
 pub fn load_sounds(sounds: &mut Assets<Sound>) {
-    // A Vec doesn't need to be allocated here.
-    // This is just a way to not borrow the AssetLoader and Assets at
-    // the same time.
-    let messages: Vec<SoundLoadMessage> = sounds.asset_loader.receiver.inner().try_iter().collect();
-    for message in messages.into_iter() {
-        println!("SOUND LOADED");
+    while let Ok(message) = sounds.asset_loader.receiver.inner().try_recv() {
         sounds.replace_placeholder(&message.handle, message.sound);
     }
 }

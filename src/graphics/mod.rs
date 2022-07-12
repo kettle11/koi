@@ -170,8 +170,7 @@ fn setup_graphics(world: &mut World) {
         high_resolution_framebuffer: true,
         /// How many MSAA samples the window framebuffer should have
         samples: 4,
-    })
-    .unwrap();
+    });
 
     #[cfg(not(feature = "headless"))]
     let main_window: &kapp::Window = main_window;
@@ -187,12 +186,8 @@ fn setup_graphics(world: &mut World) {
 
     #[cfg(not(feature = "SDL"))]
     #[cfg(not(feature = "headless"))]
-    let render_target = unsafe {
-        context
-            .get_render_target_for_window(main_window, window_width, window_height)
-            .unwrap()
-    };
-
+    let render_target =
+        context.get_render_target_for_window(main_window, window_width, window_height);
     #[cfg(feature = "headless")]
     let render_target = RenderTarget;
 
@@ -406,7 +401,7 @@ impl GraphicsInner {
         height: u32,
         pixel_format: PixelFormat,
         texture_settings: kgraphics::TextureSettings,
-    ) -> Result<Texture, ()> {
+    ) -> Result<Texture, GraphicsError> {
         Ok(Texture(self.context.new_texture(
             width,
             height,
@@ -423,12 +418,12 @@ impl GraphicsInner {
         height: u32,
         pixel_format: PixelFormat,
         texture_settings: kgraphics::TextureSettings,
-    ) -> Result<CubeMap, ()> {
+    ) -> Result<CubeMap, GraphicsError> {
         self.context
             .new_cube_map(width, height, data, pixel_format, texture_settings)
     }
 
-    pub fn new_gpu_mesh(&mut self, mesh_data: &MeshData) -> Result<GPUMesh, ()> {
+    pub fn new_gpu_mesh(&mut self, mesh_data: &MeshData) -> Result<GPUMesh, GraphicsError> {
         // Check that all of the indices point to valid vertices.
         // If this causes performance issues this check could be disabled in the future.
         let len = mesh_data.positions.len();

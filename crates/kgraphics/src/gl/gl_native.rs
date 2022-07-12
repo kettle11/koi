@@ -329,6 +329,7 @@ impl GL {
         pixel_data
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub unsafe fn blit_framebuffer(
         &self,
         source_x: u32,

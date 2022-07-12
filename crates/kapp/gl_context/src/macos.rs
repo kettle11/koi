@@ -19,7 +19,7 @@ pub struct GLContext {
 unsafe impl Send for GLContext {}
 
 impl GLContextBuilder {
-    pub fn build(&self) -> Result<GLContext, ()> {
+    pub fn build(&self) -> Result<GLContext, std::io::Error> {
         let profile_version = if self.gl_attributes.major_version > 4 {
             NSOpenGLProfileVersion4_1Core
         } else {
@@ -71,7 +71,7 @@ impl GLContextBuilder {
 }
 
 impl GLContext {
-    pub fn new() -> GLContextBuilder {
+    pub fn builder() -> GLContextBuilder {
         GLContextBuilder {
             gl_attributes: GLContextAttributes {
                 major_version: 3,
@@ -82,7 +82,7 @@ impl GLContext {
                 depth_bits: 24,
                 stencil_bits: 8,
                 srgb: true,
-                webgl_version: WebGLVersion::None,
+                webgl_version: WebGLVersion::One,
                 high_resolution_framebuffer: false,
             },
         }

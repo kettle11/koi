@@ -19,7 +19,6 @@ pub struct GLContextAttributes {
 pub enum WebGLVersion {
     One,
     Two,
-    None,
 }
 
 #[derive(Copy, Clone, Debug, PartialEq)]

@@ -8,6 +8,12 @@ pub struct ShadowCaster {
     pub ibl_shadowing: f32,
 }
 
+impl Default for ShadowCaster {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl ShadowCaster {
     pub fn new() -> Self {
         Self {
@@ -66,6 +72,7 @@ impl ShadowCaster {
     }
 }
 
+#[allow(clippy::too_many_arguments)]
 pub fn render_shadow_pass(
     shaders: &Assets<Shader>,
     meshes: &Assets<Mesh>,
@@ -162,6 +169,7 @@ pub fn render_shadow_pass(
     }
 }
 
+#[allow(clippy::too_many_arguments)]
 pub fn render_depth_only(
     shaders: &Assets<Shader>,
     meshes: &Assets<Mesh>,

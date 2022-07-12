@@ -72,6 +72,9 @@ impl CommandBufferTrait for CommandBuffer {
     fn len(&self) -> usize {
         self.actions.len()
     }
+    fn is_empty(&self) -> bool {
+        self.actions.is_empty()
+    }
 
     fn begin_render_pass_with_framebuffer<'a>(
         &'a mut self,

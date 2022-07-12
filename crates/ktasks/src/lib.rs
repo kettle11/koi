@@ -336,6 +336,8 @@ impl<'a> Task<'a> {
 struct LocalTaskQueue<'a>(Arc<Mutex<VecDeque<Arc<LocalTask<'a>>>>>);
 
 // Safety: The inner members of LocalTaskQueue are never directly accessed on other threads.
+// I should carefully audit this and find a way to do it with less unsafe.
+#[allow(clippy::non_send_fields_in_send_ty)]
 unsafe impl<'a> Send for LocalTaskQueue<'a> {}
 
 struct LocalTask<'a> {

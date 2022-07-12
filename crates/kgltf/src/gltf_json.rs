@@ -149,6 +149,7 @@ impl<'a, D: Deserializer<'a>> Deserialize<'a, D> for GlTf {
         let mut extras = None;
 
         while let Some(property) = deserializer.has_property() {
+            println!("PROPERTY: {:?}", property);
             match &*property {
                 "extensionsUsed" => {
                     extensions_used = Some(<Vec<String>>::deserialize(deserializer)?)
@@ -1078,7 +1079,7 @@ impl<S: Serializer> Serialize<S> for Material {
             serializer.property("alphaCutoff");
             serializer.value(&self.alpha_cutoff);
         }
-        if self.double_sided != false {
+        if self.double_sided {
             serializer.property("doubleSided");
             serializer.value(&self.double_sided);
         }
@@ -2515,7 +2516,7 @@ impl<S: Serializer> Serialize<S> for Accessor {
         }
         serializer.property("componentType");
         serializer.value(&self.component_type);
-        if self.normalized != false {
+        if self.normalized {
             serializer.property("normalized");
             serializer.value(&self.normalized);
         }

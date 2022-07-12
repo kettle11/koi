@@ -27,6 +27,12 @@ pub struct ImmediateDrawer {
     material: Handle<Material>,
 }
 
+impl Default for ImmediateDrawer {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl ImmediateDrawer {
     pub fn new() -> Self {
         Self {

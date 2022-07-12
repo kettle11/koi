@@ -3,6 +3,7 @@ use kgltf::AccessorComponentType;
 use crate::*;
 use std::{convert::TryInto, path::Path};
 
+#[allow(clippy::too_many_arguments)]
 pub(super) fn load_gltf_as_world(
     path: &str,
     gltf: &kgltf::GlTf,

@@ -523,7 +523,7 @@ impl World {
         Err(KecsError::no_matching_component::<Component>())
     }
 
-    pub fn entity<'a>(&'a mut self, entity: Entity) -> Result<EntityRef<'a>, KecsError> {
+    pub fn entity(&mut self, entity: Entity) -> Result<EntityRef, KecsError> {
         let entity_location = self
             .entities
             .get_entity_location(entity)

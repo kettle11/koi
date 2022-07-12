@@ -16,11 +16,10 @@ fn send_command_to_js(command: HostCommands) {
 }
 
 impl GLContextBuilder {
-    pub fn build(&self) -> Result<GLContext, ()> {
+    pub fn build(&self) -> Result<GLContext, std::io::Error> {
         match self.gl_attributes.webgl_version {
             WebGLVersion::One => send_command_to_js(HostCommands::CreateWebGL1Context),
             WebGLVersion::Two => send_command_to_js(HostCommands::CreateWebGL2Context),
-            WebGLVersion::None => Err(())?,
         }
 
         #[cfg(feature = "wasm_bindgen_support")]

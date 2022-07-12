@@ -151,7 +151,7 @@ fn render_cube_map(
         Mat4::looking_at(Vec3::ZERO, -Vec3::Z, -Vec3::Y),
     ];
 
-    for i in 0..6 {
+    for (i, view) in views.iter().enumerate() {
         let mut command_buffer = graphics.context.new_command_buffer();
 
         let face_texture = cube_map.get_face_texture(i);
@@ -165,7 +165,7 @@ fn render_cube_map(
 
             render_pass.set_pipeline(&shader.shader.pipeline);
             render_pass.set_mat4_property(&shader.projection_property, projection.as_array());
-            render_pass.set_mat4_property(&shader.view_property, views[i].as_array());
+            render_pass.set_mat4_property(&shader.view_property, view.as_array());
             match &shader.texture_property {
                 ShaderTextureProperty::TextureProperty(p) => {
                     let t = match texture {
@@ -227,7 +227,7 @@ fn render_specular_irradiance_cube_map(
 
         let roughness = mip as f32 / (mip_map_levels - 1) as f32;
 
-        for i in 0..6 {
+        for (i, view) in views.iter().enumerate() {
             let mut command_buffer = graphics.context.new_command_buffer();
 
             let face_texture = cube_map.get_face_texture(i).with_mip(mip);
@@ -241,7 +241,7 @@ fn render_specular_irradiance_cube_map(
 
                 render_pass.set_pipeline(&shader.shader.pipeline);
                 render_pass.set_mat4_property(&shader.projection_property, projection.as_array());
-                render_pass.set_mat4_property(&shader.view_property, views[i].as_array());
+                render_pass.set_mat4_property(&shader.view_property, view.as_array());
                 render_pass.set_float_property(&shader.p_roughness, roughness);
                 render_pass.set_cube_map_property(&shader.p_texture, Some(environment_texture), 0);
                 render_pass.set_vertex_attribute(&shader.a_position, Some(&cube_mesh.positions));
@@ -466,28 +466,15 @@ pub fn load_cube_maps(
     meshes: &Assets<Mesh>,
     commands: &mut Commands,
 ) {
-    // A Vec doesn't need to be allocated here.
-    // This is just a way to not borrow the TextureAssetLoader and Textures at
-    // the same time.
-    let messages: Vec<CubeMapLoadMessage> =
-        cube_maps.asset_loader.receiver.inner().try_iter().collect();
-    for message in messages.into_iter() {
+    while let Ok(message) = cube_maps.asset_loader.receiver.inner().try_recv() {
         load_cube_map_immediate(cube_maps, graphics, meshes, message, commands)
     }
 }
 
+#[derive(Default)]
 pub struct CubeMapOptions {
     pub texture_settings: TextureSettings,
     pub diffuse_and_specular_irradiance_cubemaps: Option<(Handle<CubeMap>, Handle<CubeMap>)>,
-}
-
-impl Default for CubeMapOptions {
-    fn default() -> Self {
-        Self {
-            texture_settings: TextureSettings::default(),
-            diffuse_and_specular_irradiance_cubemaps: None,
-        }
-    }
 }
 
 impl AssetTrait for CubeMap {

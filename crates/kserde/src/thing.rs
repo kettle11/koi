@@ -109,6 +109,7 @@ impl<'a, D: Deserializer<'a>> Deserialize<'a, D> for Thing<'a> {
                         },
                     );
                 }
+                deserializer.end_object();
                 Thing::Object(items)
             }
             AnyValue::Array => {
@@ -116,6 +117,7 @@ impl<'a, D: Deserializer<'a>> Deserialize<'a, D> for Thing<'a> {
                 while deserializer.has_array_value() {
                     items.push(Thing::deserialize(deserializer)?);
                 }
+                deserializer.end_array();
                 Thing::Array(items)
             }
             AnyValue::Number(n) => Thing::Number(n),

@@ -1,3 +1,5 @@
+#![allow(clippy::type_complexity)]
+
 use std::{borrow::Borrow, rc::Rc};
 
 use kcolor::*;
@@ -159,6 +161,12 @@ pub struct PointerEventInfo {
     pub in_hitbox: bool,
 }
 
+impl<State> Default for EventHandlers<State> {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl<State> EventHandlers<State> {
     pub fn new() -> Self {
         Self {
@@ -213,10 +221,8 @@ impl<State> EventHandlers<State> {
                     index_clicked = Some(i);
                     z_value = click_handler.hit_box.max.z;
                 }
-            } else {
-                if let Some(handler) = click_handler.handler.as_ref() {
-                    (handler)(event, PointerEventInfo { in_hitbox }, state);
-                }
+            } else if let Some(handler) = click_handler.handler.as_ref() {
+                (handler)(event, PointerEventInfo { in_hitbox }, state);
             }
 
             any_hitbox_hit |= in_hitbox;

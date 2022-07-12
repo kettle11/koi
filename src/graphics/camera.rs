@@ -232,12 +232,8 @@ impl Camera {
 
         let mut direction = -(world_space_far - world_space_near).normalized();
 
-        match self.projection_mode {
-            ProjectionMode::Orthographic => {
-                // HACK: Orthographic doesn't need the negation. This is probably covering for a mistake somewhere else.
-                direction *= -1.0;
-            }
-            _ => {}
+        if let ProjectionMode::Orthographic = self.projection_mode {
+            direction *= -1.0
         }
 
         Ray3::new(world_space_near, direction)

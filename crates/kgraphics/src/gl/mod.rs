@@ -56,11 +56,11 @@ impl RenderTargetTrait for RenderTarget {
         self.pixel_format
     }
 
-    fn current_frame(&self) -> Result<Texture, ()> {
-        Ok(Texture {
+    fn current_frame(&self) -> Texture {
+        Texture {
             texture_type: TextureType::DefaultFramebuffer,
             mip: 0,
-        })
+        }
     }
 }
 
@@ -234,12 +234,12 @@ impl Pipeline {
         &self,
         name: &str,
         type_: GLenum,
-    ) -> Result<Option<gl_native::UniformLocation>, ()> {
+    ) -> Result<Option<gl_native::UniformLocation>, PropertyError> {
         if let Some(uniform) = self.uniforms.get(name) {
             if uniform.uniform_type == type_.0 {
                 Ok(Some(uniform.location))
             } else {
-                Err(())
+                Err(PropertyError::IncorrectType)
             }
         } else {
             Ok(None)
@@ -248,49 +248,49 @@ impl Pipeline {
 }
 
 impl PipelineTrait for Pipeline {
-    fn get_int_property(&self, name: &str) -> Result<IntProperty, ()> {
+    fn get_int_property(&self, name: &str) -> Result<IntProperty, PropertyError> {
         Ok(IntProperty {
             location: self.get_property(name, GL_INT)?,
         })
     }
 
-    fn get_float_property(&self, name: &str) -> Result<FloatProperty, ()> {
+    fn get_float_property(&self, name: &str) -> Result<FloatProperty, PropertyError> {
         Ok(FloatProperty {
             location: self.get_property(name, GL_FLOAT)?,
         })
     }
 
-    fn get_vec2_property(&self, name: &str) -> Result<Vec2Property, ()> {
+    fn get_vec2_property(&self, name: &str) -> Result<Vec2Property, PropertyError> {
         Ok(Vec2Property {
             location: self.get_property(name, GL_FLOAT_VEC2)?,
         })
     }
 
-    fn get_vec3_property(&self, name: &str) -> Result<Vec3Property, ()> {
+    fn get_vec3_property(&self, name: &str) -> Result<Vec3Property, PropertyError> {
         Ok(Vec3Property {
             location: self.get_property(name, GL_FLOAT_VEC3)?,
         })
     }
 
-    fn get_vec4_property(&self, name: &str) -> Result<Vec4Property, ()> {
+    fn get_vec4_property(&self, name: &str) -> Result<Vec4Property, PropertyError> {
         Ok(Vec4Property {
             location: self.get_property(name, GL_FLOAT_VEC4)?,
         })
     }
 
-    fn get_mat4_property(&self, name: &str) -> Result<Mat4Property, ()> {
+    fn get_mat4_property(&self, name: &str) -> Result<Mat4Property, PropertyError> {
         Ok(Mat4Property {
             location: self.get_property(name, GL_FLOAT_MAT4)?,
         })
     }
 
-    fn get_texture_property(&self, name: &str) -> Result<TextureProperty, ()> {
+    fn get_texture_property(&self, name: &str) -> Result<TextureProperty, PropertyError> {
         Ok(TextureProperty {
             location: self.get_property(name, GL_SAMPLER_2D)?,
         })
     }
 
-    fn get_cube_map_property(&self, name: &str) -> Result<CubeMapProperty, ()> {
+    fn get_cube_map_property(&self, name: &str) -> Result<CubeMapProperty, PropertyError> {
         Ok(CubeMapProperty {
             location: self.get_property(name, GL_SAMPLER_CUBE)?,
         })
@@ -393,9 +393,9 @@ impl<'a> PipelineBuilderTrait for PipelineBuilder<'a> {
 }
 
 impl GraphicsContextTrait for GraphicsContext {
-    fn new_with_settings(settings: crate::GraphicsContextSettings) -> Result<Self, ()> {
+    fn new_with_settings(settings: crate::GraphicsContextSettings) -> Self {
         unsafe {
-            let mut gl_context_builder = GLContext::new();
+            let mut gl_context_builder = GLContext::builder();
             gl_context_builder.high_resolution_framebuffer(settings.high_resolution_framebuffer);
             gl_context_builder.samples(settings.samples);
 
@@ -427,15 +427,15 @@ impl GraphicsContextTrait for GraphicsContext {
 
             gl.enable(GL_TEXTURE_CUBE_MAP_SEAMLESS);
 
-            Ok(GraphicsContext {
+            GraphicsContext {
                 gl_context,
                 gl,
                 old_command_buffers: Vec::new(),
-            })
+            }
         }
     }
 
-    fn new() -> Result<Self, ()> {
+    fn new() -> Self {
         Self::new_with_settings(crate::GraphicsContextSettings {
             high_resolution_framebuffer: false,
             samples: 0,
@@ -443,18 +443,18 @@ impl GraphicsContextTrait for GraphicsContext {
     }
 
     /// This must only be called once per window.
-    unsafe fn get_render_target_for_window(
+    fn get_render_target_for_window(
         &mut self,
         window: &impl HasRawWindowHandle,
         _width: u32,
         _height: u32,
-    ) -> Result<RenderTarget, ()> {
+    ) -> RenderTarget {
         self.gl_context.set_window(Some(window)).unwrap();
 
         // This is obviously incorrect. This should be fixed.
         let pixel_format = PixelFormat::RGBA8Unorm;
 
-        Ok(RenderTarget { pixel_format })
+        RenderTarget { pixel_format }
     }
 
     #[cfg(feature = "SDL")]
@@ -491,7 +491,7 @@ impl GraphicsContextTrait for GraphicsContext {
         })
     }
 
-    fn new_data_buffer<T>(&mut self, data: &[T]) -> Result<DataBuffer<T>, ()> {
+    fn new_data_buffer<T>(&mut self, data: &[T]) -> Result<DataBuffer<T>, GraphicsError> {
         unsafe {
             let buffer = self.gl.create_buffer().unwrap();
             self.gl.bind_buffer(GL_ARRAY_BUFFER, Some(buffer));
@@ -508,7 +508,7 @@ impl GraphicsContextTrait for GraphicsContext {
         unsafe { self.gl.delete_buffer(data_buffer.buffer) }
     }
 
-    fn new_index_buffer(&mut self, data: &[u32]) -> Result<IndexBuffer, ()> {
+    fn new_index_buffer(&mut self, data: &[u32]) -> Result<IndexBuffer, GraphicsError> {
         unsafe {
             let buffer = self.gl.create_buffer().unwrap();
             self.gl.bind_buffer(GL_ELEMENT_ARRAY_BUFFER, Some(buffer));
@@ -532,7 +532,7 @@ impl GraphicsContextTrait for GraphicsContext {
         data: Option<&[u8]>,
         pixel_format_in: PixelFormat,
         texture_settings: TextureSettings,
-    ) -> Result<Texture, ()> {
+    ) -> Result<Texture, GraphicsError> {
         unsafe {
             if texture_settings.msaa_samples == 0 {
                 let texture = self.gl.create_texture().unwrap();
@@ -760,7 +760,7 @@ impl GraphicsContextTrait for GraphicsContext {
         data: Option<[&[u8]; 6]>,
         pixel_format: PixelFormat,
         texture_settings: TextureSettings,
-    ) -> Result<CubeMap, ()> {
+    ) -> Result<CubeMap, GraphicsError> {
         unsafe {
             let texture = self.gl.create_texture().unwrap();
             let cube_map = CubeMap { texture };

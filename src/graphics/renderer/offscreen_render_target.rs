@@ -20,10 +20,10 @@ impl OffscreenRenderTarget {
     // Todo: This is temporary until this object gets automatically deleted.
     pub fn delete(&mut self, graphics: &mut Graphics) {
         if let Some(framebuffer) = self.framebuffer.as_ref() {
-            graphics.context.delete_framebuffer((**framebuffer).clone());
+            graphics.context.delete_framebuffer(**framebuffer);
         }
         if let Some(framebuffer) = self.resolve_framebuffer.as_ref() {
-            graphics.context.delete_framebuffer((**framebuffer).clone());
+            graphics.context.delete_framebuffer(**framebuffer);
         }
     }
     pub fn new(
@@ -97,12 +97,13 @@ impl OffscreenRenderTarget {
             .any()
         {
             let size = size.max(self.inner_texture_size);
-            self.color_texture
-                .as_mut()
-                .map(|c| c.resize(size, graphics, textures));
-            self.depth_texture
-                .as_mut()
-                .map(|c| c.resize(size, graphics, textures));
+            if let Some(color_texture) = self.color_texture.as_mut() {
+                color_texture.resize(size, graphics, textures)
+            }
+
+            if let Some(depth_texture) = self.depth_texture.as_mut() {
+                depth_texture.resize(size, graphics, textures)
+            }
 
             if let Some(framebuffer) = self.framebuffer.take() {
                 graphics.context.delete_framebuffer(framebuffer.take())
