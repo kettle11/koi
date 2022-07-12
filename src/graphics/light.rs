@@ -25,4 +25,8 @@ impl Light {
             ambient_light_amount: 0.0,
         }
     }
+    pub fn with_ambient_light(mut self, amount: f32) -> Self {
+        self.ambient_light_amount = amount;
+        self
+    }
 }

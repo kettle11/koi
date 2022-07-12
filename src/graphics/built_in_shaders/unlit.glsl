@@ -7,6 +7,7 @@
 in vec2 TexCoords;
 in vec3 WorldPosition;  
 in vec4 VertexColor;
+in vec3 Normal;
 
 uniform vec2 p_texture_coordinate_offset;
 uniform vec2 p_texture_coordinate_scale;
@@ -23,8 +24,6 @@ uniform sampler2D p_base_color_texture;
 
 void main()
 {
-    vec4 base_color = (VertexColor * p_base_color * texture(p_base_color_texture, TexCoords * p_texture_coordinate_scale + p_texture_coordinate_offset));
-      //color = pow(color, vec3(1.0/2.2)); 
-    color_out = base_color;
-   // color_out += ScreenSpaceDither(gl_FragCoord.xy) * p_dither_scale;
+  vec4 base_color = (VertexColor * p_base_color * texture(p_base_color_texture, TexCoords * p_texture_coordinate_scale + p_texture_coordinate_offset));
+  color_out = base_color;
 }
