@@ -63,7 +63,6 @@ impl GLContextBuilder {
                         webgl2_context: Some(webgl2_context),
                     })
                 }
-                WebGLVersion::None => Err(()),
             };
         }
 
