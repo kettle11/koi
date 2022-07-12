@@ -22,6 +22,7 @@ pub struct Color {
 
 impl Eq for Color {}
 
+#[allow(clippy::derive_hash_xor_eq)]
 impl std::hash::Hash for Color {
     fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
         self.x.to_ne_bytes().hash(state);

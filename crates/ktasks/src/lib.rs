@@ -238,7 +238,7 @@ pub struct JoinHandle<'a, T> {
 // unsafe impl<'a, T> Send for JoinHandle<'a, T> {}
 
 // The inner RwLock ensures that it is safe to access a JoinHandle from multiple threads.
-// unsafe impl<'a, T> Sync for JoinHandle<'a, T> {}
+unsafe impl<'a, T> Sync for JoinHandle<'a, T> {}
 
 impl<T: 'static> JoinHandle<'static, T> {
     /// Returns None if still Pending or already complete.

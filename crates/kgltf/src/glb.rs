@@ -107,25 +107,25 @@ impl<'a> GLB<'a> {
             + data_padding;
 
         // Write magic number
-        writer.write(&GLB_MAGIC_NUMBER.to_le_bytes())?; // 1 counting u32s written
-        writer.write(&self.glb_version.to_le_bytes())?; // 2
-        writer.write(&file_length.to_le_bytes())?; // 3
+        writer.write_all(&GLB_MAGIC_NUMBER.to_le_bytes())?; // 1 counting u32s written
+        writer.write_all(&self.glb_version.to_le_bytes())?; // 2
+        writer.write_all(&file_length.to_le_bytes())?; // 3
 
-        writer.write(&(json_length).to_le_bytes())?; // 4
-        writer.write(&JSON_CHUNK_TYPE.to_le_bytes())?; // 5
-        writer.write(json.as_bytes())?;
+        writer.write_all(&(json_length).to_le_bytes())?; // 4
+        writer.write_all(&JSON_CHUNK_TYPE.to_le_bytes())?; // 5
+        writer.write_all(json.as_bytes())?;
 
         for _ in 0..json_padding {
-            writer.write(&[0x20])?;
+            writer.write_all(&[0x20])?;
         }
 
         if let Some(data) = &self.binary_data {
-            writer.write(&(data.len() as u32 + data_padding).to_le_bytes())?;
-            writer.write(&BIN_CHUNK_TYPE.to_le_bytes())?;
-            writer.write(&data)?;
+            writer.write_all(&(data.len() as u32 + data_padding).to_le_bytes())?;
+            writer.write_all(&BIN_CHUNK_TYPE.to_le_bytes())?;
+            writer.write_all(data)?;
 
             for _ in 0..data_padding {
-                writer.write(&[0])?;
+                writer.write_all(&[0])?;
             }
         }
 

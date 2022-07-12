@@ -371,7 +371,7 @@ impl<'a> RenderPassTrait for RenderPass<'a> {
         self.command_buffer
             .actions
             .push(CommandBufferAction::BlitFramebuffer {
-                target: target.clone(),
+                target: *target,
                 source_x,
                 source_y,
                 source_width,

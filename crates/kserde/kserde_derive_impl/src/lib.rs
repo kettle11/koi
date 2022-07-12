@@ -2,7 +2,7 @@ use std::borrow::Cow;
 
 use kreflect_common::*;
 
-fn serialize_fields(properties: &mut String, fields: &Vec<Field>) {
+fn serialize_fields(properties: &mut String, fields: &[Field]) {
     for (i, field) in fields.iter().enumerate() {
         let skip = field_contains_attribute(field, "skip");
         if !skip {
@@ -21,7 +21,7 @@ fn serialize_fields(properties: &mut String, fields: &Vec<Field>) {
     }
 }
 
-fn serialize_enum_fields(properties: &mut String, fields: &Vec<Field>) {
+fn serialize_enum_fields(properties: &mut String, fields: &[Field]) {
     for (i, field) in fields.iter().enumerate() {
         let skip = field_contains_attribute(field, "skip");
         if !skip {
@@ -63,7 +63,7 @@ pub fn kserde_serialize_impl(value: &Value) -> String {
             generic_args = _struct.generic_parameters.as_args();
 
             if !_struct.generic_parameters.0.is_empty() {
-                where_clause += &"where ";
+                where_clause += "where ";
                 for generic_arg in _struct.generic_parameters.0.iter() {
                     where_clause += &format!("{}: Serialize<KSer>, \n", generic_arg.as_string());
                 }
@@ -92,7 +92,7 @@ pub fn kserde_serialize_impl(value: &Value) -> String {
             generic_args = _enum.generic_parameters.as_args();
 
             if !_enum.generic_parameters.0.is_empty() {
-                where_clause += &"where ";
+                where_clause += "where ";
                 for generic_arg in _enum.generic_parameters.0.iter() {
                     where_clause += &format!("{}: Serialize<KSer>, \n", generic_arg.as_string());
                 }
@@ -244,7 +244,7 @@ pub fn kserde_deserialize_impl(value: &Value) -> String {
             let mut property_assignment = String::new();
 
             if !_struct.generic_parameters.0.is_empty() {
-                where_clause += &"where ";
+                where_clause += "where ";
                 for generic_arg in _struct.generic_parameters.0.iter() {
                     where_clause += &format!(
                         "{}: Deserialize<'kserde, KDes>, \n",
@@ -286,7 +286,7 @@ pub fn kserde_deserialize_impl(value: &Value) -> String {
                 let mut property_assignment = String::new();
 
                 if !enum_.generic_parameters.0.is_empty() {
-                    where_clause += &"where ";
+                    where_clause += "where ";
                     for generic_arg in enum_.generic_parameters.0.iter() {
                         where_clause += &format!(
                             "{}: Deserialize<'kserde, KDes>, \n",

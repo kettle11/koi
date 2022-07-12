@@ -261,7 +261,7 @@ impl App {
 
         let run_system = Box::new(setup_and_run_function(&mut world));
 
-        let koi_state = KoiState {
+        KoiState {
             world,
             systems: self.systems,
             start,
@@ -270,8 +270,7 @@ impl App {
             run_system,
             input_entity,
             kapp_events_entity,
-        };
-        koi_state
+        }
     }
 
     /// Pass in a 'setup' function that returns a 'run' function.

@@ -93,8 +93,8 @@ impl UIManager {
         data: &mut Data,
         standard_context: &mut StandardContext<Data>,
     ) -> bool {
-        match event {
-            &kapp::Event::PointerDown {
+        match *event {
+            kapp::Event::PointerDown {
                 x,
                 y,
                 source,
@@ -116,7 +116,7 @@ impl UIManager {
                     Vec2::new(x as f32, y as f32) / self.ui_scale,
                 )
             }
-            &kapp::Event::PointerMoved {
+            kapp::Event::PointerMoved {
                 x,
                 y,
                 source,
@@ -139,7 +139,7 @@ impl UIManager {
                     Vec2::new(x as f32, y as f32) / self.ui_scale,
                 )
             }
-            &kapp::Event::PointerUp {
+            kapp::Event::PointerUp {
                 x,
                 y,
                 source,
@@ -161,7 +161,7 @@ impl UIManager {
                     Vec2::new(x as f32, y as f32) / self.ui_scale,
                 )
             }
-            &kapp::Event::Scroll {
+            kapp::Event::Scroll {
                 delta_x,
                 delta_y,
                 window_id,

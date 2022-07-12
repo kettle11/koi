@@ -123,7 +123,7 @@ impl<T: Numeric + PartialOrd + 'static, const DIMENSIONS: usize> BoundingBox<T, 
         self.max - self.min
     }
 
-    pub fn from_points<'a>(points: impl IntoIterator<Item = Vector<T, DIMENSIONS>>) -> Self {
+    pub fn from_points(points: impl IntoIterator<Item = Vector<T, DIMENSIONS>>) -> Self {
         let (min, max) = points.into_iter().fold(
             (Vector::<T, DIMENSIONS>::MAX, Vector::<T, DIMENSIONS>::MIN),
             |(min, max), v| (min.min(v), max.max(v)),

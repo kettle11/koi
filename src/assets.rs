@@ -2,8 +2,8 @@ use std::collections::HashMap;
 use std::fmt::Debug;
 use std::sync::{mpsc, Arc, Weak};
 
-pub trait AssetTrait: 'static {
-    type AssetLoader;
+pub trait AssetTrait: 'static + Send + Sync {
+    type AssetLoader: Send + Sync;
 }
 
 pub trait AssetLoaderTrait<T: AssetTrait> {
@@ -114,11 +114,8 @@ impl<T> std::hash::Hash for Handle<T> {
     }
 }
 
-unsafe impl<T> Send for Handle<T> {}
-unsafe impl<T> Sync for Handle<T> {}
-
 use kecs::*;
-impl<T: 'static> ComponentTrait for Handle<T> {
+impl<T: AssetTrait> ComponentTrait for Handle<T> {
     fn clone_components(
         _entity_migrator: &mut EntityMigrator,
         items: &[Self],
@@ -252,9 +249,6 @@ pub struct Assets<T: AssetTrait> {
     handle_to_path: HashMap<usize, String>,
     pub asset_loader: T::AssetLoader,
 }
-
-unsafe impl<T: AssetTrait> Send for Assets<T> {}
-unsafe impl<T: AssetTrait> Sync for Assets<T> {}
 
 impl<T: AssetTrait> Assets<T> {
     pub fn new(default_placeholder: T, asset_loader: T::AssetLoader) -> Self {

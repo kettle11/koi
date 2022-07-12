@@ -699,13 +699,12 @@ impl<'a> Parser<'a> {
 
                 let mutability = if self.check_for_token(Token::Mut).is_some() {
                     Mutability::Mutable
+                } else if self.check_for_token(Token::Const).is_some() {
+                    Mutability::Immutable
                 } else {
-                    if self.check_for_token(Token::Const).is_some() {
-                        Mutability::Immutable
-                    } else {
-                        None?
-                    }
+                    None?
                 };
+
                 let _type = self._type()?;
                 Type::RawPointer {
                     mutability,

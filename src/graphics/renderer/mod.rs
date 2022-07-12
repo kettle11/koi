@@ -737,7 +737,7 @@ impl<'a, 'b: 'a> Renderer<'a, 'b> {
             |(_, material_a, mesh_a, _, _, _), (_, material_b, mesh_b, _, _, _)| {
                 // Sort by material then mesh.
                 // In the future sorting could occur by pipeline as well.
-                let cmp = material_a.cmp(&material_b);
+                let cmp = material_a.cmp(material_b);
                 match cmp {
                     std::cmp::Ordering::Less | std::cmp::Ordering::Greater => cmp,
                     _ => mesh_a.cmp(mesh_b),
@@ -821,7 +821,7 @@ pub fn prepare_shadow_casters(
 pub fn render_other_world(main_world: &mut World, other_world: &mut World) {
     {
         let commands_entity = other_world.spawn(Commands::new());
-        update_root_global_transforms.run(&other_world);
+        update_root_global_transforms.run(other_world);
         let mut commands = other_world
             .remove_component::<Commands>(commands_entity)
             .unwrap();
@@ -829,7 +829,7 @@ pub fn render_other_world(main_world: &mut World, other_world: &mut World) {
         commands.clear();
 
         let commands_entity = other_world.spawn(commands);
-        update_global_transforms.run(&other_world);
+        update_global_transforms.run(other_world);
         let mut commands = other_world
             .remove_component::<Commands>(commands_entity)
             .unwrap();

@@ -218,6 +218,6 @@ impl<S: Serializer, A: Serialize<S>, B: Serialize<S>, C: Serialize<S>> Serialize
 
 impl<S: Serializer, A: Serialize<S>> Serialize<S> for &A {
     fn serialize(&self, serializer: &mut S) {
-        A::serialize(&self, serializer)
+        A::serialize(self, serializer)
     }
 }
