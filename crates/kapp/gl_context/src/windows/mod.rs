@@ -20,7 +20,7 @@ pub struct GLContext {
 }
 
 impl GLContext {
-    pub fn new() -> GLContextBuilder {
+    pub fn builder() -> GLContextBuilder {
         GLContextBuilder {
             gl_attributes: GLContextAttributes {
                 major_version: 3,

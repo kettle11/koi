@@ -91,7 +91,7 @@ pub struct GLContext {
 }
 
 impl GLContext {
-    pub fn new() -> GLContextBuilder {
+    pub fn builder() -> GLContextBuilder {
         GLContextBuilder {
             gl_attributes: GLContextAttributes {
                 // None of these attributes other than webgl_version are used.
