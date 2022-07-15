@@ -15,6 +15,17 @@ impl Entity {
     pub fn generation(&self) -> u32 {
         self.generation
     }
+
+    pub fn to_u64(self) -> u64 {
+        u64::from(self.generation) << 32 | u64::from(self.index)
+    }
+
+    pub fn from_u64(num: u64) -> Self {
+        Self {
+            generation: (num >> 32) as u32,
+            index: num as u32,
+        }
+    }
 }
 
 /// Where the [Entity] is stored in the [World]
