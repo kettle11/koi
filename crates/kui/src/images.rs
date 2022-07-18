@@ -22,12 +22,13 @@ pub struct ImageData {
 
 struct ImageDropHandle {
     index: usize,
-    drop_channel: std::sync::mpsc::Sender<usize>,
+    drop_channel: std::sync::Mutex<Option<std::sync::mpsc::Sender<usize>>>,
 }
 
 impl Drop for ImageDropHandle {
     fn drop(&mut self) {
-        let _ = self.drop_channel.send(self.index);
+        let drop_channel = self.drop_channel.get_mut().unwrap().take().unwrap();
+        let _ = drop_channel.send(self.index);
     }
 }
 
@@ -99,7 +100,7 @@ impl Images {
 
         ImageHandle(std::sync::Arc::new(ImageDropHandle {
             index,
-            drop_channel: self.send_channel.clone(),
+            drop_channel: std::sync::Mutex::new(Some(self.send_channel.clone())),
         }))
     }
 
