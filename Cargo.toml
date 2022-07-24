@@ -24,6 +24,7 @@ physics = ["kphysics"]
 imagine_png = ["imagine"]
 tracing_allocator = ["ktracing_allocator"]
 default_font = ["kui/default_font"]
+network_requests = ["ureq"]
 
 [dependencies]
 kapp = {path = "crates/kapp", default-features=false, features=["kserde"], optional=true}
@@ -51,6 +52,7 @@ oddio = {git = "https://github.com/Ralith/oddio/", optional = true}
 
 imagine = {git="https://github.com/Lokathor/imagine", optional = true, features = ["png"]}
 bytemuck = {version = "1.7.3", features = ["extern_crate_alloc"]}
+ureq = {version = "2.5.0", optional = true}
 
 [target.'cfg(target_arch="wasm32")'.dependencies]
 kwasm = {path = "crates/kwasm",  version = "0.1.0"}
