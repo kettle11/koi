@@ -31,7 +31,7 @@ void main()
     // Bloom 
     color_out = mix(color_out, texture(p_blurred_texture, TexCoords), p_bloom_strength);
 
-    // Reinhard tonehamp
+    // Reinhard tonemap
    // color_out.rgb = color_out.rgb / (color_out.rgb + vec3(1.0));
 
     // Premultiply alpha
