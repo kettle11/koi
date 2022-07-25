@@ -413,7 +413,10 @@ fn initialize_nodes(
 
     let entity = if let Some(mesh) = node.mesh {
         let mesh_primitives = &mesh_primitives[mesh];
-        if mesh_primitives.len() == 1 {
+        // This commented out condition flattened the hierarchy slightly if an Entity only had
+        // one mesh primitive. This might be useful in some cases, but for now for simplicity and clarity
+        // we're going to ignore that case.
+        /*  if mesh_primitives.len() == 1 {
             let (mesh, material_index) = &mesh_primitives[0];
             let material_handle =
                 material_index.map_or_else(Handle::default, |i| gltf_materials[i].clone());
@@ -423,7 +426,8 @@ fn initialize_nodes(
                 RenderFlags::DEFAULT,
                 transform,
             ))
-        } else {
+        } else */
+        {
             let entity_root = gltf_world.spawn((transform,));
             for (mesh, material_index) in mesh_primitives {
                 let material_handle =

@@ -159,13 +159,6 @@ impl InterpolateTrait for Transform {
     }
 }
 
-#[test]
-fn lerp_test() {
-    let v0 = Vec3::ZERO;
-    let v1 = Vec3::X;
-    println!("VALUE: {:?}", v0.lerp(v1, 0.5));
-}
-
 impl Mul<Transform> for Transform {
     type Output = Transform;
     fn mul(self, rhs: Transform) -> Self::Output {
@@ -204,7 +197,7 @@ pub fn update_global_transforms(
         Option<&mut GlobalTransform>,
     )>,
 ) {
-    // It'd be nice to find a way to avoid this allocation
+    // TODO: It'd be nice to find a way to avoid this allocation
     let mut parents = Vec::new();
 
     // This is a bit inefficient in that all hierarchies are updated, regardless of if they changed.
@@ -226,11 +219,11 @@ fn update_descendent_transforms(
         Option<&Transform>,
         Option<&mut GlobalTransform>,
     )>,
-    child_entity: Entity,
+    parent_entity: Entity,
     parent_matrix: &Mat4,
 ) {
     if let Some((hierarchy_node, local_transform, global_transform)) =
-        query.get_entity_components_mut(child_entity)
+        query.get_entity_components_mut(parent_entity)
     {
         let my_global_matrix = if let Some(local_transform) = local_transform {
             *parent_matrix * local_transform.model()
@@ -245,7 +238,7 @@ fn update_descendent_transforms(
         if let Some(global_transform) = global_transform {
             *global_transform = new_global_transform;
         } else {
-            commands.add_component(child_entity, new_global_transform);
+            commands.add_component(parent_entity, new_global_transform);
         }
 
         let mut child = *hierarchy_node.last_child();
