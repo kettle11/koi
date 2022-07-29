@@ -4,6 +4,13 @@ A game engine.
 
 Developed in the open but not yet fit for public use. `koi` is currently designed for my active projects but I'd like to eventually make it useful to others as well.
 
+## Projects I've built with `koi`:
+[bloom3d](https://bloom3d.com)
+
+[SIMD terrain generator](https://ianjk.com/terrain_generator/)
+
+[Last of the Sky Folk](https://ianjk.com/ld50/)
+
 **Expect frequent build breaks!**
 
 Most parts are incomplete, code quality varies dramatically, and there are lots of bugs to fix. 
