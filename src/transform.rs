@@ -279,3 +279,44 @@ pub fn set_parent(world: &mut World, parent: Option<Entity>, child: Entity) {
         *child_transform = GlobalTransform(Transform::from_mat4(child_relative));
     }
 }
+
+pub fn raycast_scene(world: &mut World, ray: Ray3) -> Option<Entity> {
+    (|meshes: &Assets<Mesh>, entities: Query<(&GlobalTransform, &Handle<Mesh>)>| {
+        raycast_entities(ray, meshes, entities.entities_and_components())
+    })
+    .run(world)
+}
+
+pub fn raycast_entities<'a>(
+    ray: Ray3,
+    meshes: &Assets<Mesh>,
+    entities: impl Iterator<Item = (&'a Entity, (&'a GlobalTransform, &'a Handle<Mesh>))>,
+) -> Option<Entity> {
+    let mut closest_value = f32::MAX;
+    let mut intersected_entity = None;
+    for (entity, (transform, mesh_handle)) in entities {
+        let mesh = meshes.get(mesh_handle);
+        if let Some(bounding_box) = mesh.bounding_box {
+            if let Some(mesh_data) = mesh.mesh_data.as_ref() {
+                // This inverse will make this operation more slow
+                let inverse_model = transform.model().inversed();
+                let ray = inverse_model.transform_ray(ray);
+                if let Some(v) = crate::intersections::ray_with_bounding_box(ray, bounding_box) {
+                    if v < closest_value {
+                        if let Some(v) = crate::intersections::ray_with_mesh(
+                            ray,
+                            &mesh_data.positions,
+                            &mesh_data.indices,
+                        ) {
+                            if v < closest_value {
+                                closest_value = v;
+                                intersected_entity = Some(*entity)
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+    intersected_entity
+}
