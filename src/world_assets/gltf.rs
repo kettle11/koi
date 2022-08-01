@@ -247,49 +247,129 @@ pub(super) async fn load_mesh_primitive_data(
                 let accessor_component_type =
                     gltf.accessors[*accessor_index].component_type.clone();
 
-                fn check_type(accessor_component_type: AccessorComponentType) {
-                    match accessor_component_type {
-                        kgltf::AccessorComponentType::Float => {}
-                        _ => unimplemented!(
-                            "GLTF loading does not yet handle the non-Float accessor type: {:?}",
-                            accessor_component_type
-                        ),
-                    };
-                }
-
-                // Todo: See table here for more accessor types that need to be implemented:
+                // Table of what accessor types need to be implemented for each attribute:
                 // https://www.khronos.org/registry/glTF/specs/2.0/glTF-2.0.html#meshes-overview
                 match attribute.as_str() {
                     "POSITION" => {
-                        positions =
-                            Some(get_buffer::<Vec3>(gltf, &data, &buffers, *accessor_index).await);
+                        positions = Some(
+                            get_buffer::<Vec3, _, _>(gltf, &data, &buffers, *accessor_index, |v| v)
+                                .await,
+                        );
                     }
                     "TEXCOORD_0" => {
-                        //
-                        check_type(accessor_component_type);
-                        texture_coordinates =
-                            Some(get_buffer::<Vec2>(gltf, &data, &buffers, *accessor_index).await);
+                        texture_coordinates = Some(match accessor_component_type {
+                            AccessorComponentType::UnsignedByte => {
+                                get_buffer::<Vector<u8, 2>, _, _>(
+                                    gltf,
+                                    &data,
+                                    &buffers,
+                                    *accessor_index,
+                                    |b| b.map(|v| *v as f32 / (u8::MAX as f32)),
+                                )
+                                .await
+                            }
+                            AccessorComponentType::UnsignedShort => {
+                                get_buffer::<Vector<u16, 2>, _, _>(
+                                    gltf,
+                                    &data,
+                                    &buffers,
+                                    *accessor_index,
+                                    |b| b.map(|v| *v as f32 / (u16::MAX as f32)),
+                                )
+                                .await
+                            }
+                            AccessorComponentType::Float => {
+                                get_buffer::<Vec2, _, _>(
+                                    gltf,
+                                    &data,
+                                    &buffers,
+                                    *accessor_index,
+                                    |v| v,
+                                )
+                                .await
+                            }
+                            _ => unimplemented!(),
+                        });
                     }
                     "NORMAL" => {
-                        normals =
-                            Some(get_buffer::<Vec3>(gltf, &data, &buffers, *accessor_index).await);
+                        normals = Some(
+                            get_buffer::<Vec3, _, _>(gltf, &data, &buffers, *accessor_index, |v| v)
+                                .await,
+                        );
                     }
                     "COLOR_0" => {
-                        check_type(accessor_component_type);
-
                         // COLOR_0 can be different accessor types according to the spec.
                         // Here we make them always a `Vec4`
                         match accessor_type {
                             kgltf::AccessorType::Vec4 => {
-                                colors = Some(
-                                    get_buffer::<Vec4>(gltf, &data, &buffers, *accessor_index)
-                                        .await,
-                                );
+                                colors = Some(match accessor_component_type {
+                                    AccessorComponentType::Float => {
+                                        get_buffer::<Vec4, _, _>(
+                                            gltf,
+                                            &data,
+                                            &buffers,
+                                            *accessor_index,
+                                            |v| v,
+                                        )
+                                        .await
+                                    }
+                                    AccessorComponentType::UnsignedByte => {
+                                        get_buffer::<Vector<u8, 4>, _, _>(
+                                            gltf,
+                                            &data,
+                                            &buffers,
+                                            *accessor_index,
+                                            |b| b.map(|v| *v as f32 / (u8::MAX as f32)),
+                                        )
+                                        .await
+                                    }
+                                    AccessorComponentType::UnsignedShort => {
+                                        get_buffer::<Vector<u16, 4>, _, _>(
+                                            gltf,
+                                            &data,
+                                            &buffers,
+                                            *accessor_index,
+                                            |b| b.map(|v| *v as f32 / (u16::MAX as f32)),
+                                        )
+                                        .await
+                                    }
+                                    _ => unimplemented!(),
+                                });
                             }
                             kgltf::AccessorType::Vec3 => {
-                                let colors_vec3 =
-                                    get_buffer::<Vec3>(gltf, &data, &buffers, *accessor_index)
-                                        .await;
+                                let colors_vec3 = match accessor_component_type {
+                                    AccessorComponentType::Float => {
+                                        get_buffer::<Vec3, _, _>(
+                                            gltf,
+                                            &data,
+                                            &buffers,
+                                            *accessor_index,
+                                            |v| v,
+                                        )
+                                        .await
+                                    }
+                                    AccessorComponentType::UnsignedByte => {
+                                        get_buffer::<Vector<u8, 3>, _, _>(
+                                            gltf,
+                                            &data,
+                                            &buffers,
+                                            *accessor_index,
+                                            |b| b.map(|v| *v as f32 / (u8::MAX as f32)),
+                                        )
+                                        .await
+                                    }
+                                    AccessorComponentType::UnsignedShort => {
+                                        get_buffer::<Vector<u16, 3>, _, _>(
+                                            gltf,
+                                            &data,
+                                            &buffers,
+                                            *accessor_index,
+                                            |b| b.map(|v| *v as f32 / (u16::MAX as f32)),
+                                        )
+                                        .await
+                                    }
+                                    _ => unimplemented!(),
+                                };
                                 colors = Some(colors_vec3.iter().map(|v| v.extend(1.0)).collect());
                             }
                             _ => unimplemented!(),
@@ -521,12 +601,13 @@ async fn get_indices(
     }
 }
 
-async fn get_buffer<T: Clone>(
+async fn get_buffer<T: Copy, TOut, F: FnMut(T) -> TOut>(
     gltf: &kgltf::GlTf,
     data: &Option<&[u8]>,
     buffers: &[Option<Vec<u8>>],
     accessor: usize,
-) -> Vec<T> {
+    convert_value: F,
+) -> Vec<TOut> {
     let accessor = &gltf.accessors[accessor];
     let count = accessor.count;
 
@@ -548,23 +629,27 @@ async fn get_buffer<T: Clone>(
     if buffer.uri.is_some() {
         let bytes = buffers[buffer_view.buffer].as_ref().unwrap();
         unsafe {
-            bytes_to_buffer::<T>(
+            bytes_to_buffer(
                 &bytes[byte_offset..byte_offset + count * std::mem::size_of::<T>()],
+                convert_value,
             )
         }
     } else {
         // Use the built in data buffer
         unsafe {
-            bytes_to_buffer::<T>(
+            bytes_to_buffer(
                 &data.as_ref().unwrap()
                     [byte_offset..byte_offset + count * std::mem::size_of::<T>()],
+                convert_value,
             )
         }
     }
 }
 
-unsafe fn bytes_to_buffer<T: Clone>(bytes: &[u8]) -> Vec<T> {
+unsafe fn bytes_to_buffer<T: Copy, TOut, F: FnMut(T) -> TOut>(
+    bytes: &[u8],
+    convert_value: F,
+) -> Vec<TOut> {
     let (_prefix, shorts, _suffix) = bytes.align_to::<T>();
-
-    shorts.into()
+    shorts.iter().copied().map(convert_value).collect()
 }

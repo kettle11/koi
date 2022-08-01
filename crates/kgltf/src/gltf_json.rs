@@ -149,7 +149,6 @@ impl<'a, D: Deserializer<'a>> Deserialize<'a, D> for GlTf {
         let mut extras = None;
 
         while let Some(property) = deserializer.has_property() {
-            println!("PROPERTY: {:?}", property);
             match &*property {
                 "extensionsUsed" => {
                     extensions_used = Some(<Vec<String>>::deserialize(deserializer)?)

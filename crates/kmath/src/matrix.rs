@@ -1417,3 +1417,15 @@ impl<const R: usize, const C: usize> Matrix<f64, R, C> {
         v
     }
 }
+
+impl<T: Default, const R: usize, const C: usize> Matrix<T, R, C> {
+    pub fn map<V>(&self, mut f: impl FnMut(&T) -> V) -> Matrix<V, R, C> {
+        let mut v: Matrix<V, R, C> = unsafe { std::mem::MaybeUninit::uninit().assume_init() };
+        for i in 0..C {
+            for j in 0..R {
+                v.0[i][j] = (f)(&self.0[i][j])
+            }
+        }
+        v
+    }
+}
