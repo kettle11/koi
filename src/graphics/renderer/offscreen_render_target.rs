@@ -18,13 +18,14 @@ impl AssetTrait for OffscreenRenderTarget {
 
 impl OffscreenRenderTarget {
     // Todo: This is temporary until this object gets automatically deleted.
-    pub fn delete(&mut self, graphics: &mut Graphics) {
-        if let Some(framebuffer) = self.framebuffer.as_ref() {
-            graphics.context.delete_framebuffer(**framebuffer);
-        }
-        if let Some(framebuffer) = self.resolve_framebuffer.as_ref() {
-            graphics.context.delete_framebuffer(**framebuffer);
-        }
+    pub fn delete(&mut self, _graphics: &mut Graphics) {
+        todo!()
+        // if let Some(framebuffer) = self.framebuffer.as_ref() {
+        //     graphics.context.delete_framebuffer(**framebuffer);
+        // }
+        // if let Some(framebuffer) = self.resolve_framebuffer.as_ref() {
+        //     graphics.context.delete_framebuffer(**framebuffer);
+        // }
     }
     pub fn new(
         graphics: &mut Graphics,

@@ -196,13 +196,16 @@ unsafe impl Sync for IndexBuffer {}
 unsafe impl Sync for Pipeline {}
 unsafe impl Sync for Texture {}
 
+unsafe impl Send for CubeMap {}
+unsafe impl Sync for CubeMap {}
+
 impl Pipeline {
     fn get_property(&self, name: &str, type_: u32) -> Result<JSObjectDynamic, PropertyError> {
         if let Some(uniform) = self.uniforms.get(name) {
             if uniform.uniform_type == type_ {
                 Ok(uniform.location.clone())
             } else {
-                Err(PropertyError)
+                Err(PropertyError::IncorrectType)
             }
         } else {
             Ok(JSObjectDynamic::NULL)
@@ -818,7 +821,7 @@ impl GraphicsContextTrait for GraphicsContext {
         Ok(FragmentFunction { js_object })
     }
 
-    fn new_data_buffer<T>(&mut self, data: &[T]) -> Result<DataBuffer<T>, ()> {
+    fn new_data_buffer<T>(&mut self, data: &[T]) -> Result<DataBuffer<T>, GraphicsError> {
         let js_object = self
             .js
             .new_data_buffer
@@ -838,7 +841,7 @@ impl GraphicsContextTrait for GraphicsContext {
         self.js.delete_buffer.call_1_arg(&data_buffer.js_object);
     }
 
-    fn new_index_buffer(&mut self, data: &[u32]) -> Result<IndexBuffer, ()> {
+    fn new_index_buffer(&mut self, data: &[u32]) -> Result<IndexBuffer, GraphicsError> {
         let js_object = self
             .js
             .new_index_buffer
@@ -857,7 +860,7 @@ impl GraphicsContextTrait for GraphicsContext {
         data: Option<&[u8]>,
         pixel_format: PixelFormat,
         texture_settings: TextureSettings,
-    ) -> Result<Texture, ()> {
+    ) -> Result<Texture, GraphicsError> {
         if texture_settings.msaa_samples == 0 {
             let js_object = self.js.new_texture.call().unwrap().to_dynamic();
 
@@ -867,6 +870,8 @@ impl GraphicsContextTrait for GraphicsContext {
             };
             self.update_texture(
                 &texture,
+                0,
+                0,
                 width,
                 height,
                 data,
@@ -903,19 +908,22 @@ impl GraphicsContextTrait for GraphicsContext {
     fn update_texture(
         &mut self,
         texture: &Texture,
+        _x: u32,
+        _y: u32,
         width: u32,
         height: u32,
         data: Option<&[u8]>,
-        pixel_format: PixelFormat,
+        pixel_format_in: PixelFormat,
         texture_settings: TextureSettings,
     ) {
+        // TODO: Account for x and y value
         self.update_texture_internal(
             texture,
             width,
             height,
             &JSObject::null(),
             data,
-            pixel_format,
+            pixel_format_in,
             texture_settings,
         )
     }
@@ -933,6 +941,10 @@ impl GraphicsContextTrait for GraphicsContext {
                 panic!("Can't delete default framebuffer");
             }
         }
+    }
+
+    fn read_texture(&mut self, _texture: &Texture, _format: PixelFormat, _size: usize) -> Vec<u8> {
+        todo!()
     }
 
     fn new_pipeline(
@@ -982,7 +994,7 @@ impl GraphicsContextTrait for GraphicsContext {
         data: Option<[&[u8]; 6]>,
         pixel_format: PixelFormat,
         texture_settings: TextureSettings,
-    ) -> Result<CubeMap, ()> {
+    ) -> Result<CubeMap, GraphicsError> {
         let texture = self.js.new_texture.call().unwrap().to_dynamic();
 
         let cube_map = CubeMap { texture };
