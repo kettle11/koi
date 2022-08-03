@@ -14,20 +14,24 @@ fn main() {
         ));
 
         // Spawn a light
-        world.spawn((
-            Transform::new()
-                .with_position([0., 8.0, 8.0].into())
-                .looking_at(Vec3::ZERO, Vec3::Y),
-            Light::new(LightMode::Directional, Color::WHITE, 10.0),
-        ));
+        // world.spawn((
+        //     Transform::new()
+        //         .with_position([0., 8.0, 8.0].into())
+        //         .looking_at(Vec3::ZERO, Vec3::Y),
+        //     Light::new(LightMode::Directional, Color::WHITE, 10.0),
+        // ));
+
+        // Spawn an HDRI and shadow-caster with primary light direction
+        // inferred from the brightest point in the HDRI.
+        spawn_skybox(world, "assets/field_1k.hdr");
 
         let path = "assets/silent_ash/scene.gltf";
 
-        // Begin loading a GlTf
+        // Begin loading a glTF
         let worlds = world.get_single_component_mut::<Assets<World>>().unwrap();
         let gltf_world = worlds.load(path);
 
-        // Spawn a Handle<World> that will be replaced with the GlTf when it's loaded.
+        // Spawn a Handle<World> that will be replaced with the glTF when it's loaded.
         world.spawn(gltf_world);
 
         |_, _| false
