@@ -477,7 +477,6 @@ pub struct CubeMapOptions {
     pub diffuse_and_specular_irradiance_cubemaps: Option<(Handle<CubeMap>, Handle<CubeMap>)>,
 }
 
-
 impl AssetTrait for CubeMap {
     type AssetLoader = NotSendSync<CubeMapAssetLoader>;
 }
