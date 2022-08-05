@@ -41,6 +41,8 @@ pub use ecs_components::*;
 mod interpolate;
 pub use interpolate::*;
 
+pub use kinstant::Instant;
+
 #[cfg(feature = "graphics")]
 mod graphics;
 #[cfg(feature = "graphics")]
@@ -67,11 +69,6 @@ mod physics;
 pub use physics::*;
 
 pub use kapp::{Event as KappEvent, Key, PointerButton, PointerSource};
-
-#[cfg(target_arch = "wasm32")]
-pub use kwasm::libraries::Instant;
-#[cfg(not(target_arch = "wasm32"))]
-pub use std::time::Instant;
 
 #[cfg(target_arch = "wasm32")]
 pub use kwasm;

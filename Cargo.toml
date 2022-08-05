@@ -35,6 +35,7 @@ kmath = {path = "crates/kmath"}
 klog = {path = "crates/klog"}
 kcolor = {path = "crates/kcolor"}
 kserde = {path = "crates/kserde"}
+kinstant = {path = "crates/kinstant"}
 
 ktracing_allocator = {path = "crates/ktracing_allocator", optional = true}
 
