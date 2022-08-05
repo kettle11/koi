@@ -25,7 +25,7 @@ fn main() {
         // inferred from the brightest point in the HDRI.
         spawn_skybox(world, "assets/field_1k.hdr");
 
-        let path = "assets/silent_ash/scene.gltf";
+        let path = "assets/ferris.glb";
 
         // Begin loading a glTF
         let worlds = world.get_single_component_mut::<Assets<World>>().unwrap();
