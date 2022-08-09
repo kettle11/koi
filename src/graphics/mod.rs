@@ -43,9 +43,6 @@ mod shader_parser;
 mod renderer;
 pub use renderer::*;
 
-#[cfg(feature = "imagine_png")]
-pub(crate) mod imagine_integration;
-
 pub fn graphics_plugin() -> Plugin {
     Plugin {
         setup_systems: vec![setup_graphics.system()],

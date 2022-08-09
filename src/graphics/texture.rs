@@ -168,18 +168,23 @@ pub fn png_data_from_bytes(bytes: &[u8], srgb: bool) -> TextureLoadData {
 
 #[cfg(feature = "imagine_png")]
 fn png_data_from_bytes(bytes: &[u8], _srgb: bool) -> TextureLoadData {
-    let (mut data, width, height) = imagine_integration::parse_me_a_png_yo(bytes).unwrap();
+    let imagine::ImageRGBA8 {
+        width,
+        height,
+        mut pixels,
+    } = imagine::ImageRGBA8::try_from_png_bytes(bytes).unwrap();
+    //  let (mut data, width, height) = imagine_integration::parse_me_a_png_yo(bytes).unwrap();
 
     // Premultiply texture
-    for v in data.iter_mut() {
-        let a = v.a as f32 / 255.0;
-        v.r = (v.r as f32 * a) as u8;
-        v.g = (v.g as f32 * a) as u8;
-        v.b = (v.b as f32 * a) as u8;
+    for v in pixels.iter_mut() {
+        let a = v[3] as f32 / 255.0;
+        v[0] = (v[0] as f32 * a) as u8;
+        v[1] = (v[1] as f32 * a) as u8;
+        v[2] = (v[2] as f32 * a) as u8;
     }
 
     TextureLoadData {
-        data: TextureData::Bytes(Box::new(data)),
+        data: TextureData::Bytes(Box::new(pixels)),
         pixel_format: PixelFormat::RGBA8Unorm,
         width,
         height,
