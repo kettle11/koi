@@ -155,6 +155,12 @@ pub struct VertexAttributeInfo {
     byte_size: u32,
 }
 
+#[derive(Clone, Copy)]
+pub struct UniformBlockInfo {
+    location: u32,
+    size_bytes: u32,
+}
+
 #[derive(Clone)]
 pub struct Pipeline {
     program: JSObjectDynamic,
@@ -175,6 +181,12 @@ impl Pipeline {
 #[derive(Clone)]
 pub struct VertexAttribute<T> {
     info: Option<VertexAttributeInfo>,
+    phantom: std::marker::PhantomData<T>,
+}
+
+#[derive(Clone)]
+pub struct UniformBlock<T> {
+    info: Option<UniformBlockInfo>,
     phantom: std::marker::PhantomData<T>,
 }
 
@@ -246,6 +258,10 @@ impl PipelineTrait for Pipeline {
         Ok(CubeMapProperty(self.get_property(name, SAMPLER_CUBE)?))
     }
 
+    fn get_uniform_block<T>(&self, name: &str) -> Result<UniformBlock<T>, String> {
+        todo!()
+    }
+
     fn get_vertex_attribute<T>(&self, name: &str) -> Result<VertexAttribute<T>, String> {
         if let Some(attribute) = self.vertex_attributes.get(name) {
             if attribute.byte_size == std::mem::size_of::<T>() as u32 {
@@ -310,6 +326,14 @@ impl RenderPassTrait for RenderPass<'_> {
         self.command_buffer
             .f32_data
             .push(pipeline.depth_clear_value);
+    }
+
+    fn set_uniform_block<T>(
+        &mut self,
+        uniform_block: &UniformBlock<T>,
+        buffer: Option<&DataBuffer<T>>,
+    ) {
+        todo!()
     }
 
     fn set_vertex_attribute<T>(

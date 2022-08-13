@@ -131,6 +131,7 @@ pub struct EventLoop {
 
 impl EventLoop {
     /// Run the application. The callback is called for each new event.
+    #[inline]
     pub fn run<T>(&self, mut callback: T)
     where
         T: 'static + FnMut(Event),

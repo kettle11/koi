@@ -15,7 +15,8 @@ pub(super) enum CommandBufferAction {
     // None represents the default framebuffer
     BindFramebuffer(Framebuffer),
     ChangePipeline(Pipeline),
-    SetVertexAttribute((VertexAttributeInfo, Option<gl_native::Buffer>)),
+    SetUniformBlock((UniformBlockInfo, Option<gl_native::Buffer>, usize, usize)),
+    SetVertexAttribute((VertexAttributeInfo, Option<gl_native::Buffer>, bool)),
     SetVertexAttributeToConstant {
         attribute: VertexAttributeInfo,
         length: u8,
@@ -36,6 +37,7 @@ pub(super) enum CommandBufferAction {
     SetViewport((u32, u32, u32, u32)),
     DrawTriangles(u32),
     DrawTriangleArrays(u32),
+    DrawTrianglesInstanced(u32, u32),
     SetDepthMask(bool),
     BlitFramebuffer {
         target: Framebuffer,
@@ -166,6 +168,39 @@ impl<'a> RenderPassTrait for RenderPass<'a> {
             .push(CommandBufferAction::ChangePipeline(pipeline.clone()))
     }
 
+    fn set_uniform_block<T>(
+        &mut self,
+        uniform_block: &UniformBlock<T>,
+        buffer: Option<&DataBuffer<T>>,
+    ) {
+        if let Some(info) = uniform_block.info.clone() {
+            self.command_buffer
+                .actions
+                .push(CommandBufferAction::SetUniformBlock((
+                    info,
+                    buffer.map(|b| b.buffer),
+                    0,
+                    buffer.map_or(0, |b| b.len),
+                )))
+        }
+    }
+
+    fn set_instance_attribute<T>(
+        &mut self,
+        vertex_attribute: &VertexAttribute<T>,
+        buffer: Option<&DataBuffer<T>>,
+    ) {
+        if let Some(info) = vertex_attribute.info.clone() {
+            self.command_buffer
+                .actions
+                .push(CommandBufferAction::SetVertexAttribute((
+                    info,
+                    buffer.map(|b| b.buffer),
+                    true,
+                )))
+        }
+    }
+
     /// Vertex attributes are arrays of data for each vertex.
     fn set_vertex_attribute<T>(
         &mut self,
@@ -178,6 +213,7 @@ impl<'a> RenderPassTrait for RenderPass<'a> {
                 .push(CommandBufferAction::SetVertexAttribute((
                     info,
                     buffer.map(|b| b.buffer),
+                    false,
                 )))
         }
     }
@@ -352,6 +388,17 @@ impl<'a> RenderPassTrait for RenderPass<'a> {
         self.command_buffer
             .actions
             .push(CommandBufferAction::DrawTriangleArrays(count))
+    }
+
+    fn draw_triangles_instanced(&mut self, count: u32, buffer: &IndexBuffer, instances: u32) {
+        self.command_buffer
+            .actions
+            .push(CommandBufferAction::SetIndexBuffer(buffer.clone()));
+        self.command_buffer
+            .actions
+            .push(CommandBufferAction::DrawTrianglesInstanced(
+                count, instances,
+            ))
     }
 
     fn set_depth_mask(&mut self, depth_mask: bool) {

@@ -50,6 +50,58 @@ pub struct ActiveAttribute {
 }
 
 impl GL {
+    pub unsafe fn get_active_uniform_blocks(&self, program: Program) -> u32 {
+        let mut count = 0;
+        self.gl
+            .GetProgramiv(program.0, GL_ACTIVE_UNIFORM_BLOCKS, &mut count);
+        count as u32
+    }
+
+    pub unsafe fn uniform_block_binding(
+        &self,
+        program: Program,
+        uniform_block_index: u32,
+        uniform_block_binding: u32,
+    ) {
+        self.gl
+            .UniformBlockBinding(program.0, uniform_block_index, uniform_block_binding)
+    }
+    pub unsafe fn get_uniform_block_name_and_size(
+        &self,
+        program: Program,
+        uniform_block_index: u32,
+    ) -> Option<(String, u32)> {
+        let mut max_name_length = 0;
+        self.gl.GetProgramiv(
+            program.0,
+            GL_ACTIVE_UNIFORM_BLOCK_MAX_NAME_LENGTH,
+            &mut max_name_length,
+        );
+
+        // Todo: Don't allocate a new vec here each time.
+        let mut name: Vec<u8> = vec![0; max_name_length as usize];
+        let mut length = 0;
+
+        self.gl.GetActiveUniformBlockName(
+            program.0,
+            uniform_block_index,
+            max_name_length,
+            &mut length,
+            name.as_mut_ptr(),
+        );
+        name.truncate(length as usize);
+        let name = String::from_utf8(name).unwrap();
+
+        let mut size_bytes: i32 = 0;
+        self.gl.GetActiveUniformBlockiv(
+            program.0,
+            uniform_block_index,
+            GL_UNIFORM_BLOCK_DATA_SIZE,
+            &mut size_bytes,
+        );
+        Some((name, size_bytes as u32))
+    }
+
     pub unsafe fn get_active_uniforms(&self, program: Program) -> u32 {
         let mut count = 0;
         self.gl
@@ -65,6 +117,7 @@ impl GL {
             &mut uniform_max_length,
         );
 
+        // Todo: Don't allocate a new vec here each time.
         let mut name: Vec<u8> = vec![0; uniform_max_length as usize];
         let mut length = 0;
         let mut size_members = 0;
@@ -179,6 +232,18 @@ impl GL {
             data.as_ptr() as *const std::ffi::c_void,
             GLenum(usage),
         );
+    }
+
+    pub unsafe fn bind_buffer_range(
+        &self,
+        target: GLenum,
+        index: u32,
+        buffer: Option<Buffer>,
+        offset: isize,
+        len: isize,
+    ) {
+        self.gl
+            .BindBufferRange(target, index, buffer.map_or(0, |v| v.0), offset, len);
     }
 
     pub unsafe fn create_buffer(&self) -> Result<Buffer, String> {
@@ -454,6 +519,10 @@ impl GL {
         self.gl.DisableVertexAttribArray(index);
     }
 
+    pub unsafe fn vertex_attrib_divisor(&self, index: u32, divisor: u32) {
+        self.gl.VertexAttribDivisor(index, divisor);
+    }
+
     pub unsafe fn enable_vertex_attrib_array(&self, index: u32) {
         self.gl.EnableVertexAttribArray(index);
     }
@@ -533,6 +602,23 @@ impl GL {
     ) {
         self.gl
             .DrawElements(mode, count, element_type, offset as *const std::ffi::c_void);
+    }
+
+    pub unsafe fn draw_elements_instanced(
+        &self,
+        mode: GLenum,
+        count: i32,
+        element_type: GLenum,
+        offset: i32,
+        instance_count: i32,
+    ) {
+        self.gl.DrawElementsInstanced(
+            mode,
+            count,
+            element_type,
+            offset as *const std::ffi::c_void,
+            instance_count,
+        );
     }
 
     pub unsafe fn create_shader(&self, shader_type: GLenum) -> Result<Shader, String> {

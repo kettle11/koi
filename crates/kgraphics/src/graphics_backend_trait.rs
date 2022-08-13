@@ -23,6 +23,7 @@ pub trait PipelineTrait {
     fn get_mat4_property(&self, name: &str) -> Result<Mat4Property, PropertyError>;
     fn get_texture_property(&self, name: &str) -> Result<TextureProperty, PropertyError>;
     fn get_cube_map_property(&self, name: &str) -> Result<CubeMapProperty, PropertyError>;
+    fn get_uniform_block<T>(&self, name: &str) -> Result<UniformBlock<T>, String>;
     fn get_vertex_attribute<T>(&self, name: &str) -> Result<VertexAttribute<T>, String>;
 }
 
@@ -35,6 +36,11 @@ pub trait RenderPassTrait {
     /// Vertex attributes are arrays of data for each vertex.
     fn set_vertex_attribute<T>(
         &mut self,
+        attribute: &VertexAttribute<T>,
+        buffer: Option<&DataBuffer<T>>,
+    );
+    fn set_instance_attribute<T>(
+        &mut self,
         vertex_attribute: &VertexAttribute<T>,
         buffer: Option<&DataBuffer<T>>,
     );
@@ -42,6 +48,11 @@ pub trait RenderPassTrait {
         &mut self,
         vertex_attribute: &VertexAttribute<T>,
         value: &[f32],
+    );
+    fn set_uniform_block<T>(
+        &mut self,
+        uniform_block: &UniformBlock<T>,
+        buffer: Option<&DataBuffer<T>>,
     );
     fn set_float_property(&mut self, property: &FloatProperty, value: f32);
 
@@ -72,8 +83,15 @@ pub trait RenderPassTrait {
         texture_unit: u8,
     );
 
-    fn draw_triangles(&mut self, count: u32, index_buffer: &IndexBuffer);
-    fn draw_triangles_without_buffer(&mut self, count: u32);
+    fn draw_triangles(&mut self, vertex_count: u32, index_buffer: &IndexBuffer);
+    fn draw_triangles_without_buffer(&mut self, vertex_count: u32);
+    fn draw_triangles_instanced(
+        &mut self,
+        vertex_count: u32,
+        index_buffer: &IndexBuffer,
+        instances: u32,
+    );
+
     fn set_depth_mask(&mut self, depth_mask: bool);
 
     #[allow(clippy::too_many_arguments)]

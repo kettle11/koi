@@ -32,6 +32,7 @@ impl std::hash::Hash for Color {
     }
 }
 
+#[cfg(feature = "kecs")]
 impl kecs::ComponentTrait for Color {
     fn clone_components(
         _entity_migrator: &mut kecs::EntityMigrator,

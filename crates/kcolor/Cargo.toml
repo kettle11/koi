@@ -6,8 +6,11 @@ license = "Zlib OR Apache-2.0 OR MIT"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
+[features]
+default = ["kecs"]
+
 [dependencies]
-kecs = {path = "../kecs"}
+kecs = {path = "../kecs", optional = true}
 kmath = {path = "../kmath"}
 kserde = {path = "../kserde"}
 

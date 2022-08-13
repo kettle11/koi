@@ -49,84 +49,72 @@ impl<S: Serializer> Serialize<S> for String {
 }
 
 impl<S: Serializer> Serialize<S> for i8 {
-    #[inline]
     fn serialize(&self, serializer: &mut S) {
         serializer.i64(*self as i64)
     }
 }
 
 impl<S: Serializer> Serialize<S> for i16 {
-    #[inline]
     fn serialize(&self, serializer: &mut S) {
         serializer.i64(*self as i64)
     }
 }
 
 impl<S: Serializer> Serialize<S> for i32 {
-    #[inline]
     fn serialize(&self, serializer: &mut S) {
         serializer.i64(*self as i64)
     }
 }
 
 impl<S: Serializer> Serialize<S> for usize {
-    #[inline]
     fn serialize(&self, serializer: &mut S) {
         serializer.i64(*self as i64)
     }
 }
 
 impl<S: Serializer> Serialize<S> for u8 {
-    #[inline]
     fn serialize(&self, serializer: &mut S) {
         serializer.i64(*self as i64)
     }
 }
 
 impl<S: Serializer> Serialize<S> for u16 {
-    #[inline]
     fn serialize(&self, serializer: &mut S) {
         serializer.i64(*self as i64)
     }
 }
 
 impl<S: Serializer> Serialize<S> for u32 {
-    #[inline]
     fn serialize(&self, serializer: &mut S) {
         serializer.i64(*self as i64)
     }
 }
 
 impl<S: Serializer> Serialize<S> for u64 {
-    #[inline]
     fn serialize(&self, serializer: &mut S) {
         serializer.i64(*self as i64)
     }
 }
 
 impl<S: Serializer> Serialize<S> for f32 {
-    #[inline]
     fn serialize(&self, serializer: &mut S) {
         serializer.f64(*self as f64)
     }
 }
 
 impl<S: Serializer> Serialize<S> for f64 {
-    #[inline]
     fn serialize(&self, serializer: &mut S) {
         serializer.f64(*self)
     }
 }
 
 impl<S: Serializer> Serialize<S> for bool {
-    #[inline]
     fn serialize(&self, serializer: &mut S) {
         serializer.bool(*self)
     }
 }
 
 impl<S: Serializer, SERIALIZE: Serialize<S>> Serialize<S> for [SERIALIZE] {
-    #[inline]
     fn serialize(&self, serializer: &mut S) {
         serializer.begin_array();
         for value in self {
@@ -137,7 +125,6 @@ impl<S: Serializer, SERIALIZE: Serialize<S>> Serialize<S> for [SERIALIZE] {
 }
 
 impl<S: Serializer, SERIALIZE: Serialize<S>, const SIZE: usize> Serialize<S> for [SERIALIZE; SIZE] {
-    #[inline]
     fn serialize(&self, serializer: &mut S) {
         serializer.begin_array();
         for value in self {
@@ -148,7 +135,6 @@ impl<S: Serializer, SERIALIZE: Serialize<S>, const SIZE: usize> Serialize<S> for
 }
 
 impl<S: Serializer, SERIALIZE: Serialize<S>> Serialize<S> for Vec<SERIALIZE> {
-    #[inline]
     fn serialize(&self, serializer: &mut S) {
         serializer.begin_array();
         for value in self {
@@ -172,7 +158,6 @@ impl<S: Serializer, STRING: std::ops::Deref<Target = str>, V: Serialize<S>> Seri
 }
 
 impl<S: Serializer, SERIALIZE: Serialize<S>> Serialize<S> for Option<SERIALIZE> {
-    #[inline]
     fn serialize(&self, serializer: &mut S) {
         if let Some(s) = self {
             s.serialize(serializer);
@@ -185,7 +170,6 @@ impl<S: Serializer, SERIALIZE: Serialize<S>> Serialize<S> for Option<SERIALIZE> 
 /*
 // Todo: Implement more tuples using a macro
 impl<S: Serializer, A: Serialize<S>> Serialize<S> for (A,) {
-    #[inline]
     fn serialize(&self, serializer: &mut S) {
         serializer.begin_object();
         serializer.property("i");
@@ -195,7 +179,6 @@ impl<S: Serializer, A: Serialize<S>> Serialize<S> for (A,) {
 }
 
 impl<S: Serializer, A: Serialize<S>, B: Serialize<S>> Serialize<S> for (A, B) {
-    #[inline]
     fn serialize(&self, serializer: &mut S) {
         serializer.begin_object();
         serializer.property("i0");
@@ -205,7 +188,6 @@ impl<S: Serializer, A: Serialize<S>, B: Serialize<S>> Serialize<S> for (A, B) {
 }
 
 impl<S: Serializer, A: Serialize<S>, B: Serialize<S>, C: Serialize<S>> Serialize<S> for (A, B, C) {
-    #[inline]
     fn serialize(&self, serializer: &mut S) {
         serializer.begin_object();
         serializer.property("i0", &self.0);

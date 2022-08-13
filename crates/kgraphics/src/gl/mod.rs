@@ -34,6 +34,7 @@ pub struct Pipeline {
     program: gl_native::Program,
     vertex_attributes: HashMap<String, VertexAttributeInfo>,
     uniforms: HashMap<String, Uniform>,
+    uniform_blocks: HashMap<String, UniformBlockInfo>,
     depth_test: DepthTest,
     faces_to_render: FacesToRender,
     blending: Option<(BlendFactor, BlendFactor)>,
@@ -67,6 +68,7 @@ impl RenderTargetTrait for RenderTarget {
 #[derive(Clone)]
 pub struct DataBuffer<T> {
     buffer: gl_native::Buffer,
+    len: usize,
     phantom: std::marker::PhantomData<T>,
 }
 
@@ -126,6 +128,18 @@ struct Uniform {
     // Is this actually the size in bytes?
     // size_bytes: i32,
     location: gl_native::UniformLocation,
+}
+
+#[derive(Clone)]
+pub struct UniformBlock<T> {
+    info: Option<UniformBlockInfo>,
+    phantom: std::marker::PhantomData<T>,
+}
+
+#[derive(Clone)]
+struct UniformBlockInfo {
+    size_bytes: u32,
+    location: u32,
 }
 
 #[derive(Clone, Debug)]
@@ -296,6 +310,29 @@ impl PipelineTrait for Pipeline {
         })
     }
 
+    fn get_uniform_block<T>(&self, name: &str) -> Result<UniformBlock<T>, String> {
+        if let Some(uniform_block) = self.uniform_blocks.get(name) {
+            if uniform_block.size_bytes == std::mem::size_of::<T>() as u32 {
+                Ok(UniformBlock {
+                    info: Some(uniform_block.clone()),
+                    phantom: std::marker::PhantomData,
+                })
+            } else {
+                Err(format!(
+                    "Unform block size mismatch for {:?}. /n Shader: {:?}, Rust: {:?}",
+                    name,
+                    uniform_block.size_bytes,
+                    std::mem::size_of::<T>()
+                ))
+            }
+        } else {
+            Ok(UniformBlock {
+                info: None,
+                phantom: std::marker::PhantomData,
+            })
+        }
+    }
+
     fn get_vertex_attribute<T>(&self, name: &str) -> Result<VertexAttribute<T>, String> {
         if let Some(attribute) = self.vertex_attributes.get(name) {
             if attribute.byte_size == std::mem::size_of::<T>() as u32 {
@@ -337,21 +374,43 @@ impl<'a> PipelineBuilderTrait for PipelineBuilder<'a> {
         */
 
         let mut uniforms = HashMap::new();
+        let mut uniform_blocks = HashMap::new();
+
         let mut vertex_attributes = HashMap::new();
         unsafe {
+            let uniform_block_count = self.g.gl.get_active_uniform_blocks(program);
+            for i in 0..uniform_block_count {
+                let (name, size_bytes) = self
+                    .g
+                    .gl
+                    .get_uniform_block_name_and_size(program, i)
+                    .unwrap();
+                self.g.gl.uniform_block_binding(program, i, i);
+                uniform_blocks.insert(
+                    name,
+                    UniformBlockInfo {
+                        size_bytes,
+                        location: i,
+                    },
+                );
+            }
+
             let uniform_count = self.g.gl.get_active_uniforms(program);
             for i in 0..uniform_count {
                 let uniform = self.g.gl.get_active_uniform(program, i).unwrap();
                 let uniform_location = self.g.gl.get_uniform_location(program, &uniform.name);
 
-                uniforms.insert(
-                    uniform.name,
-                    Uniform {
-                        uniform_type: uniform.uniform_type.0,
-                        // size_bytes: uniform.size_members,
-                        location: uniform_location.unwrap(),
-                    },
-                );
+                // Uniform blocks do not have a location
+                if let Some(location) = uniform_location {
+                    uniforms.insert(
+                        uniform.name,
+                        Uniform {
+                            uniform_type: uniform.uniform_type.0,
+                            // size_bytes: uniform.size_members,
+                            location,
+                        },
+                    );
+                }
             }
 
             let vertex_attribute_count = self.g.gl.get_active_attributes(program);
@@ -384,6 +443,7 @@ impl<'a> PipelineBuilderTrait for PipelineBuilder<'a> {
             program,
             vertex_attributes,
             uniforms,
+            uniform_blocks,
             depth_test: self.depth_test,
             faces_to_render: self.faces_to_render,
             blending: self.blending,
@@ -499,6 +559,7 @@ impl GraphicsContextTrait for GraphicsContext {
                 .buffer_data_u8_slice(GL_ARRAY_BUFFER.0, slice_to_bytes(data), GL_STATIC_DRAW.0);
             Ok(DataBuffer {
                 buffer,
+                len: data.len(),
                 phantom: std::marker::PhantomData,
             })
         }
@@ -950,7 +1011,16 @@ impl GraphicsContextTrait for GraphicsContext {
 
                         self.gl.gl.ClearDepth(1.0);
                     }
-                    SetVertexAttribute((attribute, buffer)) => {
+                    SetUniformBlock((block, buffer, offset, len)) => {
+                        self.gl.bind_buffer_range(
+                            GL_UNIFORM_BUFFER,
+                            block.location, // Index
+                            buffer, // Number of components. It's assumed that components are always 32 bit.
+                            offset as isize,
+                            len as isize,
+                        );
+                    }
+                    SetVertexAttribute((attribute, buffer, per_instance)) => {
                         if buffer.is_none() {
                             self.gl.disable_vertex_attrib_array(attribute.index);
                         } else {
@@ -964,6 +1034,11 @@ impl GraphicsContextTrait for GraphicsContext {
                                 0, // Offset
                             );
 
+                            if per_instance {
+                                self.gl.vertex_attrib_divisor(attribute.index, 1);
+                            } else {
+                                self.gl.vertex_attrib_divisor(attribute.index, 0);
+                            }
                             self.gl.enable_vertex_attrib_array(attribute.index);
                         }
                     }
@@ -1027,6 +1102,15 @@ impl GraphicsContextTrait for GraphicsContext {
                     DrawTriangles(count) => {
                         self.gl
                             .draw_elements(GL_TRIANGLES, (count * 3) as i32, GL_UNSIGNED_INT, 0);
+                    }
+                    DrawTrianglesInstanced(count, instances) => {
+                        self.gl.draw_elements_instanced(
+                            GL_TRIANGLES,
+                            (count * 3) as i32,
+                            GL_UNSIGNED_INT,
+                            0,
+                            instances as _,
+                        );
                     }
                     DrawTriangleArrays(count) => {
                         self.gl.draw_arrays(GL_TRIANGLES, 0, (count * 3) as i32);
