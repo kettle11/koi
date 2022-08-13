@@ -1025,21 +1025,23 @@ impl GraphicsContextTrait for GraphicsContext {
                             self.gl.disable_vertex_attrib_array(attribute.index);
                         } else {
                             self.gl.bind_buffer(GL_ARRAY_BUFFER, buffer);
-                            self.gl.vertex_attrib_pointer_f32(
-                                attribute.index,                // Index
-                                attribute.byte_size as i32 / 4, // Number of components. It's assumed that components are always 32 bit.
-                                GL_FLOAT,
-                                false,
-                                0, // 0 means to assume tightly packed
-                                0, // Offset
-                            );
+                            for i in 0..(attribute.byte_size / 4) {
+                                self.gl.vertex_attrib_pointer_f32(
+                                    attribute.index + i as u32,                // Index
+                                    (attribute.byte_size as i32 / 4).min(4), // Number of components. It's assumed that components are always 32 bit.
+                                    GL_FLOAT,
+                                    false,
+                                    attribute.byte_size as i32, // 0 means to assume tightly packed
+                                    (i * 16) as i32, // Offset
+                                );
 
-                            if per_instance {
-                                self.gl.vertex_attrib_divisor(attribute.index, 1);
-                            } else {
-                                self.gl.vertex_attrib_divisor(attribute.index, 0);
+                                if per_instance {
+                                    self.gl.vertex_attrib_divisor(attribute.index + i, 1);
+                                } else {
+                                    self.gl.vertex_attrib_divisor(attribute.index + i, 0);
+                                }
+                                self.gl.enable_vertex_attrib_array(attribute.index + i);
                             }
-                            self.gl.enable_vertex_attrib_array(attribute.index);
                         }
                     }
                     SetVertexAttributeToConstant {
