@@ -1025,7 +1025,8 @@ impl GraphicsContextTrait for GraphicsContext {
                             self.gl.disable_vertex_attrib_array(attribute.index);
                         } else {
                             self.gl.bind_buffer(GL_ARRAY_BUFFER, buffer);
-                            for i in 0..(attribute.byte_size / 4) {
+
+                            for i in 0..(attribute.byte_size / 16).max(1) {
                                 self.gl.vertex_attrib_pointer_f32(
                                     attribute.index + i as u32,                // Index
                                     (attribute.byte_size as i32 / 4).min(4), // Number of components. It's assumed that components are always 32 bit.
@@ -1040,6 +1041,7 @@ impl GraphicsContextTrait for GraphicsContext {
                                 } else {
                                     self.gl.vertex_attrib_divisor(attribute.index + i, 0);
                                 }
+
                                 self.gl.enable_vertex_attrib_array(attribute.index + i);
                             }
                         }
