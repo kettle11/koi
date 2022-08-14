@@ -1028,12 +1028,12 @@ impl GraphicsContextTrait for GraphicsContext {
 
                             for i in 0..(attribute.byte_size / 16).max(1) {
                                 self.gl.vertex_attrib_pointer_f32(
-                                    attribute.index + i as u32,             // Index
+                                    attribute.index + i as u32,              // Index
                                     (attribute.byte_size as i32 / 4).min(4), // Number of components. It's assumed that components are always 32 bit.
                                     GL_FLOAT,
                                     false,
                                     attribute.byte_size as i32, // 0 means to assume tightly packed
-                                    (i * 16) as i32, // Offset
+                                    (i * 16) as i32,            // Offset
                                 );
 
                                 if per_instance {
