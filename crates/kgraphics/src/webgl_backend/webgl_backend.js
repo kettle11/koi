@@ -392,14 +392,11 @@ var gl_web_object = {
                     let buffer_index = u32_data[u32_offset++];
                     let per_instance = u32_data[u32_offset++];
 
-                    //console.log("ATTRIBUTE INDEX" + attribute_index);
                     let buffer = kwasm_get_object(buffer_index);
 
-                    console.log("HI");
                     if (buffer === null) {
                         gl.disableVertexAttribArray(attribute_index);
                     } else {
-                        // console.log("number_of_components: ", + number_of_components);
                         gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
                         let len = number_of_components / 4;
                         for (let i = 0; i < len; i++) {
@@ -418,13 +415,13 @@ var gl_web_object = {
                             } else {
                                 gl.vertexAttribDivisor(attribute_index + i, 0);
                             }
-                            gl.enableVertexAttribArray(attribute_index);
+                            gl.enableVertexAttribArray(attribute_index + i);
                         }
                     }
                     break;
                 }
                 case 4: {
-                    // SetVertexAttribute
+                    // SetVertexAttributeToConstant
                     let attribute_index = u32_data[u32_offset++];
                     let number_of_components = u32_data[u32_offset++];
 
@@ -559,10 +556,6 @@ var gl_web_object = {
                         if (instances == 0) {
                             gl.drawElements(gl.TRIANGLES, count, gl.UNSIGNED_INT, 0);
                         } else {
-                            console.log("HERE:");
-                            console.log("VERTEX COUNT ", count);
-                            console.log(instances);
-
                             gl.drawElementsInstanced(gl.TRIANGLES, count, gl.UNSIGNED_INT, 0, instances);
                         }
                     }
