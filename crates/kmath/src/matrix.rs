@@ -625,7 +625,7 @@ impl<T: NumericFloat> Matrix<T, 4, 4> {
     /// If used for a non-camera it will be the inverse of what is expected.
     pub fn looking_at(from: Vector<T, 3>, target: Vector<T, 3>, mut up: Vector<T, 3>) -> Self
     where
-        T: NumericSqrt + Neg<Output = T>,
+        T: NumericFloat + Neg<Output = T>,
     {
         // r: right
         // u: up
@@ -663,7 +663,7 @@ impl<T: NumericFloat> Matrix<T, 4, 4> {
         threshold: T,
     ) -> Self
     where
-        T: NumericSqrt + Neg<Output = T> + std::fmt::Debug,
+        T: NumericFloat + Neg<Output = T> + std::fmt::Debug,
     {
         // r: right
         // u: up

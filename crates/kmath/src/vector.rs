@@ -259,7 +259,7 @@ impl<T: Numeric> Vector<T, 4> {
     }
 }
 
-impl<T: Numeric + NumericSqrt, const N: usize> Vector<T, N> {
+impl<T: Numeric + NumericFloat, const N: usize> Vector<T, N> {
     /// Calculates the length of this `Vector`
     pub fn length(self) -> T {
         self.dot(self).numeric_sqrt()
@@ -270,8 +270,20 @@ impl<T: Numeric + NumericSqrt, const N: usize> Vector<T, N> {
     }
 
     /// Returns a new `Vector` with a length of 1.0
+    /// The length must not be 0.0 or nearly 0.0.
     pub fn normalized(self) -> Self {
         self / self.dot(self).numeric_sqrt()
+    }
+
+    /// Returns a new `Vector` with a length of 1.0
+    /// If the length is nearly 0.0 return [Self::ZERO]
+    pub fn normalized_or_zero(self) -> Self {
+        let one_div_length = T::ONE / self.dot(self).numeric_sqrt();
+        if one_div_length.is_finite() {
+            self * one_div_length
+        } else {
+            Self::ZERO
+        }
     }
 }
 

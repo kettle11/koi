@@ -25,13 +25,7 @@ pub trait Numeric:
 }
 
 pub trait NumericFloat:
-    Numeric
-    + NumericSqrt
-    + NumericAbs
-    + Neg<Output = Self>
-    + std::cmp::PartialOrd
-    + NumericSigNum
-    + 'static
+    Numeric + NumericAbs + Neg<Output = Self> + std::cmp::PartialOrd + NumericSigNum + 'static
 {
     const HALF: Self;
     const INFINITY: Self;
@@ -50,6 +44,8 @@ pub trait NumericFloat:
     fn acos(self) -> Self;
     fn round_numeric(self) -> Self;
     fn from_f32(f: f32) -> Self;
+    fn numeric_sqrt(self) -> Self;
+    fn is_finite(self) -> bool;
 }
 
 impl NumericFloat for f32 {
@@ -95,6 +91,12 @@ impl NumericFloat for f32 {
     fn from_f32(f: f32) -> Self {
         f
     }
+    fn numeric_sqrt(self) -> Self {
+        self.sqrt()
+    }
+    fn is_finite(self) -> bool {
+        <core::primitive::f32>::is_finite(self)
+    }
 }
 
 impl NumericFloat for f64 {
@@ -139,6 +141,12 @@ impl NumericFloat for f64 {
     fn from_f32(f: f32) -> Self {
         f as f64
     }
+    fn numeric_sqrt(self) -> Self {
+        self.sqrt()
+    }
+    fn is_finite(self) -> bool {
+        <core::primitive::f64>::is_finite(self)
+    }
 }
 
 pub trait NumericSigNum {
@@ -155,10 +163,6 @@ impl NumericSigNum for f64 {
     fn signum_numeric(self) -> Self {
         self.signum()
     }
-}
-
-pub trait NumericSqrt {
-    fn numeric_sqrt(self) -> Self;
 }
 
 pub trait NumericAbs {
@@ -188,12 +192,6 @@ impl NumericAbs for f32 {
     }
 }
 
-impl NumericSqrt for f32 {
-    fn numeric_sqrt(self) -> Self {
-        self.sqrt()
-    }
-}
-
 impl Numeric for f64 {
     const ZERO: Self = 0.0;
     const ONE: Self = 1.0;
@@ -214,12 +212,6 @@ impl Numeric for f64 {
 impl NumericAbs for f64 {
     fn numeric_abs(self) -> Self {
         self.abs()
-    }
-}
-
-impl NumericSqrt for f64 {
-    fn numeric_sqrt(self) -> Self {
-        self.sqrt()
     }
 }
 

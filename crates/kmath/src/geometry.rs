@@ -20,7 +20,7 @@ pub struct Line<T: Numeric, const DIMENSIONS: usize> {
     pub direction: Vector<T, DIMENSIONS>,
 }
 
-impl<T: Numeric + NumericSqrt, const DIMENSIONS: usize> Line<T, DIMENSIONS> {
+impl<T: Numeric + NumericFloat, const DIMENSIONS: usize> Line<T, DIMENSIONS> {
     pub fn new(a: Vector<T, DIMENSIONS>, b: Vector<T, DIMENSIONS>) -> Self {
         let direction = (b - a).normalized();
         Self {
