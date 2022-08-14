@@ -336,25 +336,6 @@ impl RenderPassTrait for RenderPass<'_> {
         todo!()
     }
 
-    fn set_instance_attribute<T>(
-        &mut self,
-        vertex_attribute: &VertexAttribute<T>,
-        buffer: Option<&DataBuffer<T>>,
-    ) {
-        if let Some(info) = vertex_attribute.info {
-            self.command_buffer
-                .commands
-                .push(Command::SetVertexAttribute);
-
-            self.command_buffer.u32_data.extend_from_slice(&[
-                info.index,
-                info.byte_size / 4, // Number of components
-                buffer.map_or(0, |b| b.js_object.index()),
-                1,
-            ]);
-        }
-    }
-
     fn set_vertex_attribute<T>(
         &mut self,
         vertex_attribute: &VertexAttribute<T>,
@@ -370,6 +351,25 @@ impl RenderPassTrait for RenderPass<'_> {
                 info.byte_size / 4, // Number of components
                 buffer.map_or(0, |b| b.js_object.index()),
                 0,
+            ]);
+        }
+    }
+
+    fn set_instance_attribute<T>(
+        &mut self,
+        vertex_attribute: &VertexAttribute<T>,
+        buffer: Option<&DataBuffer<T>>,
+    ) {
+        if let Some(info) = vertex_attribute.info {
+            self.command_buffer
+                .commands
+                .push(Command::SetVertexAttribute);
+
+            self.command_buffer.u32_data.extend_from_slice(&[
+                info.index,
+                info.byte_size / 4, // Number of components
+                buffer.map_or(0, |b| b.js_object.index()),
+                1,
             ]);
         }
     }

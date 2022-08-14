@@ -390,11 +390,12 @@ var gl_web_object = {
                     let attribute_index = u32_data[u32_offset++];
                     let number_of_components = u32_data[u32_offset++];
                     let buffer_index = u32_data[u32_offset++];
-                    let is_instance_attribute = u32_data[u32_offset++];
+                    let per_instance = u32_data[u32_offset++];
 
                     //console.log("ATTRIBUTE INDEX" + attribute_index);
                     let buffer = kwasm_get_object(buffer_index);
 
+                    console.log("HI");
                     if (buffer === null) {
                         gl.disableVertexAttribArray(attribute_index);
                     } else {
@@ -404,24 +405,22 @@ var gl_web_object = {
                         for (let i = 0; i < len; i++) {
                             gl.vertexAttribPointer(
                                 attribute_index + i,                // Index
-                                number_of_components.min(4), // Number of components. It's assumed that components are always 32 bit.
+                                Math.min(number_of_components, 4), // Number of components. It's assumed that components are always 32 bit.
                                 gl.FLOAT,
                                 false,
                                 number_of_components * 4, // 0 means to assume tightly packed
                                 i * 16, // Offset
                             );
-                        }
 
-                        if (per_instance) {
-                            gl.vertexAttribDivisor(attribute.index + i, 1);
-                        } else {
-                            gl.vertexAttribDivisor(attribute.index + i, 0);
+                            if (per_instance) {
+                                gl.vertexAttribDivisor(attribute_index + i, 1);
+
+                            } else {
+                                gl.vertexAttribDivisor(attribute_index + i, 0);
+                            }
+                            gl.enableVertexAttribArray(attribute_index);
                         }
-                        gl.enableVertexAttribArray(attribute_index);
                     }
-
-
-
                     break;
                 }
                 case 4: {
@@ -560,7 +559,11 @@ var gl_web_object = {
                         if (instances == 0) {
                             gl.drawElements(gl.TRIANGLES, count, gl.UNSIGNED_INT, 0);
                         } else {
-                            gl.drawElementsInstanced(gl.TRIANGLES, 0, count, instances);
+                            console.log("HERE:");
+                            console.log("VERTEX COUNT ", count);
+                            console.log(instances);
+
+                            gl.drawElementsInstanced(gl.TRIANGLES, count, gl.UNSIGNED_INT, 0, instances);
                         }
                     }
                     break;
