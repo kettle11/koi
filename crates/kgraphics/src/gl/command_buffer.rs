@@ -375,29 +375,35 @@ impl<'a> RenderPassTrait for RenderPass<'a> {
         }
     }
 
-    fn draw_triangles(&mut self, count: u32, buffer: &IndexBuffer) {
+    fn draw_triangles(&mut self, triangle_count: u32, buffer: &IndexBuffer) {
         self.command_buffer
             .actions
             .push(CommandBufferAction::SetIndexBuffer(buffer.clone()));
         self.command_buffer
             .actions
-            .push(CommandBufferAction::DrawTriangles(count))
+            .push(CommandBufferAction::DrawTriangles(triangle_count))
     }
 
-    fn draw_triangles_without_buffer(&mut self, count: u32) {
+    fn draw_triangles_without_buffer(&mut self, triangle_count: u32) {
         self.command_buffer
             .actions
-            .push(CommandBufferAction::DrawTriangleArrays(count))
+            .push(CommandBufferAction::DrawTriangleArrays(triangle_count))
     }
 
-    fn draw_triangles_instanced(&mut self, count: u32, buffer: &IndexBuffer, instances: u32) {
+    fn draw_triangles_instanced(
+        &mut self,
+        triangle_count: u32,
+        buffer: &IndexBuffer,
+        instances: u32,
+    ) {
         self.command_buffer
             .actions
             .push(CommandBufferAction::SetIndexBuffer(buffer.clone()));
         self.command_buffer
             .actions
             .push(CommandBufferAction::DrawTrianglesInstanced(
-                count, instances,
+                triangle_count,
+                instances,
             ))
     }
 

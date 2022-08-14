@@ -258,7 +258,7 @@ impl PipelineTrait for Pipeline {
         Ok(CubeMapProperty(self.get_property(name, SAMPLER_CUBE)?))
     }
 
-    fn get_uniform_block<T>(&self, name: &str) -> Result<UniformBlock<T>, String> {
+    fn get_uniform_block<T>(&self, _name: &str) -> Result<UniformBlock<T>, String> {
         todo!()
     }
 
@@ -330,10 +330,29 @@ impl RenderPassTrait for RenderPass<'_> {
 
     fn set_uniform_block<T>(
         &mut self,
-        uniform_block: &UniformBlock<T>,
-        buffer: Option<&DataBuffer<T>>,
+        _uniform_block: &UniformBlock<T>,
+        _buffer: Option<&DataBuffer<T>>,
     ) {
         todo!()
+    }
+
+    fn set_instance_attribute<T>(
+        &mut self,
+        vertex_attribute: &VertexAttribute<T>,
+        buffer: Option<&DataBuffer<T>>,
+    ) {
+        if let Some(info) = vertex_attribute.info {
+            self.command_buffer
+                .commands
+                .push(Command::SetVertexAttribute);
+
+            self.command_buffer.u32_data.extend_from_slice(&[
+                info.index,
+                info.byte_size / 4, // Number of components
+                buffer.map_or(0, |b| b.js_object.index()),
+                1,
+            ]);
+        }
     }
 
     fn set_vertex_attribute<T>(
@@ -350,6 +369,7 @@ impl RenderPassTrait for RenderPass<'_> {
                 info.index,
                 info.byte_size / 4, // Number of components
                 buffer.map_or(0, |b| b.js_object.index()),
+                0,
             ]);
         }
     }
@@ -480,18 +500,34 @@ impl RenderPassTrait for RenderPass<'_> {
             .extend_from_slice(&[x, y, width, height]);
     }
 
-    fn draw_triangles(&mut self, count: u32, buffer: &IndexBuffer) {
+    fn draw_triangles(&mut self, triangle_count: u32, index_buffer: &IndexBuffer) {
         self.command_buffer.commands.push(Command::DrawTriangles);
-        self.command_buffer
-            .u32_data
-            .extend_from_slice(&[count * 3, buffer.0.index()]);
+        self.command_buffer.u32_data.extend_from_slice(&[
+            triangle_count * 3,
+            index_buffer.0.index(),
+            0,
+        ]);
     }
 
-    fn draw_triangles_without_buffer(&mut self, count: u32) {
+    fn draw_triangles_without_buffer(&mut self, triangle_count: u32) {
         self.command_buffer.commands.push(Command::DrawTriangles);
         self.command_buffer
             .u32_data
-            .extend_from_slice(&[count * 3, 0]);
+            .extend_from_slice(&[triangle_count * 3, 0, 0]);
+    }
+
+    fn draw_triangles_instanced(
+        &mut self,
+        triangle_count: u32,
+        index_buffer: &IndexBuffer,
+        instances: u32,
+    ) {
+        self.command_buffer.commands.push(Command::DrawTriangles);
+        self.command_buffer.u32_data.extend_from_slice(&[
+            triangle_count * 3,
+            index_buffer.0.index(),
+            instances,
+        ]);
     }
 
     fn set_depth_mask(&mut self, value: bool) {
