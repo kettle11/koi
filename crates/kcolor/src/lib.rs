@@ -1,6 +1,7 @@
 mod color_constants;
 pub use color_constants::*;
 
+use kmath::Vec4;
 pub use kolor::spaces as color_spaces;
 pub use kolor::ColorSpace;
 use kserde::SerializeDeserialize;
@@ -215,6 +216,63 @@ impl Color {
 
     pub fn from_xyza(x: f32, y: f32, z: f32, alpha: f32) -> Self {
         Self { x, y, z, alpha }
+    }
+
+    /// Returned color will not necessarily be within the sRGB gamut.
+    pub fn from_temperature(temperature_kelvin: FType) -> Self {
+        // See here: https://en.wikipedia.org/wiki/Planckian_locus#Approximation
+        // And here: https://google.github.io/filament/Filament.html#lighting/directlighting/lightsparameterization
+        let k = temperature_kelvin;
+        let k2 = k * k;
+
+        // Convert to CIE 1960 (UCS)
+        let u = (0.860117757 + 1.54118254e-4 * k + 1.28641212e-7 * k2)
+            / (1.0 + 8.42420235e-4 * k + 7.08145163e-7 * k2);
+        let v = (0.317398726 + 4.22806245e-5 * k + 4.20481691e-8 * k2)
+            / (1.0 - 2.89741816e-5 * k + 1.61456053e-7 * k2);
+
+        // Convert to CIE 1931 xyY
+        let x0 = (3.0 * u) / (2.0 * u - 8.0 * v + 4.0);
+        let y0 = (2.0 * v) / (2.0 * u - 8.0 * v + 4.0);
+
+        // Convert to CIE XYZ
+        let x1 = x0 / y0;
+        let z1 = (1.0 - x0 - y0) / y0;
+
+        Self {
+            x: x1,
+            y: 1.0,
+            z: z1,
+            alpha: 1.0,
+        }
+    }
+
+    /// Returned color will not necessarily be within the sRGB gamut.
+    /// See here for more info about the Series D standard illuminant:
+    /// https://en.wikipedia.org/wiki/Standard_illuminant#Illuminant_series_D
+    pub fn from_standard_illuminant_seriesd_temperature(temperature_kelvin: FType) -> Self {
+        // See here: https://en.wikipedia.org/wiki/Standard_illuminant#Illuminant_series_D
+        let k = temperature_kelvin;
+
+        let ik = 1.0 / k;
+        let ik2 = ik * ik;
+        let x0 = if k <= 7000.0 {
+            0.244063 + 0.09911e3 * ik + 2.9678e6 * ik2 - 4.6070e9 * ik2 * ik
+        } else {
+            0.237040 + 0.24748e3 * ik + 1.9018e6 * ik2 - 2.0064e9 * ik2 * ik
+        };
+        let y0 = -3.0 * x0 * x0 + 2.87 * x0 - 0.275;
+
+        // Convert to CIE XYZ
+        let x1 = x0 / y0;
+        let z1 = (1.0 - x0 - y0) / y0;
+
+        Self {
+            x: x1,
+            y: 1.0,
+            z: z1,
+            alpha: 1.0,
+        }
     }
 }
 
