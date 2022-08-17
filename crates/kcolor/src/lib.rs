@@ -14,9 +14,9 @@ type FType = f32;
 /// to work with color.
 #[derive(Clone, Copy, Debug, PartialEq, PartialOrd, SerializeDeserialize)]
 pub struct Color {
-    x: FType,
-    y: FType,
-    z: FType,
+    pub x: FType,
+    pub y: FType,
+    pub z: FType,
     pub alpha: FType,
 }
 
@@ -214,7 +214,7 @@ impl Color {
         (self.x, self.y, self.z, self.alpha)
     }
 
-    pub fn from_xyza(x: f32, y: f32, z: f32, alpha: f32) -> Self {
+    pub const fn from_xyza(x: f32, y: f32, z: f32, alpha: f32) -> Self {
         Self { x, y, z, alpha }
     }
 
