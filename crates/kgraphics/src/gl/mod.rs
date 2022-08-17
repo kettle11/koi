@@ -458,6 +458,10 @@ impl GraphicsContextTrait for GraphicsContext {
             let mut gl_context_builder = GLContext::builder();
             gl_context_builder.high_resolution_framebuffer(settings.high_resolution_framebuffer);
             gl_context_builder.samples(settings.samples);
+            gl_context_builder.color_space(settings.color_space.map(|c| match c {
+                crate::ColorSpace::SRGB => kapp::ColorSpace::SRGB,
+                crate::ColorSpace::DisplayP3 => kapp::ColorSpace::DisplayP3,
+            }));
 
             #[cfg(target_arch = "wasm32")]
             gl_context_builder.webgl2();
@@ -499,6 +503,7 @@ impl GraphicsContextTrait for GraphicsContext {
         Self::new_with_settings(crate::GraphicsContextSettings {
             high_resolution_framebuffer: false,
             samples: 0,
+            color_space: Some(crate::ColorSpace::SRGB),
         })
     }
 

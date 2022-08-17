@@ -30,7 +30,7 @@ impl GLContext {
                 alpha_bits: 8,
                 depth_bits: 24,
                 stencil_bits: 8,
-                srgb: true,
+                color_space: Some(ColorSpace::SRGB),
                 webgl_version: WebGLVersion::One,
                 high_resolution_framebuffer: false,
             },
@@ -203,7 +203,7 @@ impl GLContextBuilder {
             self.gl_attributes.msaa_samples,
             self.gl_attributes.major_version,
             self.gl_attributes.minor_version,
-            self.gl_attributes.srgb,
+            self.gl_attributes.color_space == Some(ColorSpace::SRGB),
         )?)
     }
 }

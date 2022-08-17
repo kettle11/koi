@@ -75,11 +75,17 @@ pub enum BlendFactor {
     OneMinusSourceAlpha,
 }
 
+#[derive(Clone, Copy, Debug)]
+pub enum ColorSpace {
+    SRGB,
+    DisplayP3,
+}
 pub struct GraphicsContextSettings {
     /// If possible, should a high resolution framebuffer be requested?
     pub high_resolution_framebuffer: bool,
     /// How many MSAA samples should be requested for the framebuffer?
     pub samples: u8,
+    pub color_space: Option<ColorSpace>,
 }
 
 impl Default for GraphicsContextSettings {
@@ -87,6 +93,7 @@ impl Default for GraphicsContextSettings {
         Self {
             high_resolution_framebuffer: true,
             samples: 2,
+            color_space: Some(ColorSpace::SRGB),
         }
     }
 }

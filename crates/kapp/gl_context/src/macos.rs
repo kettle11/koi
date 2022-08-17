@@ -9,8 +9,8 @@ pub struct GLContext {
     pixel_format: *mut Object,
     vsync: VSync,
     high_dpi_framebuffer: bool,
-    srgb: bool,
     ns_window: Option<*mut Object>,
+    color_space: Option<ColorSpace>,
 }
 
 // This isn't really true because make_current must be called after GLContext is passed to another thread.
@@ -26,7 +26,11 @@ impl GLContextBuilder {
             NSOpenGLProfileVersion3_2Core
         };
         unsafe {
+            if self.gl_attributes.color_space == Some(ColorSpace::DisplayP3) {
+                assert_eq!(self.gl_attributes.color_bits, 64);
+            }
             let attrs = [
+                NSOpenGLPFAColorFloat as u32,
                 NSOpenGLPFAOpenGLProfile as u32,
                 profile_version as u32,
                 // NSOpenGLPFAClosestPolicy as u32,
@@ -63,8 +67,8 @@ impl GLContextBuilder {
                 vsync: VSync::On, // Enable VSync for the next window bound
                 // current_window: None,
                 high_dpi_framebuffer: self.gl_attributes.high_resolution_framebuffer,
-                srgb: self.gl_attributes.srgb,
                 ns_window: None,
+                color_space: self.gl_attributes.color_space,
             })
         }
     }
@@ -81,9 +85,9 @@ impl GLContext {
                 alpha_bits: 8,
                 depth_bits: 24,
                 stencil_bits: 8,
-                srgb: true,
                 webgl_version: WebGLVersion::One,
                 high_resolution_framebuffer: false,
+                color_space: Some(ColorSpace::SRGB),
             },
         }
     }
@@ -112,15 +116,21 @@ impl GLContextTrait for GLContext {
             let window_view: *mut Object = unsafe { msg_send![ns_window, contentView] };
 
             let () = unsafe {
-                if self.srgb {
+                if let Some(color_space) = self.color_space {
                     // There is a subtle bug here that will be left unaddressed for now.
                     // If a window is bound to this GL Context the window's color space will be set to sRGB.
                     // If the window is then bound to a non-sRGB context its color space will not reset.
                     // To set the color space properly in that scenario requires more research,
                     // and this code covers the vast majority of typical cases for now.
-                    let srgb_color_space: *mut Object =
-                        msg_send![class!(NSColorSpace), sRGBColorSpace];
-                    let () = msg_send![ns_window, setColorSpace: srgb_color_space];
+                    let color_space: *mut Object = match color_space {
+                        ColorSpace::DisplayP3 => {
+                            msg_send![class!(NSColorSpace), displayP3ColorSpace]
+                        }
+                        ColorSpace::SRGB => {
+                            msg_send![class!(NSColorSpace), sRGBColorSpace]
+                        }
+                    };
+                    let () = msg_send![ns_window, setColorSpace: color_space];
                 }
 
                 // Apparently this defaults to YES even without this call
@@ -236,12 +246,12 @@ use NSOpenGLContextParameter::*;
 pub enum NSOpenGLPixelFormatAttribute {
     NSOpenGLPFADoubleBuffer = 5,
     NSOpenGLPFAColorSize = 8,
-
     NSOpenGLPFAAlphaSize = 11,
     NSOpenGLPFADepthSize = 12,
     NSOpenGLPFAStencilSize = 13,
     NSOpenGLPFASampleBuffers = 55,
     NSOpenGLPFASamples = 56,
+    NSOpenGLPFAColorFloat = 58,
     NSOpenGLPFAAccelerated = 73,
     NSOpenGLPFAOpenGLProfile = 99,
 }

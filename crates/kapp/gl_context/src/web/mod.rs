@@ -104,7 +104,7 @@ impl GLContext {
                 stencil_bits: 8,
                 webgl_version: WebGLVersion::One,
                 high_resolution_framebuffer: false,
-                srgb: true,
+                color_space: None,
             },
         }
     }

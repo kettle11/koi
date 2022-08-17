@@ -1,7 +1,6 @@
 mod color_constants;
 pub use color_constants::*;
 
-use kmath::Vec4;
 pub use kolor::spaces as color_spaces;
 pub use kolor::ColorSpace;
 use kserde::SerializeDeserialize;
@@ -58,6 +57,7 @@ impl Color {
         }
     }
 
+    /// Create a new [Color] from sRGB red, green, blue, and alpha (transparency) bytes.
     pub fn new_from_bytes(red: u8, green: u8, blue: u8, alpha: u8) -> Self {
         Self::new(
             red as f32 / 255.0,

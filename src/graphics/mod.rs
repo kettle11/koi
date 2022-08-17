@@ -167,6 +167,7 @@ fn setup_graphics(world: &mut World) {
         high_resolution_framebuffer: true,
         /// How many MSAA samples the window framebuffer should have
         samples: 4,
+        color_space: Some(kgraphics::ColorSpace::SRGB),
     });
 
     #[cfg(not(feature = "headless"))]

@@ -25,7 +25,7 @@ pub mod sdl;
 pub use sdl::GLContext;
 
 pub mod prelude {
-    pub use super::common::{GLContextBuilder, GLContextTrait, SetWindowError, VSync};
+    pub use super::common::{ColorSpace, GLContextBuilder, GLContextTrait, SetWindowError, VSync};
     pub use super::GLContext;
 }
 

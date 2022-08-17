@@ -5,15 +5,21 @@ pub struct GLContextAttributes {
     pub alpha_bits: u8,
     pub depth_bits: u8,
     pub stencil_bits: u8,
-    pub srgb: bool,
     /// msaa_samples hould be a multiple of 2
     pub msaa_samples: u8,
     /// WebGL version is only relevant for web.
     pub webgl_version: WebGLVersion,
     /// Mac specific, should the framebuffer be allocated with a higher resolution.
     pub high_resolution_framebuffer: bool,
+    pub color_space: Option<ColorSpace>,
 }
 
+#[derive(PartialEq, Eq, Clone, Copy)]
+pub enum ColorSpace {
+    SRGB,
+    /// Only works on Mac for now.
+    DisplayP3,
+}
 #[allow(unused)]
 
 pub enum WebGLVersion {
@@ -93,8 +99,13 @@ impl GLContextBuilder {
 
     /// Sets if the context should use the sRGB color space.
     /// This has no effect on Web.
-    pub fn srgb(&mut self, srgb: bool) -> &mut Self {
-        self.gl_attributes.srgb = srgb;
+    pub fn color_space(&mut self, color_space: Option<ColorSpace>) -> &mut Self {
+        self.gl_attributes.color_space = color_space;
+
+        match color_space {
+            Some(ColorSpace::DisplayP3) => self.gl_attributes.color_bits = 64,
+            None | Some(ColorSpace::SRGB) => {}
+        }
         self
     }
 
