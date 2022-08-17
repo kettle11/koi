@@ -136,6 +136,18 @@ pub struct UniformBlock<T> {
     phantom: std::marker::PhantomData<T>,
 }
 
+impl<T> UniformBlock<T> {
+    pub const fn from_location(location: u32) -> Self {
+        Self {
+            info: Some(UniformBlockInfo {
+                size_bytes: std::mem::size_of::<T>() as u32,
+                location,
+            }),
+            phantom: std::marker::PhantomData,
+        }
+    }
+}
+
 #[derive(Clone)]
 struct UniformBlockInfo {
     size_bytes: u32,
@@ -385,7 +397,16 @@ impl<'a> PipelineBuilderTrait for PipelineBuilder<'a> {
                     .gl
                     .get_uniform_block_name_and_size(program, i)
                     .unwrap();
-                self.g.gl.uniform_block_binding(program, i, i);
+
+                fn get_id(name: &str) -> Option<u32> {
+                    Some(name[2..name.find('_')?].parse().ok()?)
+                }
+
+                let binding_location = get_id(&name).ok_or_else(|| "Uniform blocks must be formatted with ub[binding_index]_name. EX: ub0_scene_info.")? ;
+                self.g
+                    .gl
+                    .uniform_block_binding(program, i, binding_location);
+
                 uniform_blocks.insert(
                     name,
                     UniformBlockInfo {
@@ -1020,7 +1041,7 @@ impl GraphicsContextTrait for GraphicsContext {
                         self.gl.bind_buffer_range(
                             GL_UNIFORM_BUFFER,
                             block.location, // Index
-                            buffer, // Number of components. It's assumed that components are always 32 bit.
+                            buffer,
                             offset as isize,
                             len as isize,
                         );
