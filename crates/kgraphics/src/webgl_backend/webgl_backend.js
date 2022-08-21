@@ -398,10 +398,11 @@ var gl_web_object = {
                         gl.disableVertexAttribArray(attribute_index);
                     } else {
                         gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
-                        let len = number_of_components / 4;
+
+                        let len = Math.max(number_of_components / 4, 1);
                         for (let i = 0; i < len; i++) {
                             gl.vertexAttribPointer(
-                                attribute_index + i,                // Index
+                                attribute_index + i,               // Index
                                 Math.min(number_of_components, 4), // Number of components. It's assumed that components are always 32 bit.
                                 gl.FLOAT,
                                 false,
@@ -411,7 +412,6 @@ var gl_web_object = {
 
                             if (per_instance) {
                                 gl.vertexAttribDivisor(attribute_index + i, 1);
-
                             } else {
                                 gl.vertexAttribDivisor(attribute_index + i, 0);
                             }
