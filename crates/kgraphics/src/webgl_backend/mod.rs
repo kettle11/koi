@@ -155,12 +155,6 @@ pub struct VertexAttributeInfo {
     byte_size: u32,
 }
 
-#[derive(Clone, Copy)]
-pub struct UniformBlockInfo {
-    location: u32,
-    size_bytes: u32,
-}
-
 #[derive(Clone)]
 pub struct Pipeline {
     program: JSObjectDynamic,
@@ -184,10 +178,28 @@ pub struct VertexAttribute<T> {
     phantom: std::marker::PhantomData<T>,
 }
 
+#[derive(Clone, Copy)]
+pub struct UniformBlockInfo {
+    location: u32,
+    size_bytes: u32,
+}
+
 #[derive(Clone)]
 pub struct UniformBlock<T> {
     info: Option<UniformBlockInfo>,
     phantom: std::marker::PhantomData<T>,
+}
+
+impl<T> UniformBlock<T> {
+    pub const fn from_location(location: u32) -> Self {
+        Self {
+            info: Some(UniformBlockInfo {
+                size_bytes: std::mem::size_of::<T>() as u32,
+                location,
+            }),
+            phantom: std::marker::PhantomData,
+        }
+    }
 }
 
 // These implementations are safe because their inner [JSObjectDynamic]
@@ -1244,7 +1256,7 @@ impl<'a> PipelineBuilderTrait for PipelineBuilder<'a> {
                 &self.vertex.unwrap().js_object,
                 &self.fragment.unwrap().js_object,
             )
-            .unwrap();
+            .ok_or_else(|| "Could not compile shader".to_string())?;
 
         let mut uniforms = HashMap::new();
 

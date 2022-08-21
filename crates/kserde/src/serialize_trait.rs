@@ -23,13 +23,13 @@ pub trait Serializer: Sized {
 
     fn begin_object(&mut self);
     fn end_object(&mut self);
-    /// Only call this in-between [begin_object] and [end_object] calls
+    /// Only call this in-between [Self::begin_object] and [Self::end_object] calls
     /// Assigns a property label to something but `value` must be separately called.
     fn property(&mut self, name: &str);
 
     fn begin_array(&mut self);
     fn end_array(&mut self);
-    /// Only call this in-between [begin_array] and [end_array] calls
+    /// Only call this in-between [Self::begin_array] and [Self::end_array] calls
     fn value<V: Serialize<Self>>(&mut self, value: &V);
 
     fn get_context(&self) -> &Self::Context;

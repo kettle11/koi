@@ -81,7 +81,7 @@ impl<T: NumericFloat + std::fmt::Debug> Quaternion<T> {
     /// Spherically interpolate quaternions.
     /// Not commutative, constant velocity, minimal torque.
     /// See this article for details:
-    /// http://number-none.com/product/Understanding%20Slerp,%20Then%20Not%20Using%20It/
+    /// <http://number-none.com/product/Understanding%20Slerp,%20Then%20Not%20Using%20It/>
     pub fn slerp(self, mut other: Self, amount: T) -> Self {
         let mut dot = self.0.dot(other.0);
         if dot < T::ZERO {
