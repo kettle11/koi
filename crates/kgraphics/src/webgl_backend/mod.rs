@@ -102,6 +102,7 @@ pub struct VertexFunction {
 #[derive(Debug, Clone)]
 pub struct DataBuffer<T> {
     js_object: JSObjectDynamic,
+    len: usize,
     phantom: std::marker::PhantomData<T>,
 }
 #[derive(Debug, Clone)]
@@ -128,6 +129,7 @@ enum Command {
     SetCubeMapUniform = 15,
     SetDepthMask = 16,
     BlitFramebuffer = 17,
+    SetUniformBlock = 18,
 }
 
 pub struct CommandBuffer {
@@ -342,10 +344,18 @@ impl RenderPassTrait for RenderPass<'_> {
 
     fn set_uniform_block<T>(
         &mut self,
-        _uniform_block: &UniformBlock<T>,
-        _buffer: Option<&DataBuffer<T>>,
+        uniform_block: &UniformBlock<T>,
+        buffer: Option<&DataBuffer<T>>,
     ) {
-        todo!()
+        if let Some(info) = uniform_block.info.clone() {
+            self.command_buffer.commands.push(Command::SetUniformBlock);
+            self.command_buffer.u32_data.extend_from_slice(&[
+                info.location,
+                buffer.map_or(0, |b| b.js_object.index()),
+                0,
+                buffer.map_or(0, |b| b.len as u32),
+            ]);
+        }
     }
 
     fn set_vertex_attribute<T>(
@@ -894,17 +904,16 @@ impl GraphicsContextTrait for GraphicsContext {
     }
 
     fn new_data_buffer<T>(&mut self, data: &[T]) -> Result<DataBuffer<T>, GraphicsError> {
+        let len = std::mem::size_of::<T>() * data.len();
         let js_object = self
             .js
             .new_data_buffer
-            .call_raw(&[
-                data.as_ptr() as u32,
-                (data.len() * std::mem::size_of::<T>()) as u32,
-            ])
+            .call_raw(&[data.as_ptr() as u32, len as u32])
             .unwrap();
 
         Ok(DataBuffer {
             js_object: js_object.to_dynamic(),
+            len,
             phantom: std::marker::PhantomData,
         })
     }

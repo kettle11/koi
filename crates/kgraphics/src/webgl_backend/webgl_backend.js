@@ -605,6 +605,24 @@ var gl_web_object = {
                     gl.invalidateFramebuffer(gl.READ_FRAMEBUFFER, [gl.COLOR_ATTACHMENT0, gl.DEPTH_ATTACHMENT]);
                     break;
                 }
+                case 18: {
+                    // SetUniformBlock
+                    let block_location = u32_data[u32_offset++];
+                    let buffer_index = u32_data[u32_offset++];
+                    let offset = u32_data[u32_offset++];
+                    let len = u32_data[u32_offset++];
+
+                    let buffer = kwasm_get_object(buffer_index);
+
+                    self.gl.bindBufferRange(
+                        gl.UNIFORM_BUFFER,
+                        block_location, // Index
+                        buffer,
+                        offset,
+                        len,
+                    );
+
+                }
             }
         }
 

@@ -585,7 +585,7 @@ impl GraphicsContextTrait for GraphicsContext {
                 .buffer_data_u8_slice(GL_ARRAY_BUFFER.0, slice_to_bytes(data), GL_STATIC_DRAW.0);
             Ok(DataBuffer {
                 buffer,
-                len: data.len(),
+                len: std::mem::size_of::<T>() * data.len(),
                 phantom: std::marker::PhantomData,
             })
         }
