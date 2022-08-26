@@ -40,6 +40,7 @@ impl RenderTargetTexture {
                     None,
                     size.x as u32,
                     size.y as u32,
+                    1,
                     self.pixel_format,
                     self.texture_settings,
                 )
@@ -52,6 +53,7 @@ impl RenderTargetTexture {
                         None,
                         size.x as u32,
                         size.y as u32,
+                        1,
                         self.pixel_format,
                         TextureSettings {
                             msaa_samples: 0,

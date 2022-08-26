@@ -275,6 +275,34 @@ impl GL {
     */
 
     #[allow(clippy::too_many_arguments)]
+    pub unsafe fn tex_image_3d(
+        &self,
+        target: GLenum,
+        level: i32,
+        internal_format: i32,
+        width: i32,
+        height: i32,
+        depth: i32,
+        border: i32,
+        format: GLenum,
+        type_: GLenum,
+        pixels: Option<&[u8]>,
+    ) {
+        self.gl.TexImage3D(
+            target,
+            level,
+            internal_format,
+            width,
+            height,
+            depth,
+            border,
+            format,
+            type_,
+            pixels.map(|p| p.as_ptr()).unwrap_or(std::ptr::null()) as *const std::ffi::c_void,
+        );
+    }
+
+    #[allow(clippy::too_many_arguments)]
     pub unsafe fn tex_image_2d(
         &self,
         target: GLenum,
@@ -320,6 +348,36 @@ impl GL {
             y,
             width,
             height,
+            format,
+            type_,
+            pixels.as_ptr() as *const std::ffi::c_void,
+        );
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    pub unsafe fn tex_sub_image_3d(
+        &self,
+        target: GLenum,
+        level: i32,
+        x: i32,
+        y: i32,
+        z: i32,
+        width: i32,
+        height: i32,
+        depth: i32,
+        format: GLenum,
+        type_: GLenum,
+        pixels: &[u8],
+    ) {
+        self.gl.TexSubImage3D(
+            target,
+            level,
+            x,
+            y,
+            z,
+            width,
+            height,
+            depth,
             format,
             type_,
             pixels.as_ptr() as *const std::ffi::c_void,

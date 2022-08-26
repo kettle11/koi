@@ -176,7 +176,7 @@ pub(super) fn load_gltf_as_world(
     commands.apply(&mut gltf_world);
     commands.clear();
 
-    // flatten_world(&mut gltf_world);
+    flatten_world(&mut gltf_world);
     // Flatten world. This should be made an option later.
     // This updates all transform hierarchies, sets local transforms to `GlobalTransforms, and then removes `HierarchyNodes`
     // Doing this makes sense for static geometry like level objects, but doesn't make sense for GlTfs which would have

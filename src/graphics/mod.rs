@@ -244,6 +244,7 @@ fn setup_graphics(world: &mut World) {
             Some(&[255, 255, 255, 255]),
             1,
             1,
+            1,
             PixelFormat::RGBA8Unorm,
             TextureSettings {
                 srgb: false,
@@ -397,12 +398,14 @@ impl GraphicsInner {
         data: Option<&[u8]>,
         width: u32,
         height: u32,
+        depth: u32,
         pixel_format: PixelFormat,
         texture_settings: kgraphics::TextureSettings,
     ) -> Result<Texture, GraphicsError> {
         Ok(Texture(self.context.new_texture(
             width,
             height,
+            depth,
             data,
             pixel_format,
             texture_settings,

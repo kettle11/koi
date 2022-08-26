@@ -6,6 +6,7 @@ license = "Zlib OR Apache-2.0 OR MIT"
 
 [dependencies]
 kserde = {path = "../kserde"}
+num-traits = "0.2.15"
 
 # [dev-dependencies]
 # bencher = "0.1.5"

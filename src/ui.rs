@@ -34,6 +34,7 @@ impl UIManager {
                     Some(&empty_data),
                     size,
                     size,
+                    1,
                     kgraphics::PixelFormat::RGBA8Unorm,
                     TextureSettings::default(),
                 )
@@ -230,6 +231,7 @@ impl UIManager {
                         Some(&self.drawer.texture_atlas.data),
                         self.drawer.texture_atlas.width as u32,
                         self.drawer.texture_atlas.height as u32,
+                        1,
                         kgraphics::PixelFormat::R8Unorm,
                         TextureSettings {
                             srgb: false,
@@ -250,8 +252,10 @@ impl UIManager {
                     images_texture,
                     rect.x,
                     rect.y,
+                    0,
                     rect.width,
                     rect.height,
+                    1,
                     Some(data),
                     kgraphics::PixelFormat::RGBA8Unorm,
                     TextureSettings::default(),

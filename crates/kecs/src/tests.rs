@@ -420,6 +420,18 @@ fn despawn_and_add_world() {
     world.add_world(&mut world_b);
 }
 
+#[test]
+fn despawn_and_add_world1() {
+    let mut world = World::new();
+    let entity_a = world.spawn(A);
+
+    let mut world_b = world.clone_world();
+    let e = world_b.spawn(A);
+    world_b.despawn(e).unwrap();
+
+    world.add_world(&mut world_b);
+}
+
 /*
 #[test]
 fn componentless_query() {

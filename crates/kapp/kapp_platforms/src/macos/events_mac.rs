@@ -702,7 +702,7 @@ extern "C" fn dealloc(this: &Object, _sel: Sel) {
         let marked_text: *mut Object = *this.get_ivar("markedText");
         let _: () = msg_send![marked_text, release];
         let state: *mut c_void = *this.get_ivar("kappState");
-        Box::from_raw(state as *mut WindowState);
+        drop(Box::from_raw(state as *mut WindowState));
     }
 }
 

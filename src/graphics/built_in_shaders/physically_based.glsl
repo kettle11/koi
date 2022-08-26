@@ -390,12 +390,12 @@ void main()
     color += emissive;
 
     // HDR tonemapping
-   // color = color / (color + vec3(1.0));
+    // color = color / (color + vec3(1.0));
 
     //vec3 dither = ScreenSpaceDither(gl_FragCoord.xy) * p_dither_scale;
     
     // Convert color to sRGB space for output
-   // color = pow(color, vec3(1.0/2.2)) + dither; 
+    // color = pow(color, vec3(1.0/2.2)) + dither; 
         
     color_out = vec4(color, alpha);
 

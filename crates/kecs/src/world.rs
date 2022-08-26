@@ -629,7 +629,7 @@ impl World {
             } = destination;
 
             let mut entity_migrator =
-                EntityMigrator::new(&old_entities.free_entities, migrator_offset);
+                EntityMigrator::new(&new_entities.free_entities, migrator_offset);
 
             for old_archetype in old_archetypes {
                 let mut new_channels = Vec::new();

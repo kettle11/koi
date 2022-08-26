@@ -68,6 +68,10 @@ impl<T: NumericFloat + std::fmt::Debug> Quaternion<T> {
 
     /// Forward must be normalized
     pub fn from_forward_up(forward: Vector<T, 3>, up: Vector<T, 3>) -> Self {
+        // TODO: Audit this function.
+        // Why is it inversed?
+        // Why can't the quaternion be direfctly constructed?
+
         // This could be made more efficient.
         let looking_at_matrix =
             <Matrix<T, 4, 4>>::looking_at(<Vector<T, 3>>::ZERO, forward, up).inversed();

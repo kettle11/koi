@@ -616,6 +616,7 @@ impl GraphicsContextTrait for GraphicsContext {
         &mut self,
         width: u32,
         height: u32,
+        depth: u32,
         data: Option<&[u8]>,
         pixel_format_in: PixelFormat,
         texture_settings: TextureSettings,
@@ -651,25 +652,43 @@ impl GraphicsContextTrait for GraphicsContext {
                             texture_settings.srgb,
                         );
                     self.gl.bind_texture(target, Some(texture));
-                    self.gl.tex_image_2d(
-                        target,
-                        0,                         /* mip level */
-                        inner_pixel_format as i32, // Internal format, how the GPU stores these pixels.
-                        width as i32,
-                        height as i32,
-                        0,                    /* border: must be 0 */
-                        GLenum(pixel_format), // This doesn't necessarily need to match the internal_format
-                        GLenum(type_),
-                        None,
-                    );
+
+                    if depth > 1 {
+                        self.gl.tex_image_3d(
+                            target,
+                            0,                         /* mip level */
+                            inner_pixel_format as i32, // Internal format, how the GPU stores these pixels.
+                            width as i32,
+                            height as i32,
+                            depth as i32,
+                            0,                    /* border: must be 0 */
+                            GLenum(pixel_format), // This doesn't necessarily need to match the internal_format
+                            GLenum(type_),
+                            None,
+                        );
+                    } else {
+                        self.gl.tex_image_2d(
+                            target,
+                            0,                         /* mip level */
+                            inner_pixel_format as i32, // Internal format, how the GPU stores these pixels.
+                            width as i32,
+                            height as i32,
+                            0,                    /* border: must be 0 */
+                            GLenum(pixel_format), // This doesn't necessarily need to match the internal_format
+                            GLenum(type_),
+                            None,
+                        );
+                    }
                 }
 
                 self.update_texture(
                     &texture,
                     0,
                     0,
+                    0,
                     width,
                     height,
+                    depth,
                     data,
                     pixel_format_in,
                     texture_settings,
@@ -706,8 +725,10 @@ impl GraphicsContextTrait for GraphicsContext {
         texture: &Texture,
         x: u32,
         y: u32,
+        z: u32,
         width: u32,
         height: u32,
+        depth: u32,
         data: Option<&[u8]>,
         pixel_format_in: PixelFormat,
         texture_settings: TextureSettings,
@@ -745,17 +766,33 @@ impl GraphicsContextTrait for GraphicsContext {
             self.gl.bind_texture(target, Some(texture));
 
             if let Some(data) = data {
-                self.gl.tex_sub_image_2d(
-                    target,
-                    0, /* mip level */
-                    x as i32,
-                    y as i32,
-                    width as i32,
-                    height as i32,
-                    GLenum(pixel_format), // This doesn't necessarily need to match the internal_format
-                    GLenum(type_),
-                    data,
-                );
+                if depth > 1 {
+                    self.gl.tex_sub_image_3d(
+                        target,
+                        0, /* mip level */
+                        x as i32,
+                        y as i32,
+                        z as i32,
+                        width as i32,
+                        height as i32,
+                        depth as i32,
+                        GLenum(pixel_format), // This doesn't necessarily need to match the internal_format
+                        GLenum(type_),
+                        data,
+                    );
+                } else {
+                    self.gl.tex_sub_image_2d(
+                        target,
+                        0, /* mip level */
+                        x as i32,
+                        y as i32,
+                        width as i32,
+                        height as i32,
+                        GLenum(pixel_format), // This doesn't necessarily need to match the internal_format
+                        GLenum(type_),
+                        data,
+                    );
+                }
             }
 
             let minification_filter = minification_filter_to_gl_enum(

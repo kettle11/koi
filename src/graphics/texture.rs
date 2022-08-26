@@ -68,6 +68,7 @@ pub fn new_texture_from_texture_load_data(
                 Some(data.as_u8_array()),
                 texture_load_data.width,
                 texture_load_data.height,
+                1,
                 texture_load_data.pixel_format,
                 texture_settings,
             )
@@ -396,6 +397,7 @@ pub fn initialize_static_textures(graphics: &mut Graphics, textures: &mut Assets
                 Some(&[255, 255, 255, 255]),
                 1,
                 1,
+                1,
                 PixelFormat::RGBA8Unorm,
                 TextureSettings {
                     srgb: false,
@@ -409,6 +411,7 @@ pub fn initialize_static_textures(graphics: &mut Graphics, textures: &mut Assets
         graphics
             .new_texture(
                 Some(&[0, 0, 0, 255]),
+                1,
                 1,
                 1,
                 PixelFormat::RGBA8Unorm,
@@ -426,6 +429,7 @@ pub fn initialize_static_textures(graphics: &mut Graphics, textures: &mut Assets
                 Some(&[128, 128, 255, 255]),
                 1,
                 1,
+                1,
                 PixelFormat::RGBA8Unorm,
                 TextureSettings {
                     srgb: false,
@@ -439,6 +443,7 @@ pub fn initialize_static_textures(graphics: &mut Graphics, textures: &mut Assets
         graphics
             .new_texture(
                 Some(&[0, 0, 255, 255]),
+                1,
                 1,
                 1,
                 PixelFormat::RGBA8Unorm,
