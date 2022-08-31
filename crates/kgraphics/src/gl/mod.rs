@@ -61,6 +61,7 @@ impl RenderTargetTrait for RenderTarget {
         Texture {
             texture_type: TextureType::DefaultFramebuffer,
             mip: 0,
+            is_3d: false,
         }
     }
 }
@@ -92,6 +93,7 @@ enum TextureType {
 pub struct Texture {
     texture_type: TextureType,
     mip: u8,
+    is_3d: bool,
 }
 
 impl Texture {
@@ -99,6 +101,7 @@ impl Texture {
         Texture {
             texture_type: self.texture_type.clone(),
             mip: level,
+            is_3d: self.is_3d,
         }
     }
 }
@@ -118,6 +121,7 @@ impl CubeMap {
                 texture_native: self.texture,
             },
             mip: 0,
+            is_3d: false,
         }
     }
 }
@@ -312,7 +316,14 @@ impl PipelineTrait for Pipeline {
 
     fn get_texture_property(&self, name: &str) -> Result<TextureProperty, PropertyError> {
         Ok(TextureProperty {
-            location: self.get_property(name, GL_SAMPLER_2D)?,
+            location: if let Some(uniform) = self.uniforms.get(name) {
+                match GLenum(uniform.uniform_type) {
+                    GL_SAMPLER_2D | GL_SAMPLER_3D => Some(uniform.location),
+                    _ => Err(PropertyError::IncorrectType)?,
+                }
+            } else {
+                None
+            },
         })
     }
 
@@ -387,7 +398,6 @@ impl<'a> PipelineBuilderTrait for PipelineBuilder<'a> {
 
         let mut uniforms = HashMap::new();
         let mut uniform_blocks = HashMap::new();
-
         let mut vertex_attributes = HashMap::new();
         unsafe {
             let uniform_block_count = self.g.gl.get_active_uniform_blocks(program);
@@ -507,7 +517,6 @@ impl GraphicsContextTrait for GraphicsContext {
             // A random comment on the internet indicates that it may be faster to not use VAOs
             // if most meshes share the exact same layout. There are fewer calls of overhead.
             let vertex_array_object = gl.create_vertex_array().unwrap();
-
             gl.bind_vertex_array(Some(vertex_array_object));
 
             gl.enable(GL_TEXTURE_CUBE_MAP_SEAMLESS);
@@ -628,6 +637,7 @@ impl GraphicsContextTrait for GraphicsContext {
                 let texture = Texture {
                     texture_type: TextureType::Texture(texture),
                     mip: 0,
+                    is_3d: depth > 1,
                 };
                 {
                     let (target, texture) = match texture.texture_type {
@@ -654,6 +664,7 @@ impl GraphicsContextTrait for GraphicsContext {
                     self.gl.bind_texture(target, Some(texture));
 
                     if depth > 1 {
+                        println!("HERE");
                         self.gl.tex_image_3d(
                             target,
                             0,                         /* mip level */
@@ -715,6 +726,7 @@ impl GraphicsContextTrait for GraphicsContext {
                 Ok(Texture {
                     texture_type: TextureType::RenderBuffer(renderbuffer),
                     mip: 0,
+                    is_3d: depth > 1,
                 })
             }
         }
@@ -1099,6 +1111,9 @@ impl GraphicsContextTrait for GraphicsContext {
                                     (i * 16) as i32,            // Offset
                                 );
 
+                                println!("ATTRIBUTE INDEX: {:?}", attribute.index);
+                                println!("ATTRIBUTE BYTE SIZE: {:?}", attribute.byte_size);
+
                                 if per_instance {
                                     self.gl.vertex_attrib_divisor(attribute.index + i, 1);
                                 } else {
@@ -1152,10 +1167,13 @@ impl GraphicsContextTrait for GraphicsContext {
                         self.gl
                             .uniform_matrix_4_f32_slice(Some(location), false, data);
                     }
-                    SetTextureUnit((uniform_location, unit, texture)) => {
+                    SetTextureUnit((uniform_location, unit, texture, is_3d)) => {
                         self.gl.uniform_1_i32(Some(uniform_location), unit as i32);
                         self.gl.active_texture(GL_TEXTURE0.0 + unit as u32);
-                        self.gl.bind_texture(GL_TEXTURE_2D, texture);
+                        self.gl.bind_texture(
+                            if is_3d { GL_TEXTURE_3D } else { GL_TEXTURE_2D },
+                            texture,
+                        );
                     }
                     SetTextureUnitToCubeMap((uniform_location, unit, texture)) => {
                         self.gl.uniform_1_i32(Some(uniform_location), unit as i32);

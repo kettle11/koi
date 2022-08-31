@@ -66,6 +66,7 @@ impl GL {
         self.gl
             .UniformBlockBinding(program.0, uniform_block_index, uniform_block_binding)
     }
+    
     pub unsafe fn get_uniform_block_name_and_size(
         &self,
         program: Program,

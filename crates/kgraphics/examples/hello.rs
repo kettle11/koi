@@ -14,15 +14,11 @@ async fn run_async(app: Application, events: Events) {
         .new_window()
         .title("kgraphics hello")
         .size(800, 800)
-        .build()
-        .unwrap();
-
+        .build();
     let mut g = GraphicsContext::new_with_settings(GraphicsContextSettings {
         high_resolution_framebuffer: true,
         ..Default::default()
-    })
-    .unwrap();
-
+    });
     let vertex_function = g
         .new_vertex_function(
             r#"layout(location = 0) in vec3 a_position;
@@ -33,7 +29,6 @@ async fn run_async(app: Application, events: Events) {
             }"#,
         )
         .unwrap();
-
     let fragment_function = g
         .new_fragment_function(
             r#"
@@ -93,17 +88,14 @@ async fn run_async(app: Application, events: Events) {
             Event::Draw { .. } => {
                 //println!("DRAW--------------------");
 
-                let render_texture = render_target.current_frame().unwrap();
                 {
                     let mut command_buffer = g.new_command_buffer();
 
                     // Render pass
                     {
-                        let mut render_pass = command_buffer.begin_render_pass(
-                            Some(&render_texture),
-                            Some(&render_texture),
-                            None,
-                            Some(color),
+                        let mut render_pass = command_buffer.begin_render_pass_with_framebuffer(
+                            &Framebuffer::default(),
+                            Some((1.0, 0.0, 0.0, 1.0)),
                         );
 
                         render_pass.set_pipeline(&pipeline);
@@ -115,7 +107,7 @@ async fn run_async(app: Application, events: Events) {
                         render_pass.set_vec4_property(&custom_color, triangle_color);
                         render_pass.draw_triangles(1, &index_buffer);
                     }
-
+                    command_buffer.present();
                     g.commit_command_buffer(command_buffer);
                 }
 

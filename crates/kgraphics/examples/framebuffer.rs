@@ -11,14 +11,12 @@ async fn run_async(app: Application, events: Events) {
         .new_window()
         .title("kgraphics hello")
         .size(800, 800)
-        .build()
-        .unwrap();
+        .build();
 
     let mut g = GraphicsContext::new_with_settings(GraphicsContextSettings {
         high_resolution_framebuffer: true,
         ..Default::default()
-    })
-    .unwrap();
+    });
 
     let vertex_function = g
         .new_vertex_function(
@@ -75,6 +73,7 @@ async fn run_async(app: Application, events: Events) {
         .new_texture(
             256,
             256,
+            1,
             None,
             PixelFormat::RGBA8Unorm,
             TextureSettings::default(),
@@ -144,6 +143,7 @@ async fn run_async(app: Application, events: Events) {
 
                     // Render pass
 
+                    /*
                     {
                         let mut render_pass = command_buffer.begin_render_pass(
                             Some(&target_color_texture),
@@ -161,16 +161,15 @@ async fn run_async(app: Application, events: Events) {
                         // render_pass.set_vec4_property(&custom_color, triangle_color);
                         render_pass.draw_triangles(1, &index_buffer);
                     }
+                    */
 
                     // Second render pass
                     {
-                        let render_texture = render_target.current_frame().unwrap();
+                        //  let render_texture = render_target.current_frame();
 
-                        let mut render_pass = command_buffer.begin_render_pass(
-                            Some(&render_texture),
-                            None,
-                            None,
-                            Some(color),
+                        let mut render_pass = command_buffer.begin_render_pass_with_framebuffer(
+                            &Framebuffer::default(),
+                            Some((0.0, 0.0, 0.0, 1.0)),
                         );
 
                         render_pass.set_pipeline(&fullscreen_pipeline);
@@ -186,6 +185,7 @@ async fn run_async(app: Application, events: Events) {
                         render_pass.draw_triangles_without_buffer(1);
                     }
 
+                    command_buffer.present();
                     g.commit_command_buffer(command_buffer);
                 }
 

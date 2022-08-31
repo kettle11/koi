@@ -48,9 +48,9 @@ extern "C" fn kwasm_promise_complete(js_future_inner: u32, result: u32) {
 struct JSFutureInner {
     running: bool,
     /// Must return a JS function that accepts 0 args and returns a promise.
-    run_on_promise_thread: Option<Box<dyn Fn() -> JSObject + Send + Sync>>,
-    on_completion: fn(JSObject) -> Option<Box<dyn Any + Send + Sync>>,
-    result: Option<Box<dyn Any + Send + Sync>>,
+    run_on_promise_thread: Option<Box<dyn Fn() -> JSObject + Send>>,
+    on_completion: fn(JSObject) -> Option<Box<dyn Any + Send>>,
+    result: Option<Box<dyn Any + Send>>,
     waker: Option<Waker>,
 }
 
@@ -62,8 +62,8 @@ pub struct JSFuture {
 
 impl JSFuture {
     pub fn new(
-        run_on_promise_thread: impl Fn() -> JSObject + 'static + Send + Sync,
-        on_completion: fn(JSObject) -> Option<Box<dyn Any + Send + Sync>>,
+        run_on_promise_thread: impl Fn() -> JSObject + 'static + Send,
+        on_completion: fn(JSObject) -> Option<Box<dyn Any + Send>>,
     ) -> Self {
         Self {
             inner: Arc::new(Mutex::new(JSFutureInner {
@@ -78,7 +78,7 @@ impl JSFuture {
 }
 
 impl<'a> Future for JSFuture {
-    type Output = Box<dyn Any + Send + Sync>;
+    type Output = Box<dyn Any + Send>;
 
     fn poll(self: Pin<&mut Self>, cx: &mut Context) -> Poll<Self::Output> {
         // Begin the task.

@@ -38,7 +38,7 @@ pub use js_object::*;
 pub mod web_worker;
 
 mod js_future;
-pub(crate) use js_future::*;
+pub use js_future::*;
 
 use std::sync::Once;
 

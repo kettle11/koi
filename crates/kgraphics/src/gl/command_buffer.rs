@@ -32,7 +32,7 @@ pub(super) enum CommandBufferAction {
     SetVec3Uniform((UniformLocation, BumpHandle)),
     SetVec4Uniform((UniformLocation, BumpHandle)),
     SetMat4Uniform((UniformLocation, BumpHandle)),
-    SetTextureUnit((UniformLocation, u8, Option<gl_native::TextureNative>)),
+    SetTextureUnit((UniformLocation, u8, Option<gl_native::TextureNative>, bool)),
     SetTextureUnitToCubeMap((UniformLocation, u8, Option<gl_native::TextureNative>)),
     SetViewport((u32, u32, u32, u32)),
     DrawTriangles(u32),
@@ -325,7 +325,7 @@ impl<'a> RenderPassTrait for RenderPass<'a> {
         texture: Option<&Texture>,
         texture_unit: u8,
     ) {
-        let texture = texture.map(|t| match t.texture_type {
+        let native_texture = texture.map(|t| match t.texture_type {
             TextureType::Texture(t) => t,
             TextureType::RenderBuffer(..) => {
                 panic!(
@@ -344,7 +344,8 @@ impl<'a> RenderPassTrait for RenderPass<'a> {
                 .push(CommandBufferAction::SetTextureUnit((
                     uniform_location,
                     texture_unit,
-                    texture,
+                    native_texture,
+                    texture.map_or(false, |t| t.is_3d),
                 )))
         } else {
             // println!("WARNING: Binding texture to non-existent uniform")
