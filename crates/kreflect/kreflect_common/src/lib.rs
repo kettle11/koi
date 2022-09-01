@@ -1,5 +1,8 @@
 use std::{borrow::Cow, usize};
 
+mod tokenizer;
+pub use tokenizer::*;
+
 #[derive(Debug, Clone)]
 pub enum Token<'a> {
     For,
@@ -19,6 +22,7 @@ pub enum Token<'a> {
     Colon,
     Plus,
     Star,
+    Minus,
     // ::
     Colon2,
     Comma,
@@ -39,6 +43,8 @@ pub enum Token<'a> {
     Mut,
     Not,
     Equal,
+    EqualEqual,
+    NotEqual,
     Const,
     CharLiteral(char),
     StringLiteral(String),
@@ -48,8 +54,35 @@ pub enum Token<'a> {
     BoolLiteral(bool),
     Identifier(Cow<'a, str>),
     RArrow,
+    FatArrow,
+    Dot,
+    Div,
+    DivEqual,
+    //
+    Else,
+    If,
+    Let,
+    Mod,
+    Return,
+    //
+    Or,
+    VerticalBar,
 }
 
+#[derive(Debug)]
+pub enum Operator {
+    Add,
+    Subtract,
+    Multiply,
+    Divide,
+    LessThan,
+    GreaterThan,
+    And,
+    Or,
+    Sum,
+    Is,
+    FieldAccess,
+}
 // Convert TokenStream into a more generic format.
 /// This may seem a bit weird, but this could allow for partial standalone Rust
 /// parsing in a future version.
@@ -117,6 +150,7 @@ pub fn token_stream_to_rust_tokens(
                                     ('+', '=') => Token::PlusEqual,
                                     ('-', '=') => Token::MinusEqual,
                                     ('*', '=') => Token::TimesEqual,
+                                    ('/', '=') => Token::DivEqual,
                                     ('<', '=') => Token::LessThanOrEqual,
                                     ('>', '=') => Token::GreaterThanOrEqual,
                                     (':', ':') => Token::Colon2,
@@ -444,6 +478,17 @@ pub struct Enum<'a> {
 pub enum Value<'a> {
     Struct(Struct<'a>),
     Enum(Enum<'a>),
+    Function(Function<'a>),
+}
+
+#[derive(Debug)]
+pub struct Function<'a> {
+    pub name: Cow<'a, str>,
+    pub visibility: Visibility,
+    pub generic_parameters: GenericParams<'a>,
+    pub parameters: Vec<(Cow<'a, str>, Type<'a>)>,
+    pub return_type: Option<Box<Type<'a>>>,
+    pub statements: Vec<Statement<'a>>,
 }
 
 pub struct Parser<'a> {
@@ -545,7 +590,7 @@ impl<'a> Parser<'a> {
                                             args.push(GenericArgument::Type(t));
                                         }
                                         None => {
-                                            let expression = self.expression()?;
+                                            let expression = self.expression(0)?;
                                             args.push(GenericArgument::Expression(expression));
                                         }
                                     }
@@ -584,9 +629,34 @@ impl<'a> Parser<'a> {
         Some(Path { segments })
     }
 
+    fn infix_operator(&mut self, left_precendece: u8) -> Option<(Operator, Expression<'a>)> {
+        let (operator, right_precedence) = match self.peek()? {
+            // Field access has higher precedence than function calls (8)
+            Token::Dot => (Operator::FieldAccess, 9),
+            Token::Star => (Operator::Multiply, 5),
+            Token::Div => (Operator::Divide, 5),
+            Token::Plus => (Operator::Add, 4),
+            Token::Minus => (Operator::Subtract, 4),
+            Token::LessThan => (Operator::LessThan, 3),
+            Token::GreaterThan => (Operator::GreaterThan, 3),
+            Token::And => (Operator::And, 2),
+            Token::Or => (Operator::Or, 1),
+            _ => None?,
+        };
+
+        if left_precendece < right_precedence {
+            self.next();
+
+            let right = self.expression(right_precedence)?;
+            Some((operator, right))
+        } else {
+            None
+        }
+    }
+
     // Extremely limited expression parsing.
-    fn expression(&mut self) -> Option<Expression<'a>> {
-        Some(match self.peek()? {
+    fn expression(&mut self, precedence: u8) -> Option<Expression<'a>> {
+        let mut expression = match self.peek()? {
             Token::LiteralBool(b) => {
                 self.advance();
                 Expression::Literal(Literal::Bool(*b))
@@ -611,7 +681,72 @@ impl<'a> Parser<'a> {
                 self.advance();
                 Expression::Path(self.path()?)
             }
-            _ => todo!("Unhandled expression"),
+            Token::If => {
+                self.advance();
+                let condition = self.expression(0)?;
+                let body_statements = self.block()?;
+                let mut else_statements = None;
+                if self.check_for_token(Token::Else).is_some() {
+                    else_statements = Some(self.block()?);
+                }
+
+                Expression::If(IfExpression {
+                    condition: Box::new(condition),
+                    body_statements,
+                    else_statements,
+                })
+            }
+            _ => return None,
+        };
+
+        while let Some((operator, right)) = self.infix_operator(precedence) {
+            expression = Expression::Infix {
+                operator,
+                left: Box::new(expression),
+                right: Box::new(right),
+            }
+        }
+
+        Some(expression)
+    }
+
+    fn block(&mut self) -> Option<Vec<Statement<'a>>> {
+        let mut statements = Vec::new();
+
+        self.check_for_token(Token::OpenBrace)?;
+        while let Some(statement) = self.statement() {
+            statements.push(statement);
+        }
+
+        self.check_for_token(Token::CloseBrace)?;
+        Some(statements)
+    }
+
+    fn statement(&mut self) -> Option<Statement<'a>> {
+        Some(match self.peek()? {
+            Token::Let => {
+                self.advance();
+                let name = self.check_for_identifier()?;
+                let mut type_ = None;
+                if self.check_for_token(Token::Colon).is_some() {
+                    type_ = Some(Box::new(self._type()?));
+                }
+                self.check_for_token(Token::Equal)?;
+                let expression = self.expression(0)?;
+
+                self.check_for_token(Token::SemiColon)?;
+                Statement::Let(LetStatement {
+                    name,
+                    type_,
+                    expression: Box::new(expression),
+                })
+            }
+            _ => {
+                let result = Statement::Expression(self.expression(0)?);
+                // Optionally consume semicolon
+                self.check_for_token(Token::SemiColon);
+                result
+            }
         })
     }
 
@@ -668,7 +803,7 @@ impl<'a> Parser<'a> {
                 let _type = self._type()?;
                 self.check_for_token(Token::SemiColon)?;
 
-                let size = self.expression().unwrap();
+                let size = self.expression(0).unwrap();
                 self.check_for_token(Token::CloseBracket);
                 Type::Array {
                     size,
@@ -953,6 +1088,46 @@ impl<'a> Parser<'a> {
         })
     }
 
+    fn function(&mut self, visibility: Visibility) -> Option<Function<'a>> {
+        // The `fn` token was already parsed.
+        self.advance();
+        let name = self.check_for_identifier()?;
+        let generic_parameters = self.generic_params()?;
+
+        self.check_for_token(Token::OpenParentheses)?;
+        let mut parameters = Vec::new();
+        loop {
+            if let Some(Token::CloseParentheses) = self.peek() {
+                self.advance();
+                break;
+            }
+
+            let name = self.check_for_identifier()?;
+            self.check_for_token(Token::Colon)?;
+
+            let _type = self._type()?;
+
+            parameters.push((name, _type));
+            self.check_for_token(Token::Comma);
+        }
+
+        let mut return_type = None;
+        if self.check_for_token(Token::RArrow).is_some() {
+            return_type = self._type().map(Box::new);
+        }
+
+        let statements = self.block()?;
+
+        Some(Function {
+            name,
+            visibility,
+            generic_parameters,
+            parameters,
+            return_type,
+            statements,
+        })
+    }
+
     // Parses a top-level item declaration
     pub fn parse(&mut self) -> Option<Value<'a>> {
         // Skip other attributes for now.
@@ -961,6 +1136,7 @@ impl<'a> Parser<'a> {
         Some(match self.peek()? {
             Token::Struct => Value::Struct(self._struct(visibility)?),
             Token::Enum => Value::Enum(self._enum(visibility)?),
+            Token::Fn => Value::Function(self.function(visibility)?),
             token => todo!(
                 "Kreflect cannot parse non-struct non-enums yet: {:?}",
                 token
@@ -1214,6 +1390,34 @@ pub enum Expression<'a> {
     Struct(StructExpression<'a>),
     // Just a string to be inserted
     Raw(String),
+    If(IfExpression<'a>),
+    Infix {
+        operator: Operator,
+        left: Box<Expression<'a>>,
+        right: Box<Expression<'a>>,
+    },
+}
+
+#[derive(Debug)]
+pub enum Statement<'a> {
+    Let(LetStatement<'a>),
+    Expression(Expression<'a>),
+}
+
+#[derive(Debug)]
+pub struct IfExpression<'a> {
+    pub condition: Box<Expression<'a>>,
+    pub body_statements: Vec<Statement<'a>>,
+    pub else_statements: Option<Vec<Statement<'a>>>,
+}
+
+#[derive(Debug)]
+pub struct LetStatement<'a> {
+    /// TODO: More pattern types.
+    /// See syn's types: https://docs.rs/syn/latest/syn/enum.Pat.html
+    pub name: Cow<'a, str>,
+    pub type_: Option<Box<Type<'a>>>,
+    pub expression: Box<Expression<'a>>,
 }
 
 impl<'a> Expression<'a> {
@@ -1238,6 +1442,7 @@ impl<'a> Expression<'a> {
             Expression::Struct(s) => s.as_string(),
             Expression::Raw(s) => s.clone(),
             Expression::Macro(_) => todo!("Macro as_string not implemented"),
+            _ => todo!(),
         }
     }
 }

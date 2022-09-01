@@ -152,8 +152,6 @@ var gl_web_object = {
         );
 
         /* Border color should be set here too */
-
-
     },
     new_texture() {
         let texture = gl.createTexture();
