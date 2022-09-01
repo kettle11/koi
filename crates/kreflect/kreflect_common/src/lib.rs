@@ -681,6 +681,13 @@ impl<'a> Parser<'a> {
                 self.advance();
                 Expression::Path(self.path()?)
             }
+            Token::OpenParentheses => {
+                // This approach doesn't track the parentheses but preserves the precedence.
+                self.advance();
+                let expression = self.expression(0)?;
+                self.check_for_token(Token::CloseParentheses)?;
+                expression
+            }
             Token::If => {
                 self.advance();
                 let condition = self.expression(0)?;
@@ -696,6 +703,19 @@ impl<'a> Parser<'a> {
                     else_statements,
                 })
             }
+            Token::For => {
+                self.advance();
+                // TODO: Check for pattern here instead.
+                let name = self.check_for_identifier()?;
+                self.check_for_token(Token::In)?;
+                let expression = self.expression(0)?;
+                let body_statements = self.block()?;
+                Expression::For(ForExpression {
+                    name,
+                    expression: Box::new(expression),
+                    body_statements,
+                })
+            }
             _ => return None,
         };
 
@@ -705,6 +725,22 @@ impl<'a> Parser<'a> {
                 left: Box::new(expression),
                 right: Box::new(right),
             }
+        }
+
+        if self.check_for_token(Token::OpenParentheses).is_some() {
+            // This is a function call
+            let mut arguments = Vec::new();
+            while self.check_for_token(Token::CloseParentheses).is_none() {
+                arguments.push(self.expression(0)?);
+
+                // TODO: This makes the parsing a little more relaxed.
+                // The comma can be omitted.
+                self.check_for_token(Token::Comma);
+            }
+            expression = Expression::FunctionCall(FunctionCallExpression {
+                function: Box::new(expression),
+                arguments,
+            })
         }
 
         Some(expression)
@@ -1396,6 +1432,17 @@ pub enum Expression<'a> {
         left: Box<Expression<'a>>,
         right: Box<Expression<'a>>,
     },
+    Parenthesis {
+        expression: Box<Expression<'a>>,
+    },
+    For(ForExpression<'a>),
+    FunctionCall(FunctionCallExpression<'a>),
+}
+
+#[derive(Debug)]
+pub struct FunctionCallExpression<'a> {
+    pub function: Box<Expression<'a>>,
+    pub arguments: Vec<Expression<'a>>,
 }
 
 #[derive(Debug)]
@@ -1409,6 +1456,16 @@ pub struct IfExpression<'a> {
     pub condition: Box<Expression<'a>>,
     pub body_statements: Vec<Statement<'a>>,
     pub else_statements: Option<Vec<Statement<'a>>>,
+}
+
+#[derive(Debug)]
+pub struct ForExpression<'a> {
+    /// TODO: More pattern types.
+    /// See syn's types: https://docs.rs/syn/latest/syn/enum.Pat.html
+    pub name: Cow<'a, str>,
+    /// The part that comes after `in`.
+    pub expression: Box<Expression<'a>>,
+    pub body_statements: Vec<Statement<'a>>,
 }
 
 #[derive(Debug)]

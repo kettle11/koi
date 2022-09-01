@@ -286,6 +286,8 @@ pub fn tokenize(s: &str) -> (Vec<Token>, Vec<TokenPosition>) {
                     "false" => BoolLiteral(false),
                     "else" => Else,
                     "return" => Return,
+                    "for" => For,
+                    "in" => In,
                     _ => Token::Identifier(identifier.into()),
                 }
             } // _ => panic!("Unexpected character: {:?}", c),

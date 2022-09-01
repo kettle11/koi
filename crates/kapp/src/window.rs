@@ -114,6 +114,10 @@ impl Window {
             .borrow_mut()
             .redraw_window(self.0.id);
     }
+
+    pub fn window_id(&self) -> WindowId {
+        self.0.id
+    }
 }
 
 impl Drop for WindowInner {

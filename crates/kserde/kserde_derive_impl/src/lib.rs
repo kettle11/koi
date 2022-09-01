@@ -157,6 +157,9 @@ pub fn kserde_serialize_impl(value: &Value) -> String {
                 &variants
             );
         }
+        _ => {
+            panic!("Can't serialize functions")
+        }
     }
 
     format!(
@@ -360,6 +363,9 @@ pub fn kserde_deserialize_impl(value: &Value) -> String {
                 }})
             "#
             );
+        }
+        _ => {
+            panic!("Can't deserialize functions")
         }
     }
 

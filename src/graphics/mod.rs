@@ -204,7 +204,7 @@ fn setup_graphics(world: &mut World) {
         render_target,
         current_camera_target: None,
         #[cfg(not(feature = "headless"))]
-        primary_camera_target: CameraTarget::Window(main_window.id),
+        primary_camera_target: CameraTarget::Window(main_window.window_id()),
         #[cfg(feature = "headless")]
         primary_camera_target: CameraTarget::Primary,
         override_views: Vec::new(),
