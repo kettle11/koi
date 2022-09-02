@@ -1,4 +1,71 @@
-use crate::Token;
+use std::borrow::Cow;
+
+#[derive(Debug, Clone)]
+pub enum Token<'a> {
+    For,
+    Struct,
+    Enum,
+    Fn,
+    In,
+    Pub,
+    Use,
+    OpenBrace,
+    CloseBrace,
+    OpenBracket,
+    CloseBracket,
+    PlusEqual,
+    MinusEqual,
+    TimesEqual,
+    Colon,
+    Plus,
+    Star,
+    Minus,
+    // ::
+    Colon2,
+    Comma,
+    LessThan,
+    LessThanOrEqual,
+    GreaterThan,
+    GreaterThanOrEqual,
+    OpenParentheses,
+    CloseParentheses,
+    Pound,
+    Crate,
+    SelfLowercase,
+    Super,
+    SingleQuote,
+    SemiColon,
+    Dyn,
+    And,
+    Mut,
+    Not,
+    Equal,
+    EqualEqual,
+    NotEqual,
+    Const,
+    CharLiteral(char),
+    StringLiteral(String),
+    LiteralBool(bool),
+    IntegerLiteral(i128),
+    FloatLiteral(f64),
+    BoolLiteral(bool),
+    Identifier(Cow<'a, str>),
+    RArrow,
+    FatArrow,
+    Dot,
+    DotDot,
+    Div,
+    DivEqual,
+    //
+    Else,
+    If,
+    Let,
+    Mod,
+    Return,
+    //
+    Or,
+    VerticalBar,
+}
 
 #[derive(Debug)]
 pub struct TokenPosition {
@@ -26,20 +93,27 @@ fn parse_number<'a>(
     i: usize,
     s: &str,
     iter: &mut std::iter::Peekable<std::str::CharIndices>,
-) -> Token<'a> {
+) -> (Token<'a>, bool) {
     while iter.peek().map_or(false, |c| c.1.is_digit(10)) {
         iter.next();
     }
     if iter.peek().map_or(false, |c| c.1 == '.') {
         iter.next();
-        while iter.peek().map_or(false, |c| c.1.is_digit(10)) {
+        if iter.peek().map_or(false, |c| c.1 == '.') {
+            // This is an integer with a range operator next to it.
+            let end = iter.peek().map_or(s.len(), |c| c.0);
             iter.next();
+            (Token::IntegerLiteral(s[i..end - 1].parse().unwrap()), true)
+        } else {
+            while iter.peek().map_or(false, |c| c.1.is_digit(10)) {
+                iter.next();
+            }
+            let end = iter.peek().map_or(s.len(), |c| c.0);
+            (Token::FloatLiteral(s[i..end].parse().unwrap()), false)
         }
-        let end = iter.peek().map_or(s.len(), |c| c.0);
-        Token::FloatLiteral(s[i..end].parse().unwrap())
     } else {
         let end = iter.peek().map_or(s.len(), |c| c.0);
-        Token::IntegerLiteral(s[i..end].parse().unwrap())
+        (Token::IntegerLiteral(s[i..end].parse().unwrap()), false)
     }
 }
 
@@ -51,7 +125,7 @@ pub fn tokenize(s: &str) -> (Vec<Token>, Vec<TokenPosition>) {
     let mut token_positions = Vec::new();
     let mut current_line = 0;
     while let Some((i, c)) = iter.peek().cloned() {
-        tokens.push(match c {
+        let token = match c {
             c if c.is_whitespace() => {
                 if c == '\n' {
                     current_line += 1;
@@ -91,11 +165,12 @@ pub fn tokenize(s: &str) -> (Vec<Token>, Vec<TokenPosition>) {
                 iter.next();
                 SemiColon
             }
-            '|' => peek_or(&mut iter, '|', VerticalBar, Or),
+            '|' => peek_or(&mut iter, '|', Or, VerticalBar),
             '+' => peek_or(&mut iter, '=', PlusEqual, Plus),
             '*' => peek_or(&mut iter, '=', TimesEqual, Star),
             '!' => peek_or(&mut iter, '=', NotEqual, Not),
             ':' => peek_or(&mut iter, ':', Colon2, Colon),
+            '.' => peek_or(&mut iter, '.', DotDot, Dot),
             '=' => {
                 iter.next();
                 match iter.peek() {
@@ -121,14 +196,19 @@ pub fn tokenize(s: &str) -> (Vec<Token>, Vec<TokenPosition>) {
                         iter.next();
                         RArrow
                     }
-                    Some((_, c)) if c.is_digit(10) => parse_number(i, s, &mut iter),
+                    Some((_, c)) if c.is_digit(10) => {
+                        // This certainly isn't the most elegant way to handle the need to look
+                        // ahead extra for DotDot
+                        let (token, followed_by_range) = parse_number(i, s, &mut iter);
+                        if followed_by_range {
+                            tokens.push(token);
+                            Token::DotDot
+                        } else {
+                            token
+                        }
+                    }
                     _ => Minus,
                 }
-            }
-
-            '.' => {
-                iter.next();
-                Dot
             }
             '<' => {
                 iter.next();
@@ -187,7 +267,17 @@ pub fn tokenize(s: &str) -> (Vec<Token>, Vec<TokenPosition>) {
                     _ => Div,
                 }
             }
-            c if c.is_digit(10) => parse_number(i, s, &mut iter),
+            c if c.is_digit(10) => {
+                // This certainly isn't the most elegant way to handle the need to look
+                // ahead extra for DotDot
+                let (token, followed_by_range) = parse_number(i, s, &mut iter);
+                if followed_by_range {
+                    tokens.push(token);
+                    Token::DotDot
+                } else {
+                    token
+                }
+            }
             '\'' => {
                 iter.next();
                 match iter.peek().cloned() {
@@ -291,7 +381,8 @@ pub fn tokenize(s: &str) -> (Vec<Token>, Vec<TokenPosition>) {
                     _ => Token::Identifier(identifier.into()),
                 }
             } // _ => panic!("Unexpected character: {:?}", c),
-        });
+        };
+        tokens.push(token);
         token_positions.push(TokenPosition {
             line: current_line,
             last_character: iter.peek().map_or(s.len(), |(i, _)| *i),
