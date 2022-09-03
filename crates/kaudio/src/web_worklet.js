@@ -37,7 +37,6 @@ function run_on_worklet() {
             this.kwasm_memory = setup_data.kwasm_memory;
 
             WebAssembly.instantiate(setup_data.kwasm_module, imports).then(results => {
-                this.port.postMessage("INSTANTIATED MODULE");
 
                 let exports = results.exports;
                 if (exports.__wbindgen_start) {
@@ -70,47 +69,47 @@ function run_on_worklet() {
         }
     }
 
+
     registerProcessor('kaudio-processor', KAudioProcessor);
 }
 
-function setup_worklet(entry_point, stack_pointer, thread_local_storage_pointer) {
-    let callback = (event) => {
-        if (!audio_running) {
-            setup_worklet();
-            audio_running = true;
+var audio_context;
+
+async function setup_worklet(entry_point, stack_pointer, thread_local_storage_pointer) {
+    const audio_context = new AudioContext({ sampleRate: 44100 });
+
+    let blobURL = URL.createObjectURL(new Blob(
+        ['(', run_on_worklet.toString(), ')()'],
+        { type: 'application/javascript' }
+    ));
+
+    await audio_context.audioWorklet.addModule(blobURL, { credentials: 'omit' });
+    URL.revokeObjectURL(blobURL);
+
+    const worklet = new AudioWorkletNode(audio_context, 'kaudio-processor', {
+        numberOfInputs: 0,
+        numberOfOutputs: 1,
+        outputChannelCount: [2],
+        processorOptions: {
+            kwasm_memory: self.kwasm_memory,
+            kwasm_module: self.kwasm_module,
+            entry_point: entry_point,
+            stack_pointer: stack_pointer,
+            thread_local_storage_pointer: thread_local_storage_pointer,
         }
+    });
+    worklet.port.onmessage = (e) => {
+        console.log("Worklet message: ", e.data);
+    };
+    worklet.onprocessorerror = (err) => {
+        console.error(err);
+    }
+    worklet.connect(audio_context.destination);
 
-        async function setup_worklet() {
-            console.log("SETTING UP AUDIO WORKLET!");
-            const audioContext = new AudioContext({ sampleRate: 44100 });
+    this.kaudio_audio_worklet = worklet;
 
-            let blobURL = URL.createObjectURL(new Blob(
-                ['(', run_on_worklet.toString(), ')()'],
-                { type: 'application/javascript' }
-            ));
-
-            await audioContext.audioWorklet.addModule(blobURL);
-            URL.revokeObjectURL(blobURL);
-
-            const worklet = new AudioWorkletNode(audioContext, 'kaudio-processor', {
-                outputChannelCount: [2],
-                processorOptions: {
-                    kwasm_memory: self.kwasm_memory,
-                    kwasm_module: self.kwasm_module,
-                    entry_point: entry_point,
-                    stack_pointer: stack_pointer,
-                    thread_local_storage_pointer: thread_local_storage_pointer,
-                }
-            });
-            worklet.connect(audioContext.destination);
-            worklet.port.onmessage = (e) => {
-                console.log("Worklet message: ", e.data);
-            };
-
-            this.kaudio_audio_worklet = worklet;
-            audioContext.resume();
-        }
-
+    let callback = () => {
+        audio_context.resume();
     };
 
     document.addEventListener("click", callback);
