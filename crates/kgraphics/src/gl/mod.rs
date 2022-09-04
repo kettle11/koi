@@ -1111,9 +1111,6 @@ impl GraphicsContextTrait for GraphicsContext {
                                     (i * 16) as i32,            // Offset
                                 );
 
-                                println!("ATTRIBUTE INDEX: {:?}", attribute.index);
-                                println!("ATTRIBUTE BYTE SIZE: {:?}", attribute.byte_size);
-
                                 if per_instance {
                                     self.gl.vertex_attrib_divisor(attribute.index + i, 1);
                                 } else {
