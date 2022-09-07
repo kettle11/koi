@@ -18,9 +18,10 @@ impl Sound {
 pub fn resample(data: &[f32], channels: usize, old_rate: f32, new_rate: f32) -> Vec<f32> {
     let step = old_rate / new_rate;
 
-    let mut samples = Vec::with_capacity(new_rate as usize * channels);
+    let new_data_len = (new_rate / old_rate * data.len() as f32) as usize;
+    let mut samples = Vec::with_capacity(new_data_len);
     let last_sample = data.len() - 1;
-    for i in 0..data.len() / channels {
+    for i in 0..new_data_len / channels {
         for j in 0..channels {
             // Find the offset for this single channel
             let start_position = i as f32 * step;
