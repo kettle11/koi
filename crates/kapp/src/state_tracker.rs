@@ -195,6 +195,11 @@ impl StateTracker {
     pub fn reset_touch(&mut self) {
         self.touch_state.set_old_positions();
     }
+
+    /// Iterate over all keys currently pressed.
+    pub fn keys_currently_pressed(&self) -> impl Iterator<Item = Key> + '_ {
+        self.keys_pressed.iter().map(|k| k.0.clone())
+    }
 }
 
 #[derive(Clone)]
