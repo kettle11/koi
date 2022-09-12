@@ -121,6 +121,12 @@ impl Application {
             prevent_send: std::marker::PhantomData,
         }
     }
+
+    pub fn save_file_dialog(&self, default_name: Option<&str>) -> Option<String> {
+        self.platform_application
+            .borrow()
+            .save_file_dialog(default_name)
+    }
 }
 
 /// Call the 'run' or 'run_async' function on an EventLoop instance to start your program.

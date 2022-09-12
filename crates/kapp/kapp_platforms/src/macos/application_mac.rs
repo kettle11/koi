@@ -450,6 +450,31 @@ impl PlatformApplicationTrait for PlatformApplication {
             sender: APPLICATION_DATA.with(|d| d.borrow().user_event_sender.clone()),
         }
     }
+
+    fn save_file_dialog(&self, default_name: Option<&str>) -> Option<String> {
+        unsafe {
+            let ns_panel: *mut Object = msg_send![class!(NSSavePanel), savePanel];
+
+            if let Some(default_name) = default_name {
+                let name_field = NSString::new(default_name);
+                let () = msg_send![ns_panel, setNameFieldStringValue: name_field];
+            }
+
+            let response: NSInteger = msg_send![ns_panel, runModal];
+            if response == 1 {
+                let url: *mut Object = msg_send![ns_panel, URL];
+                let string: *mut Object = msg_send![url, path];
+
+                let utf8_string: *const std::os::raw::c_uchar = msg_send![string, UTF8String];
+                let utf8_len: usize = msg_send![string, lengthOfBytesUsingEncoding: UTF8_ENCODING];
+                let slice = std::slice::from_raw_parts(utf8_string, utf8_len);
+                let string = std::str::from_utf8(slice).ok()?;
+                Some(string.into())
+            } else {
+                None
+            }
+        }
+    }
 }
 
 pub fn get_backing_scale(window_id: WindowId) -> CGFloat {

@@ -71,6 +71,10 @@ pub trait PlatformApplicationTrait {
     fn raw_window_handle(&self, window: WindowId) -> RawWindowHandle;
 
     fn get_user_event_sender(&self) -> Self::UserEventSender;
+
+    fn save_file_dialog(&self, _default_name: Option<&str>) -> Option<String> {
+        todo!()
+    }
 }
 
 pub trait PlatformEventLoopTrait {
