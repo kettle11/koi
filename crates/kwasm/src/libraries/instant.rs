@@ -19,7 +19,7 @@ pub fn date_now() -> f64 {
 }
 
 #[derive(Copy, Clone, Debug, PartialEq, PartialOrd, Hash)]
-pub struct Instant(Duration);
+pub struct Instant(pub Duration);
 
 impl Ord for Instant {
     fn cmp(&self, other: &Self) -> std::cmp::Ordering {

@@ -23,7 +23,21 @@ struct Thingy {
     f: *mut std::ffi::c_void,
 }
 
-fn main() {}
+fn main() {
+    let source = r#" 
+        fn hello() -> bool {
+            4 + 3
+        }
+    "#;
+
+    let (tokens, _) = kreflect::tokenize(source);
+    println!("TOKENS: {:#?}", tokens);
+    let (parsed_result, expressions) = kreflect::Parser::new(&tokens).parse().unwrap();
+    println!("TOKENS: {:#?}", tokens);
+    println!("PARSED RESULT: {:#?}", parsed_result);
+    type_checker::type_check(&parsed_result, &expressions);
+}
+
 /*
 #[derive(Reflect)]
 struct Thing2<'a, T> {
