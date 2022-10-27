@@ -129,11 +129,11 @@ function kwasm_stuff() {
     function run_future(promise_inner_future_ptr) {
         let function_to_run_index = self.kwasm_exports.kwasm_promise_begin(promise_inner_future_ptr);
         let function_to_run = self.kwasm_get_object(function_to_run_index);
+        self.kwasm_free_js_object(function_to_run_index);
 
         function_to_run.then((result) => {
             let result_js_object = self.kwasm_new_js_object(result);
             self.kwasm_exports.kwasm_promise_complete(promise_inner_future_ptr, result_js_object);
-            self.kwasm_free_js_object(function_to_run);
         }, rejected => {
         });
         return;
