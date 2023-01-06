@@ -4,8 +4,12 @@ version = "0.1.0"
 edition = "2021"
 license = "Zlib OR Apache-2.0 OR MIT"
 
+[features]
+default = ["bytemuck"]
+
 [dependencies]
 kserde = {path = "../kserde"}
+bytemuck = {version = "1.12.2", optional = true}
 
 # [dev-dependencies]
 # bencher = "0.1.5"

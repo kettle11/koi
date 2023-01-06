@@ -31,8 +31,8 @@ extern "C" fn kwasm_promise_complete(js_future_inner: u32, result: u32) {
 
     let waker = {
         let on_completion = {
-            let inner = arc.lock().unwrap();
-            inner.on_completion
+            let mut inner = arc.lock().unwrap();
+            inner.on_completion.take().unwrap()
         };
 
         let result = (on_completion)(result);
@@ -49,7 +49,7 @@ struct JSFutureInner {
     running: bool,
     /// Must return a JS function that accepts 0 args and returns a promise.
     run_on_promise_thread: Option<Box<dyn Fn() -> JSObject + Send>>,
-    on_completion: fn(JSObject) -> Option<Box<dyn Any + Send>>,
+    on_completion: Option<Box<dyn Fn(JSObject) -> Option<Box<dyn Any + Send>>>>,
     result: Option<Box<dyn Any + Send>>,
     waker: Option<Waker>,
 }
@@ -63,13 +63,13 @@ pub struct JSFuture {
 impl JSFuture {
     pub fn new(
         run_on_promise_thread: impl Fn() -> JSObject + 'static + Send,
-        on_completion: fn(JSObject) -> Option<Box<dyn Any + Send>>,
+        on_completion: impl Fn(JSObject) -> Option<Box<dyn Any + Send>> + 'static + Send,
     ) -> Self {
         Self {
             inner: Arc::new(Mutex::new(JSFutureInner {
                 running: false,
                 run_on_promise_thread: Some(Box::new(run_on_promise_thread)),
-                on_completion,
+                on_completion: Some(Box::new(on_completion)),
                 result: None,
                 waker: None,
             })),
@@ -109,3 +109,6 @@ impl<'a> Future for JSFuture {
         }
     }
 }
+
+// TODO: Check if this is really safe
+unsafe impl Send for JSFuture {}

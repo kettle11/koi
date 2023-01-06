@@ -1259,6 +1259,36 @@ impl<const R: usize, const C: usize> Matrix<i32, R, C> {
     }
 }
 
+impl<const R: usize, const C: usize> Matrix<u8, R, C> {
+    pub fn as_f32(&self) -> Matrix<f32, R, C> {
+        let mut output = Matrix::<f32, R, C>::ZERO;
+        for i in 0..C {
+            for j in 0..R {
+                output.0[i][j] = self.0[i][j] as f32;
+            }
+        }
+        output
+    }
+    pub fn as_i32(&self) -> Matrix<i32, R, C> {
+        let mut output = Matrix::<i32, R, C>::ZERO;
+        for i in 0..C {
+            for j in 0..R {
+                output.0[i][j] = self.0[i][j] as i32;
+            }
+        }
+        output
+    }
+    pub fn as_usize(&self) -> Matrix<usize, R, C> {
+        let mut output = Matrix::<usize, R, C>::ZERO;
+        for i in 0..C {
+            for j in 0..R {
+                output.0[i][j] = self.0[i][j] as usize;
+            }
+        }
+        output
+    }
+}
+
 impl<const R: usize, const C: usize> Matrix<u32, R, C> {
     pub fn as_f32(&self) -> Matrix<f32, R, C> {
         let mut output = Matrix::<f32, R, C>::ZERO;
@@ -1429,3 +1459,12 @@ impl<T: Default, const R: usize, const C: usize> Matrix<T, R, C> {
         v
     }
 }
+
+#[cfg(feature = "bytemuck")]
+unsafe impl<T: bytemuck::Pod, const R: usize, const C: usize> bytemuck::Zeroable
+    for Matrix<T, R, C>
+{
+}
+
+#[cfg(feature = "bytemuck")]
+unsafe impl<T: bytemuck::Pod, const R: usize, const C: usize> bytemuck::Pod for Matrix<T, R, C> {}

@@ -199,6 +199,11 @@ impl JSObjectFromString {
         }
     }
 
+    pub fn to_js_object(self) -> JSObject {
+        self.check_initialized();
+        self.inner_object
+    }
+
     /*
     pub fn inner_object(&self) -> &JSObject {
         self.check_initialized();

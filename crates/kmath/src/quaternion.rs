@@ -3,7 +3,7 @@ use std::ops::{Add, Index, Mul, Neg};
 use crate::*;
 
 #[derive(Copy, Clone, Debug, PartialEq, PartialOrd, Hash, Eq)]
-pub struct Quaternion<T: NumericFloat>(pub(crate) Vector<T, 4>);
+pub struct Quaternion<T: NumericFloat>(pub Vector<T, 4>);
 
 use kserde::*;
 // Manually tweaked serialization / deserialization implementations.
