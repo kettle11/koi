@@ -13,7 +13,7 @@ use crate::*;
 
 #[derive(Copy, Clone, Debug, PartialEq, PartialOrd, Hash, Eq)]
 #[repr(C)]
-pub struct Matrix<T, const ROWS: usize, const COLUMNS: usize>(pub(crate) [[T; ROWS]; COLUMNS]);
+pub struct Matrix<T, const ROWS: usize, const COLUMNS: usize>(pub [[T; ROWS]; COLUMNS]);
 
 // Manually tweaked serialization / deserialization implementations.
 impl<KSer: kserde::Serializer, T: Serialize<KSer>, const ROWS: usize, const COLUMNS: usize>
