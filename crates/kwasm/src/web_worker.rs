@@ -2,9 +2,6 @@ use crate::*;
 use std::usize;
 
 #[allow(unused)]
-use wasm_set_stack_pointer;
-
-#[allow(unused)]
 const WASM_PAGE_SIZE: usize = 1024 * 64;
 
 struct WorkerData {

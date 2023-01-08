@@ -233,7 +233,7 @@ function kwasm_stuff() {
             if (self.kwasm_exports.__wbindgen_start) {
                 self.kwasm_exports.__wbindgen_start();
             } else {
-                self.kwasm_exports.set_stack_pointer(e.data.stack_pointer);
+                self.kwasm_exports.__stack_pointer.value = setup_data.stack_pointer;
                 self.kwasm_exports.__wasm_init_tls(e.data.thread_local_storage_pointer);
             }
             if (e.data.entry_point) {

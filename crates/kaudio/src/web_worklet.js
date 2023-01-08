@@ -42,7 +42,7 @@ function run_on_worklet() {
                 if (exports.__wbindgen_start) {
                     exports.__wbindgen_start();
                 } else {
-                    exports.set_stack_pointer(setup_data.stack_pointer);
+                    exports.__stack_pointer.value = setup_data.stack_pointer;
                     exports.__wasm_init_tls(setup_data.thread_local_storage_pointer);
                 }
 
