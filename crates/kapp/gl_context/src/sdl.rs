@@ -142,6 +142,8 @@ impl GLContextTrait for GLContext {
     }
 
     fn get_proc_address(&self, address: &str) -> *const core::ffi::c_void {
+        // Convert to a CString to ensure these addresses are null-terminated.
+        let address: std::ffi::CString = std::ffi::CString::new(address).unwrap();
         unsafe { fermium::video::SDL_GL_GetProcAddress(address.as_ptr() as *const i8) }
     }
 
