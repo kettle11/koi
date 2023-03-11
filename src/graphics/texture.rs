@@ -169,11 +169,11 @@ pub fn png_data_from_bytes(bytes: &[u8], srgb: bool) -> TextureLoadData {
 
 #[cfg(feature = "imagine_png")]
 fn png_data_from_bytes(bytes: &[u8], _srgb: bool) -> TextureLoadData {
-    let imagine::image::Image::<imagine::pixel_formats::RGBA8888> {
+    let imagine::image::Bitmap::<imagine::pixel_formats::RGBA8888> {
         width,
         height,
         mut pixels,
-    } = imagine::image::Image::try_from_png_bytes(&bytes).unwrap();
+    } = imagine::image::Bitmap::try_from_png_bytes(&bytes).unwrap();
     //  let (mut data, width, height) = imagine_integration::parse_me_a_png_yo(bytes).unwrap();
 
     // Premultiply texture

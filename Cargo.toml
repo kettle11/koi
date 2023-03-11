@@ -51,7 +51,7 @@ jpeg-decoder = {version = "0.1.20", default-features = false, optional = true}
 hdrldr = {version = "0.1.2", optional = true}
 oddio = {git = "https://github.com/Ralith/oddio/", optional = true}
 
-imagine = {git="https://github.com/Lokathor/imagine", optional = true, features = ["png", "miniz_oxide"]}
+imagine = {version="0.4.0", optional = true, features = ["png", "miniz_oxide"]}
 bytemuck = {version = "1.7.3", features = ["extern_crate_alloc"]}
 ureq = {version = "2.5.0", optional = true}
 
