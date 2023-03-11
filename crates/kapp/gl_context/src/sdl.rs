@@ -21,7 +21,7 @@ impl GLContext {
                 stencil_bits: 8,
                 webgl_version: WebGLVersion::One,
                 high_resolution_framebuffer: false,
-                srgb: true,
+                color_space: Some(ColorSpace::SRGB),
             },
         }
     }
@@ -70,7 +70,11 @@ impl GLContextBuilder {
             }
             fermium::video::SDL_GL_SetAttribute(
                 fermium::video::SDL_GL_FRAMEBUFFER_SRGB_CAPABLE,
-                if self.gl_attributes.srgb { 1 } else { 0 },
+                if self.gl_attributes.color_space == Some(ColorSpace::SRGB) {
+                    1
+                } else {
+                    0
+                },
             );
 
             fermium::video::SDL_GL_SetAttribute(
