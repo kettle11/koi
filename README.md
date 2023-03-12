@@ -4,6 +4,7 @@ A game engine.
 
 Developed in the open but not yet fit for public use. `koi` is currently designed for my active projects but I'd like to eventually make it useful to others as well.
 
+**WARNING:** Koi is mostly in maintenance mode right now and is unfinished. I'm still using it for some things, but not actively working on it.
 ## Projects I've built with `koi`
 
 [bloom3d](https://bloom3d.com)
