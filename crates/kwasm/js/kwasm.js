@@ -72,7 +72,6 @@ function kwasm_stuff() {
             let result = f.apply(self, args1);
 
             return self.kwasm_new_js_object(result);
-
         },
         kwasm_js_object_property: function (object_index, property_name_index) {
             let object = kwasm_js_objects[object_index];
@@ -233,7 +232,7 @@ function kwasm_stuff() {
             if (self.kwasm_exports.__wbindgen_start) {
                 self.kwasm_exports.__wbindgen_start();
             } else {
-                self.kwasm_exports.__stack_pointer.value = setup_data.stack_pointer;
+                self.kwasm_exports.__stack_pointer.value = e.data.stack_pointer;
                 self.kwasm_exports.__wasm_init_tls(e.data.thread_local_storage_pointer);
             }
             if (e.data.entry_point) {
