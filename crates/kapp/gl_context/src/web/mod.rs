@@ -11,15 +11,21 @@ enum HostCommands {
     CreateWebGL2Context = 1,
 }
 
-fn send_command_to_js(command: HostCommands) {
-    KAPP_GL_FUNCTION.with(|f| f.call_raw(&[command as u32]));
+fn send_command_to_js(command: HostCommands, is_display_p3: bool) {
+    KAPP_GL_FUNCTION.with(|f| f.call_raw(&[command as u32, if is_display_p3 { 1 } else { 0 }]));
 }
 
 impl GLContextBuilder {
     pub fn build(&self) -> Result<GLContext, std::io::Error> {
+        let is_display_p3 = self.gl_attributes.color_space == Some(ColorSpace::DisplayP3);
+
         match self.gl_attributes.webgl_version {
-            WebGLVersion::One => send_command_to_js(HostCommands::CreateWebGL1Context),
-            WebGLVersion::Two => send_command_to_js(HostCommands::CreateWebGL2Context),
+            WebGLVersion::One => {
+                send_command_to_js(HostCommands::CreateWebGL1Context, is_display_p3)
+            }
+            WebGLVersion::Two => {
+                send_command_to_js(HostCommands::CreateWebGL2Context, is_display_p3)
+            }
         }
 
         #[cfg(feature = "wasm_bindgen_support")]
@@ -104,7 +110,7 @@ impl GLContext {
                 stencil_bits: 8,
                 webgl_version: WebGLVersion::One,
                 high_resolution_framebuffer: false,
-                color_space: None,
+                color_space: Some(ColorSpace::SRGB),
             },
         }
     }

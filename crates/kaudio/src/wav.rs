@@ -1,5 +1,6 @@
 use crate::{resample, Sound};
 
+/// Resamples audio to 44100
 pub fn load_wav_from_bytes(bytes: &[u8]) -> Result<crate::Sound, hound::Error> {
     let mut reader = hound::WavReader::new(bytes)?;
 

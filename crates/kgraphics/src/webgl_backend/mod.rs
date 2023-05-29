@@ -864,8 +864,14 @@ impl GraphicsContextTrait for GraphicsContext {
         let js = WebGLJS::new();
 
         let msaa_enabled = if settings.samples > 0 { 1 } else { 0 };
+        let display_p3 = if Some(ColorSpace::DisplayP3) == settings.color_space {
+            1
+        } else {
+            0
+        };
+
         // Initialize context
-        js.new.call_raw(&[msaa_enabled]);
+        js.new.call_raw(&[msaa_enabled, display_p3]);
         Self {
             js,
             old_command_buffers: Vec::new(),

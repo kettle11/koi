@@ -75,7 +75,7 @@ pub enum BlendFactor {
     OneMinusSourceAlpha,
 }
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum ColorSpace {
     SRGB,
     DisplayP3,

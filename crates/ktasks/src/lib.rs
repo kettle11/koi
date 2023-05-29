@@ -456,10 +456,9 @@ impl<'a> Worker<'a> {
         }
     }
 
-    pub fn spawn_main<T: Send + 'a>(
-        &self,
-        future: impl Future<Output = T> + Send + 'a,
-    ) -> JoinHandle<'a, T> {
+    pub fn build_task<T: 'a>(
+        future: impl Future<Output = T> + 'a,
+    ) -> (Arc<SharedState<T>>, LocalTask<'a>) {
         let shared_state = Arc::new(SharedState {
             result: Mutex::new(None),
             waker: Mutex::new(None),
@@ -468,22 +467,32 @@ impl<'a> Worker<'a> {
         let task_shared_state = shared_state.clone();
 
         let mut future = Box::pin(future);
-        let task = LocalTask::new(Box::new(move |waker: Waker| {
-            let context = &mut Context::from_waker(&waker);
+        (
+            shared_state,
+            LocalTask::new(Box::new(move |waker: Waker| {
+                let context = &mut Context::from_waker(&waker);
 
-            // Run task to completion
-            let data = future.as_mut().poll(context);
-            match data {
-                Poll::Ready(data) => {
-                    *task_shared_state.result.lock().unwrap() = Some(data);
-                    if let Some(w) = task_shared_state.waker.lock().unwrap().take() {
-                        w.wake()
+                // Run task to completion
+                let data = future.as_mut().poll(context);
+                match data {
+                    Poll::Ready(data) => {
+                        *task_shared_state.result.lock().unwrap() = Some(data);
+                        if let Some(w) = task_shared_state.waker.lock().unwrap().take() {
+                            w.wake()
+                        }
+                        true
                     }
-                    true
+                    Poll::Pending => false,
                 }
-                Poll::Pending => false,
-            }
-        }));
+            })),
+        )
+    }
+
+    pub fn spawn_main<T: Send + 'a>(
+        &self,
+        future: impl Future<Output = T> + Send + 'a,
+    ) -> JoinHandle<'a, T> {
+        let (shared_state, task) = Self::build_task(future);
 
         let main_thread_queue = WORKER.with(|w| w.borrow().main_thread_local_task_queue.clone());
         JoinHandle {
@@ -495,30 +504,7 @@ impl<'a> Worker<'a> {
     }
 
     pub fn spawn_local<T: 'a>(&self, future: impl Future<Output = T> + 'a) -> JoinHandle<'a, T> {
-        let shared_state = Arc::new(SharedState {
-            result: Mutex::new(None),
-            waker: Mutex::new(None),
-        });
-
-        let task_shared_state = shared_state.clone();
-
-        let mut future = Box::pin(future);
-        let task = LocalTask::new(Box::new(move |waker: Waker| {
-            let context = &mut Context::from_waker(&waker);
-
-            // Run task to completion
-            let data = future.as_mut().poll(context);
-            match data {
-                Poll::Ready(data) => {
-                    *task_shared_state.result.lock().unwrap() = Some(data);
-                    if let Some(w) = task_shared_state.waker.lock().unwrap().take() {
-                        w.wake()
-                    }
-                    true
-                }
-                Poll::Pending => false,
-            }
-        }));
+        let (shared_state, task) = Self::build_task(future);
 
         let local_task_queue = WORKER.with(|worker| worker.borrow().local_task_queue.clone());
         JoinHandle {
@@ -634,7 +620,7 @@ impl<'a> Worker<'a> {
                 ran_a_task = true;
             }
 
-            // Run tasks enque
+            // Run tasks queue
             let task = self.task_queue.lock().unwrap().pop_front();
             if let Some(task) = task {
                 task.run(self);
