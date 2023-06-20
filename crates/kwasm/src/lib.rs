@@ -14,6 +14,7 @@ use std::ops::Deref;
 pub mod libraries {
     pub mod console;
     pub mod download;
+    pub mod drag_and_drop;
     pub mod eval;
     pub mod fetch;
     pub mod instant;
@@ -22,6 +23,7 @@ pub mod libraries {
     pub mod store_data;
     pub use console::*;
     pub use download::*;
+    pub use drag_and_drop::*;
     pub use eval::*;
     pub use fetch::*;
     pub use instant::*;
