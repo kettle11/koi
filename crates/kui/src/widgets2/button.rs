@@ -62,13 +62,15 @@ pub fn bool_button<
     ExtraState,
 >(
     child: impl Widget<State, Context, ExtraState>,
-    get_state: fn(&mut State) -> &mut bool,
+    get_state: impl Fn(&mut State) -> &mut bool + 'static + Clone,
 ) -> impl Widget<State, Context, ExtraState> {
+    let get_state0 = get_state.clone();
+
     hover_animation(button_base(
         fit(stack((
             rounded_fill(
                 move |state, _, c: &Context| {
-                    let selected = *(get_state)(state);
+                    let selected = *(get_state0)(state);
                     if c.standard_input().button_clicked || selected {
                         c.standard_style().disabled_color
                     } else {
