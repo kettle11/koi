@@ -13,8 +13,9 @@ thread_local! {
                 event.stopPropagation();
                 event.preventDefault();
                 for (file of event.dataTransfer.files) {
+                    let file_name = file.name;
                     file.arrayBuffer().then((result) => {
-                        self.kwasm_pass_string_to_client(file.name);
+                        self.kwasm_pass_string_to_client(file_name);
                         self.kwasm_exports.drag_and_drop_file_name();
 
                         let pointer = self.kwasm_exports.kwasm_reserve_space(result.byteLength);
