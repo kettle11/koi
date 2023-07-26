@@ -84,7 +84,7 @@ async fn run_async(app: Application, events: Events) {
         .new_vertex_function(
             r#"
             out vec2 TexCoords;
- 
+
             void main()
             {
                 float x = -1.0 + float((gl_VertexID & 1) << 2);

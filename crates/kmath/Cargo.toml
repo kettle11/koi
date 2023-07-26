@@ -5,7 +5,7 @@ edition = "2021"
 license = "Zlib OR Apache-2.0 OR MIT"
 
 [features]
-default = ["bytemuck"]
+default = []
 
 [dependencies]
 kserde = {path = "../kserde"}
@@ -16,7 +16,7 @@ bytemuck = {version = "1.12.2", optional = true}
 # glam = "0.14.0"
 # ultraviolet = "0.8.0"
 # nalgebra = "0.26.2"
-# 
+#
 # [[bench]]
 # name = "bench"
 # harness = false

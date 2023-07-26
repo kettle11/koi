@@ -3,7 +3,6 @@ use crate::{resample, Sound};
 /// Resamples audio to 44100
 pub fn load_wav_from_bytes(bytes: &[u8]) -> Result<crate::Sound, hound::Error> {
     let mut reader = hound::WavReader::new(bytes)?;
-
     let spec = reader.spec();
     let mut samples: Vec<f32> = match spec.sample_format {
         hound::SampleFormat::Float => reader.samples::<f32>().map(|x| x.unwrap()).collect(),

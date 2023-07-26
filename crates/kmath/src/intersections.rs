@@ -257,11 +257,22 @@ pub fn ray_with_tri(ray: Ray3, vertex0: Vec3, vertex1: Vec3, vertex2: Vec3) -> (
     }
 }
 
+pub struct RayWithMeshResult {
+    pub distance: f32,
+    pub tri_index: usize,
+}
+
 // Brute force ray with mesh ray test.
-pub fn ray_with_mesh(ray: Ray3, vertices: &[Vec3], indices: &[[u32; 3]]) -> Option<f32> {
+pub fn ray_with_mesh(
+    ray: Ray3,
+    vertices: &[Vec3],
+    indices: &[[u32; 3]],
+) -> Option<RayWithMeshResult> {
     let mut nearest = std::f32::MAX;
     let mut intersects = false;
-    for [i0, i1, i2] in indices.iter() {
+    let mut nearest_tri_index = 0;
+
+    for (i, [i0, i1, i2]) in indices.iter().enumerate() {
         let result = ray_with_tri(
             ray,
             vertices[*i0 as usize],
@@ -274,13 +285,17 @@ pub fn ray_with_mesh(ray: Ray3, vertices: &[Vec3], indices: &[[u32; 3]]) -> Opti
 
             if dis < nearest {
                 nearest = dis;
+                nearest_tri_index = i;
                 intersects = true;
             }
         }
     }
 
     if intersects {
-        Some(nearest)
+        Some(RayWithMeshResult {
+            distance: nearest,
+            tri_index: nearest_tri_index,
+        })
     } else {
         None
     }

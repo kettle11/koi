@@ -3,6 +3,7 @@ use std::ops::Mul;
 use crate::*;
 
 use kecs::Query;
+use kmath::intersections::RayWithMeshResult;
 
 pub fn transform_plugin() -> Plugin {
     Plugin {
@@ -303,11 +304,13 @@ pub fn raycast_entities<'a>(
                 let ray = inverse_model.transform_ray(ray);
                 if let Some(v) = crate::intersections::ray_with_bounding_box(ray, bounding_box) {
                     if v < closest_value {
-                        if let Some(v) = crate::intersections::ray_with_mesh(
-                            ray,
-                            &mesh_data.positions,
-                            &mesh_data.indices,
-                        ) {
+                        if let Some(RayWithMeshResult { distance: v, .. }) =
+                            crate::intersections::ray_with_mesh(
+                                ray,
+                                &mesh_data.positions,
+                                &mesh_data.indices,
+                            )
+                        {
                             if v < closest_value {
                                 closest_value = v;
                                 intersected_entity = Some(*entity)

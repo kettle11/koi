@@ -162,7 +162,7 @@ pub struct UserEventSender {
     sender: PlatformUserEventSender,
     // This field is added to prevent this from being send.
     // Presently the web backend is not Send due to its use
-    // of thread locals but when that's correct this can be removed.
+    // of thread locals but when that's corrected this can be removed.
     prevent_send: std::marker::PhantomData<std::cell::Cell<*const ()>>,
 }
 
