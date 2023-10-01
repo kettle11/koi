@@ -355,3 +355,22 @@ pub fn frustum_with_bounding_box(frustum: &Frustum, transform: Mat4, box3: Box3)
     // Todo: Additional cases should be checked for here: https://www.iquilezles.org/www/articles/frustumcorrect/frustumcorrect.htm
     true
 }
+
+/// Returns true if the point is inside the polygon.
+/// The polygon is specified by its vertices.
+/// Does not handle boundary conditions
+pub fn point_in_polygon(point: Vec2, polygon: &[Vec2]) -> bool {
+    let ray = Ray::new(point, Vec2::X);
+
+    let mut p0 = *polygon.last().unwrap();
+    let mut total_crossings = 0;
+    for p1 in polygon.iter().copied() {
+        match intersections::ray_line_segment(ray, LineSegment { a: p0, b: p1 }) {
+            LineIntersectionResult::Point(_) => total_crossings += 1,
+            _ => {}
+        }
+        p0 = p1;
+    }
+
+    total_crossings % 2 != 0
+}
